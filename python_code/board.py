@@ -69,128 +69,30 @@ class Board:
             blocks[index] = self.matrix[matrix_position[1]][matrix_position[0]]
         return blocks
 
-    def pathfind(self, start, end):
+    def remove_blocks(self, blocks):
         """
-        Returns a list of tuples as a path from the given start to the given end
-        https://gist.github.com/Nicholas-Swift/003e1932ef2804bebef2710527008f44#file-astar-py
+        Remove a matrix of bloxks from the second board layer by replacing them
+        with air
+
+        :param blocks: a matrix of blocks
         """
-        start = (self.__p_to_r(start[1]), self.__p_to_c(start[0]))
-        end = (self.__p_to_r(end[1]), self.__p_to_c(end[0]))
-        # Create start and end node
-        start_node = Node(None, start)
-        start_node.g = start_node.f = 0
-        end_node = Node(None, end)
-        end_node.g = end_node.h = end_node.f = 0
-        start_node.h = manhattan_distance(start_node.position, end_node.position)
-
-        # Initialize both open and closed list
-        open_list = []
-        closed_list = []
-
-        # Add the start node
-        open_list.append(start_node)
-
-        # Loop until you find the end
-        outer_iterations = 0
-        while len(open_list) > 0:
-
-            # Get the current node with lowest f
-            current_node = open_list[0]
-            current_index = 0
-            for index, item in enumerate(open_list):
-                if item.f < current_node.f:
-                    current_node = item
-                    current_index = index
-
-            # Pop current off open list, add to closed list
-            open_list.pop(current_index)
-            closed_list.append(current_node)
-
-            # Found the goal on block infront of destination
-            if current_node.h <= 1 and current_node.h > 0:
-                return self.__retrace_path(current_node)
-
-            # Generate children
-            children = []
-            for new_position in [(0, -1), (0, 1), (-1, 0), (1, 0)]:  # Adjacent squares
-
-                # Get node position
-                node_position = (current_node.position[0] + new_position[0],
-                                 current_node.position[1] + new_position[1])
-
-                # Make sure within range
-                if node_position[0] > (len(self.matrix) - 1) or node_position[
-                    0] < 0 or node_position[1] > (
-                        len(self.matrix[len(self.matrix) - 1]) - 1) or node_position[1] < 0:
-                    continue
-
-                # Make sure walkable terrain
-                if self.matrix[node_position[0]][node_position[1]] != "Air":
-                    continue
-
-                # Create new node
-                new_node = Node(current_node, node_position)
-
-                # Append
-                children.append(new_node)
-
-            # Loop through children
-            for child in children:
-
-                # Child is on the closed list
-                if len([closed_child for closed_child in closed_list if
-                        closed_child == child]) > 0:
-                    continue
-
-                # Create the f, g, and h values
-                child.g = current_node.g + 1
-                child.h = manhattan_distance(child.position, end_node.position)
-                child.f = child.g + child.h
-
-                # Child is already in the open list
-                if len([open_node for open_node in open_list if
-                        child.position == open_node.position]) > 0:
-                    continue
-
-                # Add the child to the open list
-                open_list.append(child)
-        return None
-
-    def __retrace_path(self, node):
-        """
-        Retrace from a given node class back to the starting parent node
-
-        :param node: A Node object
-        :return: a list of tuples that is the paht from end to start.
-
-        transforms matrix indexes into board coordinates aswell as flipping the
-        positions.
-        """
-        prev_node = (node.position[1] * BLOCK_SIZE.width,
-                       node.position[0] * BLOCK_SIZE.height)
-        path = [prev_node]
-        while node is not None:
-            board_coord = (node.position[1] * BLOCK_SIZE.width,
-                           node.position[0] * BLOCK_SIZE.height)
-            if path[-1][0] != board_coord[0] and path[-1][1] != board_coord[1]:
-                path.append(prev_node)
-            prev_node = board_coord
-            node = node.parent
-        return path
-
-    def remove_blocks(self, blocks, layer = 2):
-        """
-        """
+        rect = rect_from_block_matrix(blocks)
+        self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
+        # remove the highlight
+        self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
         for row in blocks:
             for block in row:
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
                 self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size)
-                self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=layer)
-                #remove the highlight
-                self.add_rectangle(INVISIBLE_COLOR, block.rect, layer = 1)
 
     def highlight_non_air_blocks(self, color, blocks):
+        """
+        Highlight in a given area all the non air blocks
+
+        :param color: The highlight color
+        :param blocks: a matrix of blocks
+        """
         rect = rect_from_block_matrix(blocks)
         self.add_rectangle(color, rect, layer = 1)
         air_spaces = self.get_air_rectangles(blocks)
