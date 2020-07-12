@@ -1,0 +1,387 @@
+from python_code.constants import *
+from python_code.inventories import Inventory
+
+class Entity(pygame.sprite.Sprite):
+    def __init__(self, pos, size, *groups, color = (255,255,255), zoom = 1, layer = FIRST_LAYER, **kwargs):
+        pygame.sprite.Sprite.__init__(self, *groups)
+        self.image = self._create_image(size, color, **kwargs)
+        self.orig_image = self.image
+        self.orig_rect = self.image.get_rect(topleft = pos)
+        self.visible = True
+        self._layer = layer
+
+        #zoom variables
+        self._zoom = zoom
+        #if an entity is created after zooming make sure it is zoomed to the
+        #right proportions
+        if self._zoom != 1:
+            self.zoom(self._zoom)
+
+    def update(self, *args):
+        super().update(*args)
+
+    def _create_image(self, size, color, **kwargs):
+        """
+        Create an image using a size and color
+
+        :param size: a Size object or tuple of lenght 2
+        :param color: a rgb color as tuple of lenght 2 or 3
+        :param kwargs: additional named arguments
+        :return: a pygame Surface object
+        """
+        if len(color) == 3:
+            image = pygame.Surface(size).convert()
+        #included alpha channel
+        elif len(color) == 4:
+            image = pygame.Surface(size).convert_alpha()
+        image.fill(color)
+        return image
+
+    def zoom(self, zoom):
+        """
+        Safe a zoom value so distance measures know how to change, also change
+        the image size to make sure that this is not done every request.
+
+        :param increase: a small integer that tells how much bigger the zoom
+        should be
+        """
+        self._zoom = zoom
+        orig_rect = self.orig_rect
+        new_width = orig_rect.width * zoom
+        new_height = orig_rect.height * zoom
+        self.image = pygame.transform.scale(self.orig_image, (int(new_width),
+                                                              int(new_height)))
+
+    @property
+    def rect(self):
+        """
+        Returns a rectangle that represents the zoomed version of the
+        self.orig_rect
+
+        :return: a pygame Rect object
+        """
+        if self._zoom == 1:
+            return self.orig_rect
+        orig_pos = list(self.orig_rect.center)
+        orig_pos[0] *= self._zoom
+        orig_pos[1] *= self._zoom
+        rect = self.image.get_rect(center = orig_pos)
+        return rect
+
+
+class SelectionRectangle(Entity):
+    """
+    Creates a rectangle by draging the mouse. To highlight certain areas.
+    """
+    def __init__(self, pos, size, mouse_pos, *groups, **kwargs):
+        Entity.__init__(self, pos, size, *groups, **kwargs)
+        self.__start_pos = list(pos)
+        self.__prev_screen_pos = list(mouse_pos)
+        self.__size = Size(*size)
+        self.__update_image()
+
+    def __update_image(self):
+        """
+        Update the rectangle image tha represents a highlighted area.
+        """
+        pos = self.__start_pos.copy()
+        size = self.__size.size
+        if self.__size.width < 0:
+            pos[0] += self.__size.width
+            size[0] = -1 * self.__size.width
+        if self.__size.height < 0:
+            pos[1] += self.__size.height
+            size[1] = -1 * self.__size.height
+        self.image = pygame.Surface(size).convert_alpha()
+        self.image.fill((255,255,255,100))
+        self.orig_rect = self.image.get_rect(topleft = pos)
+
+        self.orig_image = self.image
+        #make sure to update the zoomed image aswell
+        self.zoom(self._zoom)
+
+    def update(self, *args):
+        super().update(*args)
+        self.__remake_rectangle()
+
+    def __remake_rectangle(self):
+        """
+        Every update recalculate if the size of the rectangle should change
+        """
+        #figure out the distance the mouse was moved compared to the previous
+        #position
+        x_move = pygame.mouse.get_pos()[0] - self.__prev_screen_pos[0]
+        y_move = pygame.mouse.get_pos()[1] - self.__prev_screen_pos[1]
+        self.__prev_screen_pos[0] += x_move
+        self.__prev_screen_pos[1] += y_move
+
+        #adjust the size to be of orig_board coordinate size sinze the mouse
+        #screen position is in zoomed sizes.
+        self.__size.width += x_move / self._zoom
+        self.__size.height += y_move / self._zoom
+
+        if not x_move == y_move == 0:
+            self.__update_image()
+
+
+class MovingEntity(Entity):
+    MAX_SPEED = 10
+    def __init__(self, pos, size, *groups, max_speed = MAX_SPEED, **kwargs):
+        Entity.__init__(self, pos, size, *groups, **kwargs)
+        self.max_speed = max_speed
+        self.speed = pygame.Vector2(0, 0)
+
+    def update(self, *args):
+        super().update(*args)
+        self.move()
+
+    def move(self):
+        """
+        Method for moving something based on an x and y speed
+        """
+        self.orig_rect.centerx = self._x_collision_adjusted_value()
+
+        self.orig_rect.centery = self._y_collision_adjusted_value()
+
+    def _x_collision_adjusted_value(self):
+        """
+        Adjust the centerx value based on collison values established for the
+        entity. The basic collsion rules are not outside the playing board.
+
+        :return: a float that represents the new x center coordinate of the
+        rectangle of the entity.
+        """
+        new_centerx = max(0.5 * self.orig_rect.width,
+                          min(self.orig_rect.centerx + self.speed.x,
+                          ORIGINAL_BOARD_SIZE.width - 0.5 * self.orig_rect.width))
+        return new_centerx
+
+    def _y_collision_adjusted_value(self):
+        """
+        Adjust the centery value based on collison values established for the
+        entity. The basic collsion rules are not outside the playing board.
+
+        :return: a float that represents the new y center coordinate of the
+        rectangle of the entity.
+        """
+        new_centery = max(0.5 * self.orig_rect.height,
+                          min(self.orig_rect.centery + self.speed.y,
+                          ORIGINAL_BOARD_SIZE.height - 0.5 * self.orig_rect.height))
+        return new_centery
+
+
+class CameraCentre(MovingEntity):
+    """
+    The camera center where the camera centers on
+    """
+    def __init__(self, pos, size, *groups, **kwargs):
+        MovingEntity.__init__(self, pos, size, *groups, max_speed = 20, **kwargs)
+        self.orig_rect = pygame.Rect(*pos, *size)
+        self.pressed_keys = {key: False for key in KEYBOARD_KEYS}
+
+    def update(self, *args):
+        super().update(*args)
+
+    def handle_events(self, events):
+        """
+        Handle events for moving the camera around the board, this function is
+        called by the user.
+        """
+        for event in events:
+            if event.type == KEYDOWN:
+                self.pressed_keys[event.key] = True
+            elif event.type == KEYUP:
+                self.pressed_keys[event.key] = False
+            if self.pressed_keys[RIGHT] and self.pressed_keys[LEFT]:
+                self.speed.x = 0
+            else:
+                if self.pressed_keys[RIGHT]:
+                    self.speed.x = min(self.max_speed, self.speed.x + self.max_speed)
+                if self.pressed_keys[LEFT]:
+                    self.speed.x = max(-self.max_speed, self.speed.x - self.max_speed)
+                if not self.pressed_keys[LEFT] and not self.pressed_keys[RIGHT]:
+                    self.speed.x = 0
+            if self.pressed_keys[DOWN] and self.pressed_keys[UP]:
+                self.speed.y = 0
+            else:
+                if self.pressed_keys[UP]:
+                    self.speed.y = max(-self.max_speed, self.speed.y - self.max_speed)
+                if self.pressed_keys[DOWN]:
+                    self.speed.y = min(self.max_speed, self.speed.y + self.max_speed)
+                if not self.pressed_keys[UP] and not self.pressed_keys[DOWN]:
+                    self.speed.y = 0
+
+class AbstractSelectable:
+    """
+    Allow an entity to track and save events, this class cannot be instantiated
+    on its own
+    """
+    HIGHLIGHT_COLOR = (11, 219, 32)
+    def __init__(self):
+        if type(self) == AbstractSelectable:
+            raise Exception("Cannot instaniate abstract class {}".format(type(self)))
+        self._pressed_keys = {key: False for key in KEYBOARD_KEYS}
+        self.selected = False
+
+    def handle_events(self, events):
+        """
+        Record what buttons are pressed in self._pressed_keys dictionary
+
+        :param events: a list of pygame events
+        """
+        for event in events:
+            if event.type == KEYDOWN:
+                self._pressed_keys[event.key] = True
+            elif event.type == KEYUP:
+                self._pressed_keys[event.key] = False
+
+    def _draw_highlight(self):
+        """
+        Function for drawing a highlight if desired
+        :return:
+        """
+        rect = self.image.get_rect()
+        pygame.draw.rect(self.image, self.HIGHLIGHT_COLOR,
+                         (0, 0, rect.width,
+                          rect.height), 2)
+
+class Worker(MovingEntity, AbstractSelectable):
+    COLOR = (255, 0, 179)
+    SIZE = (10,10)
+    #in wheight
+    INVENTORY_SIZE = 100
+    def __init__(self, pos, board, *groups, **kwargs):
+        MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
+                              max_speed=5, **kwargs)
+        AbstractSelectable.__init__(self)
+        self.board = board
+        #tasks
+        self.task = None
+        self.task_block = None
+        self.achieved_task = True
+        self.path = []
+        self.dest = None
+        #inventory
+        self.inventory = Inventory(self.INVENTORY_SIZE)
+
+    def update(self, *args):
+        MovingEntity.update(self, *args)
+        if not self.inventory.full:
+            self.__process_tasks()
+        else:
+            #implement
+            pass
+
+    def __process_tasks(self):
+        if not self.task:
+            return
+        if len(self.path) == self.speed.x == self.speed.y == 0:
+            self.__perform_task()
+        #when a worker finishes the task before arving stop walking
+        elif self.task.finished:
+            self.speed.x = self.speed.y = 0
+            self.path = []
+        else:
+            if self.speed.x == self.speed.y == 0:
+                self.dest = self.path.pop()
+
+            #x move
+            if self.orig_rect.x < self.dest[0]:
+                self.speed.x = min(self.max_speed, self.dest[0] - self.orig_rect.x)
+            elif self.orig_rect.x > self.dest[0]:
+                self.speed.x = max(- self.max_speed, self.dest[0] - self.orig_rect.x)
+            #destination achieved
+            else:
+                self.speed.x = 0
+
+            #y move
+            if self.orig_rect.y < self.dest[1]:
+                self.speed.y = min(self.max_speed, self.dest[1] - self.orig_rect.y)
+            elif self.orig_rect.y > self.dest[1]:
+                self.speed.y = max(- self.max_speed, self.dest[1] - self.orig_rect.y)
+            else:
+                self.speed.y = 0
+
+    def __perform_task(self):
+        self.task.task_progress[0] += GAME_TIME.get_time()
+        if self.task.finished:
+            self.achieved_task = True
+            if self.task.task_type == "Mining":
+                self.board.remove_blocks([[self.task_block]])
+
+    def assign_task(self, block, task):
+        self.task = task
+        self.task_block = block
+        if task:
+            # path = self.board.pathfind(self.orig_rect.topleft,
+            #                            self.task_block.coord)
+            path = self.board.pf.get_path(self.orig_rect, self.task_block.rect)
+            if path != None:
+                self.task.start()
+                self.path = path
+                self.achieved_task = False
+            # if no path reject task
+            else:
+                self.task = None
+
+    def zoom(self, zoom):
+        """
+        Zoom an image and make sure to adda border when needed
+
+        See: Entity.zoom
+        """
+        MovingEntity.zoom(self, zoom)
+        if self.selected:
+            self._draw_highlight()
+
+    @property
+    def selected(self):
+        return self._selected
+
+    @selected.setter
+    def selected(self, boolean):
+        """
+        When selected state is changed draw or remove the highlight
+
+        :param boolean: a boolean that signifies is an entity is selected
+        """
+        self._selected = boolean
+        if self._selected:
+            self._draw_highlight()
+        else:
+            # reinstate the original image zoomed to the correct size
+            self.zoom(self._zoom)
+
+    def handle_events(self, events):
+        AbstractSelectable.handle_events(self, events)
+
+class TextSprite(Entity):
+    COLOR = (255,0,0)
+    def __init__(self, pos, size, text, font, *groups, color = COLOR, **kwargs):
+        #size has no information
+        Entity.__init__(self, pos, size, *groups, font = font,
+                        text = text, **kwargs)
+        self.lifespan = [0,1000]
+
+    def _create_image(self, size, color, **kwargs):
+        """
+        Create some tect using a string, font and color
+
+        :param size: a Size object or tuple of lenght 2
+        :param color: a rgb color as tuple of lenght 2 or 3
+        :param args: additional arguments
+        :return: a pygame Surface object
+        """
+        image = kwargs["font"].render(str(kwargs["text"]), True, color)
+        return image
+
+    def update(self,*args):
+        """
+        Decrease the lifespan of the text making sure that is dies after around
+        a second.
+        """
+        super().update(*args)
+        self.lifespan[0] += GAME_TIME.get_time()
+        if self.lifespan[0] >= self.lifespan[1]:
+            self.kill()
+        self.orig_rect.y -= 2
