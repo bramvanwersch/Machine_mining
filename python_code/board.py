@@ -329,6 +329,12 @@ class Board:
         return matrix
 
     def __generate_background_matrix(self, size):
+        """
+        Generate the backdrop matrix.
+
+        :param size: the size of the matrix
+        :return: a matrix of the given size
+        """
         matrix = []
         for _ in range(self.__p_to_r(size.height)):
             row = ["Dirt"] * self.__p_to_c(size.width)
@@ -401,6 +407,9 @@ class Board:
         return s_matrix
 
 class BaseBlock:
+    """
+    Base class for the blocks in image matrices
+    """
     def __init__(self, pos, size):
         if type(self) == BaseBlock:
             raise Exception("Cannot instantiate base class BaseBlock")
@@ -432,6 +441,11 @@ class BaseBlock:
 
     @property
     def coord(self):
+        """
+        Simplify getting the coordinate of a block
+
+        :return: the topleft cooridnate of the block rectangle.
+        """
         return self.rect.topleft
 
     def __eq__(self, other):
@@ -441,6 +455,9 @@ class BaseBlock:
         return hash(str(self.rect.topleft))
 
 class Block(BaseBlock):
+    """
+    A normal block containing anythin but air
+    """
     def __init__(self, pos, size, material):
         super().__init__(pos, size)
         self.material = material
@@ -448,10 +465,19 @@ class Block(BaseBlock):
         self.rect = self.surface.get_rect(topleft=pos)
 
     def add_task(self, task):
+        """
+        Add an additional task progress for the task on a material block
+        """
         super().add_task(task)
         task.task_progress = [0, self.material.task_time()]
 
     def __create_surface(self):
+        """
+        Create the surface of the block, this depends on the depth of the block
+        and potential border
+
+        :return: a pygame Surface object
+        """
         surface = pygame.Surface(self.size)
         surface.fill(self.material.color)
         if SHOW_BLOCK_BORDER:
@@ -468,34 +494,18 @@ class AirBlock(BaseBlock):
         super().__init__(pos, size)
         self.material = "Air"
 
-class Node:
-    """
-    A node class for A* Pathfinding
-    """
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
-        #in order y, x
-        self.position = position
-
-        self.g = 0
-        self.h = 0
-        self.f = 0
-
-    def __str__(self):
-        return str(self.position[::-1])
-
-    def __eq__(self, other):
-        return self.position == other.position
-
 class BoardImage(Entity):
     """
-    Convert a matrix of blocks into a surface and persist as entity
+    Convert a matrix of blocks into a surface that persists as an entity. This
+    is done to severly decrease the amount of blit calls and allow for layering
+    of images aswell as easily scaling.
     """
     def __init__(self, pixel_board_size, main_sprite_group, **kwargs):
         Entity.__init__(self, (0, 0), pixel_board_size, main_sprite_group, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
         """
+        Overwrites the image creation process in the basic Entity class
         """
         block_matrix = kwargs["block_matrix"]
         image = pygame.Surface(size)
@@ -519,10 +529,17 @@ class BoardImage(Entity):
         pygame.draw.rect(self.image, color, zoomed_rect)
 
 class TransparantBoardImage(BoardImage):
+    """
+    Slight variation on the basic Board image that creates a transparant
+    surface on which selections can be drawn
+    """
     def __init__(self, pixel_board_size, main_sprite_group, **kwargs):
         BoardImage.__init__(self, pixel_board_size, main_sprite_group, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
+        """
+        Overwrites the image creation process in the basic Entity class
+        """
         image = pygame.Surface(size).convert_alpha()
         image.set_colorkey((0,0,0), RLEACCEL)
         image.fill(INVISIBLE_COLOR)
