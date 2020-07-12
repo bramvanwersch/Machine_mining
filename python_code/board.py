@@ -15,14 +15,14 @@ class Board:
     BLOCK_PER_CLUSRTER = 500
     #the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
-    def __init__(self, pixel_board_size, main_sprite_group):
-        self.matrix = self.__generate_foreground_matrix(pixel_board_size)
-        self.back_matrix = self.__generate_background_matrix(pixel_board_size)
-        self.foreground_image = BoardImage(pixel_board_size, main_sprite_group,
+    def __init__(self, main_sprite_group):
+        self.matrix = self.__generate_foreground_matrix()
+        self.back_matrix = self.__generate_background_matrix()
+        self.foreground_image = BoardImage(main_sprite_group,
                                            block_matrix = self.matrix, layer = BOTTOM_LAYER)
-        self.background_image = BoardImage(pixel_board_size, main_sprite_group,
+        self.background_image = BoardImage(main_sprite_group,
                                            block_matrix = self.back_matrix, layer = BOTTOM_LAYER - 1)
-        self.selection_image = TransparantBoardImage(pixel_board_size, main_sprite_group, layer = BOTTOM_LAYER + 1)
+        self.selection_image = TransparantBoardImage(main_sprite_group, layer = BOTTOM_LAYER + 1)
         self.pf = PathFinder(self.matrix)
 
     def overlapping_blocks(self, rect):
@@ -193,7 +193,7 @@ class Board:
 
 #### MAP GENERATION FUNCTIONS ###
 
-    def __generate_foreground_matrix(self, size):
+    def __generate_foreground_matrix(self):
         """
         Fill a matrix with names of the materials of the respective blocks
 
@@ -203,8 +203,8 @@ class Board:
 
         matrix = []
         #first make everything stone
-        for _ in range(self.__p_to_r(size.height)):
-            row = ["Stone"] * self.__p_to_c(size.width)
+        for _ in range(self.__p_to_r(BOARD_SIZE.height)):
+            row = ["Stone"] * self.__p_to_c(BOARD_SIZE.width)
             matrix.append(row)
 
         #generate some ores inbetween the start and end locations
@@ -230,16 +230,15 @@ class Board:
         matrix = self.__create_blocks_from_string(matrix)
         return matrix
 
-    def __generate_background_matrix(self, size):
+    def __generate_background_matrix(self):
         """
         Generate the backdrop matrix.
 
-        :param size: the size of the matrix
         :return: a matrix of the given size
         """
         matrix = []
-        for _ in range(self.__p_to_r(size.height)):
-            row = ["Dirt"] * self.__p_to_c(size.width)
+        for _ in range(self.__p_to_r(BOARD_SIZE.height)):
+            row = ["Dirt"] * self.__p_to_c(BOARD_SIZE.width)
             matrix.append(row)
         matrix = self.__create_blocks_from_string(matrix)
         return matrix
@@ -402,8 +401,8 @@ class BoardImage(Entity):
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """
-    def __init__(self, pixel_board_size, main_sprite_group, **kwargs):
-        Entity.__init__(self, (0, 0), pixel_board_size, main_sprite_group, **kwargs)
+    def __init__(self, main_sprite_group, **kwargs):
+        Entity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -435,8 +434,8 @@ class TransparantBoardImage(BoardImage):
     Slight variation on the basic Board image that creates a transparant
     surface on which selections can be drawn
     """
-    def __init__(self, pixel_board_size, main_sprite_group, **kwargs):
-        BoardImage.__init__(self, pixel_board_size, main_sprite_group, **kwargs)
+    def __init__(self, main_sprite_group, **kwargs):
+        BoardImage.__init__(self, main_sprite_group, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
         """

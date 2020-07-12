@@ -1,7 +1,7 @@
 import os
 
 #own classes
-from python_code.entities import Worker, CameraCentre, SelectionRectangle, AbstractSelectable, TextSprite
+from python_code.entities import Worker, CameraCentre, SelectionRectangle, InputSaver, TextSprite
 from python_code.camera import CameraAwareLayeredUpdates
 from python_code.board import Board
 from python_code.utilities import rect_from_block_matrix
@@ -27,7 +27,7 @@ class Main:
         self.rect = self.screen.get_rect()
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))
         self.main_sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
-        self.board = Board(BOARD_SIZE, self.main_sprite_group)
+        self.board = Board(self.main_sprite_group)
 
         # make sure to configure the layers so that the sprites are correctly made
         for sprite in self.main_sprite_group.sprites():
@@ -204,7 +204,7 @@ class User:
             selected_sprit = None
             # select the first sprite clicked or otherwise select the board
             for sprite in self.main_sprite_group.sprites():
-                if isinstance(sprite, AbstractSelectable) and \
+                if isinstance(sprite, InputSaver) and \
                         sprite.orig_rect.collidepoint(rect.center) \
                         and sprite != self.board:
                     selected_sprit = sprite
