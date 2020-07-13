@@ -1,11 +1,13 @@
 import pygame
 
-from python_code.constants import SHOW_BLOCK_BORDER
+from python_code.constants import SHOW_BLOCK_BORDER, MODES
 
 class BaseBlock:
     """
     Base class for the blocks in image matrices
     """
+    #all tasks types are allowed
+    ALLOWED_TASKS = [mode.name for mode in MODES.values()]
     def __init__(self, pos, size):
         if type(self) == BaseBlock:
             raise Exception("Cannot instantiate base class BaseBlock")
@@ -19,7 +21,10 @@ class BaseBlock:
 
         :param task: a Task object
         """
-        self.tasks[task.task_type] = task
+        if task.task_type in self.ALLOWED_TASKS:
+            self.tasks[task.task_type] = task
+        elif WARNINGS:
+            print("WARNING: Task of type {} is not allowed for block type {}".format(task.task_type, type(self)))
 
     def remove_finished_tasks(self):
         """
