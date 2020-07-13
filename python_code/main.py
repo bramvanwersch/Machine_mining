@@ -1,4 +1,6 @@
-import os
+import os, sys
+
+#sys.path.append(dirname(__file__))
 
 #own classes
 from python_code.entities import Worker, CameraCentre, SelectionRectangle, InputSaver, TextSprite
@@ -7,6 +9,7 @@ from python_code.board import Board
 from python_code.utilities import rect_from_block_matrix
 from python_code.constants import *
 from python_code.tasks import TaskControl
+from python_code.image_handling import load_images
 
 
 class Main:
@@ -23,6 +26,8 @@ class Main:
         pygame.display.set_caption("MINING!!")
         pygame.mouse.set_visible(True)
 
+        #load all the images before running the game
+        load_images()
 
         self.rect = self.screen.get_rect()
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))

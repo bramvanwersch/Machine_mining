@@ -1,9 +1,11 @@
-import pygame
+import pygame, os
 from pygame.locals import *
 from python_code.utilities import Size
 
 
 GAME_TIME = pygame.time.Clock()
+MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
+IMAGE_DIR = "D:\python projects\Machine mining\images"
 SCREEN_SIZE = Size(800, 800)
 BOARD_SIZE = Size(2000, 2000)
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
@@ -60,3 +62,6 @@ MODES = {MINING : Mode(MINING, "Mining", (9, 108, 128, 100)),
 SHOW_BLOCK_BORDER = True
 FPS = True
 AIR_RECTANGLES = True
+
+#warning control for debugging purposes
+WARNINGS = True

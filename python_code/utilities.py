@@ -1,4 +1,4 @@
-from pygame import Rect
+from pygame import Rect, image
 from math import pi, e, sqrt
 
 

@@ -312,9 +312,12 @@ class Worker(MovingEntity, InputSaver):
             self.speed.x = self.speed.y = 0
             if len(self.path) > 0:
                 self.path = self.path[-1]
+            else:
+                if self.task.task_type == "Mining":
+                    self.board.remove_blocks([[self.task_block]])
+                    self.inventory.add(self.task_block)
             self.achieved_task = True
-            if self.task.task_type == "Mining":
-                self.board.remove_blocks([[self.task_block]])
+
 
     def __move_along_path(self):
         """
