@@ -38,15 +38,20 @@ class Inventory:
         return self.wheight[0] > self.wheight[1]
 
 class Item:
+    """
+    Tracks a single item using the material of the item and a quantity
+    """
     def __init__(self, material, quantity = 1):
         self.material = material
         self.quantity = quantity
 
-    def __add__(self, other):
+    def __iadd__(self, other):
         self.quantity += other
+        return self
 
-    def __sub__(self, other):
+    def __isub__(self, other):
         self.quantity -= other
+        return self
 
     def __getattr__(self, item):
         """
