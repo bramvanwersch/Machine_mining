@@ -31,8 +31,8 @@ class PathFinder:
                 break
         if start_rect == None:
             return None
-        #find end rectangle or rectangle next to the end rectangle
 
+        #check if there is a rectangle next to the end rectangle
         can_find = False
         for rect in self.calculation_thread.rectangles:
             if self.calculation_thread._side_by_side(end_rect, rect) != None:
@@ -63,35 +63,55 @@ class PathFinder:
         path = []
         prev_node = node
         node = node.parent
+        target_location = prev_node.rect.topleft
         while node is not None:
-            if self.DIRECTIONS[prev_node.direction_index] == "N":
-                if prev_node.rect.left > node.rect.left:
-                    x = prev_node.rect.left
-                else:
-                    x = node.rect.left
-                y = node.rect.top
-            elif self.DIRECTIONS[prev_node.direction_index] == "S":
-                if prev_node.rect.left > node.rect.left:
-                    x = prev_node.rect.left
-                else:
-                    x = node.rect.left
-                y = node.rect.bottom - BLOCK_SIZE.height
-            elif self.DIRECTIONS[prev_node.direction_index] == "E":
-                x = node.rect.right - BLOCK_SIZE.width
-                if prev_node.rect.top > node.rect.top:
-                    y = prev_node.rect.top
-                else:
+            direction = self.DIRECTIONS[prev_node.direction_index]
+            if direction in ["N", "S"]:
+                if direction == "N":
                     y = node.rect.top
-            elif self.DIRECTIONS[prev_node.direction_index] == "W":
-                x = node.rect.left
-                if prev_node.rect.top > node.rect.top:
-                    y = prev_node.rect.top
                 else:
-                    y = node.rect.top
+                    y = node.rect.bottom - BLOCK_SIZE.height
+                left_distance = right_distance= 0
+                #first check if the target should allign with the left or right
+                #side
+                if prev_node.rect.left > node.rect.left:
+                    left_distance = abs(prev_node.rect.left - target_location[0])
+                else:
+                    left_distance = abs(node.rect.left - target_location[0])
+                if prev_node.rect.right < node.rect.right:
+                    right_distance = abs(prev_node.rect.right - target_location[0])
+                else:
+                    right_distance = abs(node.rect.right - target_location[0])
 
+                #configure x
+                if left_distance < right_distance:
+                    x = max(prev_node.rect.left, node.rect.left)
+                else:
+                    x = min(prev_node.rect.right, node.rect.right) - BLOCK_SIZE[0]
+            elif direction in ["E", "W"]:
+                if direction == "E":
+                    x = node.rect.right - BLOCK_SIZE.width
+                else:
+                    x = node.rect.left
+                top_distance = bottom_distance = 0
+                if prev_node.rect.top > node.rect.top:
+                    top_distance = abs(prev_node.rect.top - target_location[1])
+                else:
+                    top_distance = abs(node.rect.top - target_location[1])
+                if prev_node.rect.bottom < node.rect.bottom:
+                    bottom_distance = abs(prev_node.rect.bottom - target_location[1])
+                else:
+                    bottom_distance = abs(node.rect.bottom - target_location[1])
+
+                # configure y
+                if top_distance < bottom_distance:
+                    y = max(prev_node.rect.top, node.rect.top)
+                else:
+                    y = min(prev_node.rect.bottom, node.rect.bottom) - BLOCK_SIZE[1]
             path.append((x,y))
             prev_node = node
             node = node.parent
+            target_location = (x, y)
         return path
 
     def pathfind(self, start, end):
