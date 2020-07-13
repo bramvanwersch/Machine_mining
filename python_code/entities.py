@@ -310,7 +310,8 @@ class Worker(MovingEntity, InputSaver):
         if self.task.finished:
             #make sure that the entity stops when the task is sudenly finshed
             self.speed.x = self.speed.y = 0
-            self.path = []
+            if len(self.path) > 0:
+                self.path = self.path[-1]
             self.achieved_task = True
             if self.task.task_type == "Mining":
                 self.board.remove_blocks([[self.task_block]])
