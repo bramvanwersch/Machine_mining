@@ -35,10 +35,7 @@ class Spritesheet:
         self.image_size = size
 
     def image_at(self, coord, color_key = None):
-        if size is not None:
-            rect = pygame.Rect(*coord, *size)
-        else:
-            rect = pygame.Rect(*coord, *self.image_size)
+        rect = pygame.Rect(*coord, *self.image_size)
         image = pygame.Surface(rect.size).convert()
         image.blit(self.sheet, (0, 0), rect)
         if color_key is not None:
