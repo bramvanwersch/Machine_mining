@@ -1,5 +1,6 @@
 import pygame
 
+from python_code.materials import Air
 from python_code.constants import SHOW_BLOCK_BORDER, MODES, WARNINGS
 
 class BaseBlock:
@@ -23,8 +24,17 @@ class BaseBlock:
         """
         return self.rect.topleft
 
+    @property
+    def allowed_tasks(self):
+        """
+        Convenience method testing what tasks are allowed for a certain block
+
+        :return: a list of strings of allowable tasks
+        """
+        return self.material.ALLOWED_TASKS
+
     def __eq__(self, other):
-        return other == self.material
+        return other == self.material.NAME
 
     def __hash__(self):
         return hash(str(self.rect.topleft))
@@ -36,7 +46,7 @@ class AirBlock(BaseBlock):
     """
     def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
-        self.material = "Air"
+        self.material = Air(0)
 
 
 class Block(BaseBlock):

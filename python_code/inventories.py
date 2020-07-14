@@ -27,7 +27,7 @@ class Inventory:
 
     def add(self, *blocks):
         for block in blocks:
-            if not block.material.NAME in self.container:
+            if not block in self.container:
                 self.container[block.material.NAME] = Item(block.material)
             else:
                 self.container[block.material.NAME] += 1
@@ -39,7 +39,7 @@ class Inventory:
 
 class Item:
     """
-    Tracks a single item using the material of the item and a quantity
+    Tracks a single item using the __material of the item and a quantity
     """
     def __init__(self, material, quantity = 1):
         self.material = material
@@ -55,7 +55,7 @@ class Item:
 
     def __getattr__(self, item):
         """
-        Give al attributes of the material to the item
+        Give al attributes of the __material to the item
         :param item: the attribute of interest
         :return:
         """

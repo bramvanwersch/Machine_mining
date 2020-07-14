@@ -228,7 +228,7 @@ class User:
         """
         #draw only over rectangles that are not air blocks
         if self.__mode.name == "Mining":
-            self.board.highlight_non_air_blocks(self.__mode.color, blocks)
+            self.board.highlight_taskable_blocks(self.__mode.color, blocks, "Mining")
         else:
             rect = rect_from_block_matrix(blocks)
             self.board.add_rectangle(self.__mode.color, rect, layer = 1)

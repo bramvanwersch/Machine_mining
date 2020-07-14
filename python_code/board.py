@@ -87,20 +87,21 @@ class Board:
                 column = self.__p_to_c(block.rect.x)
                 self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size)
 
-    def highlight_non_air_blocks(self, color, blocks):
+    def highlight_taskable_blocks(self, color, blocks, task_type):
         """
-        Highlight in a given area all the non air blocks
+        Highlight in a given area all the blocks that can take a certain task
 
         :param color: The highlight color
         :param blocks: a matrix of blocks
+        :param task_type: the type of the task that needs to be highlighted)
         """
         rect = rect_from_block_matrix(blocks)
         self.add_rectangle(color, rect, layer = 1)
-        air_spaces = self.get_air_rectangles(blocks)
+        air_spaces = self.__get_task_rectangles(blocks, task_type)
         for air_rect in air_spaces:
             self.add_rectangle(INVISIBLE_COLOR, air_rect, layer = 1)
 
-    def get_air_rectangles(self, blocks):
+    def __get_task_rectangles(self, blocks, task_type):
         """
         Get all air spaces in the given matrix of blocks as a collection of
         rectangles
@@ -116,7 +117,7 @@ class Board:
         #find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if block != "Air" or n_col in covered_coordinates[n_row]:
+                if task_type in block.allowed_tasks or n_col in covered_coordinates[n_row]:
                     continue
 
                 #calculate the maximum lenght of a rectangle based on already
@@ -129,7 +130,7 @@ class Board:
 
                 #find all air rectangles in a sub matrix
                 sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
-                lm_coord = self.__find_air_rectangle(sub_matrix)
+                lm_coord = self.__find_task_rectangle(sub_matrix, task_type)
 
                 # add newly covered coordinates
                 for x in range(lm_coord[0]+ 1):
@@ -142,7 +143,7 @@ class Board:
                 rectangles.append(rect)
         return rectangles
 
-    def __find_air_rectangle(self, blocks):
+    def __find_task_rectangle(self, blocks, task_type):
         """
         Find starting from an air block all the air blocks in a rectangle
 
@@ -153,7 +154,7 @@ class Board:
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         for block in blocks[0][1:]:
-            if block != "Air":
+            if task_type in block.allowed_tasks:
                 break
             x_size += 1
         matrix_coordinate = [x_size, 0]
@@ -162,9 +163,9 @@ class Board:
         block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
-                if block != "Air":
+                if task_type in block.allowed_tasks:
                     break
-            if block != "Air":
+            if block == None or task_type in block.allowed_tasks:
                 break
             matrix_coordinate[1] += 1
         return matrix_coordinate
@@ -215,7 +216,7 @@ class Board:
         """
         Fill a matrix with names of the materials of the respective blocks
 
-        :return: a matrix containing strings corresponding to names of material
+        :return: a matrix containing strings corresponding to names of __material
         classes.
         """
 
@@ -309,10 +310,10 @@ class Board:
         Change strings into blocks
 
         :param s_matrix: a string matrix that contains strings corresponding to
-        material classes
+        __material classes
         :return: the s_matrix filled with block class instances
 
-        Blit squares in the color of the material onto the base image.
+        Blit squares in the color of the __material onto the base image.
         """
         for row_i, row in enumerate(s_matrix):
             for column_i, value in enumerate(row):
