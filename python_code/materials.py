@@ -1,11 +1,12 @@
 import pygame
+from abc import ABC, abstractmethod, abstractproperty
 from random import randint
 
 from python_code.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER
 from python_code.image_handling import image_sheets
 
 
-class BaseMaterial:
+class BaseMaterial(ABC):
     """
     Basic functions that are shared by all materials
     """
@@ -14,14 +15,15 @@ class BaseMaterial:
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = [mode.name for mode in MODES.values()]
-    NAME = None
     def __init__(self, depth):
-        if type(self) == BaseMaterial:
-            raise Exception("Cannot instantiate abstract class BaseMaterial")
-        if self.NAME == None:
-            raise Exception("Need to define a name for class {}".format(type(self)))
         self.surface = self._configure_surface()
 
+    @property
+    @abstractmethod
+    def NAME(self):
+        return None
+
+    @abstractmethod
     def _configure_surface(self):
         """
         Method all __material classes should have
@@ -29,7 +31,7 @@ class BaseMaterial:
         :return: a pygame Surface object
         """
         if type(self) == BaseMaterial:
-            raise Exception("Cannot instantiate function of abstract class BaseMaterial")
+            raise AbstractException(self, "_configure_surface")
 
     def task_time(self):
         """
@@ -39,6 +41,7 @@ class BaseMaterial:
         :return: the task time that the task will take in total
         """
         return self.TASK_TIME + randint(0, int(0.1 * self.TASK_TIME))
+
 
 class Air(BaseMaterial):
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]
@@ -53,7 +56,7 @@ class Air(BaseMaterial):
         return None
 
 
-class ColorMaterial(BaseMaterial):
+class ColorMaterial(BaseMaterial, ABC):
     """
     Materials can inherit this when they simply are one color
     """
@@ -65,7 +68,18 @@ class ColorMaterial(BaseMaterial):
         self.__border_color = self._configure_border_color()
         super().__init__(depth)
 
+    @property
+    @abstractmethod
+    def BASE_COLOR(self):
+        return None
+
     def _configure_surface(self):
+        """
+        Create a surface that of a single color based on the color of the
+        material
+
+        :return: a pygame Surface object
+        """
         surface = pygame.Surface(BLOCK_SIZE)
         surface.fill(self.__color)
         if SHOW_BLOCK_BORDER:
@@ -204,38 +218,39 @@ class Titanium(Ore):
 
 #building materials: materials that are special building blocks like storage containers
 
-class ImageMaterial(BaseMaterial):
+class ImageMaterial(BaseMaterial, ABC):
     """
     Materials can inherit from this when displaying an image
     """
-    #image specifications for retrieving an image from image_sheets
-    #order: name of sheet, coordinate of topleft on sheet, kwargs as dictionary
-    IMAGE_SPECIFICATIONS = None
     def __init__(self, depth):
-        if type(self) == ImageMaterial:
-            raise Exception("Cannot instantiate abstract class ImageMaterial")
-        if self.IMAGE_SPECIFICATIONS == None:
-            raise Exception("There should always be image specifications defined when subclassing ImageMaterial")
         super().__init__(depth)
+
+    @property
+    @abstractmethod
+    def IMAGE_SPECIFICATIONS(self):
+        """
+        image specifications for retrieving an image from image_sheets
+        order: name of sheet, coordinate of topleft on sheet, kwargs as dictionary
+
+        :return: a list of image specifications
+        """
+        return None
 
     def _configure_surface(self):
         """
-        Show an image as a surface instead of a surface
-        :return:
+        Show an image as a surface instead of a single color
+
+        :return: a python Surface object
         """
-        if type(self) == BaseMaterial:
-            raise Exception("Cannot instantiate function of abstract class ImageMaterial")
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].image_at(self.IMAGE_SPECIFICATIONS[1], **self.IMAGE_SPECIFICATIONS[2])
 
 
-class BuildingMaterial(ImageMaterial):
+class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
     def __init__(self, depth):
         super().__init__(depth)
-        if type(self) == BuildingMaterial:
-            raise Exception("Cannot instantiate abstract class ImageMaterial")
 
 
 class Terminal(BuildingMaterial):

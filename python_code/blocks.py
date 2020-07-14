@@ -1,16 +1,15 @@
 import pygame
+from abc import ABC
 
 from python_code.materials import Air
 from python_code.constants import SHOW_BLOCK_BORDER, MODES, WARNINGS
 
-class BaseBlock:
+class BaseBlock(ABC):
     """
     Base class for the blocks in image matrices
     """
     #all tasks types are allowed
     def __init__(self, pos, size):
-        if type(self) == BaseBlock:
-            raise Exception("Cannot instantiate base class BaseBlock")
         self.size = size
         self.rect = pygame.Rect((*pos, *self.size))
         self.tasks = {}
