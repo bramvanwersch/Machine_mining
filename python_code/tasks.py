@@ -18,12 +18,13 @@ class TaskControl:
                 if block == "Air":
                     continue
                 task = Task(type, priority = priority)
-                block.add_task(task)
 
-                if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
-                    self.reachable_block_tasks[block] = block
-                else:
-                    self.unreachable_block_tasks[block] = block
+                #if task is accepted
+                if block.add_task(task):
+                    if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
+                        self.reachable_block_tasks[block] = block
+                    else:
+                        self.unreachable_block_tasks[block] = block
 
     def remove(self, *blocks):
         """
@@ -40,6 +41,7 @@ class TaskControl:
                 #pop a task if not already removed by another worker or not present in case of cancels
                 self.reachable_block_tasks.pop(block, None)
                 self.unreachable_block_tasks.pop(block, None)
+
             #if a task was completed that removes the block check if surrounding tasks can now be acceses
             if "Mining" in removed_types:
                 surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb and len(tb.tasks) > 0]

@@ -108,23 +108,39 @@ class Board:
         :param blocks: a matrix of blocks
         :return: a list of rectangles
         """
-        air_rectangles = []
-        covered_coordinates = []
+        rectangles = []
+
+        #save covered coordinates in a same lenght matrix for faster checking
+        covered_coordinates = [[] for row in blocks]
+
+        #find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if block != "Air" or (n_col, n_row) in covered_coordinates:
+                if block != "Air" or n_col in covered_coordinates[n_row]:
                     continue
-                sub_matrix = [sub_row[n_col:] for sub_row in blocks[n_row:]]
+
+                #calculate the maximum lenght of a rectangle based on already
+                #established ones
+                end_n_col = n_col
+                for n in range(n_col, len(row)):
+                    end_n_col = n
+                    if end_n_col in covered_coordinates[n_row]:
+                        break
+
+                #find all air rectangles in a sub matrix
+                sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
                 lm_coord = self.__find_air_rectangle(sub_matrix)
-                # add covered coordinates
+
+                # add newly covered coordinates
                 for x in range(lm_coord[0]+ 1):
                     for y in range(lm_coord[1] + 1):
-                        covered_coordinates.append((n_col + x, n_row + y))
-                # add the air rectangle
+                        covered_coordinates[n_row + y].append(n_col + x)
+
+                # add the air rectangle to the list of rectangles
                 air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in blocks[n_row:n_row + lm_coord[1] + 1]]
                 rect = rect_from_block_matrix(air_matrix)
-                air_rectangles.append(rect)
-        return air_rectangles
+                rectangles.append(rect)
+        return rectangles
 
     def __find_air_rectangle(self, blocks):
         """
@@ -143,6 +159,7 @@ class Board:
         matrix_coordinate = [x_size, 0]
 
         #skip the first row since this was checked already
+        block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
                 if block != "Air":

@@ -223,5 +223,7 @@ class Terminal(BuildingMaterial):
 
     IMAGE_SPECIFICATIONS = ["buildings", (0,0), {"color_key" : (255,255,255)}]
     NAME = "Terminal"
+    #make sure it is indestructible
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"]
     def __init__(self, depth):
         super().__init__(depth)

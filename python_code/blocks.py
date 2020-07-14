@@ -1,6 +1,6 @@
 import pygame
 
-from python_code.constants import SHOW_BLOCK_BORDER, MODES
+from python_code.constants import SHOW_BLOCK_BORDER, MODES, WARNINGS
 
 class BaseBlock:
     """
@@ -54,12 +54,14 @@ class Block(BaseBlock):
         Can hold a task from each type
 
         :param task: a Task object
+        :return: a boolean signifying if the task was added or not
         """
         if task.task_type in self.material.ALLOWED_TASKS:
             self.tasks[task.task_type] = task
-        elif WARNINGS:
-            print("WARNING: Task of type {} is not allowed for block type {}".format(task.task_type, type(self)))
-        task.task_progress = [0, self.material.task_time()]
+            task.task_progress = [0, self.material.task_time()]
+            return True
+        return False
+
 
     def remove_finished_tasks(self):
         """
