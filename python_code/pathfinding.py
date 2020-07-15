@@ -44,10 +44,10 @@ class PathFinder:
         end_node = self.pathfind(start_rect, end_rect)
         if not end_node:
             return None
-        path = self.__retrace_path(end_node)
+        path = self.__retrace_path(end_node, start.topleft)
         return path
 
-    def __retrace_path(self, node):
+    def __retrace_path(self, node, start):
         """
         Retraces the path from the last node of the pathfinding algorithm to
         the first node in the chain
@@ -60,7 +60,7 @@ class PathFinder:
         move to in the current node.rect that results in a path trough the
         node.rect that ends at a location that is open to the connecting rect.
         """
-        path = []
+        path = Path(start)
         prev_node = node
         node = node.parent
         target_location = prev_node.rect.topleft
@@ -192,6 +192,33 @@ class PathFinder:
 
     def stop(self):
         self.calculation_thread.keep_calculating = False
+
+class Path:
+    """
+    Track a path and its lenght
+    """
+    def __init__(self, start):
+        self.start_location = start
+        self.__coordinates = []
+        self.__lenght = 0
+
+    def append(self, item):
+        self.__coordinates.append(item)
+        #distance will be zero for the first addition
+        self.__lenght += manhattan_distance(item, self.__coordinates[-1])
+
+    def pop(self, index = -1):
+        return self.__coordinates.pop(index)
+
+    def __getitem__(self, item):
+        return self.__coordinates[item]
+
+    def __len__(self):
+        return len(self.__coordinates)
+
+    def lenght(self):
+        return self.__lenght + manhattan_distance(self.__coordinates[-1], self.start_location)
+
 
 class Node:
     """
