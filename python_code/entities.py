@@ -268,14 +268,10 @@ class Worker(MovingEntity, InputSaver):
         Perform a task when avaialable
         """
         MovingEntity.update(self, *args)
-        if not self.inventory.full:
-            self.__perform_task()
-        else:
-            #implement
-            pass
+        self.__perform_commands()
+
 
 ##task management functions:
-
     def assign_task(self, block, task):
         """
         Method called by the User object to assign a task to the worker
@@ -295,20 +291,25 @@ class Worker(MovingEntity, InputSaver):
             else:
                 self.task = None
 
+    def __perform_commands(self):
+        """
+        Perform commands issued by the user. This function shows the priority
+        of certain commands.
+        """
+        #as long as there is a path or the entity is still moving keep moving
+        if not len(self.path) == self.speed.x == self.speed.y == 0:
+            self.__move_along_path()
+        #perform a task if available
+        elif self.task:
+            self.__perform_task()
+
     def __perform_task(self):
         """
-        Try to perform a potential task when the entity has a task and has
-        arived at the destination of the task.
-        :return:
+        Perform a given task
         """
-        if not self.task:
-            return
-        if len(self.path) == self.speed.x == self.speed.y == 0:
-            self.task.task_progress[0] += GAME_TIME.get_time()
-        else:
-            self.__move_along_path()
+        self.task.task_progress[0] += GAME_TIME.get_time()
         if self.task.finished:
-            #make sure that the entity stops when the task is sudenly finshed
+            # make sure that the entity stops when the task is sudenly finshed
             self.speed.x = self.speed.y = 0
             if len(self.path) > 0:
                 self.path = self.path[-1]
@@ -317,7 +318,6 @@ class Worker(MovingEntity, InputSaver):
                     self.board.remove_blocks([[self.task_block]])
                     self.inventory.add(self.task_block)
             self.achieved_task = True
-
 
     def __move_along_path(self):
         """
