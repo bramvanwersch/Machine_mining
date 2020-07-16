@@ -12,6 +12,8 @@ class TaskControl:
 
     def add(self, type, blocks, priority = 1):
         """
+        Add a task to the total list of tasks. This functions as a smart way of
+        storing what tasks can likely be performed and which ones not.
         """
         for row in blocks:
             for block in row:
@@ -50,17 +52,28 @@ class TaskControl:
                     if b:
                         self.reachable_block_tasks[b] = b
 
-    def get_task(self, position):
+    def get_task(self, worker_pos):
         """
+        Get a task from the reachable_block_tasks list based on position,
+        priority of a task and if a task was started already by another worker
 
+        :param worker_pos: The position of the worker requesting a new task
+        :return a Task and Block object or double None
         """
-        sorted_blocks = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__block_sort_tuple(x, position))
+        sorted_blocks = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__block_sort_tuple(x, worker_pos))
         if len(sorted_blocks) > 0:
             best_task = sorted(sorted_blocks[0].tasks.values(), key = lambda x: (x.started_task, x.priority))[0]
             return best_task, sorted_blocks[0]
         return None, None
 
     def __block_sort_tuple(self, block, worker_pos):
+        """
+        create a tuple for sorting
+
+        :param block: block of a task
+        :param worker_pos: the position of the worker
+        :return: a tuple (boolean, integer, float)
+        """
         best_task = sorted(block.tasks.values(),
                            key=lambda x: (x.started_task, x.priority))[0]
         distance = manhattan_distance(block.rect.topleft, worker_pos)
