@@ -35,7 +35,7 @@ class TaskControl:
         :param blocks: a list of blocks for which tasks need to be removed
         """
         for block in blocks:
-            if block == None:
+            if block == None or block == "Air":
                 continue
             removed_types = block.remove_finished_tasks()
             #if all the tasks are depleted
