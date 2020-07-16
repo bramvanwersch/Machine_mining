@@ -281,6 +281,7 @@ class Worker(MovingEntity, InputSaver):
         #perform a task if available
         elif not self.task_queue.empty():
             self.__perform_task()
+        #request a new task from task control if there are no tasks left
         elif self.task_queue.empty():
             task, block = self.task_control.get_task(self.orig_rect.topleft)
             if task:
@@ -290,6 +291,9 @@ class Worker(MovingEntity, InputSaver):
 ##task management functions:
 
     def __start_task(self):
+        """
+        Called to start up the current task in the task_queue
+        """
         path = self.board.pf.get_path(self.orig_rect,
                                       self.task_queue.task_block.rect)
         if path != None:
@@ -300,7 +304,10 @@ class Worker(MovingEntity, InputSaver):
 
     def __next_task(self):
         """
+        For progressing to the next task in the queue.
 
+        It is made sure certain last things are handled for certain task types
+        as well as starting a new task if one is available in the queue
         """
         f_task, f_block = self.task_queue.next()
         # make sure that the entity stops when the task is sudenly finshed
@@ -320,7 +327,7 @@ class Worker(MovingEntity, InputSaver):
 
     def __perform_task(self):
         """
-        Perform a given task
+        Perform a given task and finish it if that is the case
         """
         self.task_queue.task.task_progress[0] += GAME_TIME.get_time()
         if self.task_queue.task.finished:

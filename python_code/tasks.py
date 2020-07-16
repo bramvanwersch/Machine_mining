@@ -67,43 +67,81 @@ class TaskControl:
         return (best_task.started_task, best_task.priority, distance)
 
 class TaskQueue:
+    """
+    acts as a queue of tasks that are performed from last to first by a worker
+    """
     def __init__(self):
         self.tasks = []
         self.blocks = []
 
     def add(self, task, block):
+        """
+        Add a task to the queue
+
+        :param task: a Task Object
+        :param block: a Block Object
+        """
         self.tasks.append(task)
         self.blocks.append(block)
 
     @property
     def task(self):
+        """
+        The current task being worked on by the worker
+
+        :return: a Task object or None
+        """
         if not self.empty():
             return self.tasks[-1]
         return None
 
     @property
     def task_block(self):
+        """
+        The block the current task is performed on
+
+        :return: a Block Object or None
+        """
         if not self.empty():
             return self.blocks[-1]
         return None
 
     def empty(self):
+        """
+        Check to see if the queue is empty
+
+        :return: a boolean
+        """
         return len(self.tasks) <= 0
 
     def next(self):
+        """
+        Go to the next task and return the current task and block for the last
+        operations
+
+        :return: a Task and a Block object in that order
+        """
         finished_task = self.tasks.pop()
         finished_task_block = self.blocks.pop()
         return finished_task, finished_task_block
 
 class Task:
+    """
+    Object for storing a task and its progress
+    """
     def __init__(self, task_type, priority = 1):
         self.task_type = task_type
         self.priority = priority
         #change priority of assigning tasks
         self.started_task = False
+        #determined by material
         self.task_progress = [0, 1]
 
     def start(self):
+        """
+        Signifies that the task is being worked on by a worker changes the
+        priority of accepting this task
+        """
         self.started_task = True
 
     @property
