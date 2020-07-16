@@ -102,11 +102,11 @@ class User:
 
     def __setup_start(self):
         for _ in range(10):
-            self.workers.append(Worker((1000, 40), self.board, self.main_sprite_group))
+            self.workers.append(Worker((1000, 40), self.board, self.tasks, self.main_sprite_group))
 
     def update(self):
         self.__handle_events()
-        self.__assign_tasks_to_workers()
+
 
     def __handle_events(self):
         events = pygame.event.get()
@@ -277,13 +277,6 @@ class User:
                 for block in row:
                     block.tasks = {}
                 self.tasks.remove(*row)
-
-    def __assign_tasks_to_workers(self):
-        for worker in self.workers:
-            if worker.achieved_task :
-                self.tasks.remove(worker.task_block)
-                block, task = self.tasks.get_task(worker)
-                worker.assign_task(block, task)
 
 
 if __name__ == "__main__":

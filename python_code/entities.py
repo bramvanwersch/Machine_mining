@@ -1,5 +1,6 @@
 from python_code.constants import *
 from python_code.inventories import Inventory
+from python_code.tasks import TaskQueue
 
 class Entity(pygame.sprite.Sprite):
     """
@@ -247,16 +248,15 @@ class Worker(MovingEntity, InputSaver):
     SIZE = (10,10)
     #in wheight
     INVENTORY_SIZE = 100
-    def __init__(self, pos, board, *groups, **kwargs):
+    def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
                               max_speed=5, **kwargs)
         InputSaver.__init__(self)
         self.board = board
+        self.task_control = tasks
 
         #tasks
-        self.task = None
-        self.task_block = None
-        self.achieved_task = True
+        self.task_queue = TaskQueue()
         self.path = []
         self.dest = None
 
@@ -270,27 +270,6 @@ class Worker(MovingEntity, InputSaver):
         MovingEntity.update(self, *args)
         self.__perform_commands()
 
-
-##task management functions:
-    def assign_task(self, block, task):
-        """
-        Method called by the User object to assign a task to the worker
-
-        :param block: the block where the task is supposed to be performed
-        :param task: the Task object to perform
-        """
-        self.task = task
-        self.task_block = block
-        if task:
-            path = self.board.pf.get_path(self.orig_rect, self.task_block.rect)
-            if path != None:
-                self.task.start()
-                self.path = path
-                self.achieved_task = False
-            # if no path reject task, this does not mean the task is deleted
-            else:
-                self.task = None
-
     def __perform_commands(self):
         """
         Perform commands issued by the user. This function shows the priority
@@ -300,24 +279,52 @@ class Worker(MovingEntity, InputSaver):
         if not len(self.path) == self.speed.x == self.speed.y == 0:
             self.__move_along_path()
         #perform a task if available
-        elif self.task:
+        elif not self.task_queue.empty():
             self.__perform_task()
+        elif self.task_queue.empty():
+            task, block = self.task_control.get_task(self.orig_rect.topleft)
+            if task:
+                self.task_queue.add(task, block)
+                self.__start_task()
+
+##task management functions:
+
+    def __start_task(self):
+        path = self.board.pf.get_path(self.orig_rect,
+                                      self.task_queue.task_block.rect)
+        if path != None:
+            self.task_queue.task.start()
+            self.path = path
+        else:
+            self.task_queue.next()
+
+    def __next_task(self):
+        """
+
+        """
+        f_task, f_block = self.task_queue.next()
+        # make sure that the entity stops when the task is sudenly finshed
+        self.speed.x = self.speed.y = 0
+        #make sure to move the last step if needed, so the worker does not potentially stop in a block
+        if len(self.path) > 0:
+            self.path = self.path[-1]
+        else:
+            #handle last thing of last task
+            if f_task.task_type == "Mining":
+                self.board.remove_blocks([[f_block]])
+                self.task_control.remove(f_block)
+                self.inventory.add(f_block)
+        if not self.task_queue.empty():
+            path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)
+            self.__start_task()
 
     def __perform_task(self):
         """
         Perform a given task
         """
-        self.task.task_progress[0] += GAME_TIME.get_time()
-        if self.task.finished:
-            # make sure that the entity stops when the task is sudenly finshed
-            self.speed.x = self.speed.y = 0
-            if len(self.path) > 0:
-                self.path = self.path[-1]
-            else:
-                if self.task.task_type == "Mining":
-                    self.board.remove_blocks([[self.task_block]])
-                    self.inventory.add(self.task_block)
-            self.achieved_task = True
+        self.task_queue.task.task_progress[0] += GAME_TIME.get_time()
+        if self.task_queue.task.finished:
+            self.__next_task()
 
     def __move_along_path(self):
         """

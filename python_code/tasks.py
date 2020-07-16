@@ -50,15 +50,14 @@ class TaskControl:
                     if b:
                         self.reachable_block_tasks[b] = b
 
-    def get_task(self, worker):
+    def get_task(self, position):
         """
 
         """
-        worker_pos = worker.orig_rect.topleft
-        sorted_blocks = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__block_sort_tuple(x, worker_pos))
+        sorted_blocks = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__block_sort_tuple(x, position))
         if len(sorted_blocks) > 0:
             best_task = sorted(sorted_blocks[0].tasks.values(), key = lambda x: (x.started_task, x.priority))[0]
-            return sorted_blocks[0], best_task
+            return best_task, sorted_blocks[0]
         return None, None
 
     def __block_sort_tuple(self, block, worker_pos):
@@ -67,6 +66,34 @@ class TaskControl:
         distance = manhattan_distance(block.rect.topleft, worker_pos)
         return (best_task.started_task, best_task.priority, distance)
 
+class TaskQueue:
+    def __init__(self):
+        self.tasks = []
+        self.blocks = []
+
+    def add(self, task, block):
+        self.tasks.append(task)
+        self.blocks.append(block)
+
+    @property
+    def task(self):
+        if not self.empty():
+            return self.tasks[-1]
+        return None
+
+    @property
+    def task_block(self):
+        if not self.empty():
+            return self.blocks[-1]
+        return None
+
+    def empty(self):
+        return len(self.tasks) <= 0
+
+    def next(self):
+        finished_task = self.tasks.pop()
+        finished_task_block = self.blocks.pop()
+        return finished_task, finished_task_block
 
 class Task:
     def __init__(self, task_type, priority = 1):
