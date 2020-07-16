@@ -14,7 +14,7 @@ class BaseMaterial(ABC):
     TASK_TIME = 250
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
-    ALLOWED_TASKS = [mode.name for mode in MODES.values()]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values()] + ["Empty inventory"]
     def __init__(self, depth):
         self.surface = self._configure_surface()
 
@@ -44,7 +44,7 @@ class BaseMaterial(ABC):
 
 
 class Air(BaseMaterial):
-    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]  + ["Empty inventory"]
     NAME = "Air"
     def __init__(self, depth):
         super().__init__(depth)
@@ -258,6 +258,7 @@ class Terminal(BuildingMaterial):
     IMAGE_SPECIFICATIONS = ["buildings", (0,0), {"color_key" : (255,255,255)}]
     NAME = "terminal"
     #make sure it is indestructible
-    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"] + ["Empty inventory"]
+    TASK_TIME = 1000
     def __init__(self, depth):
         super().__init__(depth)

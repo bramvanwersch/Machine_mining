@@ -216,7 +216,8 @@ class Path:
     def __len__(self):
         return len(self.__coordinates)
 
-    def lenght(self):
+    @property
+    def path_lenght(self):
         return self.__lenght + manhattan_distance(self.__coordinates[-1], self.start_location)
 
 

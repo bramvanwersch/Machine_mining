@@ -1,6 +1,6 @@
 from python_code.constants import *
 from python_code.inventories import Inventory
-from python_code.tasks import TaskQueue
+from python_code.tasks import TaskQueue, Task
 
 class Entity(pygame.sprite.Sprite):
     """
@@ -281,6 +281,13 @@ class Worker(MovingEntity, InputSaver):
         #perform a task if available
         elif not self.task_queue.empty():
             self.__perform_task()
+        elif self.inventory.full:
+            block = self.board.closest_inventory(self.orig_rect)
+            task = Task("Empty inventory")
+            if block:
+                block.add_task(task)
+                self.task_queue.add(task, block)
+                self.__start_task()
         #request a new task from task control if there are no tasks left
         elif self.task_queue.empty():
             task, block = self.task_control.get_task(self.orig_rect.topleft)
@@ -320,7 +327,10 @@ class Worker(MovingEntity, InputSaver):
             if f_task.task_type == "Mining":
                 self.board.remove_blocks([[f_block]])
                 self.task_control.remove(f_block)
-                self.inventory.add(f_block)
+                self.inventory.add_blocks(f_block)
+            elif f_task.task_type == "Empty inventory":
+                items = self.inventory.get_all()
+                f_block.add(*items)
         if not self.task_queue.empty():
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)
             self.__start_task()

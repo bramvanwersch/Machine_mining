@@ -5,7 +5,7 @@ from python_code.utilities import *
 from python_code import materials
 from python_code.constants import *
 from python_code.pathfinding import PathFinder
-from python_code.blocks import AirBlock, Block
+from python_code.blocks import AirBlock, Block, ContainerBlock
 
 class Board:
     """
@@ -17,6 +17,7 @@ class Board:
     #the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
     def __init__(self, main_sprite_group):
+        self.inventories = []
         self.matrix = self.__generate_foreground_matrix()
         self.back_matrix = self.__generate_background_matrix()
         self.foreground_image = BoardImage(main_sprite_group,
@@ -86,6 +87,21 @@ class Board:
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
                 self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size)
+
+    def closest_inventory(self, start):
+        return self.__get_closest_block(start, *self.inventories)
+
+    def __get_closest_block(self, start, *blocks):
+        #any distance should be shorter possible on the board
+        shortest_distance = 10000000000000
+        closest_block = None
+        for block in blocks:
+            path = self.pf.get_path(start, block.rect)
+            if path != None and path.path_lenght < shortest_distance:
+                shortest_distance = path.path_lenght
+                closest_block = block
+        return block
+
 
     def highlight_taskable_blocks(self, color, blocks, task_type):
         """
@@ -249,6 +265,8 @@ class Board:
         #generate pre made buildings
         matrix[self.__p_to_c(40)][self.__p_to_r(BOARD_SIZE[1] / 2 + 50)] = "Terminal"
         matrix = self.__create_blocks_from_string(matrix)
+        ##TEMPORARY IS BAD
+        self.inventories.append(matrix[self.__p_to_c(40)][self.__p_to_r(BOARD_SIZE[1] / 2 + 50)])
         return matrix
 
     def __generate_background_matrix(self):
@@ -322,9 +340,13 @@ class Board:
                        row_i * BLOCK_SIZE.height,)
                 if s_matrix[row_i][column_i] == "Air":
                     block = AirBlock(pos, BLOCK_SIZE)
+
                 else:
                     material = getattr(materials, s_matrix[row_i][column_i])(row_i)
-                    block = Block(pos, BLOCK_SIZE, material)
+                    if s_matrix[row_i][column_i] in ["Terminal", "chest"]:
+                        block = ContainerBlock(pos, BLOCK_SIZE, material)
+                    else:
+                        block = Block(pos, BLOCK_SIZE, material)
                 s_matrix[row_i][column_i] = block
         return s_matrix
 

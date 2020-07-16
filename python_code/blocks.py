@@ -3,6 +3,7 @@ from abc import ABC
 
 from python_code.materials import Air
 from python_code.constants import SHOW_BLOCK_BORDER, MODES, WARNINGS
+from python_code.inventories import Inventory
 
 class BaseBlock(ABC):
     """
@@ -71,7 +72,6 @@ class Block(BaseBlock):
             return True
         return False
 
-
     def remove_finished_tasks(self):
         """
         Check if tasks are finished or not.
@@ -85,3 +85,12 @@ class Block(BaseBlock):
                 del self.tasks[task.task_type]
                 finished.append(task.task_type)
         return finished
+
+class ContainerBlock(Block):
+    def __init__(self, pos, size, material, **kwargs):
+        super().__init__(pos, size, material, **kwargs)
+        #how full the terminal is does not matter
+        self.inventory = Inventory(-1)
+
+    def add(self, *items):
+        self.inventory.add_items(*items)

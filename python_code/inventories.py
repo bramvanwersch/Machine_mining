@@ -15,9 +15,9 @@ class Inventory:
         requested amount of the item in an Item Object
         """
         if item_name in self.container:
-            item = self.container[item_name].quantity
+            item = self.container[item_name]
             available_amnt = min(item.quantity, amnt)
-            item -= available_amnt
+            item.quantity -= available_amnt
             self.wheight[0] -= item.WHEIGHT * available_amnt
             if item.quantity <= 0:
                 del self.container[item_name]
@@ -25,13 +25,27 @@ class Inventory:
         else:
             return None
 
-    def add(self, *blocks):
+    def get_all(self):
+        items = []
+        for key in list(self.container.keys()):
+            items.append(self.get(key, self.container[key].quantity))
+        return items
+
+    def add_blocks(self, *blocks):
         for block in blocks:
-            if not block in self.container:
+            if not block.material.NAME in self.container:
                 self.container[block.material.NAME] = Item(block.material)
             else:
-                self.container[block.material.NAME] += 1
+                self.container[block.material.NAME].quantity += 1
             self.wheight[0] += self.container[block.material.NAME].WHEIGHT
+
+    def add_items(self, *items):
+        for item in items:
+            if not item.material.NAME in self.container:
+                self.container[item.material.NAME] = item
+            else:
+                self.container[item.material.NAME].quantity += item.quantity
+            self.wheight[0] += self.container[item.material.NAME].WHEIGHT * item.quantity
 
     @property
     def full(self):
@@ -44,14 +58,6 @@ class Item:
     def __init__(self, material, quantity = 1):
         self.material = material
         self.quantity = quantity
-
-    def __iadd__(self, other):
-        self.quantity += other
-        return self
-
-    def __isub__(self, other):
-        self.quantity -= other
-        return self
 
     def __getattr__(self, item):
         """
