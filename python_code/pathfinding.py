@@ -95,13 +95,13 @@ class PathFinder:
                     x = node.rect.left
                 top_distance = bottom_distance = 0
                 if prev_node.rect.top > node.rect.top:
-                    top_distance = abs(prev_node.rect.top - target_location[1])
-                else:
                     top_distance = abs(node.rect.top - target_location[1])
-                if prev_node.rect.bottom < node.rect.bottom:
-                    bottom_distance = abs(prev_node.rect.bottom - target_location[1])
                 else:
+                    top_distance = abs(prev_node.rect.top - target_location[1])
+                if prev_node.rect.bottom < node.rect.bottom:
                     bottom_distance = abs(node.rect.bottom - target_location[1])
+                else:
+                    bottom_distance = abs(prev_node.rect.bottom - target_location[1])
 
                 # configure y
                 if top_distance < bottom_distance:
