@@ -249,7 +249,7 @@ class Worker(MovingEntity, InputSaver):
     COLOR = (255, 0, 179)
     SIZE = (10,10)
     #in wheight
-    INVENTORY_SIZE = 100
+    INVENTORY_SIZE = 25
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
                               max_speed=5, **kwargs)
