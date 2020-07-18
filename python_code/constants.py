@@ -6,7 +6,7 @@ from python_code.utilities import Size
 GAME_TIME = pygame.time.Clock()
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 IMAGE_DIR = "D:\python projects\Machine mining\images"
-SCREEN_SIZE = Size(800, 800)
+SCREEN_SIZE = Size(900, 1600)
 BOARD_SIZE = Size(2000, 2000)
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 BOTTOM_LAYER = 0

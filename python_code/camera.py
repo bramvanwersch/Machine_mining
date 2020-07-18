@@ -28,11 +28,16 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
         self.lostsprites = []
         dirty_append = dirty.append
         init_rect = self._init_rect
+        count = 0
         for spr in self.sprites():
-            if not spr.visible:
-                continue
+
             rec = spritedict[spr]
-            newrect = surface_blit(spr.image, spr.rect.move(self.cam))
+            moved_rect = spr.rect.move(self.cam)
+            if moved_rect.colliderect(surface.get_rect()):
+                newrect = surface_blit(spr.image, moved_rect)
+            else:
+                count += 1
+                continue
             if rec is init_rect:
                 dirty_append(newrect)
             else:
@@ -42,4 +47,5 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
                     dirty_append(newrect)
                     dirty_append(rec)
             spritedict[spr] = newrect
+        print(count)
         return dirty

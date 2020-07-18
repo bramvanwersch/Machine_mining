@@ -7,6 +7,7 @@ class Entity(pygame.sprite.Sprite):
     Basic entity class
     """
     def __init__(self, pos, size, *groups, color = (255,255,255), zoom = 1, layer = FIRST_LAYER, **kwargs):
+        print(groups)
         pygame.sprite.Sprite.__init__(self, *groups)
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image
@@ -16,6 +17,7 @@ class Entity(pygame.sprite.Sprite):
 
         #zoom variables
         self._zoom = zoom
+        print(self.orig_rect)
         #if an entity is created after zooming make sure it is zoomed to the
         #right proportions
         if self._zoom != 1:
@@ -247,7 +249,7 @@ class Worker(MovingEntity, InputSaver):
     COLOR = (255, 0, 179)
     SIZE = (10,10)
     #in wheight
-    INVENTORY_SIZE = 100
+    INVENTORY_SIZE = 25
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
                               max_speed=5, **kwargs)

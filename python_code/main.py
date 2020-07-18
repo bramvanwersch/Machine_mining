@@ -48,7 +48,6 @@ class Main:
             GAME_TIME.tick(200)
             pygame.display.update()
             self.user.update()
-            self.screen.fill((255,255,255))
 
             self.main_sprite_group.update()
             self.main_sprite_group.draw(self.screen)

@@ -22,11 +22,9 @@ class Board:
         self.matrix = self.__generate_foreground_matrix()
         self.back_matrix = self.__generate_background_matrix()
         self.__add_starter_buildings()
-        self.foreground_image = BoardImage(main_sprite_group,
-                                           block_matrix = self.matrix, layer = BOTTOM_LAYER)
-        self.background_image = BoardImage(main_sprite_group,
-                                           block_matrix = self.back_matrix, layer = BOTTOM_LAYER - 1)
-        self.selection_image = TransparantBoardImage(main_sprite_group, layer = BOTTOM_LAYER + 1)
+        self.foreground_image = BoardImage(self.matrix, main_sprite_group, layer = BOTTOM_LAYER)
+        self.background_image = BoardImage(self.back_matrix, main_sprite_group, layer = BOTTOM_LAYER - 1)
+        # self.selection_image = TransparantBoardImage(main_sprite_group, layer = BOTTOM_LAYER + 1)
         self.pf = PathFinder(self.matrix)
 
     def add_building(self, building_instance, draw = True):
@@ -382,33 +380,46 @@ class Board:
         return s_matrix
 
 
-class BoardImage(Entity):
-    """
-    Convert a matrix of blocks into a surface that persists as an entity. This
-    is done to severly decrease the amount of blit calls and allow for layering
-    of images aswell as easily scaling.
-    """
-    def __init__(self, main_sprite_group, **kwargs):
-        Entity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
-        self.visible = True
+class BoardImage:
+    DIVIDED_MATRIX_DIMENSIONS = [10, 10]
+    def __init__(self, block_matrix, main_sprite_group, **kwargs):
+        self.segments = []
+        self.__create_images(block_matrix, main_sprite_group, **kwargs)
 
-    # def update(self, *args):
-    #     super().update(*args)
-    #     self.visible = False
+    def __create_images(self, block_matrix, main_sprite_group, **kwargs):
+        matrix_of_matrices = self.__divide_matrix(block_matrix)
+        for row_i, row in enumerate(matrix_of_matrices):
+            for column_i, matrix in enumerate(row):
+                pos = (column_i * len(matrix[0]) * BLOCK_SIZE.width,
+                       row_i * len(matrix) * BLOCK_SIZE.height)
 
-    def _create_image(self, size, color, **kwargs):
+                size = Size(len(matrix[0]) * BLOCK_SIZE.height,
+                            len(matrix) * BLOCK_SIZE.width)
+
+                b = BoardImageSegment(pos, size, main_sprite_group,
+                                  block_matrix = matrix, **kwargs)
+                self.segments.append(b)
+
+    def __divide_matrix(self, matrix):
         """
-        Overwrites the image creation process in the basic Entity class
+        Divide an original matrix in smaller mattrixes
+
+        :param matrix: a matrix of elements
+        :return: a list of lists of a list of lists. Matrices in a matrix
         """
-        block_matrix = kwargs["block_matrix"]
-        image = pygame.Surface(size)
-        image.set_colorkey((0,0,0), RLEACCEL)
-        image = image.convert_alpha()
-        for row in block_matrix:
-            for block in row:
-                if block != "Air":
-                    image.blit(block.surface, block.rect)
-        return image
+        matrix_of_matrices = []
+        sub_matrices = [[] for _ in range(self.DIVIDED_MATRIX_DIMENSIONS[0])]
+        for row_i, row in enumerate(matrix):
+            if row_i != 0 and row_i % int(len(matrix) / self.DIVIDED_MATRIX_DIMENSIONS[1]) == 0:
+                matrix_of_matrices.append(sub_matrices)
+                sub_matrices = [[] for _ in range(self.DIVIDED_MATRIX_DIMENSIONS[0])]
+            len_segments = int(len(row) / self.DIVIDED_MATRIX_DIMENSIONS[0])
+            row_segments = [row[index * len_segments: (index + 1) * len_segments] for index in range(self.DIVIDED_MATRIX_DIMENSIONS[0])]
+
+            for index, segment in enumerate(row_segments):
+                sub_matrices[index].append(segment)
+        matrix_of_matrices.append(sub_matrices)
+        return matrix_of_matrices
 
     def add_rect(self, rect, color):
         """
@@ -422,7 +433,25 @@ class BoardImage(Entity):
         pygame.draw.rect(self.image, color, zoomed_rect)
 
     def add_image(self, rect, image):
-        self.image.blit(image, rect)
+        self.orig_image.blit(image, rect)
+
+class BoardImageSegment(Entity):
+    def __init__(self, pos, size, main_sprite_group, **kwargs):
+        Entity.__init__(self, pos, size, main_sprite_group, **kwargs)
+
+    def _create_image(self, size, color, **kwargs):
+        """
+        Overwrites the image creation process in the basic Entity class
+        """
+        block_matrix = kwargs["block_matrix"]
+        image = pygame.Surface(size)
+        image.set_colorkey((0,0,0), RLEACCEL)
+        image = image.convert_alpha()
+        for row_i, row in enumerate(block_matrix):
+            for col_i, block in enumerate(row):
+                if block != "Air":
+                    image.blit(block.surface, (col_i * BLOCK_SIZE.width, row_i * BLOCK_SIZE.height, *block.rect.size))
+        return image
 
 class TransparantBoardImage(BoardImage):
     """
