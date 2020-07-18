@@ -58,10 +58,10 @@ class Board:
         :return: a sub matrix of overlapping blocks
         """
         #make sure that blocks that are just selected are not included
-        row_start = self.__p_to_r(rect.top)
-        row_end = self.__p_to_r(rect.bottom )
-        column_start = self.__p_to_c(rect.left)
-        column_end = self.__p_to_c(rect.right)
+        row_start = self.__p_to_r(rect.top + BLOCK_SIZE.height * 0.3)
+        row_end = self.__p_to_r(rect.bottom - BLOCK_SIZE.height * 0.3)
+        column_start = self.__p_to_c(rect.left + BLOCK_SIZE.width * 0.3)
+        column_end = self.__p_to_c(rect.right - BLOCK_SIZE.width * 0.3)
         overlapping_blocks = []
         for row in self.matrix[row_start : row_end + 1]:
             add_row = row[column_start : column_end + 1]
@@ -143,7 +143,6 @@ class Board:
                 shortest_distance = path.path_lenght
                 closest_block = block
         return closest_block
-
 
     def highlight_taskable_blocks(self, color, blocks, task_type):
         """
