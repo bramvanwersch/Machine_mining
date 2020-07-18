@@ -49,7 +49,7 @@ class Spritesheet:
         "Loads multiple images, supply a list of coordinates"
         return [self.image_at(coord, **kwargs) for coord in coords]
 
-    def images_at_rectangle(self, *rects, **kwargs):
+    def images_at_rectangle(self, rect, **kwargs):
         """
         specify rectangles from where images need to be extracted. The rectangles need to be multiples of the size
         dimensions
@@ -57,12 +57,9 @@ class Spritesheet:
         :return: a list of images in the rectanges in the order of the specified rectangles aswell as
         """
         images = []
-        if "size" in kwargs:
-            size = kwargs["size"]
-        else:
-            size = self.image_size
-        for rect in rects:
-            for y in range(int(rect[3] / size[1])):
-                for x in range(int(rect[2] / size[0])):
-                    images.append(self.image_at((rect[0] + x * size[0],rect[1] + y * size[1]), **kwargs))
+        for y in range(int(rect[3] / self.image_size[1])):
+            image_row = []
+            for x in range(int(rect[2] / self.image_size[0])):
+                image_row.append(self.image_at((rect[0] + x * self.image_size[0],rect[1] + y *self.image_size[1]), **kwargs))
+            images.append(image_row)
         return images

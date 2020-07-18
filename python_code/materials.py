@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod, abstractproperty
 from random import randint
 
 from python_code.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER
-from python_code.image_handling import image_sheets
 
 
 class BaseMaterial(ABC):
@@ -15,8 +14,8 @@ class BaseMaterial(ABC):
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = [mode.name for mode in MODES.values()] + ["Empty inventory"]
-    def __init__(self, depth):
-        self.surface = self._configure_surface()
+    def __init__(self, depth, image = None):
+        self.surface = self._configure_surface(image)
 
     @property
     @abstractmethod
@@ -24,10 +23,11 @@ class BaseMaterial(ABC):
         return None
 
     @abstractmethod
-    def _configure_surface(self):
+    def _configure_surface(self, image):
         """
         Method all __material classes should have
 
+        :param image: obtional pre defines pygame Surface object
         :return: a pygame Surface object
         """
         if type(self) == BaseMaterial:
@@ -46,10 +46,10 @@ class BaseMaterial(ABC):
 class Air(BaseMaterial):
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]  + ["Empty inventory"]
     NAME = "Air"
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
-    def _configure_surface(self):
+    def _configure_surface(self, image):
         """
         Air has no surface
         """
@@ -62,22 +62,23 @@ class ColorMaterial(BaseMaterial, ABC):
     """
     MIN_COLOR = (20, 20, 20)
 
-    def __init__(self, depth):
+    def __init__(self, depth, **kwargs):
         self._depth = depth
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
-        super().__init__(depth)
+        super().__init__(depth, **kwargs)
 
     @property
     @abstractmethod
     def BASE_COLOR(self):
         return None
 
-    def _configure_surface(self):
+    def _configure_surface(self, image):
         """
         Create a surface that of a single color based on the color of the
         material
 
+        :param image: obtional pre defines pygame Surface object
         :return: a pygame Surface object
         """
         surface = pygame.Surface(BLOCK_SIZE)
@@ -222,43 +223,38 @@ class ImageMaterial(BaseMaterial, ABC):
     """
     Materials can inherit from this when displaying an image
     """
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
-    @property
-    @abstractmethod
-    def IMAGE_SPECIFICATIONS(self):
-        """
-        image specifications for retrieving an image from image_sheets
-        order: name of sheet, coordinate of topleft on sheet, kwargs as dictionary
-
-        :return: a list of image specifications
-        """
-        return None
-
-    def _configure_surface(self):
+    def _configure_surface(self, image):
         """
         Show an image as a surface instead of a single color
 
+        :param image: obtional pre defines pygame Surface object
         :return: a python Surface object
         """
-        return image_sheets[self.IMAGE_SPECIFICATIONS[0]].image_at(self.IMAGE_SPECIFICATIONS[1], **self.IMAGE_SPECIFICATIONS[2])
+        if image != None:
+            return image
+        #if an image is provided return that otherwise a color
+        else:
+            surface = pygame.Surface(BLOCK_SIZE)
+            surface.fill((0, 255, 13))
+            return surface
 
 
 class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 
-class Terminal(BuildingMaterial):
+class TerminalMaterial(BuildingMaterial):
 
-    IMAGE_SPECIFICATIONS = ["buildings", (0,0), {"color_key" : (255,255,255)}]
-    NAME = "terminal"
+    NAME = "Terminal"
     #make sure it is indestructible
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"] + ["Empty inventory"]
     TASK_TIME = 1000
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)

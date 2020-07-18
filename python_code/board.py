@@ -6,6 +6,7 @@ from python_code import materials
 from python_code.constants import *
 from python_code.pathfinding import PathFinder
 from python_code.blocks import AirBlock, Block, ContainerBlock
+from python_code.buildings import *
 
 class Board:
     """
@@ -20,12 +21,29 @@ class Board:
         self.inventories = []
         self.matrix = self.__generate_foreground_matrix()
         self.back_matrix = self.__generate_background_matrix()
+        self.__add_starter_buildings()
         self.foreground_image = BoardImage(main_sprite_group,
                                            block_matrix = self.matrix, layer = BOTTOM_LAYER)
         self.background_image = BoardImage(main_sprite_group,
                                            block_matrix = self.back_matrix, layer = BOTTOM_LAYER - 1)
         self.selection_image = TransparantBoardImage(main_sprite_group, layer = BOTTOM_LAYER + 1)
         self.pf = PathFinder(self.matrix)
+
+    def add_building(self, building_instance, draw = True):
+        """
+        Add a building into the matrix and potentially draw it when requested
+
+        :param building_instance: an instance of Building
+        :param draw: Boolean telling if the foreground image should be updated
+        """
+        for row_i, row in enumerate(building_instance.blocks):
+            for column_i, block in enumerate(row):
+                m_pos = (self.__p_to_c(block.coord[0]) + BLOCK_SIZE.width * column_i, self.__p_to_r(block.coord[1]) + BLOCK_SIZE.height * row_i)
+                self.matrix[m_pos[1]][m_pos[0]] = block
+                self.inventories.append(block)
+                if draw:
+                    self.foreground_image.add_image(block.rect, block.surface)
+
 
     def overlapping_blocks(self, rect):
         """
@@ -263,11 +281,13 @@ class Board:
                                   self.__p_to_c(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"
         #generate pre made buildings
-        matrix[self.__p_to_c(40)][self.__p_to_r(BOARD_SIZE[1] / 2 + 50)] = "Terminal"
+
         matrix = self.__create_blocks_from_string(matrix)
-        ##TEMPORARY IS BAD
-        self.inventories.append(matrix[self.__p_to_c(40)][self.__p_to_r(BOARD_SIZE[1] / 2 + 50)])
         return matrix
+
+    def __add_starter_buildings(self):
+        t = Terminal((BOARD_SIZE[1] / 2 + 50, 30), 30)
+        self.add_building(t, draw = False)
 
     def __generate_background_matrix(self):
         """
@@ -331,7 +351,6 @@ class Board:
         __material classes
         :return: the s_matrix filled with block class instances
 
-        Blit squares in the color of the __material onto the base image.
         """
         for row_i, row in enumerate(s_matrix):
             for column_i, value in enumerate(row):
@@ -343,10 +362,7 @@ class Board:
 
                 else:
                     material = getattr(materials, s_matrix[row_i][column_i])(row_i)
-                    if s_matrix[row_i][column_i] in ["Terminal", "chest"]:
-                        block = ContainerBlock(pos, BLOCK_SIZE, material)
-                    else:
-                        block = Block(pos, BLOCK_SIZE, material)
+                    block = Block(pos, BLOCK_SIZE, material)
                 s_matrix[row_i][column_i] = block
         return s_matrix
 
@@ -384,6 +400,9 @@ class BoardImage(Entity):
         pygame.draw.rect(self.orig_image, color, rect)
         zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom), round(rect.width * self._zoom), round(rect.height * self._zoom)))
         pygame.draw.rect(self.image, color, zoomed_rect)
+
+    def add_image(self, rect, image):
+        self.image.blit(image, rect)
 
 class TransparantBoardImage(BoardImage):
     """
