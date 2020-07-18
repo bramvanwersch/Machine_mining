@@ -19,6 +19,8 @@ class Board:
     MAX_CLUSTER_SIZE = 3
     def __init__(self, main_sprite_group):
         self.inventories = []
+
+        #setup the board
         self.matrix = self.__generate_foreground_matrix()
         self.back_matrix = self.__generate_background_matrix()
         self.__add_starter_buildings()
@@ -27,6 +29,8 @@ class Board:
         self.background_image = BoardImage(main_sprite_group,
                                            block_matrix = self.back_matrix, layer = BOTTOM_LAYER - 1)
         self.selection_image = TransparantBoardImage(main_sprite_group, layer = BOTTOM_LAYER + 1)
+
+        #variables needed when playing
         self.pf = PathFinder(self.matrix)
 
     def add_building(self, building_instance, draw = True):
@@ -107,6 +111,13 @@ class Board:
                 self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size)
 
     def closest_inventory(self, start):
+        """
+        Shortcut function for finding the closest inventory using __get_closest_block
+        from a certain position of the worker.
+
+        :param start: The coordinate of the worker looking for an inventory
+        :return: a Block that is the closest inventory
+        """
         return self.__get_closest_block(start, *self.inventories)
 
     def __get_closest_block(self, start, *blocks):
