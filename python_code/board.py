@@ -110,6 +110,19 @@ class Board:
         return self.__get_closest_block(start, *self.inventories)
 
     def __get_closest_block(self, start, *blocks):
+        """
+        Get the closest block in a list of blocks.
+
+        :param start: a coordinate from where the closest blocks should be
+        estimated
+        :param blocks: a list of blocks that funtion as destinateion
+        coordinates
+        :return: a block from the list of blocks that is the closest or None
+        when no block is reachable.
+
+        The function uses pathfinding to estimate this so it should be used
+        with care, meaning on lists of blocks that are not to big
+        """
         #any distance should be shorter possible on the board
         shortest_distance = 10000000000000
         closest_block = None
@@ -118,7 +131,7 @@ class Board:
             if path != None and path.path_lenght < shortest_distance:
                 shortest_distance = path.path_lenght
                 closest_block = block
-        return block
+        return closest_block
 
 
     def highlight_taskable_blocks(self, color, blocks, task_type):
@@ -280,12 +293,14 @@ class Board:
             for column_i in range(self.__p_to_c(self.START_RECTANGLE.left),
                                   self.__p_to_c(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"
-        #generate pre made buildings
 
         matrix = self.__create_blocks_from_string(matrix)
         return matrix
 
     def __add_starter_buildings(self):
+        """
+        Add all starter building that should be placed before the game starts
+        """
         t = Terminal((BOARD_SIZE[1] / 2 + 50, 30), 30)
         self.add_building(t, draw = False)
 
