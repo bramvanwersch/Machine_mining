@@ -38,7 +38,7 @@ class Board:
         """
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
-                m_pos = (self.__p_to_c(block.coord[0]) + BLOCK_SIZE.width * column_i, self.__p_to_r(block.coord[1]) + BLOCK_SIZE.height * row_i)
+                m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
                 self.matrix[m_pos[1]][m_pos[0]] = block
                 self.inventories.append(block)
                 if draw:
@@ -390,6 +390,11 @@ class BoardImage(Entity):
     """
     def __init__(self, main_sprite_group, **kwargs):
         Entity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
+        self.visible = True
+
+    # def update(self, *args):
+    #     super().update(*args)
+    #     self.visible = False
 
     def _create_image(self, size, color, **kwargs):
         """
