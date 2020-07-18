@@ -32,7 +32,10 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
             if not spr.visible:
                 continue
             rec = spritedict[spr]
-            newrect = surface_blit(spr.image, spr.rect.move(self.cam))
+            if spr.static:
+                newrect = surface_blit(spr.image, spr.rect.move(self.cam))
+            else:
+                newrect = surface_blit(spr.image, spr.rect)
             if rec is init_rect:
                 dirty_append(newrect)
             else:

@@ -10,6 +10,7 @@ from python_code.utilities import rect_from_block_matrix
 from python_code.constants import *
 from python_code.tasks import TaskControl
 from python_code.image_handling import load_images
+from python_code.crafting import CraftingInterface
 
 
 class Main:
@@ -77,8 +78,6 @@ class User:
 
         #the entity that is selected and going to receive the left over events
         self.event_handler_entity = self.board
-        self.board.selected = True
-        self.workers = []
 
         #zoom variables
         self._zoom = 1
@@ -98,15 +97,17 @@ class User:
         self.tasks = TaskControl(self.board)
 
         #for some more elaborate setting up of variables
+        self.workers = []
+        self.crafting_interface = None
         self.__setup_start()
 
     def __setup_start(self):
         for _ in range(10):
             self.workers.append(Worker((1000, 40), self.board, self.tasks, self.main_sprite_group))
+        self.crafting_interface = CraftingInterface(self.main_sprite_group)
 
     def update(self):
         self.__handle_events()
-
 
     def __handle_events(self):
         events = pygame.event.get()
@@ -116,7 +117,8 @@ class User:
             if event.type == QUIT:
                 self.going = False
             elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
-                self.__handle_mouse_events(event)
+                if self.__handle_mouse_events(event):
+                    leftover_events.append(event)
             elif (event.type == KEYDOWN or event.type == KEYUP) and\
                     event.key in CAMERA_KEYS:
                 cam_events.append(event)
@@ -124,6 +126,10 @@ class User:
                 #when the event was not processed add it to the leftovers
                 if self.__handle_mode_events(event):
                     leftover_events.append(event)
+            elif event.type == KEYDOWN and event.key in INTERFACE_KEYS:
+                if self.__handle_interface_selection_events(event):
+                    leftover_events.append(event)
+
 
         if cam_events:
             self.camera_center.handle_events(cam_events)
@@ -179,6 +185,17 @@ class User:
 
         TextSprite(pos, size, text, self.font, self.main_sprite_group,
                    zoom=self._zoom)
+
+    def __handle_interface_selection_events(self, event):
+        if event.key == CRAFTING:
+            self.event_handler_entity = self.crafting_interface
+            self.crafting_interface.show(True)
+        elif event.key == K_ESCAPE:
+            self.event_handler_entity = self.board
+            self.crafting_interface.show(False)
+
+        else:
+            return event
 
     def __zoom_entities(self, increase):
         """

@@ -12,6 +12,8 @@ class Entity(pygame.sprite.Sprite):
         self.orig_image = self.image
         self.orig_rect = self.image.get_rect(topleft = pos)
         self.visible = True
+        #should the entity move with the camera or not
+        self.static = True
         self._layer = layer
 
         #zoom variables

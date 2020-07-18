@@ -6,11 +6,20 @@ from python_code.utilities import Size
 GAME_TIME = pygame.time.Clock()
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
 IMAGE_DIR = "D:\python projects\Machine mining\images"
+
+#location parameters
 SCREEN_SIZE = Size(800, 800)
 BOARD_SIZE = Size(2000, 2000)
+CRAFTING_WINDOW_SIZE = Size(500, 700)
+CRAFTING_WINDOW_POS = (int((SCREEN_SIZE.width - CRAFTING_WINDOW_SIZE.width) / 2),
+                       int((SCREEN_SIZE.height - CRAFTING_WINDOW_SIZE.height) / 2))
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
+
+#layers
 BOTTOM_LAYER = 0
-FIRST_LAYER = 2
+FIRST_LAYER = BOTTOM_LAYER + 2
+CRAFTING_LAYER = FIRST_LAYER + 1
+
 ORE_LIST = ["Iron", "Gold", "Copper", "Zinc", "Coal", "Titanium"]
 MAX_DEPTH = 200
 BLOCK_SIZE = Size(10, 10)
@@ -57,6 +66,11 @@ MODES = {MINING : Mode(MINING, "Mining", (9, 108, 128, 100)),
          BUILDING : Mode(BUILDING, "Building", (89, 50, 7, 100)),
          CANCEL : Mode(CANCEL, "Cancel", (255, 0, 0, 100), False),
          SELECTING : Mode(SELECTING, "Selecting", (59, 191, 70, 100), False)}
+
+#interface control
+CRAFTING = K_x
+
+INTERFACE_KEYS = [CRAFTING, K_ESCAPE]
 
 #visual control
 SHOW_BLOCK_BORDER = True
