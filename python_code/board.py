@@ -372,7 +372,7 @@ class Board(BoardEventHandler):
         Change strings into blocks
 
         :param s_matrix: a string matrix that contains strings corresponding to
-        __material classes
+        material classes
         :return: the s_matrix filled with block class instances
 
         """
@@ -427,6 +427,12 @@ class BoardImage(Entity):
         pygame.draw.rect(self.image, color, zoomed_rect)
 
     def add_image(self, rect, image):
+        """
+        Add an image to the boardImage
+
+        :param rect: location of the image as a pygame Rect object
+        :param image: a pygame Surface object
+        """
         self.image.blit(image, rect)
 
     #for determining mouse position on the board given the screen coordinate
@@ -467,8 +473,9 @@ class TransparantBoardImage(BoardImage):
     """
     def __init__(self, main_sprite_group, **kwargs):
         BoardImage.__init__(self, main_sprite_group, **kwargs)
+        #the current SelectionRectangle object that shows
         self.selection_rectangle = None
-        #last placed highlight
+        #last placed highlighted rectangle
         self.__highlight_rectangle = None
 
     def _create_image(self, size, color, **kwargs):
@@ -481,6 +488,12 @@ class TransparantBoardImage(BoardImage):
         return image
 
     def add_selection_rectangle(self, pos, keep = False):
+        """
+        Add a rectangle that shows what the user is currently selecting
+
+        :param pos: the event.pos of the rectangle
+        :param keep: if the previous highlight should be kept
+        """
         mouse_pos = self._screen_to_board_coordinate(pos)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
@@ -491,11 +504,22 @@ class TransparantBoardImage(BoardImage):
                                                        zoom=self._zoom)
 
     def add_highlight_rectangle(self, rect, color):
+        """
+        Add a rectangle to this image that functions as highlight from the
+        current selection
+
+        :param rect: the rectangle to highlight, this is a slightly adjusted
+        rectangle compared to the selection rectangle
+        :param color: the color of the highlight
+        """
         self.__highlight_rectangle = rect
         self.add_rect(rect, color)
 
 
     def remove_selection(self):
+        """
+        Safely remove the selection rectangle
+        """
         if self.selection_rectangle:
             self.selection_rectangle.kill()
 
