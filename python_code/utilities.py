@@ -37,7 +37,7 @@ class Size:
     """
     Class that defines a size, basically a rectangle without coordinates
     """
-    def __init__(self, height, width):
+    def __init__(self, width, height):
         self.height = height
         self.width = width
 
@@ -67,7 +67,7 @@ class Size:
         return str(self.size)
 
     def copy(self):
-        return Size(self.height, self.width)
+        return Size(self.width, self.height)
 
 class Gaussian:
     def __init__(self, mean, sd):
