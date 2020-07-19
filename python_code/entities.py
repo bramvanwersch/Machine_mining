@@ -1,6 +1,7 @@
 from python_code.constants import *
 from python_code.inventories import Inventory
 from python_code.tasks import TaskQueue, Task
+from python_code.event_handling import EventHandler
 
 class Entity(pygame.sprite.Sprite):
     """
@@ -207,21 +208,20 @@ class InputSaver:
                 self._pressed_keys[event.key] = False
 
 
-class CameraCentre(MovingEntity, InputSaver):
+class CameraCentre(MovingEntity, EventHandler):
     """
     The camera center where the camera centers on
     """
     def __init__(self, pos, size, *groups, **kwargs):
         MovingEntity.__init__(self, pos, size, *groups, max_speed = 20, **kwargs)
-        InputSaver.__init__(self)
+        EventHandler.__init__(self, [RIGHT, LEFT, UP, DOWN])
         self.orig_rect = pygame.Rect(*pos, *size)
 
     def handle_events(self, events):
         """
-        Handle events for moving the camera around the board, this function is
-        called by the User object directly
+        Handle events for moving the camera around the board
         """
-        InputSaver.handle_events(self, events)
+        leftover_events = EventHandler.handle_events(self, events)
         if self._pressed_keys[RIGHT] and self._pressed_keys[LEFT]:
             self.speed.x = 0
         else:
@@ -240,9 +240,10 @@ class CameraCentre(MovingEntity, InputSaver):
                 self.speed.y = min(self.max_speed, self.speed.y + self.max_speed)
             if not self._pressed_keys[UP] and not self._pressed_keys[DOWN]:
                 self.speed.y = 0
+        return leftover_events
 
 
-class Worker(MovingEntity, InputSaver):
+class Worker(MovingEntity):
     """
     A worker class that can perform tasks
     """
@@ -253,7 +254,6 @@ class Worker(MovingEntity, InputSaver):
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
                               max_speed=5, **kwargs)
-        InputSaver.__init__(self)
         self.board = board
         self.task_control = tasks
 

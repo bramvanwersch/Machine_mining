@@ -193,7 +193,6 @@ class User:
         elif event.key == K_ESCAPE:
             self.event_handler_entity = self.board
             self.crafting_interface.show(False)
-
         else:
             return event
 
