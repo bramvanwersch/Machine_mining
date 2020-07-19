@@ -57,6 +57,38 @@ class Size:
     def center(self):
         return (self.centerx, self.centery)
 
+    def __add__(self, other):
+        if len(other) == 1:
+            return self.width + other[0], self.height + other[0]
+        if len(other) == 2:
+            return self.width + other[0], self.height + other[1]
+        else:
+            raise ValueError("Invalid lenght for multiplication should be 1 or {}.".format(len(self)))
+
+    def __sub__(self, other):
+        if len(other) == 1:
+            return self.width - other[0], self.height - other[0]
+        if len(other) == 2:
+            return self.width - other[0], self.height - other[1]
+        else:
+            raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
+
+    def __mul__(self, other):
+        if len(other) == 1:
+            return self.width * other[0], self.height * other[0]
+        if len(other) == 2:
+            return self.width * other[0], self.height * other[1]
+        else:
+            raise ValueError("Invalid lenght for multiplication should be 1 or {}.".format(len(self)))
+
+    def __truediv__(self, other):
+        if len(other) == 1:
+            return self.width / other[0], self.height / other[0]
+        if len(other) == 2:
+            return self.width / other[0], self.height / other[1]
+        else:
+            raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
+
     def __getitem__(self, item):
         return self.size[item]
 
