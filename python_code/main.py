@@ -11,6 +11,7 @@ from python_code.constants import *
 from python_code.tasks import TaskControl
 from python_code.image_handling import load_images
 from python_code.crafting import CraftingInterface
+from python_code.event_handling import EventHandler
 
 
 class Main:
@@ -82,19 +83,9 @@ class User:
         #zoom variables
         self._zoom = 1
 
-        #selecting rectangle variables
-        self.__draging = False
-        self.__selection_rectangle = None
-
-        #hightlight rectange
-        self.__highlight_rectangle = None
-
-        #modes
-        self.__mode = MODES[SELECTING]
-        self.font = pygame.font.SysFont("arial", 18)
-
         #tasks
         self.tasks = TaskControl(self.board)
+        board.task_control = self.tasks
 
         #for some more elaborate setting up of variables
         self.workers = []
@@ -116,20 +107,21 @@ class User:
         for event in events:
             if event.type == QUIT:
                 self.going = False
-            elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
-                if self.__handle_mouse_events(event):
-                    leftover_events.append(event)
-            elif (event.type == KEYDOWN or event.type == KEYUP) and\
+            elif event.type == KEYDOWN and event.key in INTERFACE_KEYS:
+                self.__handle_interface_selection_events(event)
+
+            elif (event.type == KEYDOWN or event.type == KEYUP) and \
                     event.key in CAMERA_KEYS:
                 cam_events.append(event)
-            elif event.type == KEYDOWN and event.key in MODE_KEYS:
-                #when the event was not processed add it to the leftovers
-                if self.__handle_mode_events(event):
+            elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
+                if event.button == 4:
+                    self.__zoom_entities(0.1)
+                elif event.button == 5:
+                    self.__zoom_entities(-0.1)
+                else:
                     leftover_events.append(event)
-            elif event.type == KEYDOWN and event.key in INTERFACE_KEYS:
-                if self.__handle_interface_selection_events(event):
-                    leftover_events.append(event)
-
+            else:
+                leftover_events.append(event)
 
         if cam_events:
             self.camera_center.handle_events(cam_events)
@@ -137,54 +129,6 @@ class User:
             self.event_handler_entity.handle_events(leftover_events)
 
 #handeling of events
-    def __handle_mouse_events(self, event):
-        """
-        Handle mouse events issued by the user.
-
-        :param event: a pygame event
-        :return: an event when the event was not processed otherwise None
-        """
-        if event.type == MOUSEBUTTONDOWN and event.button == 1:
-            self.__draging = True
-            mouse_pos = self.__screen_to_board_coordinate(event.pos)
-            #should the highlighted area stay when a new one is selected
-            if not self.__mode.persistent_highlight and self.__highlight_rectangle != None:
-                self.board.add_rectangle(INVISIBLE_COLOR, self.__highlight_rectangle, layer = 1)
-            self.__selection_rectangle = SelectionRectangle(mouse_pos,
-                                    (0, 0), event.pos, self.main_sprite_group,
-                                     zoom=self._zoom)
-        elif event.type == MOUSEBUTTONUP and event.button == 1:
-            self.__draging = False
-            self.__process_selection(self.__selection_rectangle.orig_rect)
-            self.__selection_rectangle.kill()
-        elif event.button == 4:
-            self.__zoom_entities(0.1)
-        elif event.button == 5:
-            self.__zoom_entities(-0.1)
-        else:
-            return event
-
-    def __handle_mode_events(self, event):
-        """
-        Change the mode of the user and draw some text to notify the user.
-
-        :param event: a pygame event
-        """
-        #make sure to clear the rectangle before switching if needed
-        if not self.__mode.persistent_highlight and self.__highlight_rectangle != None:
-            self.board.add_rectangle(INVISIBLE_COLOR, self.__highlight_rectangle, layer=1)
-
-        self.__mode = MODES[event.key]
-
-        text = "{} mode".format(self.__mode.name)
-        size = self.font.size(text)
-
-        pos = self.__screen_to_board_coordinate(SCREEN_SIZE.center)
-        # center at the center of the screen
-        pos[0] -=0.5 * size[0]
-
-        TextSprite(pos, size, text, self.font, self.main_sprite_group,
-                   zoom=self._zoom)
 
     def __handle_interface_selection_events(self, event):
         if event.key == CRAFTING:
@@ -213,86 +157,6 @@ class User:
                 sprite.zoom(self._zoom)
             BOARD_SIZE.width = self._zoom * ORIGINAL_BOARD_SIZE.width
             BOARD_SIZE.height = self._zoom * ORIGINAL_BOARD_SIZE.height
-
-    def __process_selection(self, rect):
-        blocks = self.board.overlapping_blocks(rect)
-        #the user is selecting blocks
-        if len(blocks) > 0:
-            self.__draw_selection(blocks)
-            self.__add_tasks(blocks)
-        # the user selected a selectable entity
-        else:
-            selected_sprit = None
-            # select the first sprite clicked or otherwise select the board
-            for sprite in self.main_sprite_group.sprites():
-                if isinstance(sprite, InputSaver) and \
-                        sprite.orig_rect.collidepoint(rect.center) \
-                        and sprite != self.board:
-                    selected_sprit = sprite
-                    break
-                else:
-                    selected_sprit = self.board
-            self.event_handler_entity.selected = False
-            self.event_handler_entity = selected_sprit
-            selected_sprit.selected = True
-
-    def __draw_selection(self, blocks):
-        """
-        Draw the selection on the board highlight layer
-
-        :param blocks: A matrix of blocks
-        """
-        #draw only over rectangles that are not air blocks
-        if self.__mode.name == "Mining":
-            self.board.highlight_taskable_blocks(self.__mode.color, blocks, "Mining")
-        else:
-            rect = rect_from_block_matrix(blocks)
-            self.board.add_rectangle(self.__mode.color, rect, layer = 1)
-            self.__highlight_rectangle = rect
-
-    def __screen_to_board_coordinate(self, coord):
-        """
-        Calculate the screen to current board size coordinate. That is the
-        zoomed in board. Then revert the coordinate back to the normal screen
-
-        :param coord: a coordinate with x and y value within the screen region
-        :return: a coordinate with x and y vale within the ORIGINAL_BOARD_SIZE.
-
-        The value is scaled back to the original size after instead of
-        being calculated as the original size on the spot because the screen
-        coordinate can not be converted between zoom levels so easily.
-        """
-        c = self.main_sprite_group.target.rect.center
-        #last half a screen of the board
-        if BOARD_SIZE.width - c[0] - SCREEN_SIZE.width / 2 < 0:
-            x = BOARD_SIZE.width - (SCREEN_SIZE.width - coord[0])
-        #the rest of the board
-        elif c[0] - SCREEN_SIZE.width / 2 > 0:
-            x = coord[0] + (c[0] - SCREEN_SIZE.width / 2)
-        #first half a screen of the board
-        else:
-            x = coord[0]
-        if BOARD_SIZE.height - c[1] - SCREEN_SIZE.height / 2 < 0:
-            y = BOARD_SIZE.height - (SCREEN_SIZE.height - coord[1])
-        elif c[1] - SCREEN_SIZE.height / 2 > 0:
-            y = coord[1] + (c[1] - SCREEN_SIZE.height / 2)
-        else:
-            y = coord[1]
-        return [int(x / self._zoom), int(y / self._zoom)]
-
-#task management
-
-    def __add_tasks(self, blocks):
-        if self.__mode.name == "Mining":
-            self.tasks.add(self.__mode.name, blocks)
-        elif self.__mode.name == "Cancel":
-            rect = rect_from_block_matrix(blocks)
-            #remove highlight
-            self.board.add_rectangle(INVISIBLE_COLOR, rect, layer = 1)
-            for row in blocks:
-                for block in row:
-                    block.tasks = {}
-                self.tasks.remove(*row)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,15 @@
 from random import randint, choices, choice
 
-from python_code.entities import Entity
+from python_code.entities import Entity, SelectionRectangle
 from python_code.utilities import *
 from python_code import materials
 from python_code.constants import *
 from python_code.pathfinding import PathFinder
 from python_code.blocks import AirBlock, Block, ContainerBlock
 from python_code.buildings import *
+from python_code.event_handling import BoardEventHandler
 
-class Board:
+class Board(BoardEventHandler):
     """
     Class that holds a matrix of blocks that is a playing field and an image
     representing set matrix
@@ -18,6 +19,7 @@ class Board:
     #the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
     def __init__(self, main_sprite_group):
+        BoardEventHandler.__init__(self, [1, 2, 3, 4, MINING, CANCEL, BUILDING, SELECTING])
         self.inventories = []
 
         #setup the board
@@ -32,6 +34,7 @@ class Board:
 
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
+        self.task_control = None
 
     def add_building(self, building_instance, draw = True):
         """
@@ -47,7 +50,6 @@ class Board:
                 self.inventories.append(block)
                 if draw:
                     self.foreground_image.add_image(block.rect, block.surface)
-
 
     def overlapping_blocks(self, rect):
         """
@@ -95,7 +97,7 @@ class Board:
 
     def remove_blocks(self, blocks):
         """
-        Remove a matrix of bloxks from the second board layer by replacing them
+        Remove a matrix of blocks from the second board layer by replacing them
         with air
 
         :param blocks: a matrix of blocks
@@ -144,21 +146,47 @@ class Board:
                 closest_block = block
         return closest_block
 
-    def highlight_taskable_blocks(self, color, blocks, task_type):
+    def add_rectangle(self, color, rect, layer = 2):
         """
-        Highlight in a given area all the blocks that can take a certain task
+        Add a rectangle on to one of the layers.
 
-        :param color: The highlight color
-        :param blocks: a matrix of blocks
-        :param task_type: the type of the task that needs to be highlighted)
+        :param color: the color of the rectangle. Use INVISIBLE_COLOR to make
+        rectangles dissapear
+        :param layer: an integer that between 1 and 3 that tells at what layer
+        the rectangle should be added
+
+        This can be used to remove parts of the image or add something to it
         """
-        rect = rect_from_block_matrix(blocks)
-        self.add_rectangle(color, rect, layer = 1)
-        air_spaces = self.__get_task_rectangles(blocks, task_type)
-        for air_rect in air_spaces:
-            self.add_rectangle(INVISIBLE_COLOR, air_rect, layer = 1)
+        if layer == 1:
+            image = self.selection_image
+        elif layer == 2:
+            image = self.foreground_image
+        elif layer == 3:
+            image = self.background_image
+        image.add_rect(rect, color)
 
-    def __get_task_rectangles(self, blocks, task_type):
+    def __getitem__(self, item):
+        return self.matrix[item]
+
+    def __p_to_r(self, value):
+        """
+        Point to row conversion. Convert a coordinate into a row number
+
+        :param value: a coordinate
+        :return: the corresponding row number
+        """
+        return int(value / BLOCK_SIZE.height)
+
+    def __p_to_c(self, value):
+        """
+        Point to column conversion. Convert a coordinate into a column number
+
+        :param value: a coordinate
+        :return: the corresponding column number
+        """
+        return int(value / BLOCK_SIZE.width)
+
+    def _get_task_rectangles(self, blocks, task_type):
         """
         Get all air spaces in the given matrix of blocks as a collection of
         rectangles
@@ -202,11 +230,7 @@ class Board:
 
     def __find_task_rectangle(self, blocks, task_type):
         """
-        Find starting from an air block all the air blocks in a rectangle
 
-        :param blocks: a selection of blocks in a matrix
-        :return: the matrix coordinate of the local blocks matrix in form
-        (column, row) where the air square ends
         """
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
@@ -227,45 +251,20 @@ class Board:
             matrix_coordinate[1] += 1
         return matrix_coordinate
 
-    def add_rectangle(self, color, rect, layer = 2):
-        """
-        Add a rectangle on to one of the layers.
 
-        :param color: the color of the rectangle. Use INVISIBLE_COLOR to make
-        rectangles dissapear
-        :param layer: an integer that between 1 and 3 that tells at what layer
-        the rectangle should be added
+    # task management
 
-        This can be used to remove parts of the image or add something to it
-        """
-        if layer == 1:
-            image = self.selection_image
-        elif layer == 2:
-            image = self.foreground_image
-        elif layer == 3:
-            image = self.background_image
-        image.add_rect(rect, color)
-
-    def __getitem__(self, item):
-        return self.matrix[item]
-
-    def __p_to_r(self, value):
-        """
-        Point to row conversion. Convert a coordinate into a row number
-
-        :param value: a coordinate
-        :return: the corresponding row number
-        """
-        return int(value / BLOCK_SIZE.height)
-
-    def __p_to_c(self, value):
-        """
-        Point to column conversion. Convert a coordinate into a column number
-
-        :param value: a coordinate
-        :return: the corresponding column number
-        """
-        return int(value / BLOCK_SIZE.width)
+    def _add_tasks(self, blocks):
+        if self._mode.name == "Mining":
+            self.task_control.add(self._mode.name, blocks)
+        elif self._mode.name == "Cancel":
+            rect = rect_from_block_matrix(blocks)
+            # remove highlight
+            self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+            for row in blocks:
+                for block in row:
+                    block.tasks = {}
+                self.task_control.remove(*row)
 
 #### MAP GENERATION FUNCTIONS ###
 
@@ -402,10 +401,6 @@ class BoardImage(Entity):
         Entity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
         self.visible = True
 
-    # def update(self, *args):
-    #     super().update(*args)
-    #     self.visible = False
-
     def _create_image(self, size, color, **kwargs):
         """
         Overwrites the image creation process in the basic Entity class
@@ -422,8 +417,8 @@ class BoardImage(Entity):
 
     def add_rect(self, rect, color):
         """
-        Remove a rectangle from the foreground by blitting a transparant
-        rectangle on top
+        Add a rectangle to the image, this can be a transparant rectangle to
+        remove a part of the image or another rectangle
 
         :param rect: a pygame rect object
         """
@@ -434,6 +429,37 @@ class BoardImage(Entity):
     def add_image(self, rect, image):
         self.image.blit(image, rect)
 
+    #for determining mouse position on the board given the screen coordinate
+    def _screen_to_board_coordinate(self, coord):
+        """
+        Calculate the screen to current board size coordinate. That is the
+        zoomed in board. Then revert the coordinate back to the normal screen
+
+        :param coord: a coordinate with x and y value within the screen region
+        :return: a coordinate with x and y vale within the ORIGINAL_BOARD_SIZE.
+
+        The value is scaled back to the original size after instead of
+        being calculated as the original size on the spot because the screen
+        coordinate can not be converted between zoom levels so easily.
+        """
+        c = self.groups()[0].target.rect.center
+        #last half a screen of the board
+        if BOARD_SIZE.width - c[0] - SCREEN_SIZE.width / 2 < 0:
+            x = BOARD_SIZE.width - (SCREEN_SIZE.width - coord[0])
+        #the rest of the board
+        elif c[0] - SCREEN_SIZE.width / 2 > 0:
+            x = coord[0] + (c[0] - SCREEN_SIZE.width / 2)
+        #first half a screen of the board
+        else:
+            x = coord[0]
+        if BOARD_SIZE.height - c[1] - SCREEN_SIZE.height / 2 < 0:
+            y = BOARD_SIZE.height - (SCREEN_SIZE.height - coord[1])
+        elif c[1] - SCREEN_SIZE.height / 2 > 0:
+            y = coord[1] + (c[1] - SCREEN_SIZE.height / 2)
+        else:
+            y = coord[1]
+        return [int(x / self._zoom), int(y / self._zoom)]
+
 class TransparantBoardImage(BoardImage):
     """
     Slight variation on the basic Board image that creates a transparant
@@ -441,6 +467,9 @@ class TransparantBoardImage(BoardImage):
     """
     def __init__(self, main_sprite_group, **kwargs):
         BoardImage.__init__(self, main_sprite_group, **kwargs)
+        self.selection_rectangle = None
+        #last placed highlight
+        self.__highlight_rectangle = None
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -450,4 +479,24 @@ class TransparantBoardImage(BoardImage):
         image.set_colorkey((0,0,0), RLEACCEL)
         image.fill(INVISIBLE_COLOR)
         return image
+
+    def add_selection_rectangle(self, pos, keep = False):
+        mouse_pos = self._screen_to_board_coordinate(pos)
+        # should the highlighted area stay when a new one is selected
+        if not keep and self.__highlight_rectangle:
+            self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
+        self.selection_rectangle = SelectionRectangle(mouse_pos,
+                                                       (0, 0), pos,
+                                                       self.groups()[0],
+                                                       zoom=self._zoom)
+
+    def add_highlight_rectangle(self, rect, color):
+        self.__highlight_rectangle = rect
+        self.add_rect(rect, color)
+
+
+    def remove_selection(self):
+        if self.selection_rectangle:
+            self.selection_rectangle.kill()
+
 
