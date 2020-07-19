@@ -23,7 +23,6 @@ class Main:
         self.screen = pygame.display.set_mode(SCREEN_SIZE, DOUBLEBUF)  # | FULLSCREEN)
         self.screen.set_alpha(None)
         self.screen.fill([0,0,0])
-        self.font = pygame.font.SysFont("arial", 18)
 
         pygame.display.set_caption("MINING!!")
         pygame.mouse.set_visible(True)
@@ -55,7 +54,7 @@ class Main:
             self.main_sprite_group.update()
             self.main_sprite_group.draw(self.screen)
             if FPS:
-                fps = self.font.render(str(int(GAME_TIME.get_fps())), True,
+                fps = FONT18.render(str(int(GAME_TIME.get_fps())), True,
                                          pygame.Color('black'))
                 self.screen.blit(fps, (10, 10))
             # if AIR_RECTANGLES:
