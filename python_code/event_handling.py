@@ -100,7 +100,7 @@ class BoardEventHandler(EventHandler, ABC):
         Process when the user is done selecting and a highlight should appear of the area
         :return:
         """
-        blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.rect)
+        blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.orig_rect)
         # the user is selecting blocks
         if len(blocks) > 0:
             rect = rect_from_block_matrix(blocks)
