@@ -117,7 +117,7 @@ class BoardEventHandler(EventHandler, ABC):
 
         :param event: a pygame event
         """
-        if self._pressed_keys[event.key]:
+        if event.key in self._pressed_keys and self._pressed_keys[event.key]:
 
             self._mode = MODES[event.key]
             #for now print what the mode is, TODO add this into the gui somewhere
