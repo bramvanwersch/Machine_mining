@@ -118,6 +118,8 @@ class BoardEventHandler(EventHandler, ABC):
         :param event: a pygame event
         """
         if event.key in self._pressed_keys and self._pressed_keys[event.key]:
+            #make sure to clear the board of any remnants before switching
+            self.selection_image.reset_selection_and_highlight(self._mode.persistent_highlight)
 
             self._mode = MODES[event.key]
             #for now print what the mode is, TODO add this into the gui somewhere
