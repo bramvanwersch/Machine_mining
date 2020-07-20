@@ -85,8 +85,8 @@ class ColorMaterial(BaseMaterial, ABC):
         surface.fill(self.__color)
         if SHOW_BLOCK_BORDER:
             pygame.draw.rect(surface, self.__border_color,
-                             (0, 0, BLOCK_SIZE.width + 1,
-                              BLOCK_SIZE.height + 1), 1)
+                             (0, 0, BLOCK_SIZE.width,
+                              BLOCK_SIZE.height), 1)
         return surface.convert()
 
     def _configure_color(self):

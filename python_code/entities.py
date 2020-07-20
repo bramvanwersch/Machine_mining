@@ -1,28 +1,22 @@
+from abc import ABC, abstractmethod
+
 from python_code.constants import *
 from python_code.inventories import Inventory
 from python_code.tasks import TaskQueue, Task
 from python_code.event_handling import EventHandler
 
-class Entity(pygame.sprite.Sprite):
-    """
-    Basic entity class
-    """
-    def __init__(self, pos, size, *groups, color = (255,255,255), zoom = 1, layer = FIRST_LAYER, **kwargs):
+
+class Entity(pygame.sprite.Sprite, ABC):
+    def __init__(self, pos, size, *groups, color = (255,255,255),
+                 layer = FIRST_LAYER, **kwargs):
         pygame.sprite.Sprite.__init__(self, *groups)
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image
-        self.orig_rect = self.image.get_rect(topleft = pos)
+        self.orig_rect = self.image.get_rect(topleft=pos)
         self.visible = True
-        #should the entity move with the camera or not
+        # should the entity move with the camera or not
         self.static = True
         self._layer = layer
-
-        #zoom variables
-        self._zoom = zoom
-        #if an entity is created after zooming make sure it is zoomed to the
-        #right proportions
-        if self._zoom != 1:
-            self.zoom(self._zoom)
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -41,21 +35,6 @@ class Entity(pygame.sprite.Sprite):
         image.fill(color)
         return image
 
-    def zoom(self, zoom):
-        """
-        Safe a zoom value so distance measures know how to change, also change
-        the image size to make sure that this is not done every request.
-
-        :param increase: a small integer that tells how much bigger the zoom
-        should be
-        """
-        self._zoom = zoom
-        orig_rect = self.orig_rect
-        new_width = orig_rect.width * zoom
-        new_height = orig_rect.height * zoom
-        self.image = pygame.transform.scale(self.orig_image, (int(new_width),
-                                                              int(new_height)))
-
     @property
     def rect(self):
         """
@@ -72,13 +51,41 @@ class Entity(pygame.sprite.Sprite):
         rect = self.image.get_rect(center = orig_pos)
         return rect
 
+class ZoomableEntity(Entity):
+    """
+    Basic zoomable entity class
+    """
+    def __init__(self, pos, size, *groups, zoom = 1, **kwargs):
+        Entity.__init__(self, pos, size, *groups, **kwargs)
+        #zoom variables
+        self._zoom = zoom
+        #if an entity is created after zooming make sure it is zoomed to the
+        #right proportions
+        if self._zoom != 1:
+            self.zoom(self._zoom)
 
-class SelectionRectangle(Entity):
+    def zoom(self, zoom):
+        """
+        Safe a zoom value so distance measures know how to change, also change
+        the image size to make sure that this is not done every request.
+
+        :param increase: a small integer that tells how much bigger the zoom
+        should be
+        """
+        self._zoom = zoom
+        orig_rect = self.orig_rect
+        new_width = orig_rect.width * zoom
+        new_height = orig_rect.height * zoom
+        self.image = pygame.transform.scale(self.orig_image, (int(new_width),
+                                                              int(new_height)))
+
+
+class SelectionRectangle(ZoomableEntity):
     """
     Creates a rectangle by draging the mouse. To highlight certain areas.
     """
     def __init__(self, pos, size, mouse_pos, *groups, **kwargs):
-        Entity.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.__start_pos = list(pos)
         self.__prev_screen_pos = list(mouse_pos)
         self.__size = Size(*size)
@@ -131,13 +138,13 @@ class SelectionRectangle(Entity):
             self.__update_image()
 
 
-class MovingEntity(Entity):
+class MovingEntity(ZoomableEntity):
     """
     Base class for moving entities
     """
     MAX_SPEED = 10
     def __init__(self, pos, size, *groups, max_speed = MAX_SPEED, **kwargs):
-        Entity.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.max_speed = max_speed
         self.speed = pygame.Vector2(0, 0)
 
@@ -370,7 +377,7 @@ class Worker(MovingEntity):
             self.speed.y = 0
 
 
-class TextSprite(Entity):
+class TextSprite(ZoomableEntity):
     COLOR = (255,0,0)
     #in ms
     TOTAL_LIFE_SPAN = 1000
@@ -379,8 +386,8 @@ class TextSprite(Entity):
     """
     def __init__(self, pos, size, text, font, *groups, color = COLOR, **kwargs):
         #size has no information
-        Entity.__init__(self, pos, size, *groups, font = font,
-                        text = text, **kwargs)
+        ZoomableEntity.__init__(self, pos, size, *groups, font = font,
+                                text = text, **kwargs)
         self.lifespan = [0,self.TOTAL_LIFE_SPAN]
 
     def _create_image(self, size, color, **kwargs):

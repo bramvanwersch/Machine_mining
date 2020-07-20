@@ -1,6 +1,6 @@
 from random import randint, choices, choice
 
-from python_code.entities import Entity, SelectionRectangle
+from python_code.entities import ZoomableEntity, SelectionRectangle
 from python_code.utilities import *
 from python_code import materials
 from python_code.constants import *
@@ -391,14 +391,14 @@ class Board(BoardEventHandler):
         return s_matrix
 
 
-class BoardImage(Entity):
+class BoardImage(ZoomableEntity):
     """
     Convert a matrix of blocks into a surface that persists as an entity. This
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """
     def __init__(self, main_sprite_group, **kwargs):
-        Entity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
+        ZoomableEntity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
         self.visible = True
 
     def _create_image(self, size, color, **kwargs):
