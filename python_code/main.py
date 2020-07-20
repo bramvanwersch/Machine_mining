@@ -94,7 +94,8 @@ class User:
     def __setup_start(self):
         for _ in range(10):
             self.workers.append(Worker((1000, 40), self.board, self.tasks, self.main_sprite_group))
-        self.crafting_interface = CraftingInterface(self.main_sprite_group)
+        #add the inventories to be accesible to the crafting interface
+        self.crafting_interface = CraftingInterface(self.board.inventories, self.main_sprite_group)
 
     def update(self):
         self.__handle_events()

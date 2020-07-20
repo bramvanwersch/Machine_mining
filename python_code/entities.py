@@ -37,19 +37,8 @@ class Entity(pygame.sprite.Sprite, ABC):
 
     @property
     def rect(self):
-        """
-        Returns a rectangle that represents the zoomed version of the
-        self.orig_rect
+        return self.orig_rect
 
-        :return: a pygame Rect object
-        """
-        if self._zoom == 1:
-            return self.orig_rect
-        orig_pos = list(self.orig_rect.center)
-        orig_pos[0] *= self._zoom
-        orig_pos[1] *= self._zoom
-        rect = self.image.get_rect(center = orig_pos)
-        return rect
 
 class ZoomableEntity(Entity):
     """
@@ -78,6 +67,21 @@ class ZoomableEntity(Entity):
         new_height = orig_rect.height * zoom
         self.image = pygame.transform.scale(self.orig_image, (int(new_width),
                                                               int(new_height)))
+    @property
+    def rect(self):
+        """
+        Returns a rectangle that represents the zoomed version of the
+        self.orig_rect
+
+        :return: a pygame Rect object
+        """
+        if self._zoom == 1:
+            return self.orig_rect
+        orig_pos = list(self.orig_rect.center)
+        orig_pos[0] *= self._zoom
+        orig_pos[1] *= self._zoom
+        rect = self.image.get_rect(center = orig_pos)
+        return rect
 
 
 class SelectionRectangle(ZoomableEntity):
