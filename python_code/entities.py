@@ -14,6 +14,7 @@ class Entity(pygame.sprite.Sprite, ABC):
         self.orig_image = self.image
         self.orig_rect = self.image.get_rect(topleft=pos)
         self.visible = True
+        self.zoomable = False
         # should the entity move with the camera or not
         self.static = True
         self._layer = layer
@@ -39,6 +40,10 @@ class Entity(pygame.sprite.Sprite, ABC):
     def rect(self):
         return self.orig_rect
 
+    @rect.setter
+    def rect(self, rect):
+        self.orig_rect = rect
+
 
 class ZoomableEntity(Entity):
     """
@@ -48,6 +53,7 @@ class ZoomableEntity(Entity):
         Entity.__init__(self, pos, size, *groups, **kwargs)
         #zoom variables
         self._zoom = zoom
+        self.zoomable = True
         #if an entity is created after zooming make sure it is zoomed to the
         #right proportions
         if self._zoom != 1:

@@ -7,37 +7,16 @@ from python_code.event_handling import EventHandler
 
 
 class Widget(ABC):
-    SELECTED_COLOR = (0,0,0)
-    def __init__(self, pos,  size, color = (255,255,255), **kwargs):
+    def __init__(self, pos, size, selectable = False, **kwargs):
         self.action_functions = {}
-        self.selectable = False
+        self.selectable = selectable
         self.selected = False
 
-        self.image = self._create_image(size, color, **kwargs)
-        self.orig_image = self.image
-        self.rect = self.image.get_rect(topleft=pos)
+        self.rect = pygame.Rect((*pos, *size))
         self.visible = True
-        self.changed_image = False
 
     def update(self):
         return None
-
-    def _create_image(self, size, color, **kwargs):
-        """
-        Create an image using a size and color
-
-        :param size: a Size object or tuple of lenght 2
-        :param color: a rgb color as tuple of lenght 2 or 3
-        :param kwargs: additional named arguments
-        :return: a pygame Surface object
-        """
-        if len(color) == 3:
-            image = pygame.Surface(size).convert()
-        # included alpha channel
-        elif len(color) == 4:
-            image = pygame.Surface(size).convert_alpha()
-        image.fill(color)
-        return image
 
     def action(self, e):
         """
@@ -65,6 +44,37 @@ class Widget(ABC):
 
     def set_selected(self, selected):
         self.selected = selected
+
+class Label(Widget):
+    """
+    Bsically a widget that allows image manipulation
+    """
+    SELECTED_COLOR = (0,0,0)
+    def __init__(self, pos, size, color = (255,255,255), **kwargs):
+        Widget.__init__(self,pos, size, **kwargs)
+        self.image = self._create_image(size, color, **kwargs)
+        self.orig_image = self.image
+        self.changed_image = False
+
+    def _create_image(self, size, color, **kwargs):
+        """
+        Create an image using a size and color
+
+        :param size: a Size object or tuple of lenght 2
+        :param color: a rgb color as tuple of lenght 2 or 3
+        :param kwargs: additional named arguments
+        :return: a pygame Surface object
+        """
+        if len(color) == 3:
+            image = pygame.Surface(size).convert()
+        # included alpha channel
+        elif len(color) == 4:
+            image = pygame.Surface(size).convert_alpha()
+        image.fill(color)
+        return image
+
+    def set_selected(self, selected):
+        super().set_selected(selected)
         if self.selected:
             pygame.draw.rect(self.image, self.image.get_rect(), self.SELECTED_COLOR)
             self.image = self.selected_image
@@ -74,45 +84,28 @@ class Widget(ABC):
 
     def set_image(self, image):
         if image == None:
-            self.image = orig_imaage
+            self.image = self.orig_image
         else:
             self.image = image
         self.changed_image = True
 
+    def set_text(self, text, font_size = 22):
+        s = FONT22.render(str(text), True, (0,0,0))
+        self.image.blit(s, self.rect)
 
-class Frame(Entity, EventHandler):
-    TEXTCOLOR = (0,0,0)
-    def __init__(self, pos, size, *groups, title=None, **kwargs):
-        """
-        Creates a MenuPane that holds othger widgets and regulated selection of the widgets in the pane itself.
-        :param rect: size of the pane
-        :param image: image to be displayed on the pane
-        :param groups: sprite group for this widget and widgets in this widget to be added to
-        :param title: optional title
-        """
-        EventHandler.__init__(self, [K_UP, K_w, K_s, K_DOWN])
-        Entity.__init__(self, pos, size, *groups, **kwargs)
+
+class Pane(Label, EventHandler):
+    """
+    Container widget that allows selecting and acts as an image
+    """
+    def __init__(self, pos, size, **kwargs):
+        Label.__init__(self, pos, size, **kwargs)
+        EventHandler.__init__(self, [K_UP, K_DOWN])
         self.widgets = []
+
         # index of selected widget in the widgets list
         self.selectable_widgets = []
         self.selected_widget = 0
-
-        if title:
-            self._set_title(title)
-
-    def _set_title(self, title):
-        title = FONT30.render(title, True, self.TEXTCOLOR)
-        tr = title.get_rect()
-        #center the title above the widet
-        self.image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
-
-    def update(self, *args):
-        Entity.update(self, *args)
-        for widget in self.widgets:
-            widget.update()
-            if widget.changed_image:
-                self.__redraw_widget(widget)
-                widget.changed_image = False
 
     def handle_events(self, events):
         events = super().handle_events(events)
@@ -122,15 +115,14 @@ class Frame(Entity, EventHandler):
                     if widget.rect.collidepoint(x, y):
                         widget.action([event])
                         break;
-            if self._pressed_keys[K_UP] or self._pressed_keys[K_w]:
+            if self._pressed_keys[K_UP]:
                 self._change_selected_widget()
-            elif self._pressed_keys[K_DOWN] or self._pressed_keys[K_s]:
+            elif self._pressed_keys[K_DOWN]:
                 self._change_selected_widget(False)
             else:
                 selected_widget_events.append(event)
         if self.selectable_widgets:
             self.widgets[self.selected_widget].action(selected_widget_events)
-
 
     def _change_selected_widget(self, up=True):
         if not self.selectable_widgets: return
@@ -156,6 +148,42 @@ class Frame(Entity, EventHandler):
         if widget.selectable:
             self.selectable_widgets.append(widget)
             self.selectable_widgets.sort(key=lambda x: x.rect.y)
+
+
+class Frame(Entity, Pane):
+    """
+    Container for widgets, that is an entity so it can act as a window in the
+    game it
+    """
+    TEXTCOLOR = (0,0,0)
+    def __init__(self, pos, size, *groups, title=None, **kwargs):
+        """
+        Creates a MenuPane that holds othger widgets and regulated selection of the widgets in the pane itself.
+        :param rect: size of the pane
+        :param image: image to be displayed on the pane
+        :param groups: sprite group for this widget and widgets in this widget to be added to
+        :param title: optional title
+        """
+        Entity.__init__(self, pos, size, *groups, **kwargs)
+        Pane.__init__(self, pos, size, **kwargs)
+        if title:
+            self._set_title(title)
+
+    def _set_title(self, title):
+        title = FONT30.render(title, True, self.TEXTCOLOR)
+        tr = title.get_rect()
+        #center the title above the widet
+        self.image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
+
+    def update(self, *args):
+        Entity.update(self, *args)
+        for widget in self.widgets:
+            widget.update()
+            if widget.changed_image:
+                self.__redraw_widget(widget)
+                widget.changed_image = False
+
+
 
 # class Button(Widget):
 #     def __init__(self, text="", text_color=(0, 0, 0),
@@ -187,41 +215,6 @@ class Frame(Entity, EventHandler):
 #             self.image = self.selected_image
 #         else:
 #             self.image = self.unselected_image
-
-
-class Label(Widget):
-    def __init__(self, pos, size, **kwargs):
-        Widget.__init__(self,pos, size, **kwargs)
-
-
-class SelectableLabel(Label):
-    def __init__(self, image, size):
-        """
-        Extension of the label class that
-        :param image:
-        :param size:
-        """
-        Label.__init__(self, size)
-        self.selectable = True
-
-
-# methods for images that have a set location but change theire appearance over time.
-# pretty much a chiller sprite
-class DynamicSurface:
-    def __init__(self, rect, background_color=(165, 103, 10), **kwargs):
-        self.font18 = pygame.font.Font(
-            constants.DATA_DIR + "//Menu//font//manaspc.ttf", 18)
-        self.rect = rect
-        self.background_color = background_color
-        self.image = None
-
-    def update(self):
-        self.image = self._get_image()
-
-    def _get_image(self):
-        image = pygame.Surface((self.rect.size))
-        image.fill(self.background_color)
-        return image
 
 
 class TextLog:

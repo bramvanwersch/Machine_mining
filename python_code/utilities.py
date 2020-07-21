@@ -58,36 +58,48 @@ class Size:
         return (self.centerx, self.centery)
 
     def __add__(self, other):
-        if len(other) == 1:
-            return self.width + other[0], self.height + other[0]
-        if len(other) == 2:
-            return self.width + other[0], self.height + other[1]
-        else:
-            raise ValueError("Invalid lenght for multiplication should be 1 or {}.".format(len(self)))
+        try:
+            if len(other) == 2:
+                return Size(self.width + other[0], self.height + other[1])
+        except TypeError as e:
+            print(e)
+        raise ValueError("Expected value of lenght 2. Got {}".format(type(other)))
 
-    def __sub__(self, *other):
-        if len(other) == 1:
-            return self.width - other[0], self.height - other[0]
-        if len(other) == 2:
-            return self.width - other[0], self.height - other[1]
-        else:
-            raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        try:
+            if len(other) == 2:
+                return Size(self.width - other[0], self.height - other[1])
+        except TypeError as e:
+            print(e)
+        raise ValueError("Expected value of lenght 2. Got {}".format(type(other)))
+
+    def __rsub__(self, other):
+        return self.__sub__(other)
 
     def __mul__(self, other):
-        if len(other) == 1:
-            return self.width * other[0], self.height * other[0]
-        if len(other) == 2:
-            return self.width * other[0], self.height * other[1]
-        else:
-            raise ValueError("Invalid lenght for multiplication should be 1 or {}.".format(len(self)))
+        try:
+            if len(other) == 2:
+                return Size(self.width * other[0], self.height * other[1])
+        except TypeError as e:
+            print(e)
+        raise ValueError("Invalid lenght for multiplication should be 1 or {}.".format(len(self)))
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
     def __truediv__(self, other):
-        if len(other) == 1:
-            return self.width / other[0], self.height / other[0]
-        if len(other) == 2:
-            return self.width / other[0], self.height / other[1]
-        else:
-            raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
+        try:
+            if len(other) == 2:
+                return Size(self.width / other[0], self.height / other[1])
+        except TypeError as e:
+            print(e)
+        raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
+
+    def __rtruediv__(self, other):
+        return self.__truediv__(other)
 
     def __getitem__(self, item):
         return self.size[item]

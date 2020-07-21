@@ -154,7 +154,8 @@ class User:
         #prevent unnecesairy recalculations
         if prev_zoom_level != self._zoom:
             for sprite in self.main_sprite_group.sprites():
-                sprite.zoom(self._zoom)
+                if sprite.zoomable:
+                    sprite.zoom(self._zoom)
             BOARD_SIZE.width = self._zoom * ORIGINAL_BOARD_SIZE.width
             BOARD_SIZE.height = self._zoom * ORIGINAL_BOARD_SIZE.height
 

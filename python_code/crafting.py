@@ -20,9 +20,9 @@ class CraftingWindow(Frame):
     COLOR = (173, 94, 29, 150)
     GRID_SIZE = Size(9, 9)
     GRID_PIXEL_SIZE = Size(450, 450)
-    GRID_SQUARE = Size(*GRID_PIXEL_SIZE / GRID_SIZE)
+    #take the border into account
+    GRID_SQUARE = Size(*(GRID_PIXEL_SIZE / GRID_SIZE )) - (1, 1)
     def __init__(self, board_inventories, *groups):
-        print(groups, board_inventories)
         Frame.__init__(self, CRAFTING_WINDOW_POS, CRAFTING_WINDOW_SIZE,
                         *groups, layer=CRAFTING_LAYER, color=self.COLOR, title = "CRAFTING:")
         self.visible = False
@@ -38,15 +38,16 @@ class CraftingWindow(Frame):
 
     def __innitiate_widgets(self):
         #create grid
-        start_pos = (25, 50)
-        # background_lbl = Label(start_pos, self.GRID_SIZE, color = (0,0,0))
-        # self.add_widget(background_lbl)
+        start_pos = [25, 50]
+        background_lbl = Label(start_pos, self.GRID_PIXEL_SIZE, color = (0,0,0, 150))
+        self.add_widget(background_lbl)
+        start_pos[0] += 5; start_pos[1] += 5
         for row_i in range(self.GRID_SIZE.height):
             row = []
             for col_i in range(self.GRID_SIZE.width):
                 #this is still a little wonky and does not work completely like you want
-                pos = Size(*self.GRID_SQUARE * (col_i, row_i)) + start_pos
-                lbl = Label(pos, (self.GRID_SQUARE - 3), color = self.COLOR)
+                pos = start_pos + self.GRID_SQUARE * (col_i, row_i) + (2, 2)
+                lbl = Label(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR)
                 self.add_widget(lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
