@@ -131,10 +131,10 @@ class User:
 #handeling of events
 
     def __handle_interface_selection_events(self, event):
-        if event.key == CRAFTING:
+        if event.key == CRAFTING and self.event_handler_entity != self.crafting_interface:
             self.event_handler_entity = self.crafting_interface
             self.crafting_interface.show(True)
-        elif event.key == K_ESCAPE:
+        elif event.key == K_ESCAPE or event.key == CRAFTING:
             self.event_handler_entity = self.board
             self.crafting_interface.show(False)
         else:
