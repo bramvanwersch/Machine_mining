@@ -12,7 +12,10 @@ class EventHandler(ABC):
         """
         :param recordable_events: a list of keys that the handler should record
         """
-        self._pressed_keys = {key: False for key in recordable_keys}
+        if recordable_keys == "ALL":
+            self._pressed_keys = {key: False for key in KEYBOARD_KEYS}
+        else:
+            self._pressed_keys = {key: False for key in recordable_keys}
         self._dragging = False
 
     def __record_pressed_keys(self, events):
@@ -100,6 +103,8 @@ class BoardEventHandler(EventHandler, ABC):
         Process when the user is done selecting and a highlight should appear of the area
         :return:
         """
+        if self.selection_image == None:
+            return
         blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.orig_rect)
         # the user is selecting blocks
         if len(blocks) > 0:
