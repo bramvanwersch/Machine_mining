@@ -522,6 +522,7 @@ class TransparantBoardImage(BoardImage):
         """
         if self.selection_rectangle:
             self.selection_rectangle.kill()
+            self.selection_rectangle = None
 
     def reset_selection_and_highlight(self, keep):
         if not keep and self.__highlight_rectangle:

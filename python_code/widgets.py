@@ -15,31 +15,18 @@ class Widget(ABC):
         self.rect = pygame.Rect((*pos, *size))
         self.visible = True
 
-    def update(self):
+    def wupdate(self):
         return None
 
     def action(self, e):
-        """
-        You can define a set of action functions linked to keys these are then executed when the widget is selected. If
-        it is marked with SELECTION the action function is activated upon selection
-        :param e: a list of events that passed the menu pane loop
-        """
-        if "SELECTION" in self.action_functions:
-            self.action_functions["SELECTION"]()
         for event in e:
-            if event.type in self.action_functions:
-                self.action_functions[event.type]()
+            if event.type == MOUSEBUTTONDOWN:
+                self.action_functions[event.button]()
             if event.type == KEYDOWN:
                 if event.key in self.action_functions:
                     self.action_functions[event.key]()
 
     def set_action(self, action_function, key):
-        """
-        Bind a function to a key that is called when the widget is selected. There is an optional keyword SELECTION that
-        makes sure that the function is called upon selection and each frame after while the widget is selected
-        :param action_function: a function defenition
-        :param key: a key typically an integer representing a key as defined in pygame.locals
-        """
         self.action_functions[key] = action_function
 
     def set_selected(self, selected):
@@ -96,48 +83,25 @@ class Label(Widget):
 
 class Pane(Label, EventHandler):
     """
-    Container widget that allows selecting and acts as an image
+    Container widget that allows selecting and acts as an image for a number
+    of widgets
     """
     def __init__(self, pos, size, **kwargs):
         Label.__init__(self, pos, size, **kwargs)
-        EventHandler.__init__(self, [K_UP, K_DOWN])
+        EventHandler.__init__(self, "ALL")
         self.widgets = []
 
-        # index of selected widget in the widgets list
-        self.selectable_widgets = []
-        self.selected_widget = 0
+
+    def wupdate(self, *args):
+        for widget in self.widgets:
+            widget.wupdate()
+            if widget.changed_image:
+                self.__redraw_widget(widget)
+                widget.changed_image = False
 
     def handle_events(self, events):
-        events = super().handle_events(events)
-        for event in events:
-            if event.type == MOUSEBUTTONDOWN:
-                for widget in self.widgets:
-                    if widget.rect.collidepoint(x, y):
-                        widget.action([event])
-                        break;
-            if self._pressed_keys[K_UP]:
-                self._change_selected_widget()
-            elif self._pressed_keys[K_DOWN]:
-                self._change_selected_widget(False)
-            else:
-                selected_widget_events.append(event)
-        if self.selectable_widgets:
-            self.widgets[self.selected_widget].action(selected_widget_events)
+        super().handle_events(events)
 
-    def _change_selected_widget(self, up=True):
-        if not self.selectable_widgets: return
-        self.selectable_widgets[self.selected_widget].set_selected(False)
-        if up:
-            if self.selected_widget <= 0:
-                self.selected_widget = len(self.widgets) - 1
-            else:
-                self.selected_widget -= 1
-        else:
-            if self.selected_widget >= len(self.widgets) - 1:
-                self.selected_widget = 0
-            else:
-                self.selected_widget += 1
-        self.selectable_widgets[self.selected_widget].set_selected(True)
 
     def __redraw_widget(self, widget):
         self.orig_image.blit(widget.image, widget.rect)
@@ -145,15 +109,12 @@ class Pane(Label, EventHandler):
     def add_widget(self, widget):
         self.widgets.append(widget)
         self.orig_image.blit(widget.image, widget.rect)
-        if widget.selectable:
-            self.selectable_widgets.append(widget)
-            self.selectable_widgets.sort(key=lambda x: x.rect.y)
 
 
 class Frame(Entity, Pane):
     """
-    Container for widgets, that is an entity so it can act as a window in the
-    game it
+    Container for widgets, that is an entity so it can act as a window. Every
+    gui should have a frame to be able to display and handle updates
     """
     TEXTCOLOR = (0,0,0)
     def __init__(self, pos, size, *groups, title=None, **kwargs):
@@ -175,13 +136,16 @@ class Frame(Entity, Pane):
         #center the title above the widet
         self.image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
-    def update(self, *args):
-        Entity.update(self, *args)
-        for widget in self.widgets:
-            widget.update()
-            if widget.changed_image:
-                self.__redraw_widget(widget)
-                widget.changed_image = False
+
+class ScrollPane(Pane):
+    def __init__(self, pos, size, total_size, **kwargs):
+        super().__init__(pos, total_size, **kwargs)
+        #the total rectangle
+        self.total_rect = self.rect
+        #the rect that is visible as the image
+        self.rect = python.Rect((*pos, *size))
+
+
 
 
 

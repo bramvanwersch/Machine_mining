@@ -214,7 +214,7 @@ class InputSaver:
 
     def handle_events(self, events):
         """
-        Record what buttons are pressed in self._pressed_keys dictionary
+        Record what buttons are pressed in self.__pressed_keys dictionary
 
         :param events: a list of pygame events
         """
@@ -239,23 +239,23 @@ class CameraCentre(MovingEntity, EventHandler):
         Handle events for moving the camera around the board
         """
         leftover_events = EventHandler.handle_events(self, events)
-        if self._pressed_keys[RIGHT] and self._pressed_keys[LEFT]:
+        if self.pressed(RIGHT) and self.pressed(LEFT):
             self.speed.x = 0
         else:
-            if self._pressed_keys[RIGHT]:
+            if self.pressed(RIGHT):
                 self.speed.x = min(self.max_speed, self.speed.x + self.max_speed)
-            if self._pressed_keys[LEFT]:
+            if self.pressed(LEFT):
                 self.speed.x = max(-self.max_speed, self.speed.x - self.max_speed)
-            if not self._pressed_keys[LEFT] and not self._pressed_keys[RIGHT]:
+            if not self.pressed(LEFT) and not self.pressed(RIGHT):
                 self.speed.x = 0
-        if self._pressed_keys[DOWN] and self._pressed_keys[UP]:
+        if self.pressed(DOWN) and self.pressed(UP):
             self.speed.y = 0
         else:
-            if self._pressed_keys[UP]:
+            if self.pressed(UP):
                 self.speed.y = max(-self.max_speed, self.speed.y - self.max_speed)
-            if self._pressed_keys[DOWN]:
+            if self.pressed(DOWN):
                 self.speed.y = min(self.max_speed, self.speed.y + self.max_speed)
-            if not self._pressed_keys[UP] and not self._pressed_keys[DOWN]:
+            if not self.pressed(UP) and not self.pressed(DOWN):
                 self.speed.y = 0
         return leftover_events
 
