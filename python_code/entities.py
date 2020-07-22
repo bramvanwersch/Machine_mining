@@ -239,23 +239,23 @@ class CameraCentre(MovingEntity, EventHandler):
         Handle events for moving the camera around the board
         """
         leftover_events = EventHandler.handle_events(self, events)
-        if self.pressed(RIGHT) and self.pressed(LEFT):
+        if self.pressed(RIGHT, continious=True) and self.pressed(LEFT, continious=True):
             self.speed.x = 0
         else:
-            if self.pressed(RIGHT):
+            if self.pressed(RIGHT, continious=True):
                 self.speed.x = min(self.max_speed, self.speed.x + self.max_speed)
-            if self.pressed(LEFT):
+            if self.pressed(LEFT, continious=True):
                 self.speed.x = max(-self.max_speed, self.speed.x - self.max_speed)
-            if not self.pressed(LEFT) and not self.pressed(RIGHT):
+            if not self.pressed(LEFT, continious=True) and not self.pressed(RIGHT, continious=True):
                 self.speed.x = 0
-        if self.pressed(DOWN) and self.pressed(UP):
+        if self.pressed(DOWN, continious=True) and self.pressed(UP, continious=True):
             self.speed.y = 0
         else:
-            if self.pressed(UP):
+            if self.pressed(UP, continious=True):
                 self.speed.y = max(-self.max_speed, self.speed.y - self.max_speed)
-            if self.pressed(DOWN):
+            if self.pressed(DOWN, continious=True):
                 self.speed.y = min(self.max_speed, self.speed.y + self.max_speed)
-            if not self.pressed(UP) and not self.pressed(DOWN):
+            if not self.pressed(UP, continious=True) and not self.pressed(DOWN, continious=True):
                 self.speed.y = 0
         return leftover_events
 

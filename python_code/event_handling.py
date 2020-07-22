@@ -51,27 +51,27 @@ class EventHandler(ABC):
             return self.__pressed_keys[key]
         return None
 
-    def pressed(self, key):
+    def pressed(self, key, continious = False):
         if key in self.__pressed_keys:
-            return self.__pressed_keys[key].pressed
+            return self.__pressed_keys[key].pressed(continious)
         return False
 
-    def get_pressed(self, *keys):
+    def get_pressed(self, *keys, continious = False):
         pressed_keys = []
         for key in keys:
-            if key in self.__pressed_keys and self.__pressed_keys[key].pressed:
+            if key in self.__pressed_keys and self.__pressed_keys[key].pressed(continious):
                 pressed_keys.append(self.__pressed_keys[key])
         return pressed_keys
 
-    def unpressed(self, key):
+    def unpressed(self, key, continious = False):
         if key in self.__pressed_keys:
-            return self.__pressed_keys[key].unpressed
+            return self.__pressed_keys[key].unpressed(continious)
         return False
 
-    def get_unpressed(self, *keys):
+    def get_unpressed(self, *keys, continious = False):
         unpressed_keys = []
         for key in keys:
-            if key in self.__pressed_keys and self.__pressed_keys[key].unpressed:
+            if key in self.__pressed_keys and self.__pressed_keys[key].unpressed(continious):
                 unpressed_keys.append(self.__pressed_keys[key])
         return unpressed_keys
 
@@ -94,27 +94,34 @@ class Key:
     def press(self, event):
         self.__pressed = True
         self.event = event
-        if self.__pressed:
-            self.__unpressed = False
+        self.__unpressed = False
 
     def unpress(self, event):
         self.__unpressed = True
         self.event = event
-        if self.__unpressed:
+        self.__pressed = False
+
+    def pressed(self, continious = False):
+        """
+        Make sure that an event is only triggered once on a key press
+
+        :param continious: if set to True this means that a key will continously
+        be triggered as long as the key is not unpressed
+        :return:
+        """
+        p = self.__pressed
+        if not continious:
             self.__pressed = False
+        return p
 
-    @property
-    def pressed(self):
-        return self.__pressed
-
-    @property
-    def unpressed(self):
+    def unpressed(self, continious = False):
         """
         Records if the button was unpressed after the last time of it being
         pressed. This event can be checked once. It tracks a BUTTONUP event
         """
         up = self.__unpressed
-        self.__unpressed = False
+        if not continious:
+            self.__unpressed = False
         return up
 
 
@@ -146,7 +153,7 @@ class BoardEventHandler(EventHandler, ABC):
         Handle mouse events issued by the user.
         """
         #mousebutton1
-        if self.pressed(1) and self.selection_image.selection_rectangle == None:
+        if self.pressed(1):
             self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
 
         elif self.unpressed(1):
