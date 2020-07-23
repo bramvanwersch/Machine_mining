@@ -3,7 +3,7 @@ import pygame
 from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS, FONT30
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
-from python_code.widgets import Frame, Label
+from python_code.widgets import Frame, Label, ScrollPane
 
 class CraftingInterface(EventHandler):
     def __init__(self, board_inventories, *groups):
@@ -14,7 +14,9 @@ class CraftingInterface(EventHandler):
         self.__window.visible = value
 
     def handle_events(self, events):
-        pass
+        leftovers = super().handle_events(events)
+        if self.__window.visible:
+            self.__window.handle_events(events)
 
 class CraftingWindow(Frame):
     COLOR = (173, 94, 29, 150)
@@ -37,6 +39,7 @@ class CraftingWindow(Frame):
             pass
 
     def __innitiate_widgets(self):
+
         #create grid
         start_pos = [25, 50]
         background_lbl = Label(start_pos, self.GRID_PIXEL_SIZE, color = (0,0,0, 150))
@@ -51,6 +54,13 @@ class CraftingWindow(Frame):
                 self.add_widget(lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
+
+        #create scrollable inventory
+        sp  = ScrollPane((500, 50), (175, 450), (175, 800))
+        self.add_widget(sp)
+        lbl = Label((0,0), (100,100), (255,255,255))
+        sp.add_widget(lbl)
+
 
 
 # class ScrollableInventory(Entity):

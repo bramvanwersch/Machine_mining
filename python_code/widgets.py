@@ -18,16 +18,11 @@ class Widget(ABC):
     def wupdate(self):
         return None
 
-    def action(self, e):
-        for event in e:
-            if event.type == MOUSEBUTTONDOWN:
-                self.action_functions[event.button]()
-            if event.type == KEYDOWN:
-                if event.key in self.action_functions:
-                    self.action_functions[event.key]()
+    def action(self, key):
+        self.action_functions[key][0](*self.action_functions[key][1])
 
-    def set_action(self, action_function, key):
-        self.action_functions[key] = action_function
+    def set_action(self, key, action_function, *values):
+        self.action_functions[key] = (action_function, *values)
 
     def set_selected(self, selected):
         self.selected = selected
@@ -64,7 +59,6 @@ class Label(Widget):
         super().set_selected(selected)
         if self.selected:
             pygame.draw.rect(self.image, self.image.get_rect(), self.SELECTED_COLOR)
-            self.image = self.selected_image
         else:
             self.image = self.orig_image
         self.changed_image = True
@@ -91,7 +85,6 @@ class Pane(Label, EventHandler):
         EventHandler.__init__(self, "ALL")
         self.widgets = []
 
-
     def wupdate(self, *args):
         for widget in self.widgets:
             widget.wupdate()
@@ -99,16 +92,30 @@ class Pane(Label, EventHandler):
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def handle_events(self, events):
-        super().handle_events(events)
-
+    def _find_selected_widgets(self, pos):
+        selected_widgets = []
+        adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
+        for widget in self.widgets:
+            if widget.rect.collidepoint(adjusted_pos):
+                if isinstance(widget, ScrollPane):
+                    selected_widgets.append(widget)
+                    lower_selected = widget._find_selected_widgets(adjusted_pos)
+                    if lower_selected:
+                        for w in lower_selected:
+                            selected_widgets.append(w)
+                    return selected_widgets
+                else:
+                    selected_widgets.append(widget)
+                    return selected_widgets
 
     def __redraw_widget(self, widget):
-        self.orig_image.blit(widget.image, widget.rect)
+        self.orig_image.blit(widget.image, widget.rect, area=(0,0,*widget.rect.size))
+        self.image = self.orig_image
 
     def add_widget(self, widget):
         self.widgets.append(widget)
         self.orig_image.blit(widget.image, widget.rect)
+        self.image = self.orig_image
 
 
 class Frame(Entity, Pane):
@@ -130,6 +137,24 @@ class Frame(Entity, Pane):
         if title:
             self._set_title(title)
 
+    def update(self, *args):
+        super().update(*args)
+        self.wupdate(*args)
+
+    def handle_events(self, events):
+        super().handle_events(events)
+        selected = self._find_selected_widgets(pygame.mouse.get_pos())
+
+        #handle all events from the most front widget to the most back one.
+        keys = [*self.get_pressed(), *self.get_unpressed()]
+        while selected != None and len(selected) > 0:
+            widget = selected.pop()
+            for index in range(len(keys) - 1, -1, -1):
+                key_name = keys[index].name
+                if key_name in widget.action_functions:
+                    widget.action(key_name)
+                    del keys[index]
+
     def _set_title(self, title):
         title = FONT30.render(title, True, self.TEXTCOLOR)
         tr = title.get_rect()
@@ -138,15 +163,36 @@ class Frame(Entity, Pane):
 
 
 class ScrollPane(Pane):
+    SCROLL_SPEED = 10
     def __init__(self, pos, size, total_size, **kwargs):
-        super().__init__(pos, total_size, **kwargs)
+        super().__init__(pos, size, color = (0, 0, 0, 100), **kwargs)
         #the total rectangle
-        self.total_rect = self.rect
+        self.total_rect = pygame.Rect((*pos, *total_size))
         #the rect that is visible as the image
-        self.rect = python.Rect((*pos, *size))
+        self.orig_image = pygame.Surface(total_size)
+        self.orig_image.fill((0,0,0,100))
+
+        self.set_image(self.image)
+
+        self.set_action(4, self.scroll_y, [self.SCROLL_SPEED])
+        self.set_action(5, self.scroll_y, [-self.SCROLL_SPEED])
 
 
+    def scroll_y(self, offset_y):
+        width, height = self.orig_image.get_size()
+        copy_surf = self.orig_image.copy()
+        self.orig_image.blit(copy_surf, (0, offset_y))
+        if offset_y < 0:
+            self.orig_image.blit(copy_surf, (0, height + offset_y),
+                            (0, 0, width, -offset_y))
+        else:
+            self.orig_image.blit(copy_surf, (0, 0),
+                            (0, height - offset_y, width, offset_y))
+        self.changed_image = True
 
+        #make sure the location of the widgets contained is moved accordingly
+        for widget in self.widgets:
+            widget.rect.move_ip(0, offset_y)
 
 
 # class Button(Widget):

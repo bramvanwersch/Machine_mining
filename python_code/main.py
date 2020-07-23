@@ -114,12 +114,15 @@ class User:
                     event.key in CAMERA_KEYS:
                 cam_events.append(event)
             elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
-                if event.button == 4:
-                    self.__zoom_entities(0.1)
-                elif event.button == 5:
-                    self.__zoom_entities(-0.1)
-                else:
+                if self.event_handler_entity != self.board:
                     leftover_events.append(event)
+                else:
+                    if event.button == 4:
+                        self.__zoom_entities(0.1)
+                    elif event.button == 5:
+                        self.__zoom_entities(-0.1)
+                    else:
+                        leftover_events.append(event)
             else:
                 leftover_events.append(event)
 

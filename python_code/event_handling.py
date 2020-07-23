@@ -56,9 +56,9 @@ class EventHandler(ABC):
             return self.__pressed_keys[key].pressed(continious)
         return False
 
-    def get_pressed(self, *keys, continious = False):
+    def get_pressed(self, continious = False):
         pressed_keys = []
-        for key in keys:
+        for key in self.__pressed_keys:
             if key in self.__pressed_keys and self.__pressed_keys[key].pressed(continious):
                 pressed_keys.append(self.__pressed_keys[key])
         return pressed_keys
@@ -68,14 +68,13 @@ class EventHandler(ABC):
             return self.__pressed_keys[key].unpressed(continious)
         return False
 
-    def get_unpressed(self, *keys, continious = False):
+    def get_unpressed(self, continious = False):
         unpressed_keys = []
-        for key in keys:
+        for key in self.__pressed_keys:
             if key in self.__pressed_keys and self.__pressed_keys[key].unpressed(continious):
                 unpressed_keys.append(self.__pressed_keys[key])
         return unpressed_keys
 
-    @abstractmethod
     def handle_events(self, events):
         """
         Handles events for the inheriting class.
@@ -185,7 +184,7 @@ class BoardEventHandler(EventHandler, ABC):
 
         :param event: a pygame event
         """
-        pressed_modes = self.get_pressed(*MODE_KEYS)
+        pressed_modes = self.get_pressed()
         if len(pressed_modes):
             #make sure to clear the board of any remnants before switching
             self.selection_image.reset_selection_and_highlight(self._mode.persistent_highlight)
