@@ -20,7 +20,7 @@ class Board(BoardEventHandler):
     MAX_CLUSTER_SIZE = 3
     def __init__(self, main_sprite_group):
         BoardEventHandler.__init__(self, [1, 2, 3, 4, MINING, CANCEL, BUILDING, SELECTING])
-        self.inventories = []
+        self.inventorie_blocks = []
 
         #setup the board
         self.matrix = self.__generate_foreground_matrix()
@@ -42,14 +42,16 @@ class Board(BoardEventHandler):
 
         :param building_instance: an instance of Building
         :param draw: Boolean telling if the foreground image should be updated
+        mainly important when innitiating
         """
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
                 m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
                 self.matrix[m_pos[1]][m_pos[0]] = block
-                self.inventories.append(block)
                 if draw:
                     self.foreground_image.add_image(block.rect, block.surface)
+                if isinstance(block, ContainerBlock):
+                    self.inventorie_blocks.append(block)
 
     def overlapping_blocks(self, rect):
         """
@@ -120,7 +122,7 @@ class Board(BoardEventHandler):
         :param start: The coordinate of the worker looking for an inventory
         :return: a Block that is the closest inventory
         """
-        return self.__get_closest_block(start, *self.inventories)
+        return self.__get_closest_block(start, *self.inventorie_blocks)
 
     def __get_closest_block(self, start, *blocks):
         """

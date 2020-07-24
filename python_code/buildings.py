@@ -4,6 +4,7 @@ from python_code.materials import TerminalMaterial
 from python_code.image_handling import image_sheets
 from python_code.constants import BLOCK_SIZE
 from python_code.blocks import *
+from python_code.inventories import Inventory
 
 class Building(ABC):
     """
@@ -71,4 +72,12 @@ class Terminal(Building):
     MATERIAL = TerminalMaterial
     def __init__(self, pos, depth):
         super().__init__(pos, depth)
+
+    def _get_blocks(self, depth, block_class, material_class):
+        blocks = super()._get_blocks(depth, block_class, material_class)
+        shared_inventory = Inventory(-1)
+        for row in blocks:
+            for block in row:
+                block.inventory = shared_inventory
+        return blocks
 

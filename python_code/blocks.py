@@ -90,7 +90,8 @@ class ContainerBlock(Block):
     def __init__(self, pos, size, material, **kwargs):
         super().__init__(pos, size, material, **kwargs)
         #how full the terminal is does not matter
-        self.inventory = Inventory(-1)
+        self.inventory = None
 
     def add(self, *items):
-        self.inventory.add_items(*items)
+        if self.inventory != None:
+            self.inventory.add_items(*items)
