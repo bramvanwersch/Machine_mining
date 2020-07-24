@@ -6,9 +6,9 @@ from python_code.event_handling import EventHandler
 from python_code.widgets import Frame, Label, ScrollPane
 
 class CraftingInterface(EventHandler):
-    def __init__(self, board_inventories, *groups):
+    def __init__(self, terminal_inventory, *groups):
         EventHandler.__init__(self, [])
-        self.__window = CraftingWindow(board_inventories, *groups)
+        self.__window = CraftingWindow(terminal_inventory, *groups)
 
     def show(self, value):
         self.__window.visible = value
@@ -24,14 +24,15 @@ class CraftingWindow(Frame):
     GRID_PIXEL_SIZE = Size(450, 450)
     #take the border into account
     GRID_SQUARE = Size(*(GRID_PIXEL_SIZE / GRID_SIZE )) - (1, 1)
-    def __init__(self, board_inventories, *groups):
+    def __init__(self, terminal_inventory, *groups):
         Frame.__init__(self, CRAFTING_WINDOW_POS, CRAFTING_WINDOW_SIZE,
-                        *groups, layer=CRAFTING_LAYER, color=self.COLOR, title = "CRAFTING:")
+                       *groups, layer=CRAFTING_LAYER, color=self.COLOR,
+                       title = "CRAFTING:")
         self.visible = False
         self.static = False
         self._crafting_grid = [[]]
+        self.__inventory = terminal_inventory
         self.__innitiate_widgets()
-        # self.__crafting_inventory = ScrollableInventory((525, 50), (250, 450), board_inventories, *groups)
 
     def update(self, *args):
         super().update(*args)
@@ -56,17 +57,19 @@ class CraftingWindow(Frame):
             self._crafting_grid.append(row)
 
         #create scrollable inventory
-        sp  = ScrollPane((500, 50), (175, 450), (175, 800))
+        sp  = ScrollPane((500, 50), (175, 450), (175, 800), color=self.COLOR)
         self.add_widget(sp)
-        lbl = Label((0,0), (100,100), (255,255,255))
-        sp.add_widget(lbl)
+        # for item in self.__get_unique_items():
+        #     print(item)
+        #     lbl = Label((0, 0), (100, 100), (255, 255, 255))
+        #     sp.add_widget(lbl)
 
 
 
 # class ScrollableInventory(Entity):
 #     def __init__(self, pos, size, board_inventories, *groups):
 #         Entity.__init__(self, pos, size, *groups)
-#         self.inventories = board_inventories
+#         self.inventorie_blocks = board_inventories
 #         self.static = False
 #
 #     # def _create_image(self, size, color, **kwargs):

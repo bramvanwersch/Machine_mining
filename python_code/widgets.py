@@ -36,7 +36,9 @@ class Label(Widget):
         Widget.__init__(self,pos, size, **kwargs)
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image
-        self.changed_image = False
+        self.color = color
+        #make sure that the image is changed
+        self.changed_image = True
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -47,7 +49,9 @@ class Label(Widget):
         :param kwargs: additional named arguments
         :return: a pygame Surface object
         """
-        if len(color) == 3:
+        if "image" in kwargs:
+            return kwargs["image"]
+        elif len(color) == 3:
             image = pygame.Surface(size).convert()
         # included alpha channel
         elif len(color) == 4:
@@ -153,6 +157,7 @@ class Frame(Entity, Pane):
                 key_name = keys[index].name
                 if key_name in widget.action_functions:
                     widget.action(key_name)
+                    #remove event as to not trigger it twice
                     del keys[index]
 
     def _set_title(self, title):
@@ -165,12 +170,12 @@ class Frame(Entity, Pane):
 class ScrollPane(Pane):
     SCROLL_SPEED = 10
     def __init__(self, pos, size, total_size, **kwargs):
-        super().__init__(pos, size, color = (0, 0, 0, 100), **kwargs)
+        super().__init__(pos, size, **kwargs)
         #the total rectangle
         self.total_rect = pygame.Rect((*pos, *total_size))
         #the rect that is visible as the image
-        self.orig_image = pygame.Surface(total_size)
-        self.orig_image.fill((0,0,0,100))
+        self.orig_image = pygame.Surface(total_size).convert()
+        self.orig_image.fill(self.color)
 
         self.set_image(self.image)
 
