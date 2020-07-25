@@ -74,9 +74,9 @@ class Label(Widget):
             self.image = image
         self.changed_image = True
 
-    def set_text(self, text, pos, font_size = 15):
+    def set_text(self, text, pos, color = (0,0,0), font_size = 15):
         self.image = self.orig_image.copy()
-        s = FONT15.render(str(text), True, (0,0,0))
+        s = FONTS[font_size].render(str(text), True, color)
         self.image.blit(s, pos)
         self.changed_image = True
 
@@ -90,7 +90,7 @@ class ItemLabel(Label):
     def wupdate(self):
         if self.previous_total != self.item.quantity:
             self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (10, 10))
+            self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
 
 
 class BaseConstraints(ABC):
@@ -229,7 +229,7 @@ class Frame(Entity, Pane):
                     del keys[index]
 
     def _set_title(self, title):
-        title = FONT30.render(title, True, self.TEXTCOLOR)
+        title = FONTS[30].render(title, True, self.TEXTCOLOR)
         tr = title.get_rect()
         #center the title above the widet
         self.image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))

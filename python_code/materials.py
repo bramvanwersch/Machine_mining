@@ -14,6 +14,7 @@ class BaseMaterial(ABC):
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = [mode.name for mode in MODES.values()] + ["Empty inventory"]
+    TEXT_COLOR = (0,0,0)
     def __init__(self, depth, image = None):
         self.surface = self._configure_surface(image)
 
@@ -207,6 +208,7 @@ class Coal(Ore):
     CLUSTER_SIZE = (6, 12)
     BASE_COLOR = (10, 10, 10)
     NAME = "coal"
+    TEXT_COLOR = (255,255,255)
     def __init__(self, depth):
         super().__init__(depth)
 
