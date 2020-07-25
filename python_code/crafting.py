@@ -3,7 +3,7 @@ import pygame
 from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS, FONT30
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
-from python_code.widgets import Frame, Label, ScrollPane
+from python_code.widgets import Frame, Label, ScrollPane, ItemLabel
 
 class CraftingInterface(EventHandler):
     def __init__(self, terminal_inventory, *groups):
@@ -32,12 +32,30 @@ class CraftingWindow(Frame):
         self.static = False
         self._crafting_grid = [[]]
         self.__inventory = terminal_inventory
+        self.__no_items = self.__inventory.number_of_items
+        self.__inventory_sp = None
         self.__innitiate_widgets()
+
 
     def update(self, *args):
         super().update(*args)
-        if self.visible:
-            pass
+        if not self.visible:
+            return
+        if self.__no_items != self.__inventory.number_of_items:
+            self.__no_items = self.__inventory.number_of_items
+            self.__check_item_labels()
+
+    def __check_item_labels(self):
+        covered_items = [widget.item.name for widget in self._inventory_sp.widgets]
+        for item in self.__inventory.items:
+            if item.name not in covered_items:
+                image = pygame.Surface((88, 88))
+                image.fill(self.COLOR[:-1])
+                center = pygame.transform.scale(item.surface, (75,75))
+                image.blit(center, (88 / 2 - 75 / 2, 88 / 2 - 75 / 2))
+                lbl = ItemLabel((0, 0), (88, 88), item, image=image)
+                self._inventory_sp.add_widget(lbl)
+
 
     def __innitiate_widgets(self):
 
@@ -57,8 +75,8 @@ class CraftingWindow(Frame):
             self._crafting_grid.append(row)
 
         #create scrollable inventory
-        sp  = ScrollPane((500, 50), (175, 450), (175, 800), color=self.COLOR)
-        self.add_widget(sp)
+        self._inventory_sp  = ScrollPane((500, 50), (175, 450), (175, 800), color=self.COLOR)
+        self.add_widget(self._inventory_sp)
         # for item in self.__get_unique_items():
         #     print(item)
         #     lbl = Label((0, 0), (100, 100), (255, 255, 255))

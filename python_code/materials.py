@@ -22,6 +22,10 @@ class BaseMaterial(ABC):
     def NAME(self):
         return None
 
+    @property
+    def name(self):
+        return self.NAME
+
     @abstractmethod
     def _configure_surface(self, image):
         """

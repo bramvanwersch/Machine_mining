@@ -79,7 +79,64 @@ class Label(Widget):
         self.image.blit(s, self.rect)
 
 
-class Pane(Label, EventHandler):
+class ItemLabel(Label):
+    def __init__(self, pos, size, item, **kwargs):
+        Label.__init__(self, pos, size, **kwargs)
+        self.item = item
+
+class BaseConstraints(ABC):
+    """
+    Determines how widgets are placed inside a __container widget. This is the
+    most basic form that allows free placement
+    """
+    def __init__(self):
+        #make sure the constraints are put on a __container. This means that certain methods can assume __container values
+        if not isinstance(self, Pane):
+            raise AttributeError("Constraints can only be put on a __container widget")
+
+    @abstractmethod
+    def add_widget(self, widget):
+        pass
+
+class FreeConstraints(BaseConstraints):
+    def __init__(self):
+        BaseConstraints.__init__(self)
+
+    def add_widget(self, widget):
+        self.widgets.append(widget)
+        self.orig_image.blit(widget.image, widget.rect)
+        self.image = self.orig_image
+
+class GridConstraints(BaseConstraints):
+    def __init__(self):
+        BaseConstraints.__init__(self)
+        self.__widget_matrix = []
+
+    def add_widget(self, widget, column, row):
+        self.widgets.append(widget)
+
+        #fit the widget in the matrix
+        if row > len(self.__widget_matrix) or column > len(self.__widget_matrix[row]):
+            raise ValueError("provided row or column for the widget are to big.")
+        if row == len(self.__widget_matrix):
+            self.__widget_matrix.append([])
+        if column == len(self.__widget_matrix[row]):
+            self.__widget_matrix[row].append(widget)
+        else:
+            self.widgets.remove(self.__widget_matrix[row][column])
+            self.__widget_matrix[row][column] = widget
+
+        #configure a location that is next to the widgets beside it
+        blit_loc = [0, 0]
+        if not row - 1 <= 0:
+            blit_loc[1] = self.__widget_matrix[row - 1][column].rect.bottom
+        if not column - 1 <= 0:
+            blit_loc[0] = self.__widget_matrix[row][column - 1].rect.right
+        self.orig_image.blit(widget.image, blit_loc, target=self.rect)
+        self.image = self.orig_image
+
+
+class Pane(Label, EventHandler, FreeConstraints):
     """
     Container widget that allows selecting and acts as an image for a number
     of widgets
@@ -88,6 +145,10 @@ class Pane(Label, EventHandler):
         Label.__init__(self, pos, size, **kwargs)
         EventHandler.__init__(self, "ALL")
         self.widgets = []
+        self._set_constraints()
+
+    def _set_constraints(self):
+        FreeConstraints.__init__(self)
 
     def wupdate(self, *args):
         for widget in self.widgets:
@@ -114,11 +175,6 @@ class Pane(Label, EventHandler):
 
     def __redraw_widget(self, widget):
         self.orig_image.blit(widget.image, widget.rect, area=(0,0,*widget.rect.size))
-        self.image = self.orig_image
-
-    def add_widget(self, widget):
-        self.widgets.append(widget)
-        self.orig_image.blit(widget.image, widget.rect)
         self.image = self.orig_image
 
 
@@ -167,10 +223,11 @@ class Frame(Entity, Pane):
         self.image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
 
-class ScrollPane(Pane):
+class ScrollPane(Pane, FreeConstraints):
     SCROLL_SPEED = 10
     def __init__(self, pos, size, total_size, **kwargs):
         super().__init__(pos, size, **kwargs)
+        self.next_widget_topleft = (0,0)
         #the total rectangle
         self.total_rect = pygame.Rect((*pos, *total_size))
         #the rect that is visible as the image
@@ -178,12 +235,31 @@ class ScrollPane(Pane):
         self.orig_image.fill(self.color)
 
         self.set_image(self.image)
+        self.__total_offset = 0
 
         self.set_action(4, self.scroll_y, [self.SCROLL_SPEED])
         self.set_action(5, self.scroll_y, [-self.SCROLL_SPEED])
 
+    def add_widget(self, widget):
+        self.widgets.append(widget)
+        print(self.next_widget_topleft)
+        widget.rect.topleft = self.next_widget_topleft
+        widget.rect.move_ip(0,  - self.__total_offset)
+        self.orig_image.blit(widget.image, widget.rect)
+        print(widget.rect.right, self.total_rect.right)
+        if widget.rect.right > self.total_rect.width:
+            self.next_widget_topleft = (0, widget.rect.bottom)
+        else:
+            self.next_widget_topleft = widget.rect.topright
+
+        self.changed_image = True
+
 
     def scroll_y(self, offset_y):
+
+        #track this to make sure that when blitting new labels they can be blittet in the right place
+        self.__total_offset += offset_y
+
         width, height = self.orig_image.get_size()
         copy_surf = self.orig_image.copy()
         self.orig_image.blit(copy_surf, (0, offset_y))

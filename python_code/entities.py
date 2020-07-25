@@ -267,7 +267,7 @@ class Worker(MovingEntity):
     COLOR = (255, 0, 179)
     SIZE = (10,10)
     #in wheight
-    INVENTORY_SIZE = 25
+    INVENTORY_SIZE = 2
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
                               max_speed=5, **kwargs)
@@ -348,7 +348,7 @@ class Worker(MovingEntity):
                 self.task_control.remove(f_block)
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Empty inventory":
-                items = self.inventory.get_all()
+                items = self.inventory.get_all_items()
                 f_block.add(*items)
         if not self.task_queue.empty():
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)
