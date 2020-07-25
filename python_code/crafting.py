@@ -49,11 +49,21 @@ class CraftingWindow(Frame):
         covered_items = [widget.item.name for widget in self._inventory_sp.widgets]
         for item in self.__inventory.items:
             if item.name not in covered_items:
-                image = pygame.Surface((88, 88))
+                #create a background surface
+                image = pygame.Surface((44, 44))
                 image.fill(self.COLOR[:-1])
-                center = pygame.transform.scale(item.surface, (75,75))
-                image.blit(center, (88 / 2 - 75 / 2, 88 / 2 - 75 / 2))
-                lbl = ItemLabel((0, 0), (88, 88), item, image=image)
+
+                #get the item image and place it in the center
+                center = pygame.transform.scale(item.surface, (30,30))
+                image.blit(center, (44 / 2 - 30 / 2 + 4 / 2, 44 / 2 - 30 / 2 + 4 / 2))
+
+                #draw rectangle slightly smaller then image
+                rect = image.get_rect()
+                rect.inflate_ip(-4, -4)
+                pygame.draw.rect(image, (0,0,0), rect, 3)
+
+                #add the ItemLabel to the inventory
+                lbl = ItemLabel((0, 0), (44, 44), item, image=image)
                 self._inventory_sp.add_widget(lbl)
 
 
