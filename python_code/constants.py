@@ -4,6 +4,7 @@ from python_code.utilities import Size
 
 #innitialize fonts to pre load a font
 pygame.font.init()
+FONT15 = pygame.font.SysFont("roboto", 15)
 FONT22 = pygame.font.SysFont("roboto", 22)
 FONT30 = pygame.font.SysFont("roboto", 30)
 

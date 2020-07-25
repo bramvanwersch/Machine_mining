@@ -35,7 +35,7 @@ class Label(Widget):
     def __init__(self, pos, size, color = (255,255,255), **kwargs):
         Widget.__init__(self,pos, size, **kwargs)
         self.image = self._create_image(size, color, **kwargs)
-        self.orig_image = self.image
+        self.orig_image = self.image.copy()
         self.color = color
         #make sure that the image is changed
         self.changed_image = True
@@ -74,15 +74,24 @@ class Label(Widget):
             self.image = image
         self.changed_image = True
 
-    def set_text(self, text, font_size = 22):
-        s = FONT22.render(str(text), True, (0,0,0))
-        self.image.blit(s, self.rect)
+    def set_text(self, text, pos, font_size = 15):
+        self.image = self.orig_image.copy()
+        s = FONT15.render(str(text), True, (0,0,0))
+        self.image.blit(s, pos)
+        self.changed_image = True
 
 
 class ItemLabel(Label):
     def __init__(self, pos, size, item, **kwargs):
         Label.__init__(self, pos, size, **kwargs)
         self.item = item
+        self.previous_total = self.item.quantity
+
+    def wupdate(self):
+        if self.previous_total != self.item.quantity:
+            self.previous_total = self.item.quantity
+            self.set_text(str(self.previous_total), (10, 10))
+
 
 class BaseConstraints(ABC):
     """
@@ -90,13 +99,14 @@ class BaseConstraints(ABC):
     most basic form that allows free placement
     """
     def __init__(self):
-        #make sure the constraints are put on a __container. This means that certain methods can assume __container values
+        #make sure the constraints are put on a container. This means that certain methods can assume container values
         if not isinstance(self, Pane):
-            raise AttributeError("Constraints can only be put on a __container widget")
+            raise AttributeError("Constraints can only be put on a container widget")
 
     @abstractmethod
     def add_widget(self, widget):
         pass
+
 
 class FreeConstraints(BaseConstraints):
     def __init__(self):
@@ -105,7 +115,8 @@ class FreeConstraints(BaseConstraints):
     def add_widget(self, widget):
         self.widgets.append(widget)
         self.orig_image.blit(widget.image, widget.rect)
-        self.image = self.orig_image
+        self.image = self.orig_image.copy()
+
 
 class GridConstraints(BaseConstraints):
     def __init__(self):
@@ -133,7 +144,7 @@ class GridConstraints(BaseConstraints):
         if not column - 1 <= 0:
             blit_loc[0] = self.__widget_matrix[row][column - 1].rect.right
         self.orig_image.blit(widget.image, blit_loc, target=self.rect)
-        self.image = self.orig_image
+        self.image = self.orig_image.copy()
 
 
 class Pane(Label, EventHandler, FreeConstraints):
@@ -175,7 +186,8 @@ class Pane(Label, EventHandler, FreeConstraints):
 
     def __redraw_widget(self, widget):
         self.orig_image.blit(widget.image, widget.rect, area=(0,0,*widget.rect.size))
-        self.image = self.orig_image
+        self.image = self.orig_image.copy()
+        self.changed_image = True
 
 
 class Frame(Entity, Pane):
@@ -242,18 +254,13 @@ class ScrollPane(Pane, FreeConstraints):
 
     def add_widget(self, widget):
         self.widgets.append(widget)
-        print(self.next_widget_topleft)
         widget.rect.topleft = self.next_widget_topleft
-        widget.rect.move_ip(0,  - self.__total_offset)
         self.orig_image.blit(widget.image, widget.rect)
-        print(widget.rect.right, self.total_rect.right)
         if widget.rect.right > self.total_rect.width:
             self.next_widget_topleft = (0, widget.rect.bottom)
         else:
             self.next_widget_topleft = widget.rect.topright
-
         self.changed_image = True
-
 
     def scroll_y(self, offset_y):
 
@@ -269,11 +276,12 @@ class ScrollPane(Pane, FreeConstraints):
         else:
             self.orig_image.blit(copy_surf, (0, 0),
                             (0, height - offset_y, width, offset_y))
-        self.changed_image = True
 
         #make sure the location of the widgets contained is moved accordingly
         for widget in self.widgets:
             widget.rect.move_ip(0, offset_y)
+            widget.changed_image = True
+        self.changed_image = True
 
 
 # class Button(Widget):

@@ -55,7 +55,7 @@ class CraftingWindow(Frame):
 
                 #get the item image and place it in the center
                 center = pygame.transform.scale(item.surface, (30,30))
-                image.blit(center, (44 / 2 - 30 / 2 + 4 / 2, 44 / 2 - 30 / 2 + 4 / 2))
+                image.blit(center, (44 / 2 - 30 / 2 , 44 / 2 - 30 / 2))
 
                 #draw rectangle slightly smaller then image
                 rect = image.get_rect()
@@ -87,20 +87,3 @@ class CraftingWindow(Frame):
         #create scrollable inventory
         self._inventory_sp  = ScrollPane((500, 50), (175, 450), (175, 800), color=self.COLOR)
         self.add_widget(self._inventory_sp)
-        # for item in self.__get_unique_items():
-        #     print(item)
-        #     lbl = Label((0, 0), (100, 100), (255, 255, 255))
-        #     sp.add_widget(lbl)
-
-
-
-# class ScrollableInventory(Entity):
-#     def __init__(self, pos, size, board_inventories, *groups):
-#         Entity.__init__(self, pos, size, *groups)
-#         self.inventorie_blocks = board_inventories
-#         self.static = False
-#
-#     # def _create_image(self, size, color, **kwargs):
-
-
-
