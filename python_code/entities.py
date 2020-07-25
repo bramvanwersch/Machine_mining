@@ -343,13 +343,16 @@ class Worker(MovingEntity):
             self.path = self.path[-1]
         else:
             #handle last thing of last task
-            if f_task.task_type == "Mining":
+            if f_task.handed_in:
+                pass
+            elif f_task.task_type == "Mining":
                 self.board.remove_blocks([[f_block]])
                 self.task_control.remove(f_block)
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
+            f_task.handed_in = True
         if not self.task_queue.empty():
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)
             self.__start_task()

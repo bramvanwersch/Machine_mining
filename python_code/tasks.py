@@ -149,6 +149,7 @@ class Task:
         self.started_task = False
         #determined by material
         self.task_progress = [0, 1]
+        self.handed_in = False
 
     def start(self):
         """
