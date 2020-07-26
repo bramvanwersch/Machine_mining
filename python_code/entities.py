@@ -8,7 +8,8 @@ from python_code.event_handling import EventHandler
 
 class Entity(pygame.sprite.Sprite, ABC):
     def __init__(self, pos, size, *groups, color = (255,255,255),
-                 layer = FIRST_LAYER, **kwargs):
+                 layer = HIGHLIGHT_LAYER, **kwargs):
+        self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image
@@ -17,7 +18,6 @@ class Entity(pygame.sprite.Sprite, ABC):
         self.zoomable = False
         # should the entity move with the camera or not
         self.static = True
-        self._layer = layer
 
     def _create_image(self, size, color, **kwargs):
         """

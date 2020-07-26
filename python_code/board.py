@@ -27,10 +27,10 @@ class Board(BoardEventHandler):
         self.back_matrix = self.__generate_background_matrix()
         self.__add_starter_buildings()
         self.foreground_image = BoardImage(main_sprite_group,
-                                           block_matrix = self.matrix, layer = BOTTOM_LAYER)
+                                           block_matrix = self.matrix, layer = BOARD_LAYER)
         self.background_image = BoardImage(main_sprite_group,
-                                           block_matrix = self.back_matrix, layer = BOTTOM_LAYER - 1)
-        self.selection_image = TransparantBoardImage(main_sprite_group, layer = BOTTOM_LAYER + 1)
+                                           block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
+        self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
