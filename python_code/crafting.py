@@ -82,7 +82,6 @@ class CraftingWindow(Frame):
                 lbl = ItemLabel((0, 0), (44, 44), item, color=self.COLOR[:-1])
                 self._inventory_sp.add_widget(lbl)
 
-
     def __innitiate_widgets(self):
         """
         Innitiate all the widgets neccesairy for the crafting window at the
@@ -104,5 +103,5 @@ class CraftingWindow(Frame):
             self._crafting_grid.append(row)
 
         #create scrollable inventory
-        self._inventory_sp  = ScrollPane((500, 50), (175, 450), (175, 800), color=self.COLOR[:-1])
+        self._inventory_sp  = ScrollPane((500, 50), (175, 450), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)

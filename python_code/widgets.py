@@ -132,6 +132,8 @@ class ItemLabel(Label):
     """
     Specialized label specifically for displaying items
     """
+    SIZE = Size(40, 40)
+    ITEM_SIZE = Size(28, 28)
     def __init__(self, pos, size, item, **kwargs):
         self.item = item
         Label.__init__(self, pos, size, **kwargs)
@@ -147,12 +149,13 @@ class ItemLabel(Label):
         :return: pygame Surface object
         """
         # create a background surface
-        image = pygame.Surface((44, 44))
+        image = pygame.Surface(self.SIZE)
         image.fill(color)
 
         # get the item image and place it in the center
-        center = pygame.transform.scale(self.item.surface, (30, 30))
-        image.blit(center, (44 / 2 - 30 / 2, 44 / 2 - 30 / 2))
+        center = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
+        image.blit(center, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
+                            self.SIZE.height / 2 - self.ITEM_SIZE.height / 2))
 
         # draw rectangle slightly smaller then image
         rect = image.get_rect()
@@ -371,17 +374,17 @@ class ScrollPane(Pane, FreeConstraints):
     A Pane that can be scrolled
     """
     SCROLL_SPEED = 20
-    def __init__(self, pos, size, total_size, **kwargs):
+    #space between the outside of the crafting window and the closest label
+    BORDER_SPACE = 7
+    def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
-        self.next_widget_topleft = [0,0]
+        self.next_widget_topleft = [self.BORDER_SPACE,self.BORDER_SPACE]
         #the total rectangle
-        self.total_rect = pygame.Rect((*pos, *total_size))
-        #the rect that is visible as the image
-        self.orig_image = pygame.Surface(total_size).convert()
-        self.orig_image.fill(self.color)
+        self.total_rect = self.rect.copy()
+        #make the total rect slightly larger
+        self.__extend_scroll_image(100)
 
-        self.set_image(self.image)
-        self.__total_offset = 0
+        self.__total_offset_y = 0
 
         self.set_action(4, self.scroll_y, [self.SCROLL_SPEED])
         self.set_action(5, self.scroll_y, [-self.SCROLL_SPEED])
@@ -394,17 +397,17 @@ class ScrollPane(Pane, FreeConstraints):
 
         :See: FreeConstraints.add_widget()
         """
+        #configure the position of the next
+        if len(self.widgets) > 0:
+            #when the widget does not fit on the frame put it on the next line
+            if self.widgets[-1].rect.right + widget.rect.width > self.total_rect.width - self.BORDER_SPACE:
+                self.next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
+            else:
+                self.next_widget_topleft = self.widgets[-1].rect.topright
         self.widgets.append(widget)
         widget.rect.topleft = self.next_widget_topleft
-        widget.rect.top += self.__total_offset
         self.orig_image.blit(widget.image, widget.rect)
-        if widget.rect.right > self.total_rect.width:
-            #make sure to substract the offset so that all widgets remain relative to it
-            self.next_widget_topleft = [0, widget.rect.bottom]
-            self.next_widget_topleft[1] -= self.__total_offset
-        else:
-            self.next_widget_topleft = list(widget.rect.topright)
-            self.next_widget_topleft[1] -= self.__total_offset
+
         self.changed_image = True
 
     def scroll_y(self, offset_y):
@@ -414,9 +417,13 @@ class ScrollPane(Pane, FreeConstraints):
         :param offset_y: an integer tnat is the amount the image should be
         scrolled in the y direction
         """
+        #make sure to not scroll out of range
+        if self.total_rect.bottom + self.__total_offset_y + offset_y < self.rect.bottom or\
+            offset_y + self.__total_offset_y > 0:
+            return
 
-        #track this to make sure that when blitting new labels they can be blittet in the right place
-        self.__total_offset += offset_y
+        #to make sure not to scroll when it is not needed
+        self.__total_offset_y += offset_y
 
         width, height = self.orig_image.get_size()
         copy_surf = self.orig_image.copy()
@@ -434,9 +441,22 @@ class ScrollPane(Pane, FreeConstraints):
             widget.changed_image = True
         self.changed_image = True
 
+    def __extend_scroll_image(self, amnt):
+        """
+        Extend the current orig_image and total_rect to hold more image.
+
+        :param amnt: the amount of pixels to extend the image by in the y
+        direction
+        """
+        self.total_rect.height += amnt
+        orig_copy = self.orig_image.copy()
+        self.orig_image = pygame.Surface(self.total_rect.size).convert()
+        self.orig_image.fill(self.color)
+        self.orig_image.blit(orig_copy, (0,0))
 
 
-### ALL OLD STUFF ###
+
+### ALL OLD STUFF ### could come in handy later
 
 # class Button(Widget):
 #     def __init__(self, text="", text_color=(0, 0, 0),
