@@ -7,6 +7,9 @@ from python_code.event_handling import EventHandler
 
 
 class Widget(ABC):
+    """
+    Basic widget class
+    """
     def __init__(self, pos, size, selectable = False, **kwargs):
         self.action_functions = {}
         self.selectable = selectable
@@ -16,15 +19,38 @@ class Widget(ABC):
         self.visible = True
 
     def wupdate(self):
-        return None
+        """
+        A funtion that allows updating a widget each frame
+        """
+        pass
 
     def action(self, key):
+        """
+        Activates an action function bound to a certain key.
+
+        :param key: the key where the action function is bound to
+        """
         self.action_functions[key][0](*self.action_functions[key][1])
 
     def set_action(self, key, action_function, *values):
+        """
+        Binds a certain key to an action function. Optional values can be
+        supplied that are then added as args.
+
+        :param key: the keyboard key that the function should be activated by
+        :param action_function: the function that should trigger when the key
+        is used and the mouse is over the widget
+        :param values: optional values that can be supplied as additional
+        arguments to the action function
+        """
         self.action_functions[key] = (action_function, *values)
 
     def set_selected(self, selected):
+        """
+        Set a widget as selected. Allowing a highlight for instance
+
+        :param selected: a boolean telling the state of selection
+        """
         self.selected = selected
 
 class Label(Widget):
@@ -37,7 +63,8 @@ class Label(Widget):
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image.copy()
         self.color = color
-        #make sure that the image is changed
+        #parameter that tells the container widget containing this widget to
+        #reblit it onto its surface.
         self.changed_image = True
 
     def _create_image(self, size, color, **kwargs):
@@ -60,6 +87,10 @@ class Label(Widget):
         return image
 
     def set_selected(self, selected):
+        """
+        Add a border around the outside of a widget when it is selected
+        :See: Widget.set_selected()
+        """
         super().set_selected(selected)
         if self.selected:
             pygame.draw.rect(self.image, self.image.get_rect(), self.SELECTED_COLOR)
@@ -68,29 +99,71 @@ class Label(Widget):
         self.changed_image = True
 
     def set_image(self, image):
+        """
+        Change the full image of a widget or change it back to the orig_image
+        by setting image to None
+        :param image: a Surface Object or None
+        """
         if image == None:
             self.image = self.orig_image
         else:
             self.image = image
         self.changed_image = True
 
-    def set_text(self, text, pos, color = (0,0,0), font_size = 15):
-        self.image = self.orig_image.copy()
+    def set_text(self, text, pos, color = (0,0,0), font_size = 15, add = False):
+        """
+        Place some text on the widget
+
+        :param text: A String to display
+        :param pos: The position of the topleft corner
+        :param color: the Color of the text default is black
+        :param font_size: the size of the font. Can choose a range between 12 and 35
+        :param add: if the text should be added to the current image or to the
+        orig_image
+        """
+        if not add:
+            self.image = self.orig_image.copy()
         s = FONTS[font_size].render(str(text), True, color)
         self.image.blit(s, pos)
         self.changed_image = True
 
 
 class ItemLabel(Label):
+    """
+    Specialized label specifically for displaying items
+    """
     def __init__(self, pos, size, item, **kwargs):
-        Label.__init__(self, pos, size, **kwargs)
         self.item = item
+        Label.__init__(self, pos, size, **kwargs)
         self.previous_total = self.item.quantity
         # when innitiating make sure the number is displayed
         self.set_text(str(self.previous_total), (10, 10),
                       color=self.item.TEXT_COLOR)
 
+    def _create_image(self, size, color, **kwargs):
+        """
+        Customized image which is an image containing a block and a border
+        :See: Label._create_image()
+        :return: pygame Surface object
+        """
+        # create a background surface
+        image = pygame.Surface((44, 44))
+        image.fill(color)
+
+        # get the item image and place it in the center
+        center = pygame.transform.scale(self.item.surface, (30, 30))
+        image.blit(center, (44 / 2 - 30 / 2, 44 / 2 - 30 / 2))
+
+        # draw rectangle slightly smaller then image
+        rect = image.get_rect()
+        rect.inflate_ip(-4, -4)
+        pygame.draw.rect(image, (0, 0, 0), rect, 3)
+        return image
+
     def wupdate(self):
+        """
+        Make sure to update the amount whenever it changes.
+        """
         if self.previous_total != self.item.quantity:
             self.previous_total = self.item.quantity
             self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
@@ -108,20 +181,36 @@ class BaseConstraints(ABC):
 
     @abstractmethod
     def add_widget(self, widget):
+        """
+        Each constraints should have a method for defining addition of widgets
+
+        :param widget: a widget to add
+        """
         pass
 
 
 class FreeConstraints(BaseConstraints):
+    """
+    Allow widgets to be placed anywhere in a container using coordinates
+    relative to the container
+    """
     def __init__(self):
         BaseConstraints.__init__(self)
 
     def add_widget(self, widget):
+        """
+        Add widgets at the provided rectangle of the widget
+        :See: BaseConstraints.add_widget()
+        """
         self.widgets.append(widget)
         self.orig_image.blit(widget.image, widget.rect)
         self.image = self.orig_image.copy()
 
-
+#note this class has not been tested yet
 class GridConstraints(BaseConstraints):
+    """
+    Allow placing of widgets in a grid format. Note this class is not done
+    """
     def __init__(self):
         BaseConstraints.__init__(self)
         self.__widget_matrix = []
@@ -162,9 +251,20 @@ class Pane(Label, EventHandler, FreeConstraints):
         self._set_constraints()
 
     def _set_constraints(self):
+        """
+        Innitiate the appropriate constraints. This makes it so inheriting
+        classes can define different constraints
+        TODO make this a more appropriate method
+        """
         FreeConstraints.__init__(self)
 
     def wupdate(self, *args):
+        """
+        Update all the widgets in this container, and make sure to redraw them
+        when needed
+
+        :param args: optiinal argumetns
+        """
         for widget in self.widgets:
             widget.wupdate()
             if widget.changed_image:
@@ -172,6 +272,14 @@ class Pane(Label, EventHandler, FreeConstraints):
                 widget.changed_image = False
 
     def _find_selected_widgets(self, pos):
+        """
+        Recursively traverse all containers in containers to find the widget
+        the user is hovering over. Then activate a potential action function
+
+        :param pos: The position of the mouse relative to the container
+        :return: a list of selected widgets with the bottommost one at the end
+        of the list
+        """
         selected_widgets = []
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
         for widget in self.widgets:
@@ -188,6 +296,14 @@ class Pane(Label, EventHandler, FreeConstraints):
                     return selected_widgets
 
     def __redraw_widget(self, widget):
+        """
+        Method that redraws a widget in a container.
+
+        :param widget:
+
+        Sets the self.changed_image flag to True to forse potential containers
+        that contain this container to redraw this container
+        """
         self.orig_image.blit(widget.image, widget.rect, area=(0,0,*widget.rect.size))
         self.image = self.orig_image.copy()
         self.changed_image = True
@@ -200,23 +316,29 @@ class Frame(Entity, Pane):
     """
     TEXTCOLOR = (0,0,0)
     def __init__(self, pos, size, *groups, title=None, **kwargs):
-        """
-        Creates a MenuPane that holds othger widgets and regulated selection of the widgets in the pane itself.
-        :param rect: size of the pane
-        :param image: image to be displayed on the pane
-        :param groups: sprite group for this widget and widgets in this widget to be added to
-        :param title: optional title
-        """
         Entity.__init__(self, pos, size, *groups, **kwargs)
         Pane.__init__(self, pos, size, **kwargs)
         if title:
             self._set_title(title)
 
     def update(self, *args):
+        """
+        Entity update method that is used to update all widgets in the frame
+
+        :See: Entity.update()
+        """
         super().update(*args)
         self.wupdate(*args)
 
     def handle_events(self, events):
+        """
+        Handle events that are issued to the frame.
+
+        :param events: a list of pygame Events
+        activates events on the last element in the selected list (a list of
+        all widgets that the user hovers over at this moment). It then tries
+        to apply these events to all widgets in this list.
+        """
         super().handle_events(events)
         selected = self._find_selected_widgets(pygame.mouse.get_pos())
 
@@ -232,14 +354,23 @@ class Frame(Entity, Pane):
                     del keys[index]
 
     def _set_title(self, title):
+        """
+        Permanently add a title tot the frame. This is displayed at the top of
+        the frame
+
+        :param title: String of what should be displayed
+        """
         title = FONTS[30].render(title, True, self.TEXTCOLOR)
         tr = title.get_rect()
         #center the title above the widet
-        self.image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
+        self.orig_image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
 
 class ScrollPane(Pane, FreeConstraints):
-    SCROLL_SPEED = 10
+    """
+    A Pane that can be scrolled
+    """
+    SCROLL_SPEED = 20
     def __init__(self, pos, size, total_size, **kwargs):
         super().__init__(pos, size, **kwargs)
         self.next_widget_topleft = [0,0]
@@ -256,6 +387,13 @@ class ScrollPane(Pane, FreeConstraints):
         self.set_action(5, self.scroll_y, [-self.SCROLL_SPEED])
 
     def add_widget(self, widget):
+        """
+        Overrides FreeConstriants method and adds widgets automatically so
+        they will fit within the pane. Also makes sure that the offset of the
+        scrolling is taken into account
+
+        :See: FreeConstraints.add_widget()
+        """
         self.widgets.append(widget)
         widget.rect.topleft = self.next_widget_topleft
         widget.rect.top += self.__total_offset
@@ -270,6 +408,12 @@ class ScrollPane(Pane, FreeConstraints):
         self.changed_image = True
 
     def scroll_y(self, offset_y):
+        """
+        Scroll down the main image of the pane
+
+        :param offset_y: an integer tnat is the amount the image should be
+        scrolled in the y direction
+        """
 
         #track this to make sure that when blitting new labels they can be blittet in the right place
         self.__total_offset += offset_y
@@ -290,6 +434,9 @@ class ScrollPane(Pane, FreeConstraints):
             widget.changed_image = True
         self.changed_image = True
 
+
+
+### ALL OLD STUFF ###
 
 # class Button(Widget):
 #     def __init__(self, text="", text_color=(0, 0, 0),
