@@ -5,6 +5,15 @@ from python_code.entities import Entity
 from python_code.constants import *
 from python_code.event_handling import EventHandler
 
+class ActionFuntion:
+    def __init__(self, function, values = [], types = ["pressed", "unpressed"]):
+        self.function = function
+        self.values = values
+        self.types = types
+
+    def __call__(self, *args, **kwargs):
+        if args[0] in self.types:
+            self.function(*self.values)
 
 class Widget(ABC):
     """
@@ -24,15 +33,15 @@ class Widget(ABC):
         """
         pass
 
-    def action(self, key):
+    def action(self, key, type):
         """
         Activates an action function bound to a certain key.
 
         :param key: the key where the action function is bound to
         """
-        self.action_functions[key][0](*self.action_functions[key][1])
+        self.action_functions[key](type)
 
-    def set_action(self, key, action_function, *values):
+    def set_action(self, key, action_function, values, types = ["pressed", "unpressed"]):
         """
         Binds a certain key to an action function. Optional values can be
         supplied that are then added as args.
@@ -40,10 +49,11 @@ class Widget(ABC):
         :param key: the keyboard key that the function should be activated by
         :param action_function: the function that should trigger when the key
         is used and the mouse is over the widget
-        :param values: optional values that can be supplied as additional
-        arguments to the action function
+        :param values: a list of values
+        :param: types: a list of event types that should trigger the action
+        function
         """
-        self.action_functions[key] = (action_function, *values)
+        self.action_functions[key] = ActionFuntion(action_function, values, types)
 
     def set_selected(self, selected):
         """
@@ -345,14 +355,18 @@ class Frame(Entity, Pane):
         super().handle_events(events)
         selected = self._find_selected_widgets(pygame.mouse.get_pos())
 
+        pressed = self.get_pressed()
+        unpressed = self.get_unpressed()
+        keys = [*zip(pressed, ["pressed"]* len(pressed)),
+                *zip(unpressed, ["pressed"]* len(unpressed))]
+
         #handle all events from the most front widget to the most back one.
-        keys = [*self.get_pressed(), *self.get_unpressed()]
         while selected != None and len(selected) > 0:
             widget = selected.pop()
             for index in range(len(keys) - 1, -1, -1):
-                key_name = keys[index].name
-                if key_name in widget.action_functions:
-                    widget.action(key_name)
+                key, type = keys[index]
+                if key.name in widget.action_functions:
+                    widget.action(key.name, type)
                     #remove event as to not trigger it twice
                     del keys[index]
 
