@@ -79,7 +79,7 @@ class CraftingWindow(Frame):
         for item in self.__inventory.items:
             if item.name not in covered_items:
                 #remove the alpha channel
-                lbl = ItemLabel((0, 0), (44, 44), item, color=self.COLOR[:-1])
+                lbl = ItemLabel((0, 0), item, color=self.COLOR[:-1])
                 self._inventory_sp.add_widget(lbl)
 
     def __innitiate_widgets(self):
@@ -89,7 +89,7 @@ class CraftingWindow(Frame):
         """
         #create grid
         start_pos = [25, 50]
-        background_lbl = Label(start_pos, self.GRID_PIXEL_SIZE, color = (0,0,0, 150))
+        background_lbl = Label(start_pos, self.GRID_PIXEL_SIZE, color = (0,0,0))
         self.add_widget(background_lbl)
         start_pos[0] += 5; start_pos[1] += 5
         for row_i in range(self.GRID_SIZE.height):
@@ -97,7 +97,7 @@ class CraftingWindow(Frame):
             for col_i in range(self.GRID_SIZE.width):
                 #this is still a little wonky and does not work completely like you want
                 pos = start_pos + self.GRID_SQUARE * (col_i, row_i) + (2, 2)
-                lbl = Label(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR)
+                lbl = Label(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR[:-1])
                 self.add_widget(lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
@@ -105,3 +105,4 @@ class CraftingWindow(Frame):
         #create scrollable inventory
         self._inventory_sp  = ScrollPane((500, 50), (175, 450), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
+        self.add_border(self._inventory_sp)

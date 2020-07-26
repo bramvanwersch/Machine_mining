@@ -65,7 +65,7 @@ class Label(Widget):
         self.color = color
         #parameter that tells the container widget containing this widget to
         #reblit it onto its surface.
-        self.changed_image = True
+        self.changed_image = False
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -132,11 +132,11 @@ class ItemLabel(Label):
     """
     Specialized label specifically for displaying items
     """
-    SIZE = Size(40, 40)
-    ITEM_SIZE = Size(28, 28)
-    def __init__(self, pos, size, item, **kwargs):
+    SIZE = Size(42, 42)
+    ITEM_SIZE = Size(30, 30)
+    def __init__(self, pos, item, **kwargs):
         self.item = item
-        Label.__init__(self, pos, size, **kwargs)
+        Label.__init__(self, pos, self.SIZE, **kwargs)
         self.previous_total = self.item.quantity
         # when innitiating make sure the number is displayed
         self.set_text(str(self.previous_total), (10, 10),
@@ -307,7 +307,7 @@ class Pane(Label, EventHandler, FreeConstraints):
         Sets the self.changed_image flag to True to forse potential containers
         that contain this container to redraw this container
         """
-        self.orig_image.blit(widget.image, widget.rect, area=(0,0,*widget.rect.size))
+        self.orig_image.blit(widget.image, dest=widget.rect, area=(0,0,*widget.rect.size))
         self.image = self.orig_image.copy()
         self.changed_image = True
 
@@ -368,6 +368,16 @@ class Frame(Entity, Pane):
         #center the title above the widet
         self.orig_image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
+    def add_border(self, widget):
+        """
+        add a border around a specified widget. The widget should be in the frame
+        :param widget:
+        :return:
+        """
+        rect = widget.rect.inflate(4, 4)
+        pygame.draw.rect(self.orig_image, (0,0,0), rect, 3)
+        self.image = self.orig_image.copy()
+
 
 class ScrollPane(Pane, FreeConstraints):
     """
@@ -375,14 +385,13 @@ class ScrollPane(Pane, FreeConstraints):
     """
     SCROLL_SPEED = 20
     #space between the outside of the crafting window and the closest label
-    BORDER_SPACE = 7
+    BORDER_SPACE = 3
     def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
         self.next_widget_topleft = [self.BORDER_SPACE,self.BORDER_SPACE]
         #the total rectangle
         self.total_rect = self.rect.copy()
         #make the total rect slightly larger
-        self.__extend_scroll_image(100)
 
         self.__total_offset_y = 0
 
@@ -401,14 +410,16 @@ class ScrollPane(Pane, FreeConstraints):
         if len(self.widgets) > 0:
             #when the widget does not fit on the frame put it on the next line
             if self.widgets[-1].rect.right + widget.rect.width > self.total_rect.width - self.BORDER_SPACE:
+                #when the total rect is to small extend it.
+                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE + self.total_rect.top > self.total_rect.bottom:
+                    extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE + self.total_rect.top) - self.total_rect.bottom
+                    self.__extend_scroll_image(extra_room)
                 self.next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
             else:
                 self.next_widget_topleft = self.widgets[-1].rect.topright
         self.widgets.append(widget)
         widget.rect.topleft = self.next_widget_topleft
         self.orig_image.blit(widget.image, widget.rect)
-
-        self.changed_image = True
 
     def scroll_y(self, offset_y):
         """
@@ -439,7 +450,6 @@ class ScrollPane(Pane, FreeConstraints):
         for widget in self.widgets:
             widget.rect.move_ip(0, offset_y)
             widget.changed_image = True
-        self.changed_image = True
 
     def __extend_scroll_image(self, amnt):
         """
@@ -447,13 +457,15 @@ class ScrollPane(Pane, FreeConstraints):
 
         :param amnt: the amount of pixels to extend the image by in the y
         direction
+
+        Note: There is a bug with calling this at the start. I do not know why,
+        it makes it so the image is being displayed over the full lenght
         """
         self.total_rect.height += amnt
         orig_copy = self.orig_image.copy()
         self.orig_image = pygame.Surface(self.total_rect.size).convert()
         self.orig_image.fill(self.color)
-        self.orig_image.blit(orig_copy, (0,0))
-
+        self.orig_image.blit(orig_copy, (0,self.__total_offset_y))
 
 
 ### ALL OLD STUFF ### could come in handy later
