@@ -86,6 +86,9 @@ class ItemLabel(Label):
         Label.__init__(self, pos, size, **kwargs)
         self.item = item
         self.previous_total = self.item.quantity
+        # when innitiating make sure the number is displayed
+        self.set_text(str(self.previous_total), (10, 10),
+                      color=self.item.TEXT_COLOR)
 
     def wupdate(self):
         if self.previous_total != self.item.quantity:
@@ -239,7 +242,7 @@ class ScrollPane(Pane, FreeConstraints):
     SCROLL_SPEED = 10
     def __init__(self, pos, size, total_size, **kwargs):
         super().__init__(pos, size, **kwargs)
-        self.next_widget_topleft = (0,0)
+        self.next_widget_topleft = [0,0]
         #the total rectangle
         self.total_rect = pygame.Rect((*pos, *total_size))
         #the rect that is visible as the image
@@ -255,11 +258,15 @@ class ScrollPane(Pane, FreeConstraints):
     def add_widget(self, widget):
         self.widgets.append(widget)
         widget.rect.topleft = self.next_widget_topleft
+        widget.rect.top += self.__total_offset
         self.orig_image.blit(widget.image, widget.rect)
         if widget.rect.right > self.total_rect.width:
-            self.next_widget_topleft = (0, widget.rect.bottom)
+            #make sure to substract the offset so that all widgets remain relative to it
+            self.next_widget_topleft = [0, widget.rect.bottom]
+            self.next_widget_topleft[1] -= self.__total_offset
         else:
-            self.next_widget_topleft = widget.rect.topright
+            self.next_widget_topleft = list(widget.rect.topright)
+            self.next_widget_topleft[1] -= self.__total_offset
         self.changed_image = True
 
     def scroll_y(self, offset_y):

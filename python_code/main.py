@@ -54,7 +54,7 @@ class Main:
             self.main_sprite_group.update()
             self.main_sprite_group.draw(self.screen)
             if FPS:
-                fps = FONT22.render(str(int(GAME_TIME.get_fps())), True,
+                fps = FONTS[22].render(str(int(GAME_TIME.get_fps())), True,
                                     pygame.Color('black'))
                 self.screen.blit(fps, (10, 10))
             # if AIR_RECTANGLES:

@@ -1,6 +1,6 @@
 import pygame
 
-from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS, FONT30
+from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
 from python_code.widgets import Frame, Label, ScrollPane, ItemLabel
@@ -39,8 +39,6 @@ class CraftingWindow(Frame):
 
     def update(self, *args):
         super().update(*args)
-        if not self.visible:
-            return
         if self.__no_items != self.__inventory.number_of_items:
             self.__no_items = self.__inventory.number_of_items
             self.__check_item_labels()

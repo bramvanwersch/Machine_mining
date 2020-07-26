@@ -4,9 +4,7 @@ from python_code.utilities import Size
 
 #innitialize fonts to pre load a font
 pygame.font.init()
-FONT15 = pygame.font.SysFont("roboto", 15)
-FONT22 = pygame.font.SysFont("roboto", 22)
-FONT30 = pygame.font.SysFont("roboto", 30)
+FONTS = {i : pygame.font.SysFont("roboto", i) for i in range(12,35)}
 
 GAME_TIME = pygame.time.Clock()
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
