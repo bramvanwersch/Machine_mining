@@ -67,7 +67,7 @@ class Label(Widget):
     """
     Bsically a widget that allows image manipulation
     """
-    SELECTED_COLOR = (0,0,0)
+    SELECTED_COLOR = (255, 255, 255)
     def __init__(self, pos, size, color = (255,255,255), **kwargs):
         Widget.__init__(self,pos, size, **kwargs)
         self.image = self._create_image(size, color, **kwargs)
@@ -76,6 +76,7 @@ class Label(Widget):
         #parameter that tells the container widget containing this widget to
         #reblit it onto its surface.
         self.changed_image = False
+        self.text_image = None
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -103,9 +104,10 @@ class Label(Widget):
         """
         super().set_selected(selected)
         if self.selected:
-            pygame.draw.rect(self.image, self.image.get_rect(), self.SELECTED_COLOR)
+            pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)
         else:
-            self.image = self.orig_image
+            self.__clean_image(text = False)
+
         self.changed_image = True
 
     def set_image(self, image):
@@ -132,54 +134,31 @@ class Label(Widget):
         orig_image
         """
         if not add:
-            self.image = self.orig_image.copy()
+            self.__clean_image()
         s = FONTS[font_size].render(str(text), True, color)
         self.image.blit(s, pos)
+        self.text_image = self.image.copy()
+        if self.selected:
+            self.set_selected(True)
         self.changed_image = True
 
-
-class ItemLabel(Label):
-    """
-    Specialized label specifically for displaying items
-    """
-    SIZE = Size(42, 42)
-    ITEM_SIZE = Size(30, 30)
-    def __init__(self, pos, item, **kwargs):
-        self.item = item
-        Label.__init__(self, pos, self.SIZE, **kwargs)
-        self.previous_total = self.item.quantity
-        # when innitiating make sure the number is displayed
-        self.set_text(str(self.previous_total), (10, 10),
-                      color=self.item.TEXT_COLOR)
-
-    def _create_image(self, size, color, **kwargs):
+    def __clean_image(self, text = True, selected = True):
         """
-        Customized image which is an image containing a block and a border
-        :See: Label._create_image()
-        :return: pygame Surface object
-        """
-        # create a background surface
-        image = pygame.Surface(self.SIZE)
-        image.fill(color)
+        Controlled cleaning of the image. You can specify to clean the text and
+        or the border by setting text or selected to True
 
-        # get the item image and place it in the center
-        center = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
-        image.blit(center, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
-                            self.SIZE.height / 2 - self.ITEM_SIZE.height / 2))
-
-        # draw rectangle slightly smaller then image
-        rect = image.get_rect()
-        rect.inflate_ip(-4, -4)
-        pygame.draw.rect(image, (0, 0, 0), rect, 3)
-        return image
-
-    def wupdate(self):
+        :param text: a boolean that is True when the text should be cleaned
+        False if not
+        :param selected: a boolean that is True when selected border should be
+        cleaned False if not
         """
-        Make sure to update the amount whenever it changes.
-        """
-        if self.previous_total != self.item.quantity:
-            self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
+        if self.text_image and not text:
+            self.image = self.text_image.copy()
+        else:
+            self.image = self.orig_image.copy()
+        if self.selected and not selected:
+            #draw selected
+            pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)
 
 
 class BaseConstraints(ABC):
@@ -358,7 +337,7 @@ class Frame(Entity, Pane):
         pressed = self.get_pressed()
         unpressed = self.get_unpressed()
         keys = [*zip(pressed, ["pressed"]* len(pressed)),
-                *zip(unpressed, ["pressed"]* len(unpressed))]
+                *zip(unpressed, ["unpressed"]* len(unpressed))]
 
         #handle all events from the most front widget to the most back one.
         while selected != None and len(selected) > 0:

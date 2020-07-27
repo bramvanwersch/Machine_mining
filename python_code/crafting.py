@@ -3,7 +3,19 @@ import pygame
 from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
-from python_code.widgets import Frame, Label, ScrollPane, ItemLabel
+from python_code.widgets import Frame, Label, ScrollPane
+
+
+#crafting globals
+#this is for managing a selected item. I am not super happy with it.
+SELECTED_LABEL = None
+
+def select_a_widget(widget):
+    global SELECTED_LABEL
+    if SELECTED_LABEL and widget != SELECTED_LABEL:
+        SELECTED_LABEL.set_selected(False)
+    SELECTED_LABEL = widget
+
 
 class CraftingInterface(EventHandler):
     """
@@ -106,3 +118,52 @@ class CraftingWindow(Frame):
         self._inventory_sp  = ScrollPane((500, 50), (175, 450), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
+
+class ItemLabel(Label):
+    """
+    Specialized label specifically for displaying items
+    """
+    SIZE = Size(42, 42)
+    ITEM_SIZE = Size(30, 30)
+    def __init__(self, pos, item, **kwargs):
+        self.item = item
+        Label.__init__(self, pos, self.SIZE, **kwargs)
+        self.previous_total = self.item.quantity
+        # when innitiating make sure the number is displayed
+        self.set_text(str(self.previous_total), (10, 10),
+                      color=self.item.TEXT_COLOR)
+        self.set_action(1, self.set_selected, [True], ["pressed"])
+
+    def _create_image(self, size, color, **kwargs):
+        """
+        Customized image which is an image containing a block and a border
+        :See: Label._create_image()
+        :return: pygame Surface object
+        """
+        # create a background surface
+        image = pygame.Surface(self.SIZE)
+        image.fill(color)
+
+        # get the item image and place it in the center
+        center = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
+        image.blit(center, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
+                            self.SIZE.height / 2 - self.ITEM_SIZE.height / 2))
+
+        # draw rectangle slightly smaller then image
+        rect = image.get_rect()
+        rect.inflate_ip(-4, -4)
+        pygame.draw.rect(image, (0, 0, 0), rect, 3)
+        return image
+
+    def set_selected(self, selected):
+        super().set_selected(selected)
+        if selected:
+            select_a_widget(self)
+
+    def wupdate(self):
+        """
+        Make sure to update the amount whenever it changes.
+        """
+        if self.previous_total != self.item.quantity:
+            self.previous_total = self.item.quantity
+            self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
