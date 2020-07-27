@@ -6,12 +6,27 @@ from python_code.constants import *
 from python_code.event_handling import EventHandler
 
 class ActionFuntion:
+    """
+    Action function for defining actions for widgets. Can be called like a
+    function
+    """
     def __init__(self, function, values = [], types = ["pressed", "unpressed"]):
+        """
+        :param function: a function object that can be triggered
+        :param values: a value or pointer to supply to the function
+        :param types: a list of types that should trigger the function
+        """
         self.function = function
         self.values = values
         self.types = types
 
     def __call__(self, *args, **kwargs):
+        """
+        Allows the class to act like a function
+
+        :param args: optional args
+        :param kwargs: optional kwargs
+        """
         if args[0] in self.types:
             self.function(*self.values)
 
