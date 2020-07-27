@@ -56,7 +56,7 @@ class Widget(ABC):
         """
         self.action_functions[key](type)
 
-    def set_action(self, key, action_function, values, types = ["pressed", "unpressed"]):
+    def set_action(self, key, action_function, values = [], types = ["pressed", "unpressed"]):
         """
         Binds a certain key to an action function. Optional values can be
         supplied that are then added as args.
@@ -132,9 +132,11 @@ class Label(Widget):
         :param image: a Surface Object or None
         """
         if image == None:
-            self.image = self.orig_image
+            self.image = self.orig_image.copy()
         else:
-            self.image = image
+            rect = image.get_rect()
+            center_pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
+            self.image.blit(image, center_pos)
         self.changed_image = True
 
     def set_text(self, text, pos, color = (0,0,0), font_size = 15, add = False):
@@ -297,10 +299,9 @@ class Pane(Label, EventHandler, FreeConstraints):
                     if lower_selected:
                         for w in lower_selected:
                             selected_widgets.append(w)
-                    return selected_widgets
                 else:
                     selected_widgets.append(widget)
-                    return selected_widgets
+        return selected_widgets
 
     def __redraw_widget(self, widget):
         """
@@ -342,6 +343,7 @@ class Frame(Entity, Pane):
         Handle events that are issued to the frame.
 
         :param events: a list of pygame Events
+
         activates events on the last element in the selected list (a list of
         all widgets that the user hovers over at this moment). It then tries
         to apply these events to all widgets in this list.

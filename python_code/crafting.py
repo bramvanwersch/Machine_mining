@@ -109,7 +109,7 @@ class CraftingWindow(Frame):
             for col_i in range(self.GRID_SIZE.width):
                 #this is still a little wonky and does not work completely like you want
                 pos = start_pos + self.GRID_SQUARE * (col_i, row_i) + (2, 2)
-                lbl = Label(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR[:-1])
+                lbl = CraftingLabel(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR[:-1])
                 self.add_widget(lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
@@ -119,6 +119,22 @@ class CraftingWindow(Frame):
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
 
+
+class CraftingLabel(Label):
+    def __init__(self, pos, size, **kwargs):
+        Label.__init__(self, pos, size, **kwargs)
+        self.set_action(1, self.set_image, types=["pressed"])
+        self.set_action(3, self.set_image, values=[False], types=["pressed"])
+
+    def set_image(self, add = True):
+        if SELECTED_LABEL == None:
+            return
+        image = None
+        if add:
+            image = SELECTED_LABEL.item_image
+        super().set_image(image)
+
+
 class ItemLabel(Label):
     """
     Specialized label specifically for displaying items
@@ -127,6 +143,8 @@ class ItemLabel(Label):
     ITEM_SIZE = Size(30, 30)
     def __init__(self, pos, item, **kwargs):
         self.item = item
+        #is set when innitailising label, just to make sure
+        self.item_image = None
         Label.__init__(self, pos, self.SIZE, **kwargs)
         self.previous_total = self.item.quantity
         # when innitiating make sure the number is displayed
@@ -137,6 +155,7 @@ class ItemLabel(Label):
     def _create_image(self, size, color, **kwargs):
         """
         Customized image which is an image containing a block and a border
+
         :See: Label._create_image()
         :return: pygame Surface object
         """
@@ -145,8 +164,8 @@ class ItemLabel(Label):
         image.fill(color)
 
         # get the item image and place it in the center
-        center = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
-        image.blit(center, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
+        self.item_image = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
+        image.blit(self.item_image, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
                             self.SIZE.height / 2 - self.ITEM_SIZE.height / 2))
 
         # draw rectangle slightly smaller then image
