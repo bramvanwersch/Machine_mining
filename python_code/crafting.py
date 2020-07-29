@@ -1,9 +1,11 @@
 import pygame
+from abc import ABC, abstractmethod
 
 from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
 from python_code.widgets import Frame, Label, ScrollPane
+from python_code.materials import *
 
 
 #crafting globals
@@ -186,3 +188,52 @@ class ItemLabel(Label):
         if self.previous_total != self.item.quantity:
             self.previous_total = self.item.quantity
             self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
+
+class RecipeGrid:
+    def __init__(self, rows, columns):
+        self.grid = [[[None] for _ in range(columns)] for _ in range(rows)]
+
+    def add_all_rows(self, *values):
+        for index, row in enumerate(values):
+            self.add_row(row, index)
+
+    def add_row(self, value, row_i):
+        self.grid[row_i] = value
+
+    def add_value(self, value, column_i, row_i):
+        self.grid[row_i][column_i] = value
+
+    def __getitem__(self, item):
+        return self.grid[item]
+
+    def __len__(self):
+        return len(self.grid)
+
+class BaseRecipe:
+    def __init__(self):
+        self.recipe_grid = self.__create_recipe_grid()
+
+    @abstractmethod
+    def _create_recipe_grid(self):
+        """
+        Method to define a recipe grid
+        :return: a RecipeGrid object
+        """
+        return None
+
+    def size(self):
+        return Size(len(self.recipe_grid[0]),len(self.recipe_grid))
+
+class FurnaceRecipe(BaseRecipe):
+    def __init__(self):
+        BaseRecipe.__init__()
+
+    def _create_recipe_grid(self):
+        grid = RecipeGrid(6,6)
+        top_row = ["Stone","Stone","Stone","Stone","Stone","Stone","Stone"]
+        second_row = ["Stone","Ore","Ore","Ore","Ore","Ore","Stone"]
+        third_row = ["Stone","Ore","Stone","Stone","Stone","Ore","Stone"]
+        middle_row = ["Stone","Ore","Stone","Coal","Stone","Ore","Stone"]
+
+        grid.add_all_rows(top_row, second_row, third_row, middle_row,
+                          third_row, second_row, top_row)
