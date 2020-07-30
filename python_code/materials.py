@@ -15,7 +15,7 @@ class BaseMaterial(ABC):
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = [mode.name for mode in MODES.values()] + ["Empty inventory"]
     TEXT_COLOR = (0,0,0)
-    def __init__(self, depth, image = None):
+    def __init__(self, image = None):
         self.surface = self._configure_surface(image)
 
     @property
@@ -23,20 +23,15 @@ class BaseMaterial(ABC):
     def NAME(self):
         return None
 
-    @property
-    def name(self):
-        return self.NAME
-
     @abstractmethod
     def _configure_surface(self, image):
         """
-        Method all __material classes should have
+        Method all material classes should have
 
         :param image: obtional pre defines pygame Surface object
         :return: a pygame Surface object
         """
-        if type(self) == BaseMaterial:
-            raise AbstractException(self, "_configure_surface")
+        pass
 
     def task_time(self):
         """
@@ -51,8 +46,8 @@ class BaseMaterial(ABC):
 class Air(BaseMaterial):
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]  + ["Empty inventory"]
     NAME = "Air"
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def _configure_surface(self, image):
         """
@@ -229,8 +224,8 @@ class ImageMaterial(BaseMaterial, ABC):
     """
     Materials can inherit from this when displaying an image
     """
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__( **kwargs)
 
     def _configure_surface(self, image):
         """
@@ -252,8 +247,8 @@ class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class TerminalMaterial(BuildingMaterial):
@@ -262,5 +257,5 @@ class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"] + ["Empty inventory"]
     TASK_TIME = 1000
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)

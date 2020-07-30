@@ -44,9 +44,9 @@ class AirBlock(BaseBlock):
     """
     Special case of a block class that is an empty block with no surface
     """
-    def __init__(self, pos, size, **kwargs):
+    def __init__(self, pos, size, material, **kwargs):
         super().__init__(pos, size, **kwargs)
-        self.material = Air(0)
+        self.material = material
 
 
 class Block(BaseBlock):

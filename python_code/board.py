@@ -112,7 +112,7 @@ class Board(BoardEventHandler):
             for block in row:
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
-                self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size)
+                self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size, materials.Air())
 
     def closest_inventory(self, start):
         """
@@ -312,7 +312,7 @@ class Board(BoardEventHandler):
         """
         Add all starter building that should be placed before the game starts
         """
-        t = Terminal((BOARD_SIZE[1] / 2 + 50, 30), 30)
+        t = Terminal((BOARD_SIZE[1] / 2 + 50, 30))
         self.add_building(t, draw = False)
 
     def __generate_background_matrix(self):
@@ -383,12 +383,15 @@ class Board(BoardEventHandler):
                 #create position
                 pos = (column_i * BLOCK_SIZE.width,
                        row_i * BLOCK_SIZE.height,)
-                if s_matrix[row_i][column_i] == "Air":
-                    block = AirBlock(pos, BLOCK_SIZE)
-
+                material = getattr(materials, s_matrix[row_i][column_i])
+                if issubclass(material, materials.ColorMaterial):
+                    material_instance = material(row_i)
                 else:
-                    material = getattr(materials, s_matrix[row_i][column_i])(row_i)
-                    block = Block(pos, BLOCK_SIZE, material)
+                    material_instance = material()
+                if material.NAME == "Air":
+                    block = AirBlock(pos, BLOCK_SIZE, material_instance)
+                else:
+                    block = Block(pos, BLOCK_SIZE, material_instance)
                 s_matrix[row_i][column_i] = block
         return s_matrix
 

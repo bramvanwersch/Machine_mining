@@ -12,9 +12,9 @@ class Building(ABC):
     that contain an image
     """
     BLOCK_TYPE = Block
-    def __init__(self, pos, depth):
+    def __init__(self, pos):
         self.pos = pos
-        self.blocks = self._get_blocks(depth, self.BLOCK_TYPE, self.MATERIAL)
+        self.blocks = self._get_blocks( self.BLOCK_TYPE, self.MATERIAL)
 
     @property
     @abstractmethod
@@ -43,7 +43,7 @@ class Building(ABC):
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].images_at_rectangle(
             self.IMAGE_SPECIFICATIONS[1], **self.IMAGE_SPECIFICATIONS[2])
 
-    def _get_blocks(self, depth, block_class, material_class):
+    def _get_blocks(self, block_class, material_class):
         """
         Create blocks of a given class and type for each block that the image
         of the block occupies
@@ -56,7 +56,7 @@ class Building(ABC):
         for row_i, row in enumerate(self._images()):
             block_row = []
             for column_i, image in enumerate(row):
-                material = material_class(depth, image = image)
+                material = material_class(image = image)
                 pos = (self.pos[0] + column_i * BLOCK_SIZE.width, self.pos[1] + row_i * BLOCK_SIZE.height)
                 block_row.append(block_class(pos, BLOCK_SIZE, material))
             blocks.append(block_row)
@@ -70,11 +70,11 @@ class Terminal(Building):
     IMAGE_SPECIFICATIONS = ["buildings", (0, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = TerminalMaterial
-    def __init__(self, pos, depth):
-        super().__init__(pos, depth)
+    def __init__(self, pos):
+        super().__init__(pos)
 
-    def _get_blocks(self, depth, block_class, material_class):
-        blocks = super()._get_blocks(depth, block_class, material_class)
+    def _get_blocks(self, block_class, material_class):
+        blocks = super()._get_blocks(block_class, material_class)
         shared_inventory = Inventory(-1)
         for row in blocks:
             for block in row:
