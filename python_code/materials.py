@@ -15,7 +15,14 @@ class BaseMaterial(ABC):
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = [mode.name for mode in MODES.values()] + ["Empty inventory"]
     TEXT_COLOR = (0,0,0)
-    def __init__(self, image = None):
+    def __init__(self, image = None, **kwargs):
+        """
+        :param image: a pygame Surface object that can be an image instead of
+        an automatically configured surface
+        :param surface: if the material should configure a surface. Interesting
+        when treating the materials as more abstract units instead of actual
+        surface defining objects.
+        """
         self.surface = self._configure_surface(image)
 
     @property
@@ -66,7 +73,7 @@ class ColorMaterial(BaseMaterial, ABC):
         self._depth = depth
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
-        super().__init__(depth, **kwargs)
+        super().__init__(depth, surface=surface, **kwargs)
 
     @property
     @abstractmethod
@@ -123,28 +130,27 @@ class Stone(ColorMaterial):
 
     BASE_COLOR = (155, 155, 155)
     NAME = "stone"
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 class Dirt(ColorMaterial):
 
     BASE_COLOR = (107, 49, 13)
     NAME = "dirt"
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 
 #ore materials
-class Ore(ColorMaterial):
+class Ore(ColorMaterial, ABC):
     """
     Abstract class for all ores. Contains a gaussian distribution for the
     likelyhood of a ore to be at certain percent depth
     """
     WHEIGHT = 2
-    def __init__(self, depth):
-        super().__init__(depth)
-        if type(self) == Ore:
-            raise Exception("Cannot instantiate abstract class Ore")
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
+
 
     def _configure_color(self):
         """
@@ -162,8 +168,8 @@ class Iron(Ore):
     BASE_COLOR = (184, 98, 92)
     NAME = "iron"
     WHEIGHT = 3
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 class Gold(Ore):
 
@@ -173,8 +179,8 @@ class Gold(Ore):
     BASE_COLOR = (235, 173, 16)
     NAME = "gold"
     WHEIGHT = 5
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 class Zinc(Ore):
 
@@ -183,8 +189,8 @@ class Zinc(Ore):
     CLUSTER_SIZE = (2, 15)
     BASE_COLOR = (58, 90, 120)
     NAME = "zinc"
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 class Copper(Ore):
 
@@ -193,8 +199,8 @@ class Copper(Ore):
     CLUSTER_SIZE = (5, 8)
     BASE_COLOR = (189, 99, 20)
     NAME = "copper"
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 class Coal(Ore):
 
@@ -204,8 +210,8 @@ class Coal(Ore):
     BASE_COLOR = (10, 10, 10)
     NAME = "coal"
     TEXT_COLOR = (255,255,255)
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 class Titanium(Ore):
 
@@ -215,8 +221,8 @@ class Titanium(Ore):
     BASE_COLOR = (152, 196, 237)
     NAME = "titanium"
     WHEIGHT = 10
-    def __init__(self, depth):
-        super().__init__(depth)
+    def __init__(self, depth, **kwargs):
+        super().__init__(depth, **kwargs)
 
 #building materials: materials that are special building blocks like storage containers
 

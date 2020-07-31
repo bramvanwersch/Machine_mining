@@ -5,7 +5,7 @@ from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_S
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
 from python_code.widgets import Frame, Label, ScrollPane
-from python_code.materials import *
+from python_code import materials
 
 
 #crafting globals
@@ -89,9 +89,9 @@ class CraftingWindow(Frame):
         First it is figured out what items are new and then a label for each is
         constructed
         """
-        covered_items = [widget.item.name for widget in self._inventory_sp.widgets]
+        covered_items = [widget.item.NAME for widget in self._inventory_sp.widgets]
         for item in self.__inventory.items:
-            if item.name not in covered_items:
+            if item.NAME not in covered_items:
                 #remove the alpha channel
                 lbl = ItemLabel((0, 0), item, color=self.COLOR[:-1])
                 self._inventory_sp.add_widget(lbl)
@@ -189,8 +189,10 @@ class ItemLabel(Label):
             self.previous_total = self.item.quantity
             self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
 
+
 class RecipeGrid:
     def __init__(self, rows, columns):
+        self.size = Size(columns, rows)
         self.grid = [[[None] for _ in range(columns)] for _ in range(rows)]
 
     def add_all_rows(self, *values):
@@ -209,9 +211,42 @@ class RecipeGrid:
     def __len__(self):
         return len(self.grid)
 
+    def print(self, attribute):
+        for row in self.grid:
+            attr_values = [getattr(value, attribute) for value in row]
+            str_values = list(map(str, attr_values))
+            value_format = "{:" + str(self.__longest_string(str_values) + 2) + "}"
+            s = (value_format * self.size.width)
+            str_row = s.format(*str_values)
+            print(str_row)
+
+    def __longest_string(self, strings):
+        longest = 0
+        for string in strings:
+            if len(string) > longest:
+                longest = len(string)
+        return longest
+
+
+class RMat:
+    def __init__(self, name, group):
+        self._material_type = getattr(materials, name)
+        self.name = name
+        #add the materials to groups that tell what group is required. Group 0
+        #is always required
+        self.group = group
+
+    @property
+    def required(self):
+        return self.group == 0
+
+    def __getattr__(self, item):
+        return getattr(self.__material, item)
+
+
 class BaseRecipe:
     def __init__(self):
-        self.recipe_grid = self.__create_recipe_grid()
+        self.recipe_grid = self._create_recipe_grid()
 
     @abstractmethod
     def _create_recipe_grid(self):
@@ -224,16 +259,22 @@ class BaseRecipe:
     def size(self):
         return Size(len(self.recipe_grid[0]),len(self.recipe_grid))
 
+
 class FurnaceRecipe(BaseRecipe):
     def __init__(self):
-        BaseRecipe.__init__()
+        BaseRecipe.__init__(self)
 
     def _create_recipe_grid(self):
-        grid = RecipeGrid(6,6)
-        top_row = ["Stone","Stone","Stone","Stone","Stone","Stone","Stone"]
-        second_row = ["Stone","Ore","Ore","Ore","Ore","Ore","Stone"]
-        third_row = ["Stone","Ore","Stone","Stone","Stone","Ore","Stone"]
-        middle_row = ["Stone","Ore","Stone","Coal","Stone","Ore","Stone"]
+        grid = RecipeGrid(7,7)
 
-        grid.add_all_rows(top_row, second_row, third_row, middle_row,
-                          third_row, second_row, top_row)
+        top_row = [RMat("Stone", 5), RMat("Stone", 5), RMat("Stone", 3), RMat("Stone", 3), RMat("Stone", 3), RMat("Stone", 5), RMat("Stone", 5)]
+        second_row = [RMat("Stone", 5), RMat("Ore", 5), RMat("Ore", 3), RMat("Ore", 3), RMat("Ore", 3), RMat("Ore", 5), RMat("Stone", 5)]
+        third_row = [RMat("Stone", 2),RMat("Ore", 2),RMat("Stone", 0),RMat("Stone", 0),RMat("Stone", 0),RMat("Ore", 1),RMat("Stone", 1)]
+        fourth_row = [RMat("Stone", 2), RMat("Ore", 2), RMat("Stone", 0), RMat("Coal", 0), RMat("Stone", 0), RMat("Ore", 1), RMat("Stone", 1)]
+        fifth_row = [RMat("Stone", 2),RMat("Ore", 2),RMat("Stone", 0),RMat("Stone", 0),RMat("Stone", 0),RMat("Ore", 1),RMat("Stone", 1)]
+        sixt_row = [RMat("Stone", 5), RMat("Ore", 5), RMat("Ore", 4), RMat("Ore", 4), RMat("Ore", 4), RMat("Ore", 5), RMat("Stone", 5)]
+        last_row = [RMat("Stone", 5), RMat("Stone", 5), RMat("Stone", 4), RMat("Stone", 4), RMat("Stone", 4), RMat("Stone", 5), RMat("Stone", 5)]
+
+        grid.add_all_rows(top_row, second_row, third_row, fourth_row,
+                          fifth_row, sixt_row, last_row)
+        return grid
