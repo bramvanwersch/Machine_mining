@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
-from python_code.widgets import Frame, Label, ScrollPane
+from python_code.widgets import Frame, Label, ScrollPane, Button
 from python_code import materials
 
 
@@ -120,6 +120,9 @@ class CraftingWindow(Frame):
         self._inventory_sp  = ScrollPane((500, 50), (175, 450), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
+
+        craft_button = Button((25, 525), (100, 40), text="CRAFT", border=True)
+        self.add_widget(craft_button)
 
 
 class CraftingLabel(Label):

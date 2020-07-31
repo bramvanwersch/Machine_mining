@@ -73,7 +73,7 @@ class ColorMaterial(BaseMaterial, ABC):
         self._depth = depth
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
-        super().__init__(depth, surface=surface, **kwargs)
+        super().__init__(depth, **kwargs)
 
     @property
     @abstractmethod

@@ -5,12 +5,12 @@ from python_code.entities import Entity
 from python_code.constants import *
 from python_code.event_handling import EventHandler
 
-class ActionFuntion:
+class ActionFunction:
     """
     Action function for defining actions for widgets. Can be called like a
     function
     """
-    def __init__(self, function, values = [], types = ["pressed", "unpressed"]):
+    def __init__(self, function, values = [], types = []):
         """
         :param function: a function object that can be triggered
         :param values: a value or pointer to supply to the function
@@ -27,8 +27,34 @@ class ActionFuntion:
         :param args: optional args
         :param kwargs: optional kwargs
         """
-        if args[0] in self.types:
+        if len(self.types) == 0 or args[0] in self.types:
             self.function(*self.values)
+
+
+class HoverAction:
+    def __init__(self, continious = False):
+        self.__continious = continious
+        self.__prev_hover_state = False
+        self.__action_functions = {True : None, False : None}
+
+    def set(self, hover):
+        """
+        Set and trigger an hover event when appropraite
+
+        :param hover: a boolean that tells if the mouse is hovering or not
+        :return:
+        """
+        if hover != self.__prev_hover_state or self.__continious:
+            if self.__action_functions[hover]:
+                self.__action_functions[hover]()
+        self.__prev_hover_state = hover
+
+    def set_hover_action(self, action, values=[]):
+        self.__action_functions[True] = ActionFunction(action, values)
+
+    def set_unhover_action(self, action, values=[]):
+        self.__action_functions[False] = ActionFunction(action, values)
+
 
 class Widget(ABC):
     """
@@ -38,6 +64,7 @@ class Widget(ABC):
         self.action_functions = {}
         self.selectable = selectable
         self.selected = False
+        #track if hovering already triggered an event or not
 
         self.rect = pygame.Rect((*pos, *size))
         self.visible = True
@@ -68,7 +95,7 @@ class Widget(ABC):
         :param: types: a list of event types that should trigger the action
         function
         """
-        self.action_functions[key] = ActionFuntion(action_function, values, types)
+        self.action_functions[key] = ActionFunction(action_function, values, types)
 
     def set_selected(self, selected):
         """
@@ -77,6 +104,7 @@ class Widget(ABC):
         :param selected: a boolean telling the state of selection
         """
         self.selected = selected
+
 
 class Label(Widget):
     """
@@ -176,6 +204,45 @@ class Label(Widget):
         if self.selected and not selected:
             #draw selected
             pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)
+
+
+class Button(Label):
+    COLOR_CHANGE = 75
+    def __init__(self, pos, size, **kwargs):
+        self._hover_image = None
+        super().__init__(pos, size, **kwargs)
+        self._hover = HoverAction()
+        self._hover.set_hover_action(self.set_image, values=[self._hover_image])
+        self._hover.set_unhover_action(self.set_image, values=[None])
+
+    def _create_image(self, size, color, **kwargs):
+        image = super()._create_image(size, color, **kwargs)
+
+        hover_image = image.copy()
+        hover_image.fill(self.__hover_color(color))
+        #add a potential border
+        if "border" in kwargs and kwargs["border"]:
+            pygame.draw.rect(image, (0,0,0), (0,0,*self.rect.size), 4)
+            pygame.draw.rect(hover_image, (0, 0, 0), (0, 0, *self.rect.size), 4)
+
+        #add text when defined
+        if "text" in kwargs:
+            text = FONTS[22].render(kwargs["text"], True, (0,0,0))
+            text_rect = text.get_rect()
+            center_pos = (self.rect.width / 2 - text_rect.width / 2, self.rect.height / 2 - text_rect.height / 2)
+            image.blit(text, center_pos)
+            hover_image.blit(text, center_pos)
+        self._hover_image = hover_image
+        return image
+
+    def __hover_color(self, color):
+        new_color = []
+        for channel in color:
+            if channel + self.COLOR_CHANGE > 255:
+                new_color.append(channel - self.COLOR_CHANGE)
+            else:
+                new_color.append(channel + self.COLOR_CHANGE)
+        return new_color
 
 
 class BaseConstraints(ABC):
@@ -292,7 +359,11 @@ class Pane(Label, EventHandler, FreeConstraints):
         selected_widgets = []
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
         for widget in self.widgets:
-            if widget.rect.collidepoint(adjusted_pos):
+            collide = widget.rect.collidepoint(adjusted_pos)
+            #save if the widget is hovered over at this moment when implementing a hover action
+            if hasattr(widget, "_hover"):
+                widget._hover.set(collide)
+            if collide:
                 if isinstance(widget, ScrollPane):
                     selected_widgets.append(widget)
                     lower_selected = widget._find_selected_widgets(adjusted_pos)
@@ -476,7 +547,6 @@ class ScrollPane(Pane, FreeConstraints):
         self.orig_image = pygame.Surface(self.total_rect.size).convert()
         self.orig_image.fill(self.color)
         self.orig_image.blit(orig_copy, (0,self.__total_offset_y))
-
 
 ### ALL OLD STUFF ### could come in handy later
 
