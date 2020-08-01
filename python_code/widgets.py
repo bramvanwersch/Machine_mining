@@ -364,7 +364,7 @@ class Pane(Label, EventHandler, FreeConstraints):
             if hasattr(widget, "_hover"):
                 widget._hover.set(collide)
             if collide:
-                if isinstance(widget, ScrollPane):
+                if isinstance(widget, Pane):
                     selected_widgets.append(widget)
                     lower_selected = widget._find_selected_widgets(adjusted_pos)
                     if lower_selected:

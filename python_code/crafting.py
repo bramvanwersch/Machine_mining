@@ -3,7 +3,7 @@ import pygame
 from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS
 from python_code.utilities import Size
 from python_code.event_handling import EventHandler
-from python_code.widgets import Frame, Label, ScrollPane, Button
+from python_code.widgets import *
 from python_code.recipes import RecipeBook
 
 
@@ -25,7 +25,7 @@ class CraftingInterface(EventHandler):
     def __init__(self, terminal_inventory, *groups):
         EventHandler.__init__(self, [])
         self.__window = CraftingWindow(terminal_inventory, *groups)
-        self.recipe_book = RecipeBook()
+        self.__recipe_book = RecipeBook()
 
     def show(self, value):
         """
@@ -38,32 +38,38 @@ class CraftingInterface(EventHandler):
 
     def handle_events(self, events):
         """
-        Handle events issued by the user not consumed by the Main module
+        Handle events issued by the user not consumed by the Main module. This
+        function can also be used as an update method for all things that only
+        need updates with new inputs.
+
+        Note: this will trager quite often considering that moving the mouse is
+        also considered an event.
 
         :param events: a list of events
         """
         leftovers = super().handle_events(events)
         if self.__window.visible:
             self.__window.handle_events(events)
+            #check if the rescipe changed. If that is the case update the crafting window
+            new_recipe_grid = self.__window.grid_pane.get_new_recipe_grid()
+            if new_recipe_grid:
+                self.__recipe_book.get_recipe(new_recipe_grid)
+
 
 class CraftingWindow(Frame):
     """
     A Frame for the crafting GUI
     """
     COLOR = (173, 94, 29, 150)
-    GRID_SIZE = Size(9, 9)
-    GRID_PIXEL_SIZE = Size(450, 450)
-    #take the border into account
-    GRID_SQUARE = Size(*(GRID_PIXEL_SIZE / GRID_SIZE )) - (1, 1)
     def __init__(self, terminal_inventory, *groups):
         Frame.__init__(self, CRAFTING_WINDOW_POS, CRAFTING_WINDOW_SIZE,
                        *groups, layer=CRAFTING_LAYER, color=self.COLOR,
                        title = "CRAFTING:")
         self.visible = False
         self.static = False
-        self._crafting_grid = [[]]
+        self._grid_pane = None
         self.__inventory = terminal_inventory
-        self.__no_items = self.__inventory.number_of_items
+        self.__prev_no_items = self.__inventory.number_of_items
 
         #just ti signify that this exists
         self.__inventory_sp = None
@@ -76,8 +82,8 @@ class CraftingWindow(Frame):
         :See: Entity.update()
         """
         super().update(*args)
-        if self.__no_items < self.__inventory.number_of_items:
-            self.__no_items = self.__inventory.number_of_items
+        if self.__prev_no_items < self.__inventory.number_of_items:
+            self.__prev_no_items = self.__inventory.number_of_items
             self.__add_item_labels()
 
     def __add_item_labels(self):
@@ -102,27 +108,97 @@ class CraftingWindow(Frame):
         start
         """
         #create grid
-        start_pos = [25, 50]
-        background_lbl = Label(start_pos, self.GRID_PIXEL_SIZE, color = (0,0,0))
-        self.add_widget(background_lbl)
-        start_pos[0] += 5; start_pos[1] += 5
-        for row_i in range(self.GRID_SIZE.height):
-            row = []
-            for col_i in range(self.GRID_SIZE.width):
-                #this is still a little wonky and does not work completely like you want
-                pos = start_pos + self.GRID_SQUARE * (col_i, row_i) + (2, 2)
-                lbl = CraftingLabel(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR[:-1])
-                self.add_widget(lbl)
-                row.append(lbl)
-            self._crafting_grid.append(row)
+        self.grid_pane = CraftingGrid((25, 50), (450, 450), color = (50, 50, 50))
+        self.add_widget(self.grid_pane)
+
 
         #create scrollable inventory
         self._inventory_sp  = ScrollPane((500, 50), (175, 450), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
 
+        #add craft button
         craft_button = Button((25, 525), (100, 40), text="CRAFT", border=True)
         self.add_widget(craft_button)
+
+class CraftingGrid(Pane):
+    COLOR = (173, 94, 29)
+    GRID_SIZE = Size(9, 9)
+    GRID_PIXEL_SIZE = Size(450, 450)
+    # take the border into account
+    GRID_SQUARE = Size(*(GRID_PIXEL_SIZE / GRID_SIZE)) - (1, 1)
+    def __init__(self, pos, size, **kwargs):
+        super().__init__(pos, size, **kwargs)
+        self._crafting_grid = []
+
+        #variables that track a recipe grid and if it is changed
+        self._recipe_grid = []
+        self.__recipe_changed = False
+
+        self.__init_grid()
+        self.size = Size(len(self._crafting_grid[0]), len(self._crafting_grid))
+
+    def __init_grid(self):
+        start_pos= [5,5]
+        for row_i in range(self.GRID_SIZE.height):
+            row = []
+            for col_i in range(self.GRID_SIZE.width):
+                pos = start_pos + self.GRID_SQUARE * (col_i, row_i) + (2, 2)
+                lbl = CraftingLabel(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR)
+                self.add_widget(lbl)
+                row.append(lbl)
+            self._crafting_grid.append(row)
+
+    def wupdate(self, *args):
+        super().wupdate()
+        updated_recipe = False
+        for row in self._crafting_grid:
+            for lbl in row:
+                if lbl.changed_item and not updated_recipe:
+                    self._recipe_grid = self._get_recipe_grid()
+                    self.__recipe_changed = True
+                lbl.changed_item = False
+
+    def get_new_recipe_grid(self):
+        if self.__recipe_changed:
+            self.__recipe_changed = False
+            return self._recipe_grid
+        return None
+
+    def _get_recipe_grid(self):
+        col_start = self.size.width
+        col_end = 0
+        row_start = self.size.height
+        row_end = 0
+        recipe_grid = []
+        for row_i, row in enumerate(self._crafting_grid):
+            material_row = [None for _ in range(len(row))]
+            material_present = False
+            for col_i, lbl in enumerate(row):
+                if lbl.item != None:
+                    material_present = True
+                    material_row[col_i] = lbl.item.material.NAME
+                    # figure out the start end end inxed of the items in the row
+                    if col_i < col_start:
+                        col_start = col_i
+                        col_end = col_i
+                    elif col_i > col_end:
+                        col_end = col_i
+
+            recipe_grid.append(material_row)
+            if material_present:
+                if row_i < row_start:
+                    row_start = row_i
+                    row_end = row_i
+                elif row_i > row_end:
+                    row_end = row_i
+
+        #cut the grid to the right size
+        reduced_recipe_grid = []
+        for row_i in range(row_start, row_end + 1):
+            reduced_recipe_grid.append(recipe_grid[row_i][col_start:col_end + 1])
+
+        return reduced_recipe_grid
 
 
 class CraftingLabel(Label):
@@ -130,14 +206,18 @@ class CraftingLabel(Label):
         Label.__init__(self, pos, size, **kwargs)
         self.set_action(1, self.set_image, types=["pressed"])
         self.set_action(3, self.set_image, values=[False], types=["pressed"])
+        self.changed_item = False
+        self.item = None
 
     def set_image(self, add = True):
         if SELECTED_LABEL == None:
             return
-        image = None
+        image = self.item = None
         if add:
+            self.item = SELECTED_LABEL.item
             image = SELECTED_LABEL.item_image
         super().set_image(image)
+        self.changed_item = True
 
 
 class ItemLabel(Label):

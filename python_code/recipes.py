@@ -18,6 +18,9 @@ class RecipeBook:
                 recipes.append(obj())
         return recipes
 
+    def get_recipe(self, material_grid):
+        print("Implement needed")
+
 class RecipeGrid:
     def __init__(self, rows, columns):
         self.size = Size(columns, rows)
