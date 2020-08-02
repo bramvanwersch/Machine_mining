@@ -1,11 +1,6 @@
-import pygame
-
-from python_code.constants import CRAFTING_LAYER, CRAFTING_WINDOW_SIZE, SCREEN_SIZE, CRAFTING_WINDOW_POS
-from python_code.utilities import Size
-from python_code.event_handling import EventHandler
 from python_code.widgets import *
-from python_code.recipes import RecipeBook
-from python_code.materials import Air
+from python_code.crafting.recipes import RecipeBook
+from python_code.board.materials import Air
 
 
 #crafting globals

@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
-from python_code.materials import TerminalMaterial
-from python_code.image_handling import image_sheets
-from python_code.constants import BLOCK_SIZE
-from python_code.blocks import *
+from python_code.board.materials import TerminalMaterial
+from python_code.utility.image_handling import image_sheets
+from python_code.utility.constants import BLOCK_SIZE
+from python_code.board.blocks import *
 from python_code.inventories import Inventory
 
 class Building(ABC):

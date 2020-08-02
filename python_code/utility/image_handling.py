@@ -1,7 +1,7 @@
 import pygame, os
 
-from python_code.constants import IMAGE_DIR
-from python_code.utilities import Size
+from python_code.utility.constants import IMAGE_DIR
+from python_code.utility.utilities import Size
 
 #variable for all image sheets
 image_sheets = {}

@@ -1,7 +1,7 @@
 import threading
 
-from python_code.constants import BLOCK_SIZE
-from python_code.utilities import rect_from_block_matrix, manhattan_distance
+from python_code.utility.constants import BLOCK_SIZE
+from python_code.utility.utilities import rect_from_block_matrix, manhattan_distance
 
 class PathFinder:
     """

@@ -1,17 +1,13 @@
-import os, sys
-
 #sys.path.append(dirname(__file__))
 
 #own classes
-from python_code.entities import Worker, CameraCentre, SelectionRectangle, InputSaver, TextSprite
-from python_code.camera import CameraAwareLayeredUpdates
-from python_code.board import Board
-from python_code.utilities import rect_from_block_matrix
-from python_code.constants import *
+from python_code.entities import Worker, CameraCentre
+from python_code.board.camera import CameraAwareLayeredUpdates
+from python_code.board.board import Board
+from python_code.utility.constants import *
 from python_code.tasks import TaskControl
-from python_code.image_handling import load_images
-from python_code.crafting import CraftingInterface
-from python_code.event_handling import EventHandler
+from python_code.utility.image_handling import load_images
+from python_code.crafting.crafting import CraftingInterface
 
 
 class Main:

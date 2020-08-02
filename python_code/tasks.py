@@ -1,4 +1,4 @@
-from python_code.utilities import manhattan_distance
+from python_code.utility.utilities import manhattan_distance
 
 class TaskControl:
     """

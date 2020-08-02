@@ -1,9 +1,6 @@
 import pygame
 from abc import ABC
 
-from python_code.materials import Air
-from python_code.constants import SHOW_BLOCK_BORDER, MODES, WARNINGS
-from python_code.inventories import Inventory
 
 class BaseBlock(ABC):
     """

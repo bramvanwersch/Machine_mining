@@ -1,8 +1,8 @@
 import pygame
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from random import randint
 
-from python_code.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER
+from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER
 
 
 class BaseMaterial(ABC):

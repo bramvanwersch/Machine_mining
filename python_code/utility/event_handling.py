@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
-from python_code.constants import *
-from python_code.utilities import rect_from_block_matrix
+from python_code.utility.constants import *
+from python_code.utility.utilities import rect_from_block_matrix
 
 class EventHandler(ABC):
     """

@@ -1,9 +1,8 @@
-import pygame
 from abc import ABC, abstractmethod
 
 from python_code.entities import Entity
-from python_code.constants import *
-from python_code.event_handling import EventHandler
+from python_code.utility.constants import *
+from python_code.utility.event_handling import EventHandler
 
 class ActionFunction:
     """
