@@ -5,6 +5,7 @@ from python_code.utilities import Size
 from python_code.event_handling import EventHandler
 from python_code.widgets import *
 from python_code.recipes import RecipeBook
+from python_code.materials import Air
 
 
 #crafting globals
@@ -107,7 +108,7 @@ class CraftingWindow(Frame):
         Innitiate all the widgets neccesairy for the crafting window at the
         start
         """
-        #create grid
+        #create material_grid
         self.grid_pane = CraftingGrid((25, 50), (450, 450), color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
@@ -131,7 +132,7 @@ class CraftingGrid(Pane):
         super().__init__(pos, size, **kwargs)
         self._crafting_grid = []
 
-        #variables that track a recipe grid and if it is changed
+        #variables that track a recipe material_grid and if it is changed
         self._recipe_grid = []
         self.__recipe_changed = False
 
@@ -172,12 +173,12 @@ class CraftingGrid(Pane):
         row_end = 0
         recipe_grid = []
         for row_i, row in enumerate(self._crafting_grid):
-            material_row = [None for _ in range(len(row))]
+            material_row = [Air for _ in range(len(row))]
             material_present = False
             for col_i, lbl in enumerate(row):
                 if lbl.item != None:
                     material_present = True
-                    material_row[col_i] = lbl.item.material.NAME
+                    material_row[col_i] = type(lbl.item.material)
                     # figure out the start end end inxed of the items in the row
                     if col_i < col_start:
                         col_start = col_i
@@ -193,7 +194,7 @@ class CraftingGrid(Pane):
                 elif row_i > row_end:
                     row_end = row_i
 
-        #cut the grid to the right size
+        #cut the material_grid to the right size
         reduced_recipe_grid = []
         for row_i in range(row_start, row_end + 1):
             reduced_recipe_grid.append(recipe_grid[row_i][col_start:col_end + 1])

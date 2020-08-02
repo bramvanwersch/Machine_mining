@@ -285,7 +285,7 @@ class FreeConstraints(BaseConstraints):
 #note this class has not been tested yet
 class GridConstraints(BaseConstraints):
     """
-    Allow placing of widgets in a grid format. Note this class is not done
+    Allow placing of widgets in a material_grid format. Note this class is not done
     """
     def __init__(self):
         BaseConstraints.__init__(self)

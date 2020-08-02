@@ -57,6 +57,7 @@ class Size:
     def center(self):
         return (self.centerx, self.centery)
 
+#calculating using iterable objects of len 2
     def __add__(self, other):
         try:
             if len(other) == 2:
@@ -104,6 +105,7 @@ class Size:
     def __getitem__(self, item):
         return self.size[item]
 
+#general
     def __len__(self):
         return len(self.size)
 
