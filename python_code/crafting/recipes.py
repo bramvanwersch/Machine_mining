@@ -1,8 +1,9 @@
 import sys, inspect
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 
 from python_code.board import materials
 from python_code.utility.utilities import Size
+from python_code.board.buildings import *
 
 
 class RecipeBook:
@@ -37,7 +38,8 @@ class RecipeBook:
         """
         for recipe in self.recipes:
             if recipe.compare(material_grid):
-                print(recipe)
+                return recipe
+        return None
 
 
 class RecipeGrid:
@@ -190,7 +192,7 @@ class RMat:
         return self.name
 
 
-class BaseRecipe:
+class BaseRecipe(ABC):
     """
     Base class for recipes.
     """
@@ -204,6 +206,11 @@ class BaseRecipe:
 
         :return: a RecipeGrid object
         """
+        return None
+
+    @property
+    @abstractmethod
+    def BLOCK_TYPE(self):
         return None
 
     def get_size(self):
@@ -282,6 +289,7 @@ class BaseRecipe:
 
 
 class FurnaceRecipe(BaseRecipe):
+    BLOCK_TYPE = Furnace
     def __init__(self):
         BaseRecipe.__init__(self)
 

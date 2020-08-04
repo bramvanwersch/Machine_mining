@@ -49,7 +49,11 @@ class CraftingInterface(EventHandler):
             #check if the rescipe changed. If that is the case update the crafting window
             new_recipe_grid = self.__window.grid_pane.get_new_recipe_grid()
             if new_recipe_grid:
-                self.__recipe_book.get_recipe(new_recipe_grid)
+                recipe = self.__recipe_book.get_recipe(new_recipe_grid)
+                if recipe != None:
+                    self.__window._craftable_item_lbl.set_display(recipe.BLOCK_TYPE)
+                else:
+                    self.__window._craftable_item_lbl.set_display(None)
 
 
 class CraftingWindow(Frame):
@@ -69,6 +73,7 @@ class CraftingWindow(Frame):
 
         #just ti signify that this exists
         self.__inventory_sp = None
+        self._craftable_item_lbl = None
         self.__innitiate_widgets()
 
     def update(self, *args):
@@ -116,6 +121,10 @@ class CraftingWindow(Frame):
         #add craft button
         craft_button = Button((25, 525), (100, 40), text="CRAFT", border=True)
         self.add_widget(craft_button)
+
+        #add label to display the possible item image
+        self._craftable_item_lbl = DisplayLabel((150, 512), (300, 75), color=self.COLOR[:-1])
+        self.add_widget(self._craftable_item_lbl)
 
 class CraftingGrid(Pane):
     COLOR = (173, 94, 29)
@@ -215,6 +224,30 @@ class CraftingLabel(Label):
         super().set_image(image)
         self.changed_item = True
 
+class DisplayLabel(Label):
+    COLOR = (173, 94, 29)
+
+    def set_display(self, block_type):
+        #the pos does not matter
+
+        if block_type == None:
+            self._clean_image()
+        elif block_type != None:
+            block_inst = block_type((0,0))
+            image = block_inst.full_image()
+            image = pygame.transform.scale(image, (75, 75))
+            text = self._create_text(block_inst)
+            self.set_image(image, pos=(0,0))
+            self.set_image(text, pos=(100, 0))
+
+    def _create_text(self, block_inst):
+        text_image = pygame.Surface((200, 75))
+        text_image.fill(self.COLOR)
+        name = FONTS[20].render("Name: {}".format(block_inst.MATERIAL.name().replace("Material", "")), True, (0,0,0))
+        size = FONTS[20].render("Size: {} by {}".format(len(block_inst.blocks[0]), len(block_inst.blocks)), True, (0,0,0))
+        text_image.blit(name, (0,0))
+        text_image.blit(size, (0, 18))
+        return text_image
 
 class ItemLabel(Label):
     """

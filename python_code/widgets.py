@@ -148,11 +148,11 @@ class Label(Widget):
         if self.selected:
             pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)
         else:
-            self.__clean_image(text = False)
+            self._clean_image(text = False)
 
         self.changed_image = True
 
-    def set_image(self, image):
+    def set_image(self, image, pos = "center"):
         """
         Change the full image of a widget or change it back to the orig_image
         by setting image to None
@@ -162,8 +162,9 @@ class Label(Widget):
             self.image = self.orig_image.copy()
         else:
             rect = image.get_rect()
-            center_pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
-            self.image.blit(image, center_pos)
+            if pos == "center":
+                pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
+            self.image.blit(image, pos)
         self.changed_image = True
 
     def set_text(self, text, pos, color = (0,0,0), font_size = 15, add = False):
@@ -178,7 +179,7 @@ class Label(Widget):
         orig_image
         """
         if not add:
-            self.__clean_image()
+            self._clean_image()
         s = FONTS[font_size].render(str(text), True, color)
         self.image.blit(s, pos)
         self.text_image = self.image.copy()
@@ -186,7 +187,7 @@ class Label(Widget):
             self.set_selected(True)
         self.changed_image = True
 
-    def __clean_image(self, text = True, selected = True):
+    def _clean_image(self, text = True, selected = True):
         """
         Controlled cleaning of the image. You can specify to clean the text and
         or the border by setting text or selected to True
@@ -200,6 +201,7 @@ class Label(Widget):
             self.image = self.text_image.copy()
         else:
             self.image = self.orig_image.copy()
+            self.text_image = None
         if self.selected and not selected:
             #draw selected
             pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)

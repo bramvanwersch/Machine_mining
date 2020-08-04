@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from python_code.board.materials import TerminalMaterial
+from python_code.board.materials import *
 from python_code.utility.image_handling import image_sheets
 from python_code.utility.constants import BLOCK_SIZE
 from python_code.board.blocks import *
@@ -42,6 +42,10 @@ class Building(ABC):
         """
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].images_at_rectangle(
             self.IMAGE_SPECIFICATIONS[1], **self.IMAGE_SPECIFICATIONS[2])
+
+    def full_image(self):
+        return image_sheets[self.IMAGE_SPECIFICATIONS[0]].image_at(self.IMAGE_SPECIFICATIONS[1][0:2],
+                            size = self.IMAGE_SPECIFICATIONS[1][2:4], **self.IMAGE_SPECIFICATIONS[2])
 
     def _get_blocks(self, block_class, material_class):
         """
@@ -88,7 +92,7 @@ class Furnace(Building):
     """
     IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
-    MATERIAL = TerminalMaterial
+    MATERIAL = FurnaceMaterial
     def __init__(self, pos):
         super().__init__(pos)
 
