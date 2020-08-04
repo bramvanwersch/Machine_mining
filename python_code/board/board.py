@@ -387,7 +387,7 @@ class Board(BoardEventHandler):
                     material_instance = material(row_i)
                 else:
                     material_instance = material()
-                if material.NAME == "Air":
+                if material.name() == "Air":
                     block = AirBlock(pos, BLOCK_SIZE, material_instance)
                 else:
                     block = Block(pos, BLOCK_SIZE, material_instance)

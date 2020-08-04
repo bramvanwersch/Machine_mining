@@ -41,19 +41,19 @@ class Inventory:
 
     def add_blocks(self, *blocks):
         for block in blocks:
-            if not block.material.NAME in self.__container:
-                self.__container[block.material.NAME] = Item(block.material)
+            if not block.material.name in self.__container:
+                self.__container[block.material.name] = Item(block.material)
             else:
-                self.__container[block.material.NAME].quantity += 1
-            self.wheight[0] += self.__container[block.material.NAME].WHEIGHT
+                self.__container[block.material.name].quantity += 1
+            self.wheight[0] += self.__container[block.material.name].WHEIGHT
 
     def add_items(self, *items):
         for item in items:
-            if not item.material.NAME in self.__container:
-                self.__container[item.material.NAME] = item
+            if not item.material.name in self.__container:
+                self.__container[item.material.name] = item
             else:
-                self.__container[item.material.NAME].quantity += item.quantity
-            self.wheight[0] += self.__container[item.material.NAME].WHEIGHT * item.quantity
+                self.__container[item.material.name].quantity += item.quantity
+            self.wheight[0] += self.__container[item.material.name].WHEIGHT * item.quantity
 
     @property
     def full(self):

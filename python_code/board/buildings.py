@@ -81,3 +81,21 @@ class Terminal(Building):
                 block.inventory = shared_inventory
         return blocks
 
+
+class Furnace(Building):
+    """
+    Terminal building. The main interaction centrum for the workers
+    """
+    IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
+    BLOCK_TYPE = ContainerBlock
+    MATERIAL = TerminalMaterial
+    def __init__(self, pos):
+        super().__init__(pos)
+
+    def _get_blocks(self, block_class, material_class):
+        blocks = super()._get_blocks(block_class, material_class)
+        shared_inventory = Inventory(-1)
+        for row in blocks:
+            for block in row:
+                block.inventory = shared_inventory
+        return blocks

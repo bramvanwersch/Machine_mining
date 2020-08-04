@@ -25,10 +25,9 @@ class BaseMaterial(ABC):
         """
         self.surface = self._configure_surface(image)
 
-    @property
-    @abstractmethod
-    def NAME(self):
-        return None
+    @classmethod
+    def name(self):
+        return self.__name__
 
     @abstractmethod
     def _configure_surface(self, image):
@@ -52,7 +51,6 @@ class BaseMaterial(ABC):
 
 class Air(BaseMaterial):
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]  + ["Empty inventory"]
-    NAME = "Air"
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -129,14 +127,12 @@ class ColorMaterial(BaseMaterial, ABC):
 class Stone(ColorMaterial):
 
     BASE_COLOR = (155, 155, 155)
-    NAME = "stone"
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
 
 class Dirt(ColorMaterial):
 
     BASE_COLOR = (107, 49, 13)
-    NAME = "dirt"
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
 
@@ -166,7 +162,6 @@ class Iron(Ore):
     SD = 30
     CLUSTER_SIZE = (2, 10)
     BASE_COLOR = (184, 98, 92)
-    NAME = "iron"
     WHEIGHT = 3
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
@@ -177,7 +172,6 @@ class Gold(Ore):
     SD = 3
     CLUSTER_SIZE = (2, 6)
     BASE_COLOR = (235, 173, 16)
-    NAME = "gold"
     WHEIGHT = 5
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
@@ -188,7 +182,6 @@ class Zinc(Ore):
     SD = 5
     CLUSTER_SIZE = (2, 15)
     BASE_COLOR = (58, 90, 120)
-    NAME = "zinc"
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
 
@@ -198,7 +191,6 @@ class Copper(Ore):
     SD = 5
     CLUSTER_SIZE = (5, 8)
     BASE_COLOR = (189, 99, 20)
-    NAME = "copper"
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
 
@@ -208,7 +200,6 @@ class Coal(Ore):
     SD = 50
     CLUSTER_SIZE = (6, 12)
     BASE_COLOR = (10, 10, 10)
-    NAME = "coal"
     TEXT_COLOR = (255,255,255)
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
@@ -219,7 +210,6 @@ class Titanium(Ore):
     SD = 2
     CLUSTER_SIZE = (1, 2)
     BASE_COLOR = (152, 196, 237)
-    NAME = "titanium"
     WHEIGHT = 10
     def __init__(self, depth, **kwargs):
         super().__init__(depth, **kwargs)
@@ -259,9 +249,16 @@ class BuildingMaterial(ImageMaterial, ABC):
 
 class TerminalMaterial(BuildingMaterial):
 
-    NAME = "Terminal"
     #make sure it is indestructible
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"] + ["Empty inventory"]
+    TASK_TIME = 1000
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+class FurnaceMaterial(BuildingMaterial):
+
+    #make sure it is indestructible
+    ALLOWED_TASKS = [mode.name for mode in MODES.values()]
     TASK_TIME = 1000
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

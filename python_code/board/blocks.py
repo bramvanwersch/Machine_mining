@@ -31,7 +31,7 @@ class BaseBlock(ABC):
         return self.material.ALLOWED_TASKS
 
     def __eq__(self, other):
-        return other == self.material.NAME
+        return other == self.material.name()
 
     def __hash__(self):
         return hash(str(self.rect.topleft))
