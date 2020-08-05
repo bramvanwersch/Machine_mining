@@ -13,7 +13,7 @@ IMAGE_DIR = "D:\python projects\Machine mining\images"
 #location parameters
 SCREEN_SIZE = Size(800, 800)
 BOARD_SIZE = Size(2000, 2000)
-CRAFTING_WINDOW_SIZE = Size(700, 600)
+CRAFTING_WINDOW_SIZE = Size(700, 700)
 CRAFTING_WINDOW_POS = (int((SCREEN_SIZE.width - CRAFTING_WINDOW_SIZE.width) / 2),
                        int((SCREEN_SIZE.height - CRAFTING_WINDOW_SIZE.height) / 2))
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()

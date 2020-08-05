@@ -1,6 +1,7 @@
 from python_code.widgets import *
 from python_code.crafting.recipes import RecipeBook
 from python_code.board.materials import Air
+from python_code.utility.image_handling import image_sheets
 
 
 #crafting globals
@@ -114,17 +115,25 @@ class CraftingWindow(Frame):
 
 
         #create scrollable inventory
-        self._inventory_sp  = ScrollPane((500, 50), (175, 450), color=self.COLOR[:-1])
+        self._inventory_sp  = ScrollPane((25, 525), (450, 150), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
 
         #add craft button
-        craft_button = Button((25, 525), (100, 40), text="CRAFT", border=True)
+        craft_button = Button((565, 325), (100, 40), text="CRAFT", border=True, color=self.COLOR[:-1])
         self.add_widget(craft_button)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = DisplayLabel((150, 512), (300, 75), color=self.COLOR[:-1])
+        self._craftable_item_lbl = DisplayLabel((575, 222), (75, 75), color=self.COLOR[:-1])
         self.add_widget(self._craftable_item_lbl)
+        self.add_border(self._craftable_item_lbl)
+
+        #add arrow pointing from grid to display
+        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
+        arrow_image = pygame.transform.scale(arrow_image, (70,70))
+        a_lbl = Label((489, 225), (70, 70), color=INVISIBLE_COLOR)
+        a_lbl.set_image(arrow_image)
+        self.add_widget(a_lbl)
 
 class CraftingGrid(Pane):
     COLOR = (173, 94, 29)
@@ -225,29 +234,32 @@ class CraftingLabel(Label):
         self.changed_item = True
 
 class DisplayLabel(Label):
-    COLOR = (173, 94, 29)
+
+    def __init__(self, pos, size, **kwargs):
+        super().__init__(pos, size, **kwargs)
+        self.selected = True
 
     def set_display(self, block_type):
-        #the pos does not matter
-
         if block_type == None:
-            self._clean_image()
+
+            self.set_image(None)
         elif block_type != None:
+            # the pos does not matter
             block_inst = block_type((0,0))
             image = block_inst.full_image()
-            image = pygame.transform.scale(image, (75, 75))
-            text = self._create_text(block_inst)
-            self.set_image(image, pos=(0,0))
-            self.set_image(text, pos=(100, 0))
+            image = pygame.transform.scale(image, (70, 70))
+            # text = self._create_text(block_inst)
+            self.set_image(image)
+            # self.set_image(text, pos=(100, 0))
 
-    def _create_text(self, block_inst):
-        text_image = pygame.Surface((200, 75))
-        text_image.fill(self.COLOR)
-        name = FONTS[20].render("Name: {}".format(block_inst.MATERIAL.name().replace("Material", "")), True, (0,0,0))
-        size = FONTS[20].render("Size: {} by {}".format(len(block_inst.blocks[0]), len(block_inst.blocks)), True, (0,0,0))
-        text_image.blit(name, (0,0))
-        text_image.blit(size, (0, 18))
-        return text_image
+    # def _create_text(self, block_inst):
+    #     text_image = pygame.Surface((200, 75))
+    #     text_image.fill(self.COLOR)
+    #     name = FONTS[22].render("Name: {}".format(block_inst.MATERIAL.name().replace("Material", "")), True, (0,0,0))
+    #     size = FONTS[22].render("Size: {} by {}".format(len(block_inst.blocks[0]), len(block_inst.blocks)), True, (0,0,0))
+    #     text_image.blit(name, (0,0))
+    #     text_image.blit(size, (0, 18))
+    #     return text_image
 
 class ItemLabel(Label):
     """

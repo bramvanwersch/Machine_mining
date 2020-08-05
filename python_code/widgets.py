@@ -156,7 +156,9 @@ class Label(Widget):
         """
         Change the full image of a widget or change it back to the orig_image
         by setting image to None
+
         :param image: a Surface Object or None
+        :Note: resetting the image does not work if the original is transparant
         """
         if image == None:
             self.image = self.orig_image.copy()

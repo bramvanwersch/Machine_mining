@@ -13,6 +13,7 @@ def load_images():
     global image_sheets
     image_sheets["buildings"] = Spritesheet("building_materials.bmp",
                                             Size(10, 10))
+    image_sheets["general"] = Spritesheet("general.bmp", Size(10, 10))
 
 
 def load_image(name, colorkey=None):
