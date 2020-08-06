@@ -224,9 +224,9 @@ class BaseConceptRecipe(ABC):
     Base class for all recipe concepts. It saves a recipe a grid that is a
     potential of all recipes that can be.
     """
-    def __init__(self):
+    def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
-        self.material = None
+        self.material = material
 
     @abstractmethod
     def _create_recipe_grid(self):
@@ -320,8 +320,8 @@ class BaseConceptRecipe(ABC):
 class FurnaceRecipe(BaseConceptRecipe):
     BLOCK_TYPE = Furnace
     def __init__(self):
-        BaseConceptRecipe.__init__(self)
-        self.material = FurnaceMaterial(image=Furnace((0,0)).full_image())
+        mat = FurnaceMaterial(image=Furnace((0,0)).full_image())
+        BaseConceptRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(7, 7), Size(3, 3))
@@ -338,7 +338,15 @@ class FurnaceRecipe(BaseConceptRecipe):
                           fifth_row, sixt_row, last_row)
         return grid
 
-# class FurnaceRecipe(BaseConceptRecipe):
-#     BLOCK_TYPE = Block
-#     def __init__(self):
-#         BaseConceptRecipe.__init__(self)
+class CompactStoneRecipe(BaseConceptRecipe):
+    BLOCK_TYPE = Block
+    def __init__(self):
+        mat = StoneBrick()
+        BaseConceptRecipe.__init__(self, mat)
+
+    def _create_recipe_grid(self):
+        grid = RecipeGrid(Size(2, 2), Size(2, 2))
+
+        row = [RMat("Stone", 0), RMat("Stone", 0)]
+        grid.add_all_rows(row, row)
+        return grid

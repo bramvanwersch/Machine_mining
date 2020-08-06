@@ -11,9 +11,9 @@ def load_images():
     Loads all the available image_sheets into memory and saves them by a descriptive name in a dictionary
     """
     global image_sheets
-    image_sheets["buildings"] = Spritesheet("building_materials.bmp",
-                                            Size(10, 10))
+    image_sheets["buildings"] = Spritesheet("building_materials.bmp", Size(10, 10))
     image_sheets["general"] = Spritesheet("general.bmp", Size(10, 10))
+    image_sheets["materials"] = Spritesheet("materials.bmp", Size(10, 10))
 
 
 def load_image(name, colorkey=None):

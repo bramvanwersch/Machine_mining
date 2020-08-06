@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from random import randint
 
 from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER
+from python_code.utility.image_handling import image_sheets
 
 
 class BaseMaterial(ABC):
@@ -237,6 +238,13 @@ class ImageMaterial(BaseMaterial, ABC):
             surface = pygame.Surface(BLOCK_SIZE)
             surface.fill((0, 255, 13))
             return surface
+
+#craftables
+class StoneBrick(ImageMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((0,0))
+        return image
 
 
 class BuildingMaterial(ImageMaterial, ABC):
