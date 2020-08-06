@@ -384,7 +384,7 @@ class Board(BoardEventHandler):
                        row_i * BLOCK_SIZE.height,)
                 material = getattr(materials, s_matrix[row_i][column_i])
                 if issubclass(material, materials.ColorMaterial):
-                    material_instance = material(row_i)
+                    material_instance = material(depth=row_i)
                 else:
                     material_instance = material()
                 if material.name() == "Air":

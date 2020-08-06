@@ -67,7 +67,7 @@ class ColorMaterial(BaseMaterial, ABC):
     """
     MIN_COLOR = (20, 20, 20)
 
-    def __init__(self, depth, **kwargs):
+    def __init__(self, depth = 0, **kwargs):
         self._depth = depth
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
@@ -101,7 +101,7 @@ class ColorMaterial(BaseMaterial, ABC):
 
         :return: a tuple with a r, g and b value as integers
         """
-        new_color = [0,0,0]
+        new_color = list(self.BASE_COLOR)
         random_change = randint(-10, 10)
         #dont change the alpha channel if present
         for index, color_component in enumerate(self.BASE_COLOR):
@@ -116,7 +116,7 @@ class ColorMaterial(BaseMaterial, ABC):
 
         :return: a tuple with a r, g and b value as integers
         """
-        new_color = [0,0,0]
+        new_color = list(self.BASE_COLOR)
         for index, color_component in enumerate(self.BASE_COLOR):
             color_component = max(0, color_component - int(self._depth / 2) - 30)
             new_color[index] = color_component
@@ -127,14 +127,14 @@ class ColorMaterial(BaseMaterial, ABC):
 class Stone(ColorMaterial):
 
     BASE_COLOR = (155, 155, 155)
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class Dirt(ColorMaterial):
 
     BASE_COLOR = (107, 49, 13)
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 #ore materials
@@ -144,8 +144,8 @@ class Ore(ColorMaterial, ABC):
     likelyhood of a ore to be at certain percent depth
     """
     WHEIGHT = 2
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
     def _configure_color(self):
@@ -163,8 +163,8 @@ class Iron(Ore):
     CLUSTER_SIZE = (2, 10)
     BASE_COLOR = (184, 98, 92)
     WHEIGHT = 3
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class Gold(Ore):
 
@@ -173,8 +173,8 @@ class Gold(Ore):
     CLUSTER_SIZE = (2, 6)
     BASE_COLOR = (235, 173, 16)
     WHEIGHT = 5
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class Zinc(Ore):
 
@@ -182,8 +182,8 @@ class Zinc(Ore):
     SD = 5
     CLUSTER_SIZE = (2, 15)
     BASE_COLOR = (58, 90, 120)
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class Copper(Ore):
 
@@ -191,8 +191,8 @@ class Copper(Ore):
     SD = 5
     CLUSTER_SIZE = (5, 8)
     BASE_COLOR = (189, 99, 20)
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class Coal(Ore):
 
@@ -201,8 +201,8 @@ class Coal(Ore):
     CLUSTER_SIZE = (6, 12)
     BASE_COLOR = (10, 10, 10)
     TEXT_COLOR = (255,255,255)
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class Titanium(Ore):
 
@@ -211,8 +211,8 @@ class Titanium(Ore):
     CLUSTER_SIZE = (1, 2)
     BASE_COLOR = (152, 196, 237)
     WHEIGHT = 10
-    def __init__(self, depth, **kwargs):
-        super().__init__(depth, **kwargs)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 #building materials: materials that are special building blocks like storage containers
 
@@ -254,6 +254,7 @@ class TerminalMaterial(BuildingMaterial):
     TASK_TIME = 1000
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
 
 class FurnaceMaterial(BuildingMaterial):
 
