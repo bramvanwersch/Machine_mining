@@ -2,6 +2,8 @@ from python_code.widgets import *
 from python_code.crafting.recipes import RecipeBook
 from python_code.board.materials import Air
 from python_code.utility.image_handling import image_sheets
+from python_code.inventories import Item
+from python_code.board.materials import BuildingMaterial
 
 
 #crafting globals
@@ -52,7 +54,8 @@ class CraftingInterface(EventHandler):
             if new_recipe_grid:
                 recipe = self.__recipe_book.get_recipe(new_recipe_grid)
                 if recipe != None:
-                    self.__window._craftable_item_lbl.set_display(recipe.BLOCK_TYPE)
+                    self.__window._craftable_item_lbl.set_display(recipe.block_type)
+                    self.__window._craftable_item_recipe = recipe
                 else:
                     self.__window._craftable_item_lbl.set_display(None)
 
@@ -76,6 +79,8 @@ class CraftingWindow(Frame):
         self.__inventory_sp = None
         self._craftable_item_lbl = None
         self.__innitiate_widgets()
+
+        self._craftable_item_recipe = None
 
     def update(self, *args):
         """
@@ -121,6 +126,8 @@ class CraftingWindow(Frame):
 
         #add craft button
         craft_button = Button((565, 325), (100, 40), text="CRAFT", border=True, color=self.COLOR[:-1])
+        craft_button.set_action(1, self.craft_button_action, types=["unpressed"])
+
         self.add_widget(craft_button)
 
         #add label to display the possible item image
@@ -134,6 +141,26 @@ class CraftingWindow(Frame):
         a_lbl = Label((489, 225), (70, 70), color=INVISIBLE_COLOR)
         a_lbl.set_image(arrow_image)
         self.add_widget(a_lbl)
+
+    def craft_button_action(self):
+        if self._craftable_item_recipe == None:
+            return
+        #check if all materials are available
+        for item, quantity in self._craftable_item_recipe.required_materials.items():
+            if not self.__inventory.check_item(item, quantity):
+                print("no materials")
+                #TODO push a message notifying that there are not enough materials
+                return
+        if issubclass(self._craftable_item_recipe.material, BuildingMaterial):
+            #for buildings go trough a strange loop to achieve the image
+            building_image = self._craftable_item_recipe.block_type((0,0)).full_image()
+            self.__inventory.add_items(Item(self._craftable_item_recipe.material(image=building_image), 1))
+        else:
+            self.__inventory.add_items(Item(self._craftable_item_recipe.material(), 1))
+        #remove the items from the inventory
+        for item, quantity in self._craftable_item_recipe.required_materials.items():
+            self.__inventory.get(item, quantity)
+
 
 class CraftingGrid(Pane):
     COLOR = (173, 94, 29)

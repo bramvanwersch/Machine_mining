@@ -23,7 +23,7 @@ class RecipeBook:
         #filter out all the recipes.
         recipes = []
         for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-            if issubclass(obj, BaseRecipe) and obj != BaseRecipe:
+            if issubclass(obj, BaseConceptRecipe) and obj != BaseConceptRecipe:
                 #add an instance of the recipe
                 recipes.append(obj())
         return recipes
@@ -38,7 +38,7 @@ class RecipeBook:
         """
         for recipe in self.recipes:
             if recipe.compare(material_grid):
-                return recipe
+                return CraftableRecipe(material_grid, recipe.BLOCK_TYPE)
         return None
 
 
@@ -62,6 +62,7 @@ class RecipeGrid:
 
         #saves the sizes of the graphs to allow for checking
         self.group_sizes = {}
+
 
     def check_complete_groups(self, g_size, col_i, row_i):
         """
@@ -109,7 +110,7 @@ class RecipeGrid:
         Add a value to the material matrix and the group matrix aswell as a
         count for a certain group
 
-        :param value: the value to add
+        :param value: a RMat object
         :param column_i: the column to add the value to
         :param row_i: the row to add the value to
         """
@@ -188,13 +189,40 @@ class RMat:
     def __getattr__(self, item):
         return getattr(self._material_type, item)
 
+    def __eq__(self, other):
+        return self.name == other
+
     def __str__(self):
         return self.name
 
 
-class BaseRecipe(ABC):
+class CraftableRecipe:
     """
-    Base class for recipes.
+    Defines a crafting grid and items that can be used to create the item
+    defined by a concept recipe
+    """
+    def __init__(self, material_grid, block_type):
+        self.block_type = block_type
+        self.material = block_type.MATERIAL
+
+        # saves the amount of the materials in the grid
+        self.required_materials = self.__count_grid(material_grid)
+
+    def __count_grid(self, grid):
+        counts = {}
+        for row in grid:
+            for value in row:
+                if value.name != "Air":
+                    if value.name not in counts and value.name != "Air":
+                        counts[value.name] = 1
+                    else:
+                        counts[value.name] += 1
+        return counts
+
+class BaseConceptRecipe(ABC):
+    """
+    Base class for all recipe concepts. It saves a recipe a grid that is a
+    potential of all recipes that can be.
     """
     def __init__(self):
         self.__recipe_grid = self._create_recipe_grid()
@@ -288,10 +316,10 @@ class BaseRecipe(ABC):
         return True
 
 
-class FurnaceRecipe(BaseRecipe):
+class FurnaceRecipe(BaseConceptRecipe):
     BLOCK_TYPE = Furnace
     def __init__(self):
-        BaseRecipe.__init__(self)
+        BaseConceptRecipe.__init__(self)
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(7, 7), Size(3, 3))

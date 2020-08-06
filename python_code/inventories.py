@@ -33,6 +33,11 @@ class Inventory:
             items.append(self.get(key, self.__container[key].quantity))
         return items
 
+    def check_item(self, item_name, quantity):
+        if item_name in self.__container and self.__container[item_name].quantity >= quantity:
+            return True
+        return False
+
     def __remove_quantity(self, item, amnt):
         available_amnt = min(item.quantity, amnt)
         item.quantity -= available_amnt
