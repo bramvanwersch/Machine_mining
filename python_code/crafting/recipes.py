@@ -38,7 +38,7 @@ class RecipeBook:
         """
         for recipe in self.recipes:
             if recipe.compare(material_grid):
-                return CraftableRecipe(material_grid, recipe.BLOCK_TYPE)
+                return CraftableRecipe(material_grid, recipe.BLOCK_TYPE, recipe.material)
         return None
 
 
@@ -201,9 +201,9 @@ class CraftableRecipe:
     Defines a crafting grid and items that can be used to create the item
     defined by a concept recipe
     """
-    def __init__(self, material_grid, block_type):
+    def __init__(self, material_grid, block_type, material):
         self.block_type = block_type
-        self.material = block_type.MATERIAL
+        self.material = material
 
         # saves the amount of the materials in the grid
         self.required_materials = self.__count_grid(material_grid)
@@ -226,6 +226,7 @@ class BaseConceptRecipe(ABC):
     """
     def __init__(self):
         self.__recipe_grid = self._create_recipe_grid()
+        self.material = None
 
     @abstractmethod
     def _create_recipe_grid(self):
@@ -320,6 +321,7 @@ class FurnaceRecipe(BaseConceptRecipe):
     BLOCK_TYPE = Furnace
     def __init__(self):
         BaseConceptRecipe.__init__(self)
+        self.material = FurnaceMaterial(image=Furnace((0,0)).full_image())
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(7, 7), Size(3, 3))
@@ -335,3 +337,8 @@ class FurnaceRecipe(BaseConceptRecipe):
         grid.add_all_rows(top_row, second_row, third_row, fourth_row,
                           fifth_row, sixt_row, last_row)
         return grid
+
+# class FurnaceRecipe(BaseConceptRecipe):
+#     BLOCK_TYPE = Block
+#     def __init__(self):
+#         BaseConceptRecipe.__init__(self)

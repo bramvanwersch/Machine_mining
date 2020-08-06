@@ -54,7 +54,7 @@ class CraftingInterface(EventHandler):
             if new_recipe_grid:
                 recipe = self.__recipe_book.get_recipe(new_recipe_grid)
                 if recipe != None:
-                    self.__window._craftable_item_lbl.set_display(recipe.block_type)
+                    self.__window._craftable_item_lbl.set_display(recipe.material)
                     self.__window._craftable_item_recipe = recipe
                 else:
                     self.__window._craftable_item_lbl.set_display(None)
@@ -151,12 +151,8 @@ class CraftingWindow(Frame):
                 print("no materials")
                 #TODO push a message notifying that there are not enough materials
                 return
-        if issubclass(self._craftable_item_recipe.material, BuildingMaterial):
-            #for buildings go trough a strange loop to achieve the image
-            building_image = self._craftable_item_recipe.block_type((0,0)).full_image()
-            self.__inventory.add_items(Item(self._craftable_item_recipe.material(image=building_image), 1))
-        else:
-            self.__inventory.add_items(Item(self._craftable_item_recipe.material(), 1))
+        self.__inventory.add_items(Item(self._craftable_item_recipe.material, 1))
+
         #remove the items from the inventory
         for item, quantity in self._craftable_item_recipe.required_materials.items():
             self.__inventory.get(item, quantity)
@@ -266,15 +262,12 @@ class DisplayLabel(Label):
         super().__init__(pos, size, **kwargs)
         self.selected = True
 
-    def set_display(self, block_type):
-        if block_type == None:
+    def set_display(self, material):
+        if material == None:
 
             self.set_image(None)
-        elif block_type != None:
-            # the pos does not matter
-            block_inst = block_type((0,0))
-            image = block_inst.full_image()
-            image = pygame.transform.scale(image, (70, 70))
+        elif material != None:
+            image = pygame.transform.scale(material.surface, (70, 70))
             # text = self._create_text(block_inst)
             self.set_image(image)
             # self.set_image(text, pos=(100, 0))
