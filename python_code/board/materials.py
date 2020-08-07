@@ -233,6 +233,7 @@ class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
+    ALLOWED_TASKS = [mode.name for mode in MODES.values()]
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -243,9 +244,13 @@ class TerminalMaterial(BuildingMaterial):
     TASK_TIME = 1000
 
 
-
 class FurnaceMaterial(BuildingMaterial):
-    #make sure it is indestructible
-    ALLOWED_TASKS = [mode.name for mode in MODES.values()]
     TASK_TIME = 1000
     TEXT_COLOR = (255,255,255)
+
+
+class StonePipeMaterial(BuildingMaterial):
+    TASK_TIME = 1000
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((10,0), color_key=(255,255,255))
+        return image

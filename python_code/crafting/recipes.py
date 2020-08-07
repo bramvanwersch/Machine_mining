@@ -213,8 +213,8 @@ class CraftableRecipe:
         counts = {}
         for row in grid:
             for value in row:
-                if value.name != "Air":
-                    if value.name not in counts and value.name != "Air":
+                if value.name() != "Air":
+                    if value.name not in counts:
                         counts[value.name] = 1
                     else:
                         counts[value.name] += 1
@@ -352,4 +352,18 @@ class CompactStoneRecipe(BaseConceptRecipe):
 
         row = [RMat("Stone", 0), RMat("Stone", 0)]
         grid.add_all_rows(row, row)
+        return grid
+
+class StonePipe(BaseConceptRecipe):
+    BLOCK_TYPE = Block
+    def __init__(self):
+        mat = StonePipeMaterial()
+        BaseConceptRecipe.__init__(self, mat)
+
+    def _create_recipe_grid(self):
+        grid = RecipeGrid(Size(3, 5), Size(3, 3))
+        top = [RMat("Stone", 1), RMat("Stone", 1), RMat("Stone", 1)]
+        row = [RMat("Stone", 0), RMat("Stone", 0), RMat("Stone", 0)]
+        middle = [RMat("Air", 0), RMat("Air", 0), RMat("Air", 0)]
+        grid.add_all_rows(top, row, middle, row, top)
         return grid
