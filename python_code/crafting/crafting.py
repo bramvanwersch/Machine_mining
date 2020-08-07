@@ -66,8 +66,8 @@ class CraftingWindow(Frame):
     """
     COLOR = (173, 94, 29, 150)
     def __init__(self, terminal_inventory, *groups):
-        Frame.__init__(self, CRAFTING_WINDOW_POS, CRAFTING_WINDOW_SIZE,
-                       *groups, layer=CRAFTING_LAYER, color=self.COLOR,
+        Frame.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
+                       *groups, layer=INTERFACE_LAYER, color=self.COLOR,
                        title = "CRAFTING:")
         self.visible = False
         self.static = False

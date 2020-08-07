@@ -8,6 +8,7 @@ from python_code.utility.constants import *
 from python_code.tasks import TaskControl
 from python_code.utility.image_handling import load_images
 from python_code.crafting.crafting import CraftingInterface
+from python_code.building.building import BuildingInterface
 
 
 class Main:
@@ -85,6 +86,7 @@ class User:
         #for some more elaborate setting up of variables
         self.workers = []
         self.crafting_interface = None
+        self.building_interface = None
         self.__setup_start()
 
     def __setup_start(self):
@@ -92,6 +94,7 @@ class User:
             self.workers.append(Worker((1000, 40), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
         self.crafting_interface = CraftingInterface(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
+        self.building_interface = BuildingInterface(self.board, self.main_sprite_group)
 
     def update(self):
         self.__handle_events()
@@ -133,9 +136,15 @@ class User:
         if event.key == CRAFTING and self.event_handler_entity != self.crafting_interface:
             self.event_handler_entity = self.crafting_interface
             self.crafting_interface.show(True)
-        elif event.key == K_ESCAPE or event.key == CRAFTING:
+            self.building_interface.show(False)
+        elif event.key == BUILDING and self.event_handler_entity != self.building_interface:
+            self.event_handler_entity = self.building_interface
+            self.crafting_interface.show(False)
+            self.building_interface.show(True)
+        elif event.key == K_ESCAPE or event.key == CRAFTING or event.key == BUILDING:
             self.event_handler_entity = self.board
             self.crafting_interface.show(False)
+            self.building_interface.show(False)
         else:
             return event
 
