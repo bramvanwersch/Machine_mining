@@ -38,7 +38,7 @@ class RecipeBook:
         """
         for recipe in self.recipes:
             if recipe.compare(material_grid):
-                return CraftableRecipe(material_grid, recipe.BLOCK_TYPE, recipe.material)
+                return CraftableRecipe(material_grid, recipe)
         return None
 
 
@@ -201,9 +201,10 @@ class CraftableRecipe:
     Defines a crafting grid and items that can be used to create the item
     defined by a concept recipe
     """
-    def __init__(self, material_grid, block_type, material):
-        self.block_type = block_type
-        self.material = material
+    def __init__(self, material_grid, recipe):
+        self.block_type = recipe.BLOCK_TYPE
+        self.material = recipe.material
+        self.quantity = recipe.quantity
 
         # saves the amount of the materials in the grid
         self.required_materials = self.__count_grid(material_grid)
@@ -227,6 +228,7 @@ class BaseConceptRecipe(ABC):
     def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
         self.material = material
+        self.quantity = 1
 
     @abstractmethod
     def _create_recipe_grid(self):
@@ -343,6 +345,7 @@ class CompactStoneRecipe(BaseConceptRecipe):
     def __init__(self):
         mat = StoneBrick()
         BaseConceptRecipe.__init__(self, mat)
+        self.quantity = 2
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(2, 2), Size(2, 2))

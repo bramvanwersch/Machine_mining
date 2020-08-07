@@ -151,7 +151,7 @@ class CraftingWindow(Frame):
                 print("no materials")
                 #TODO push a message notifying that there are not enough materials
                 return
-        self.__inventory.add_items(Item(self._craftable_item_recipe.material, 1))
+        self.__inventory.add_items(Item(self._craftable_item_recipe.material, self._craftable_item_recipe.quantity))
 
         #remove the items from the inventory
         for item, quantity in self._craftable_item_recipe.required_materials.items():
