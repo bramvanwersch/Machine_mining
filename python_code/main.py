@@ -108,6 +108,8 @@ class User:
                 self.going = False
             elif event.type == KEYDOWN and event.key in INTERFACE_KEYS:
                 self.__handle_interface_selection_events(event)
+                #allow these events to trigger after
+                leftover_events.append(event)
 
             elif (event.type == KEYDOWN or event.type == KEYUP) and \
                     event.key in CAMERA_KEYS:

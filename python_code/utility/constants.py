@@ -75,7 +75,6 @@ MODES = {MINING : Mode(MINING, "Mining", (9, 108, 128, 100)),
 
 #interface control
 CRAFTING = K_c
-BUILDING = K_b
 
 INTERFACE_KEYS = [CRAFTING, K_ESCAPE, BUILDING]
 

@@ -8,10 +8,10 @@ from python_code.board.materials import BuildingMaterial
 
 #crafting globals
 #this is for managing a selected item. I am not super happy with it.
-SELECTED_LABEL = None
+SELECTED_ITEM = None
 
 def select_a_widget(widget):
-    global SELECTED_LABEL
+    global SELECTED_ITEM
     if SELECTED_LABEL and widget != SELECTED_LABEL:
         SELECTED_LABEL.set_selected(False)
     SELECTED_LABEL = widget
@@ -107,6 +107,11 @@ class CraftingWindow(Frame):
             if item.name not in covered_items:
                 #remove the alpha channel
                 lbl = ItemLabel((0, 0), item, color=self.COLOR[:-1])
+                def set_selected(self, selected):
+                    self.set_selected(selected)
+                    if selected:
+                        select_a_widget(self)
+                lbl.set_action(1, set_selected, [lbl, True], ["pressed"])
                 self._inventory_sp.add_widget(lbl)
 
     def __innitiate_widgets(self):
@@ -247,12 +252,12 @@ class CraftingLabel(Label):
         self.item = None
 
     def set_image(self, add = True):
-        if SELECTED_LABEL == None:
+        if SELECTED_ITEM == None:
             return
         image = self.item = None
         if add:
-            self.item = SELECTED_LABEL.item
-            image = SELECTED_LABEL.item_image
+            self.item = SELECTED_ITEM.item
+            image = SELECTED_ITEM.item_image
         super().set_image(image)
         self.changed_item = True
 
@@ -281,54 +286,3 @@ class DisplayLabel(Label):
     #     text_image.blit(size, (0, 18))
     #     return text_image
 
-class ItemLabel(Label):
-    """
-    Specialized label specifically for displaying items
-    """
-    SIZE = Size(42, 42)
-    ITEM_SIZE = Size(30, 30)
-    def __init__(self, pos, item, **kwargs):
-        self.item = item
-        #is set when innitailising label, just to make sure
-        self.item_image = None
-        Label.__init__(self, pos, self.SIZE, **kwargs)
-        self.previous_total = self.item.quantity
-        # when innitiating make sure the number is displayed
-        self.set_text(str(self.previous_total), (10, 10),
-                      color=self.item.TEXT_COLOR)
-        self.set_action(1, self.set_selected, [True], ["pressed"])
-
-    def _create_image(self, size, color, **kwargs):
-        """
-        Customized image which is an image containing a block and a border
-
-        :See: Label._create_image()
-        :return: pygame Surface object
-        """
-        # create a background surface
-        image = pygame.Surface(self.SIZE)
-        image.fill(color)
-
-        # get the item image and place it in the center
-        self.item_image = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
-        image.blit(self.item_image, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
-                            self.SIZE.height / 2 - self.ITEM_SIZE.height / 2))
-
-        # draw rectangle slightly smaller then image
-        rect = image.get_rect()
-        rect.inflate_ip(-4, -4)
-        pygame.draw.rect(image, (0, 0, 0), rect, 3)
-        return image
-
-    def set_selected(self, selected):
-        super().set_selected(selected)
-        if selected:
-            select_a_widget(self)
-
-    def wupdate(self):
-        """
-        Make sure to update the amount whenever it changes.
-        """
-        if self.previous_total != self.item.quantity:
-            self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)

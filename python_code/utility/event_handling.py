@@ -162,8 +162,8 @@ class BoardEventHandler(EventHandler, ABC):
 
     def __process_selection(self):
         """
-        Process when the user is done selecting and a highlight should appear of the area
-        :return:
+        Process when the user is done selecting and a highlight should appear
+        of the area. Also try to add tasks for all selected blocks.
         """
         if self.selection_image == None or self.selection_image.selection_rectangle == None:
             return
