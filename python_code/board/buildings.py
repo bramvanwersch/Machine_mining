@@ -12,9 +12,11 @@ class Building(ABC):
     that contain an image
     """
     BLOCK_TYPE = Block
-    def __init__(self, pos):
+    def __init__(self, pos, material=None, **kwargs):
+        if material == None:
+            material = self.MATERIAL
         self.pos = pos
-        self.blocks = self._get_blocks( self.BLOCK_TYPE, self.MATERIAL)
+        self.blocks = self._get_blocks( self.BLOCK_TYPE, material)
 
     @property
     @abstractmethod
@@ -30,7 +32,9 @@ class Building(ABC):
     @abstractmethod
     def MATERIAL(self):
         """
-        Specify a material class
+        Specify a material class. The material class should be called
+        NameOfBuildingMaterial and the name of the building cannot contain the
+        word Material
 
         :return: material class
         """
@@ -62,7 +66,7 @@ class Building(ABC):
             for column_i, image in enumerate(row):
                 material = material_class(image = image)
                 pos = (self.pos[0] + column_i * BLOCK_SIZE.width, self.pos[1] + row_i * BLOCK_SIZE.height)
-                block_row.append(block_class(pos, BLOCK_SIZE, material))
+                block_row.append(block_class(pos, material))
             blocks.append(block_row)
         return blocks
 
@@ -74,8 +78,7 @@ class Terminal(Building):
     IMAGE_SPECIFICATIONS = ["buildings", (0, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = TerminalMaterial
-    def __init__(self, pos):
-        super().__init__(pos)
+
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
@@ -93,8 +96,8 @@ class Furnace(Building):
     IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = FurnaceMaterial
-    def __init__(self, pos):
-        super().__init__(pos)
+    #to allow it to be instantiated like any normal block
+
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)

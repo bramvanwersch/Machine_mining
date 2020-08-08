@@ -1,14 +1,16 @@
 import pygame
 from abc import ABC
 
+from python_code.utility.constants import BLOCK_SIZE
+
 
 class BaseBlock(ABC):
     """
     Base class for the blocks in image matrices
     """
     #all tasks types are allowed
-    def __init__(self, pos, size):
-        self.size = size
+    def __init__(self, pos):
+        self.size = BLOCK_SIZE
         self.rect = pygame.Rect((*pos, *self.size))
         self.tasks = {}
 
@@ -41,8 +43,8 @@ class AirBlock(BaseBlock):
     """
     Special case of a block class that is an empty block with no surface
     """
-    def __init__(self, pos, size, material, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, **kwargs)
         self.material = material
 
 
@@ -50,8 +52,8 @@ class Block(BaseBlock):
     """
     A normal block containing anythin but air
     """
-    def __init__(self, pos, size, material, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, **kwargs)
         self.material = material
         self.surface = self.material.surface
         self.rect = self.surface.get_rect(topleft=pos)
@@ -84,8 +86,8 @@ class Block(BaseBlock):
         return finished
 
 class ContainerBlock(Block):
-    def __init__(self, pos, size, material, **kwargs):
-        super().__init__(pos, size, material, **kwargs)
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, material, **kwargs)
         #how full the terminal is does not matter
         self.inventory = None
 

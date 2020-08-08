@@ -7,6 +7,7 @@ from python_code.utility.constants import *
 from python_code.board.pathfinding import PathFinder
 from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
+from python_code.building.building import SELECTED_ITEM
 
 class Board(BoardEventHandler):
     """
@@ -111,7 +112,7 @@ class Board(BoardEventHandler):
             for block in row:
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
-                self.matrix[row][column] = AirBlock(block.rect.topleft, block.rect.size, materials.Air())
+                self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
 
     def closest_inventory(self, start):
         """
@@ -254,7 +255,6 @@ class Board(BoardEventHandler):
 
 
     # task management
-
     def _add_tasks(self, blocks):
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, blocks)
@@ -266,6 +266,19 @@ class Board(BoardEventHandler):
                 for block in row:
                     block.tasks = {}
                 self.task_control.remove(*row)
+        elif self._mode.name == "Building":
+            build_blocks = self.__change_to_building_blocks(blocks)
+            self.task_control.add(self._mode.name)
+
+    def __change_to_building_blocks(self, blocks):
+        building_item = SELECTED_ITEM.material
+        if isinstance(material, BuildingMaterial):
+            name = material.name.replace("Material", "")
+            building_block_i = getattr(python_code.board.buildings, name)
+        for row_i, row in enumerate(blocks):
+            for col_i, block in enumerate(row):
+                blocks[row_i][col_i] = building_block_i
+
 
 #### MAP GENERATION FUNCTIONS ###
 
@@ -388,9 +401,9 @@ class Board(BoardEventHandler):
                 else:
                     material_instance = material()
                 if material.name() == "Air":
-                    block = AirBlock(pos, BLOCK_SIZE, material_instance)
+                    block = AirBlock(pos, material_instance)
                 else:
-                    block = Block(pos, BLOCK_SIZE, material_instance)
+                    block = Block(pos, material_instance)
                 s_matrix[row_i][column_i] = block
         return s_matrix
 
