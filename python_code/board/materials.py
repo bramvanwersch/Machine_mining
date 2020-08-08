@@ -249,7 +249,7 @@ class FurnaceMaterial(BuildingMaterial):
     TEXT_COLOR = (255,255,255)
 
 
-class StonePipeMaterial(BuildingMaterial):
+class StonePipeMaterial(ImageMaterial):
     TASK_TIME = 1000
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((10,0), color_key=(255,255,255))

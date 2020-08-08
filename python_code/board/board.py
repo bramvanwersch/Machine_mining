@@ -5,9 +5,10 @@ from python_code.utility.utilities import *
 from python_code.board import materials
 from python_code.utility.constants import *
 from python_code.board.pathfinding import PathFinder
-from python_code.board.buildings import *
+from python_code.board import buildings
+from  python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
-from python_code.building.building import SELECTED_ITEM
+from python_code.building.building import get_selected_item
 
 class Board(BoardEventHandler):
     """
@@ -113,6 +114,14 @@ class Board(BoardEventHandler):
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
                 self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
+
+    def add_block(self, block):
+        self.foreground_image.add_image(block.rect, block.surface)
+        # remove the highlight
+        self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
+        row = self.__p_to_r(block.rect.y)
+        column = self.__p_to_c(block.rect.x)
+        self.matrix[row][column] = block
 
     def closest_inventory(self, start):
         """
@@ -268,16 +277,19 @@ class Board(BoardEventHandler):
                 self.task_control.remove(*row)
         elif self._mode.name == "Building":
             build_blocks = self.__change_to_building_blocks(blocks)
-            self.task_control.add(self._mode.name)
+            self.task_control.add(self._mode.name, blocks)
 
     def __change_to_building_blocks(self, blocks):
-        building_item = SELECTED_ITEM.material
+        material = get_selected_item().material
         if isinstance(material, BuildingMaterial):
-            name = material.name.replace("Material", "")
-            building_block_i = getattr(python_code.board.buildings, name)
+            name = material.name().replace("Material", "")
+            building_block_i = getattr(buildings, name)
+        else:
+            building_block_i = Block
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
-                blocks[row_i][col_i] = building_block_i
+                blocks[row_i][col_i] = building_block_i(block.rect.topleft, material)
+        return blocks
 
 
 #### MAP GENERATION FUNCTIONS ###

@@ -202,7 +202,7 @@ class MovingEntity(ZoomableEntity):
 
 class InputSaver:
     """
-    Save input into a dictionary. This is an abstract class that cannot be 
+    Save input into a dictionary. This is an abstract class that cannot be
     instantiated on its own
     """
 
@@ -349,6 +349,8 @@ class Worker(MovingEntity):
                 self.board.remove_blocks([[f_block]])
                 self.task_control.remove(f_block)
                 self.inventory.add_blocks(f_block)
+            elif f_task.task_type == "Building":
+                self.board.add_block(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)

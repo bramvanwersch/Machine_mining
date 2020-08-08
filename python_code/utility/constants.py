@@ -57,7 +57,7 @@ CAMERA_KEYS = [UP, DOWN, RIGHT, LEFT]
 #mode controls
 MINING = K_m
 BUILDING = K_b
-CANCEL = K_c
+CANCEL = K_x
 SELECTING = K_k
 
 class Mode:
@@ -69,7 +69,7 @@ class Mode:
 
 MODE_KEYS = [MINING, BUILDING, CANCEL, SELECTING]
 MODES = {MINING : Mode(MINING, "Mining", (9, 108, 128, 100)),
-         BUILDING : Mode(BUILDING, "Building", (89, 50, 7, 100)),
+         BUILDING : Mode(BUILDING, "Building", (255, 64, 229, 100)),
          CANCEL : Mode(CANCEL, "Cancel", (255, 0, 0, 100), False),
          SELECTING : Mode(SELECTING, "Selecting", (59, 191, 70, 100), False)}
 

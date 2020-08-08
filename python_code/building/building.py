@@ -1,18 +1,21 @@
 from python_code.widgets import *
 
 #globals
-SELECTED_ITEM = None
+SELECTED_WIDGET = None
 
 def select_an_item(widget):
-    global SELECTED_ITEM
-    if SELECTED_ITEM and widget != SELECTED_ITEM:
-        SELECTED_ITEM.set_selected(False)
-    SELECTED_ITEM = widget
+    global SELECTED_WIDGET
+    if SELECTED_WIDGET and widget != SELECTED_WIDGET:
+        SELECTED_WIDGET.set_selected(False)
+    SELECTED_WIDGET = widget
     #add an event that presses the building key to exit the interface
     newevent = pygame.event.Event(KEYDOWN, unicode="b",
                                   key=pygame.locals.K_b,
                                   mod=pygame.locals.KMOD_NONE)  # create the event
     pygame.event.post(newevent)
+    
+def get_selected_item():
+    return SELECTED_WIDGET.item
 
 class BuildingInterface(EventHandler):
     def __init__(self, board, *groups):

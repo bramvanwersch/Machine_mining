@@ -8,10 +8,10 @@ from python_code.board.materials import BuildingMaterial
 
 #crafting globals
 #this is for managing a selected item. I am not super happy with it.
-SELECTED_ITEM = None
+SELECTED_LABEL = None
 
 def select_a_widget(widget):
-    global SELECTED_ITEM
+    global SELECTED_LABEL
     if SELECTED_LABEL and widget != SELECTED_LABEL:
         SELECTED_LABEL.set_selected(False)
     SELECTED_LABEL = widget
@@ -252,12 +252,12 @@ class CraftingLabel(Label):
         self.item = None
 
     def set_image(self, add = True):
-        if SELECTED_ITEM == None:
+        if SELECTED_LABEL== None:
             return
         image = self.item = None
         if add:
-            self.item = SELECTED_ITEM.item
-            image = SELECTED_ITEM.item_image
+            self.item = SELECTED_LABEL.item
+            image = SELECTED_LABEL.item_image
         super().set_image(image)
         self.changed_item = True
 
