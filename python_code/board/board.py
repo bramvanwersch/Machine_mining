@@ -474,7 +474,10 @@ class BoardImage(ZoomableEntity):
         :param rect: location of the image as a pygame Rect object
         :param image: a pygame Surface object
         """
-        self.image.blit(image, rect)
+        self.orig_image.blit(image, rect)
+        zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),round(rect.width * self._zoom),round(rect.height * self._zoom)))
+        zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
+        self.image.blit(zoomed_image, zoomed_rect)
 
     #for determining mouse position on the board given the screen coordinate
     def _screen_to_board_coordinate(self, coord):
