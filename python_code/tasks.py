@@ -68,10 +68,10 @@ class TaskControl:
         """
         sorted_blocks = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__block_sort_tuple(x, worker_pos))
         for block in sorted_blocks:
-            # sorted_tasks = sorted(block.task.values(), key = lambda x: (x.started_task, x.priority))
-            #allow for the last checks
-            # for task in sorted_tasks:
-            #     if task.task_type == "Building"
+            #if no materials are avaialable skip the building task
+            if block.task.task_type == "Building":
+                if not self.__terminal_inv.check_item(block.finish_block.name(), 1):
+                    continue
             return block.task, block
         return None, None
 

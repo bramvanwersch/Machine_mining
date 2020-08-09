@@ -102,9 +102,9 @@ class CraftingWindow(Frame):
         First it is figured out what items are new and then a label for each is
         constructed
         """
-        covered_items = [widget.item.name for widget in self._inventory_sp.widgets]
+        covered_items = [widget.item.name() for widget in self._inventory_sp.widgets]
         for item in self.__inventory.items:
-            if item.name not in covered_items:
+            if item.name() not in covered_items:
                 #remove the alpha channel
                 lbl = ItemLabel((0, 0), item, color=self.COLOR[:-1])
                 def set_selected(self, selected):

@@ -32,6 +32,9 @@ class BaseBlock(ABC):
         """
         return self.material.ALLOWED_TASKS
 
+    def name(self):
+        return self.material.name()
+
     def add_task(self, task):
         """
         Can hold a task from each type
