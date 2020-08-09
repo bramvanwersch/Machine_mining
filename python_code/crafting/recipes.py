@@ -343,7 +343,7 @@ class FurnaceRecipe(BaseConceptRecipe):
 class CompactStoneRecipe(BaseConceptRecipe):
     BLOCK_TYPE = Block
     def __init__(self):
-        mat = StoneBrick()
+        mat = StoneBrickMaterial()
         BaseConceptRecipe.__init__(self, mat)
         self.quantity = 2
 

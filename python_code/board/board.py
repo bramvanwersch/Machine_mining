@@ -278,20 +278,10 @@ class Board(BoardEventHandler):
             # remove highlight
             self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
             for row in blocks:
-                for block in row:
-                    block.tasks = {}
-                self.task_control.remove(*row)
+                self.task_control.remove(*row, cancel=True)
         elif self._mode.name == "Building":
             build_blocks = self.__change_to_building_blocks(blocks)
-            self.__add_building_blocks(blocks)
-            self.task_control.add(self._mode.name, blocks)
-
-    def __add_building_blocks(self, blocks):
-        for row in blocks:
-            for block in row:
-                row = self.__p_to_r(block.rect.y)
-                column = self.__p_to_c(block.rect.x)
-                self.matrix[row][column] = BuildingBlock(block.rect.topleft, "Building")
+            self.task_control.add(self._mode.name, build_blocks)
 
     def __change_to_building_blocks(self, blocks):
         material = get_selected_item().material
@@ -303,7 +293,11 @@ class Board(BoardEventHandler):
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
                 if block == "Air":
-                    blocks[row_i][col_i] = building_block_i(block.rect.topleft, material)
+                    finish_block = building_block_i(block.rect.topleft, material)
+                    row_i_m = self.__p_to_r(block.rect.y)
+                    column_i_m = self.__p_to_c(block.rect.x)
+                    self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block)
+                    blocks[row_i][col_i] = self.matrix[row_i_m][column_i_m]
                 else:
                     #ignore this block
                     blocks[row_i][col_i] = None

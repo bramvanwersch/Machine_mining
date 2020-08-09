@@ -1,4 +1,6 @@
 from python_code.utility.utilities import manhattan_distance
+from python_code.board.blocks import AirBlock
+from python_code.board.materials import Air
 
 class TaskControl:
     """
@@ -28,7 +30,7 @@ class TaskControl:
                     else:
                         self.unreachable_block_tasks[block] = block
 
-    def remove(self, *blocks):
+    def remove(self, *blocks, cancel = False):
         """
         Remove a task from a block and consider other things if needed
 
@@ -37,7 +39,7 @@ class TaskControl:
         for block in blocks:
             if block == None or block == "Air":
                 continue
-            removed_types = block.remove_finished_tasks()
+            removed_types = block.remove_tasks(cancel=cancel)
             #if all the tasks are depleted
             if len(block.tasks) == 0:
                 #pop a task if not already removed by another worker or not present in case of cancels
@@ -51,6 +53,9 @@ class TaskControl:
                     b = self.unreachable_block_tasks.pop(b, None)
                     if b:
                         self.reachable_block_tasks[b] = b
+            #make sure that the original block is replaced with air when canceling
+            if "Building" in removed_types and cancel == True:
+                self.board.remove_blocks([[block]])
 
     def get_task(self, worker_pos):
         """

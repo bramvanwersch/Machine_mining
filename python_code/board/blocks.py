@@ -32,6 +32,36 @@ class BaseBlock(ABC):
         """
         return self.material.ALLOWED_TASKS
 
+    def add_task(self, task):
+        """
+        Can hold a task from each type
+
+        :param task: a Task object
+        :return: a boolean signifying if the task was added or not
+        """
+        if task.task_type in self.material.ALLOWED_TASKS:
+            self.tasks[task.task_type] = task
+            task.task_progress = [0, self.material.task_time()]
+            return True
+        return False
+
+    def remove_tasks(self, cancel=False):
+        """
+        Check if tasks are finished or not.
+
+        :return: a list of task types that are removed.
+        """
+        finished = []
+        for key in list(self.tasks.keys()):
+            task = self.tasks[key]
+            if not cancel and task.finished:
+                del self.tasks[task.task_type]
+                finished.append(task.task_type)
+            else:
+                del self.tasks[task.task_type]
+                finished.append(task.task_type)
+        return finished
+
     def __eq__(self, other):
         return other == self.material.name()
 
@@ -49,13 +79,10 @@ class AirBlock(BaseBlock):
 
 
 class BuildingBlock(BaseBlock):
-    def __init__(self, pos, material, **kwargs):
+    def __init__(self, pos, material, finish_block, **kwargs):
         super().__init__(pos, **kwargs)
-        #TODO make this proper
-        self.material = "Building"
-
-    def __eq__(self, other):
-        return None
+        self.material = material
+        self.finish_block = finish_block
 
 
 class Block(BaseBlock):
@@ -68,32 +95,6 @@ class Block(BaseBlock):
         self.surface = self.material.surface
         self.rect = self.surface.get_rect(topleft=pos)
 
-    def add_task(self, task):
-        """
-        Can hold a task from each type
-
-        :param task: a Task object
-        :return: a boolean signifying if the task was added or not
-        """
-        if task.task_type in self.material.ALLOWED_TASKS:
-            self.tasks[task.task_type] = task
-            task.task_progress = [0, self.material.task_time()]
-            return True
-        return False
-
-    def remove_finished_tasks(self):
-        """
-        Check if tasks are finished or not.
-
-        :return: a list of task types that are removed.
-        """
-        finished = []
-        for key in list(self.tasks.keys()):
-            task = self.tasks[key]
-            if task.finished:
-                del self.tasks[task.task_type]
-                finished.append(task.task_type)
-        return finished
 
 class ContainerBlock(Block):
     def __init__(self, pos, material, **kwargs):

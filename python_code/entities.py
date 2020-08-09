@@ -335,7 +335,7 @@ class Worker(MovingEntity):
                 self.task_control.remove(f_block)
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
-                self.board.add_block(f_block)
+                self.board.add_block(f_block.finish_block)
                 self.task_control.remove(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
@@ -377,7 +377,7 @@ class Worker(MovingEntity):
         else:
             self.speed.y = 0
 
-        #check all corners for collision
+        #check for collision
         if not self.board.collide_air((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
             self.speed.x = 0
         if not self.board.collide_air((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):

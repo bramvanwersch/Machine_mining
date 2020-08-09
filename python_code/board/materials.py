@@ -14,7 +14,7 @@ class BaseMaterial(ABC):
     TASK_TIME = 250
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
-    ALLOWED_TASKS = [mode.name for mode in MODES.values()] + ["Empty inventory"]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building"]] + ["Empty inventory"]
     TEXT_COLOR = (0,0,0)
     def __init__(self, image = None, **kwargs):
         """
@@ -59,6 +59,15 @@ class Air(BaseMaterial):
         """
         return None
 
+
+class BuildMaterial(BaseMaterial):
+    ALLOWED_TASKS = ["Cancel", "Building"]
+
+    def _configure_surface(self, image):
+        """
+        No surface
+        """
+        return None
 
 class ColorMaterial(BaseMaterial, ABC):
     """
@@ -223,7 +232,7 @@ class ImageMaterial(BaseMaterial, ABC):
             return surface
 
 #craftables
-class StoneBrick(ImageMaterial):
+class StoneBrickMaterial(ImageMaterial):
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((0,0))
         return image
@@ -233,14 +242,14 @@ class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
-    ALLOWED_TASKS = [mode.name for mode in MODES.values()]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building"]]
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
 class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
-    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name != "Mining"] + ["Empty inventory"]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
     TASK_TIME = 1000
 
 
