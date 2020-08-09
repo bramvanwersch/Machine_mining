@@ -286,18 +286,24 @@ class Worker(MovingEntity):
         elif not self.task_queue.empty():
             self.__perform_task()
         elif self.inventory.full:
-            block = self.board.closest_inventory(self.orig_rect)
-            task = Task("Empty inventory")
-            if block:
-                block.add_task(task)
-                self.task_queue.add(task, block)
-                self.__start_task()
+            self.__empty_inventory()
+
         #request a new task from task control if there are no tasks left
         elif self.task_queue.empty():
             task, block = self.task_control.get_task(self.orig_rect.topleft)
             if task:
                 self.task_queue.add(task, block)
                 self.__start_task()
+            elif not self.inventory.empty:
+                self.__empty_inventory()
+
+    def __empty_inventory(self):
+        block = self.board.closest_inventory(self.orig_rect)
+        task = Task("Empty inventory")
+        if block:
+            block.add_task(task)
+            self.task_queue.add(task, block)
+            self.__start_task()
 
 ##task management functions:
 
