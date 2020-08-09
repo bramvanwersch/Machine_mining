@@ -10,7 +10,8 @@ class TaskControl:
         #variable to track tasks by name and allow for fast search and destroy
         self.reachable_block_tasks = {}
         self.unreachable_block_tasks = {}
-        self.board= board
+        self.board = board
+        self.__terminal_inv = board.inventorie_blocks[0].inventory
 
     def add(self, type, blocks, priority = 1):
         """
@@ -39,22 +40,22 @@ class TaskControl:
         for block in blocks:
             if block == None or block == "Air":
                 continue
-            removed_types = block.remove_tasks(cancel=cancel)
+            removed_type = block.remove_task()
             #if all the tasks are depleted
-            if len(block.tasks) == 0:
+            if removed_type:
                 #pop a task if not already removed by another worker or not present in case of cancels
                 self.reachable_block_tasks.pop(block, None)
                 self.unreachable_block_tasks.pop(block, None)
 
             #if a task was completed that removes the block check if surrounding tasks can now be acceses
-            if "Mining" in removed_types:
-                surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb and len(tb.tasks) > 0]
+            if removed_type == "Mining":
+                surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
                 for b in surrounding_task_blocks:
                     b = self.unreachable_block_tasks.pop(b, None)
                     if b:
                         self.reachable_block_tasks[b] = b
             #make sure that the original block is replaced with air when canceling
-            if "Building" in removed_types and cancel == True:
+            elif removed_type == "Building" and cancel == True:
                 self.board.remove_blocks([[block]])
 
     def get_task(self, worker_pos):
@@ -66,9 +67,12 @@ class TaskControl:
         :return a Task and Block object or double None
         """
         sorted_blocks = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__block_sort_tuple(x, worker_pos))
-        if len(sorted_blocks) > 0:
-            best_task = sorted(sorted_blocks[0].tasks.values(), key = lambda x: (x.started_task, x.priority))[0]
-            return best_task, sorted_blocks[0]
+        for block in sorted_blocks:
+            # sorted_tasks = sorted(block.task.values(), key = lambda x: (x.started_task, x.priority))
+            #allow for the last checks
+            # for task in sorted_tasks:
+            #     if task.task_type == "Building"
+            return block.task, block
         return None, None
 
     def __block_sort_tuple(self, block, worker_pos):
@@ -79,10 +83,8 @@ class TaskControl:
         :param worker_pos: the position of the worker
         :return: a tuple (boolean, integer, float)
         """
-        best_task = sorted(block.tasks.values(),
-                           key=lambda x: (x.started_task, x.priority))[0]
         distance = manhattan_distance(block.rect.topleft, worker_pos)
-        return (best_task.started_task, best_task.priority, distance)
+        return (block.task.started_task, block.task.priority, distance)
 
 class TaskQueue:
     """

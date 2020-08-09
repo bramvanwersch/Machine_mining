@@ -12,7 +12,7 @@ class BaseBlock(ABC):
     def __init__(self, pos):
         self.size = BLOCK_SIZE
         self.rect = pygame.Rect((*pos, *self.size))
-        self.tasks = {}
+        self.task = None
 
     @property
     def coord(self):
@@ -40,27 +40,22 @@ class BaseBlock(ABC):
         :return: a boolean signifying if the task was added or not
         """
         if task.task_type in self.material.ALLOWED_TASKS:
-            self.tasks[task.task_type] = task
+            self.task = task
             task.task_progress = [0, self.material.task_time()]
             return True
         return False
 
-    def remove_tasks(self, cancel=False):
+    def remove_task(self):
         """
-        Check if tasks are finished or not.
+        remove a task from a block
 
         :return: a list of task types that are removed.
         """
-        finished = []
-        for key in list(self.tasks.keys()):
-            task = self.tasks[key]
-            if not cancel and task.finished:
-                del self.tasks[task.task_type]
-                finished.append(task.task_type)
-            else:
-                del self.tasks[task.task_type]
-                finished.append(task.task_type)
-        return finished
+        if self.task != None:
+            type = self.task.task_type
+            self.task = None
+            return type
+        return None
 
     def __eq__(self, other):
         return other == self.material.name()

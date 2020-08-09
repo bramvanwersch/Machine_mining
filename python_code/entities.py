@@ -311,8 +311,7 @@ class Worker(MovingEntity):
         """
         Called to start up the current task in the task_queue
         """
-        path = self.board.pf.get_path(self.orig_rect,
-                                      self.task_queue.task_block.rect)
+        path = self.board.pf.get_path(self.orig_rect,self.task_queue.task_block.rect)
         if path != None:
             self.task_queue.task.start()
             self.path = path
@@ -342,6 +341,8 @@ class Worker(MovingEntity):
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
                 self.board.add_block(f_block.finish_block)
+                # print(f_block.finish_block.material.name())
+                # print(self.inventory.get(f_block.finish_block.material.name(), 1))
                 self.task_control.remove(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
