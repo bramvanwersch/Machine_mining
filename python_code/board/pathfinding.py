@@ -26,7 +26,7 @@ class PathFinder:
         start_rect = None
         #find start rectangle
         for rect in self.calculation_thread.rectangles:
-            if rect.collidepoint(start.topleft):
+            if rect.collidepoint(start.center):
                 start_rect = rect
                 break
         if start_rect == None:

@@ -48,6 +48,16 @@ class AirBlock(BaseBlock):
         self.material = material
 
 
+class BuildingBlock(BaseBlock):
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, **kwargs)
+        #TODO make this proper
+        self.material = "Building"
+
+    def __eq__(self, other):
+        return None
+
+
 class Block(BaseBlock):
     """
     A normal block containing anythin but air

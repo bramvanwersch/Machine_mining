@@ -17,7 +17,7 @@ class TaskControl:
         """
         for row in blocks:
             for block in row:
-                if block == "Air":
+                if block  == None or block == "Air":
                     continue
                 task = Task(type, priority = priority)
 

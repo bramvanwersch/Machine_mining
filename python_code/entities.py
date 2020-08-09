@@ -169,35 +169,20 @@ class MovingEntity(ZoomableEntity):
         """
         Method for moving something based on an x and y speed
         """
-        self.orig_rect.centerx = self._x_collision_adjusted_value()
+        x, y = self._collision_adjusted_values()
+        self.orig_rect.centerx = x
 
-        self.orig_rect.centery = self._y_collision_adjusted_value()
+        self.orig_rect.centery = y
 
-    def _x_collision_adjusted_value(self):
-        """
-        Adjust the centerx value based on collison values established for the
-        entity. The basic collsion rules are not outside the playing board.
-
-        :return: a float that represents the new x center coordinate of the
-        rectangle of the entity.
-        """
+    def _collision_adjusted_values(self):
         new_centerx = max(0.5 * self.orig_rect.width,
                           min(self.orig_rect.centerx + self.speed.x,
                           ORIGINAL_BOARD_SIZE.width - 0.5 * self.orig_rect.width))
-        return new_centerx
 
-    def _y_collision_adjusted_value(self):
-        """
-        Adjust the centery value based on collison values established for the
-        entity. The basic collsion rules are not outside the playing board.
-
-        :return: a float that represents the new y center coordinate of the
-        rectangle of the entity.
-        """
         new_centery = max(0.5 * self.orig_rect.height,
                           min(self.orig_rect.centery + self.speed.y,
                           ORIGINAL_BOARD_SIZE.height - 0.5 * self.orig_rect.height))
-        return new_centery
+        return new_centerx, new_centery
 
 
 class InputSaver:
@@ -351,6 +336,7 @@ class Worker(MovingEntity):
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
                 self.board.add_block(f_block)
+                self.task_control.remove(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
@@ -389,6 +375,12 @@ class Worker(MovingEntity):
         elif self.orig_rect.y > self.dest[1]:
             self.speed.y = max(- self.max_speed, self.dest[1] - self.orig_rect.y)
         else:
+            self.speed.y = 0
+
+        #check all corners for collision
+        if not self.board.collide_air((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
+            self.speed.x = 0
+        if not self.board.collide_air((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):
             self.speed.y = 0
 
 

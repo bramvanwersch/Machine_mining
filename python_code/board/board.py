@@ -179,6 +179,12 @@ class Board(BoardEventHandler):
     def __getitem__(self, item):
         return self.matrix[item]
 
+    def collide_air(self, point):
+        block = self.matrix[self.__p_to_r(point[1])][self.__p_to_c(point[0])]
+        if block == "Air":
+            return True
+        return False
+
     def __p_to_r(self, value):
         """
         Point to row conversion. Convert a coordinate into a row number
@@ -277,7 +283,15 @@ class Board(BoardEventHandler):
                 self.task_control.remove(*row)
         elif self._mode.name == "Building":
             build_blocks = self.__change_to_building_blocks(blocks)
+            self.__add_building_blocks(blocks)
             self.task_control.add(self._mode.name, blocks)
+
+    def __add_building_blocks(self, blocks):
+        for row in blocks:
+            for block in row:
+                row = self.__p_to_r(block.rect.y)
+                column = self.__p_to_c(block.rect.x)
+                self.matrix[row][column] = BuildingBlock(block.rect.topleft, "Building")
 
     def __change_to_building_blocks(self, blocks):
         material = get_selected_item().material
@@ -288,7 +302,11 @@ class Board(BoardEventHandler):
             building_block_i = Block
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
-                blocks[row_i][col_i] = building_block_i(block.rect.topleft, material)
+                if block == "Air":
+                    blocks[row_i][col_i] = building_block_i(block.rect.topleft, material)
+                else:
+                    #ignore this block
+                    blocks[row_i][col_i] = None
         return blocks
 
 
