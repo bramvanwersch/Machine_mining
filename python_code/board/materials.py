@@ -250,7 +250,7 @@ class BuildingMaterial(ImageMaterial, ABC):
 class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
-    TASK_TIME = 1000
+    TASK_TIME = 200
 
 
 class FurnaceMaterial(BuildingMaterial):

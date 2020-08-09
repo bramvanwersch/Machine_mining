@@ -107,7 +107,7 @@ class TaskQueue:
     @property
     def task(self):
         """
-        The current task being worked on by the worker
+        The current task that is at the top of the stack
 
         :return: a Task object or None
         """
@@ -149,7 +149,7 @@ class Task:
     """
     Object for storing a task and its progress
     """
-    def __init__(self, task_type, priority = 1):
+    def __init__(self, task_type, priority = 1, **kwargs):
         self.task_type = task_type
         self.priority = priority
         #change priority of assigning tasks
@@ -157,6 +157,7 @@ class Task:
         #determined by material
         self.task_progress = [0, 1]
         self.handed_in = False
+        self.__additional_info = kwargs
 
     def start(self):
         """
@@ -173,3 +174,6 @@ class Task:
         :return: a boolean
         """
         return self.task_progress[0] >= self.task_progress[1]
+
+    def __getattr__(self, item):
+        return self.__additional_info[item]

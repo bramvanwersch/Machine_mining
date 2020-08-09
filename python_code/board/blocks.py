@@ -95,6 +95,7 @@ class Block(BaseBlock):
 
 
 class ContainerBlock(Block):
+    #TODO take a critical look at this block and inheritance to container Inventory
     def __init__(self, pos, material, **kwargs):
         super().__init__(pos, material, **kwargs)
         #how full the terminal is does not matter
@@ -103,3 +104,4 @@ class ContainerBlock(Block):
     def add(self, *items):
         if self.inventory != None:
             self.inventory.add_items(*items)
+

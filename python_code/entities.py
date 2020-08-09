@@ -293,17 +293,32 @@ class Worker(MovingEntity):
             task, block = self.task_control.get_task(self.orig_rect.topleft)
             if task:
                 self.task_queue.add(task, block)
+                if self.task_queue.task.task_type == "Building":
+                    self.__get_build_items()
+                    self.__empty_inventory()
                 self.__start_task()
-            elif not self.inventory.empty:
+            #if no available task add an empty inventory task
+            else:
                 self.__empty_inventory()
 
     def __empty_inventory(self):
-        block = self.board.closest_inventory(self.orig_rect)
-        task = Task("Empty inventory")
-        if block:
-            block.add_task(task)
-            self.task_queue.add(task, block)
-            self.__start_task()
+        if not self.inventory.empty:
+            block = self.board.closest_inventory(self.orig_rect)
+            task = Task("Empty inventory")
+            if block:
+                block.add_task(task)
+                self.task_queue.add(task, block)
+                self.__start_task()
+
+    def __get_build_items(self):
+        req_block = self.task_queue.task_block.finish_block
+        if not self.inventory.check_item(req_block.name(), 1):
+            block = self.board.closest_inventory(self.orig_rect)
+            task = Task("Take item", req_block_name=req_block.name())
+            if block:
+                block.add_task(task)
+                self.task_queue.add(task, block)
+
 
 ##task management functions:
 
@@ -341,12 +356,14 @@ class Worker(MovingEntity):
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
                 self.board.add_block(f_block.finish_block)
-                # print(f_block.finish_block.material.name())
-                # print(self.inventory.get(f_block.finish_block.material.name(), 1))
+                self.inventory.get(f_block.finish_block.name(), 1)
                 self.task_control.remove(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
+            elif f_task.task_type == "Take item":
+                item = f_block.inventory.get(f_task.req_block_name, 1)
+                self.inventory.add_items(item)
             f_task.handed_in = True
         if not self.task_queue.empty():
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)

@@ -214,10 +214,10 @@ class CraftableRecipe:
         for row in grid:
             for value in row:
                 if value.name() != "Air":
-                    if value.name not in counts:
-                        counts[value.name] = 1
+                    if value.name() not in counts:
+                        counts[value.name()] = 1
                     else:
-                        counts[value.name] += 1
+                        counts[value.name()] += 1
         return counts
 
 class BaseConceptRecipe(ABC):
