@@ -187,6 +187,9 @@ class RMat:
         return self.group == 0
 
     def __getattr__(self, item):
+        """
+        Give all attributes of the material to the recipe material
+        """
         return getattr(self._material_type, item)
 
     def __eq__(self, other):

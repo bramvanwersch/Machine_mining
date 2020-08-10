@@ -7,6 +7,9 @@ from python_code.utility.event_handling import EventHandler
 
 
 class Entity(pygame.sprite.Sprite, ABC):
+    """
+    Basic entity class is a sprite with an image.
+    """
     def __init__(self, pos, size, *groups, color = (255,255,255),
                  layer = HIGHLIGHT_LAYER, **kwargs):
         self._layer = layer
@@ -38,10 +41,21 @@ class Entity(pygame.sprite.Sprite, ABC):
 
     @property
     def rect(self):
+        """
+        The original rectangle. This method is here to support zoomable entity
+        method
+
+        :return pygame Rect object
+        """
         return self.orig_rect
 
     @rect.setter
     def rect(self, rect):
+        """
+        Set the orig_rect using the rect value. Support for zoomable entity
+
+        :param rect: a pygame Rect object
+        """
         self.orig_rect = rect
 
 
@@ -175,6 +189,10 @@ class MovingEntity(ZoomableEntity):
         self.orig_rect.centery = y
 
     def _collision_adjusted_values(self):
+        """
+        Adjust the movement values to be inside the board when needed
+        :return: new x and y
+        """
         new_centerx = max(0.5 * self.orig_rect.width,
                           min(self.orig_rect.centerx + self.speed.x,
                           ORIGINAL_BOARD_SIZE.width - 0.5 * self.orig_rect.width))
@@ -293,6 +311,8 @@ class Worker(MovingEntity):
             task, block = self.task_control.get_task(self.orig_rect.topleft)
             if task:
                 self.task_queue.add(task, block)
+                #allow for extra tasks to be added to the stack depending on
+                #the type
                 if self.task_queue.task.task_type == "Building":
                     self.__get_build_items()
                     self.__empty_inventory()
@@ -302,6 +322,9 @@ class Worker(MovingEntity):
                 self.__empty_inventory()
 
     def __empty_inventory(self):
+        """
+        Protocol for emptying an inventory into the closest inventory
+        """
         if not self.inventory.empty:
             block = self.board.closest_inventory(self.orig_rect)
             task = Task("Empty inventory")
@@ -311,6 +334,9 @@ class Worker(MovingEntity):
                 self.__start_task()
 
     def __get_build_items(self):
+        """
+        Protocol for getting build materials.
+        """
         req_block = self.task_queue.task_block.finish_block
         if not self.inventory.check_item(req_block.name(), 1):
             block = self.board.closest_inventory(self.orig_rect)

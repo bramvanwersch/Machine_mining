@@ -116,6 +116,12 @@ class Board(BoardEventHandler):
                 self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
 
     def add_block(self, block):
+        """
+        Add a block to the board by changing the matrix and blitting the image
+        to the foreground_layer
+
+        :param block: a BasicBlock object or inheriting class
+        """
         self.foreground_image.add_image(block.rect, block.surface)
         # remove the highlight
         self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
@@ -247,7 +253,11 @@ class Board(BoardEventHandler):
 
     def __find_task_rectangle(self, blocks, task_type):
         """
+        Find in a matrix of blocks all blocks of a certain task type
 
+        :param blocks: a matrix of blocks
+        :param task_type: the string name of a certain type of task
+        :return:
         """
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
@@ -271,6 +281,12 @@ class Board(BoardEventHandler):
 
     # task management
     def _add_tasks(self, blocks):
+        """
+        Add tasks of the _mode.name type, tasks are added to the task control
+        when they need to be assigned to workers or directly resolved otherwise
+
+        :param blocks: a matrix of blocks
+        """
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, blocks)
         elif self._mode.name == "Cancel":
@@ -284,6 +300,13 @@ class Board(BoardEventHandler):
             self.task_control.add(self._mode.name, build_blocks)
 
     def __change_to_building_blocks(self, blocks):
+        """
+        change a matrix of blocks to instances of BuildingBlock
+
+        :param blocks: a matrix of blocks
+        :return: the original matrix where all the air blocks are filles with
+        BuildingBlocks
+        """
         material = get_selected_item().material
         if isinstance(material, BuildingMaterial):
             name = material.name().replace("Material", "")
@@ -569,6 +592,11 @@ class TransparantBoardImage(BoardImage):
             self.selection_rectangle = None
 
     def reset_selection_and_highlight(self, keep):
+        """
+        Reset the selection of the selection layer and the highlight rectangle
+
+        :param keep: if the highlight rectangle should be saved or not
+        """
         if not keep and self.__highlight_rectangle:
             self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
         self.__highlight_rectangle = None

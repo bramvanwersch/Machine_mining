@@ -11,6 +11,12 @@ from python_code.board.materials import BuildingMaterial
 SELECTED_LABEL = None
 
 def select_a_widget(widget):
+    """
+    Select a widget from ScrollPane
+
+    :param widget: a subclass of Widget object
+    :return:
+    """
     global SELECTED_LABEL
     if SELECTED_LABEL and widget != SELECTED_LABEL:
         SELECTED_LABEL.set_selected(False)
@@ -148,6 +154,9 @@ class CraftingWindow(Frame):
         self.add_widget(a_lbl)
 
     def craft_button_action(self):
+        """
+        Action function activated when pressing the crafting button
+        """
         if self._craftable_item_recipe == None:
             return
         #check if all materials are available
@@ -164,6 +173,10 @@ class CraftingWindow(Frame):
 
 
 class CraftingGrid(Pane):
+    """
+    Contains lables that are the represnetation of the crafting grid that can
+    contain materials
+    """
     COLOR = (173, 94, 29)
     GRID_SIZE = Size(9, 9)
     GRID_PIXEL_SIZE = Size(450, 450)
@@ -181,6 +194,9 @@ class CraftingGrid(Pane):
         self.size = Size(len(self._crafting_grid[0]), len(self._crafting_grid))
 
     def __init_grid(self):
+        """
+        Innitialize the crafting grid and fill it with CraftingLabels
+        """
         start_pos= [5,5]
         for row_i in range(self.GRID_SIZE.height):
             row = []
@@ -192,6 +208,12 @@ class CraftingGrid(Pane):
             self._crafting_grid.append(row)
 
     def wupdate(self, *args):
+        """
+        Trigger for updating widgets. Checks all the CraftingLabels for changes
+        and finds a rectangle of selected labels when changes where made
+
+        :param args: optional arguments
+        """
         super().wupdate()
         updated_recipe = False
         for row in self._crafting_grid:
@@ -202,6 +224,10 @@ class CraftingGrid(Pane):
                 lbl.changed_item = False
 
     def get_new_recipe_grid(self):
+        """
+        Get a new recipe grid, called when crafting labels change
+        :return:
+        """
         if self.__recipe_changed:
             self.__recipe_changed = False
             return self._recipe_grid

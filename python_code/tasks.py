@@ -176,4 +176,11 @@ class Task:
         return self.task_progress[0] >= self.task_progress[1]
 
     def __getattr__(self, item):
+        """
+        Allow to add some custom attributes using the kwargs. This can be small
+        things that allow to save some varaible
+
+        :param item: the name of a variable]
+        :return: the value of set variable as saved in the __additional_info
+        """
         return self.__additional_info[item]

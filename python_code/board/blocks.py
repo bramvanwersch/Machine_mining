@@ -33,6 +33,11 @@ class BaseBlock(ABC):
         return self.material.ALLOWED_TASKS
 
     def name(self):
+        """
+        The name of the material of the block
+
+        :return: a string
+        """
         return self.material.name()
 
     def add_task(self, task):
@@ -61,9 +66,20 @@ class BaseBlock(ABC):
         return None
 
     def __eq__(self, other):
+        """
+        Method used when == is called using this object
+
+        :param other: anything. But the expected value is a string
+        :return: a boolean
+        """
         return other == self.material.name()
 
     def __hash__(self):
+        """
+        Function for hashing a block. Kind of obsolote
+        TODO check how usefull this is and if neccesairy
+        :return: a hash
+        """
         return hash(str(self.rect.topleft))
 
 
@@ -77,6 +93,10 @@ class AirBlock(BaseBlock):
 
 
 class BuildingBlock(BaseBlock):
+    """
+    Place holder block when building that is not air. This block is removed when
+    canceling and finishing building tasks
+    """
     def __init__(self, pos, material, finish_block, **kwargs):
         super().__init__(pos, **kwargs)
         self.material = material
@@ -95,6 +115,9 @@ class Block(BaseBlock):
 
 
 class ContainerBlock(Block):
+    """
+    Block that has an inventory
+    """
     #TODO take a critical look at this block and inheritance to container Inventory
     def __init__(self, pos, material, **kwargs):
         super().__init__(pos, material, **kwargs)
