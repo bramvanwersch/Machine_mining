@@ -226,7 +226,8 @@ class CraftingGrid(Pane):
     def get_new_recipe_grid(self):
         """
         Get a new recipe grid, called when crafting labels change
-        :return:
+
+        :return: a recipe grid or None when there is no change
         """
         if self.__recipe_changed:
             self.__recipe_changed = False
@@ -234,6 +235,13 @@ class CraftingGrid(Pane):
         return None
 
     def _get_recipe_grid(self):
+        """
+        Get the recipe grid by finding a square of CraftingLabels that are have
+        items in them
+
+        :return: return a matrix of  CraftingLabels potentially with items in
+        them
+        """
         col_start = self.size.width
         col_end = 0
         row_start = self.size.height
@@ -270,6 +278,9 @@ class CraftingGrid(Pane):
 
 
 class CraftingLabel(Label):
+    """
+    Labels that can hold items as pictures in them
+    """
     def __init__(self, pos, size, **kwargs):
         Label.__init__(self, pos, size, **kwargs)
         self.set_action(1, self.set_image, types=["pressed"])
@@ -278,6 +289,12 @@ class CraftingLabel(Label):
         self.item = None
 
     def set_image(self, add = True):
+        """
+        Change the image of the label
+        
+        :param add: boolean. If true the image of the self.item is added otherwise
+        remove any image
+        """
         if SELECTED_LABEL== None:
             return
         image = self.item = None
@@ -288,14 +305,21 @@ class CraftingLabel(Label):
         self.changed_item = True
 
 class DisplayLabel(Label):
-
+    """
+    a label to display an image
+    """
     def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
         self.selected = True
 
     def set_display(self, material):
-        if material == None:
+        """
+        Set the display with a material image
 
+        :param material: the material, can be None to clear the image
+        :return:
+        """
+        if material == None:
             self.set_image(None)
         elif material != None:
             image = pygame.transform.scale(material.surface, (70, 70))
