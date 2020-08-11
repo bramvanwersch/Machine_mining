@@ -52,6 +52,7 @@ class BaseMaterial(ABC):
 
 class Air(BaseMaterial):
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]  + ["Empty inventory"]
+    TASK_TIME = 0
 
     def _configure_surface(self, image):
         """

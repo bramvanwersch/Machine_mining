@@ -315,7 +315,7 @@ class Board(BoardEventHandler):
             building_block_i = Block
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
-                if material.name() != block.material.name():
+                if material != block.material:
                     finish_block = building_block_i(block.rect.topleft, material)
                     row_i_m = self.__p_to_r(block.rect.y)
                     column_i_m = self.__p_to_c(block.rect.x)

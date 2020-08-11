@@ -103,6 +103,20 @@ class BuildingBlock(BaseBlock):
         self.finish_block = finish_block
         self.original_block = original_block
 
+    def add_task(self, task):
+        """
+        Can hold a task from each type
+
+        :param task: a Task object
+        :return: a boolean signifying if the task was added or not
+        """
+        if task.task_type in self.material.ALLOWED_TASKS:
+            self.task = task
+            task.task_progress = [0, self.finish_block.material.task_time() +
+                                  self.original_block.material.task_time()]
+            return True
+        return False
+
 
 class Block(BaseBlock):
     """
