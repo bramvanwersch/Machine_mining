@@ -14,7 +14,7 @@ class BaseMaterial(ABC):
     TASK_TIME = 250
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
-    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building"]] + ["Empty inventory"]
+    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name ] + ["Empty inventory"]
     TEXT_COLOR = (0,0,0)
     def __init__(self, image = None, **kwargs):
         """

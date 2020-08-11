@@ -97,10 +97,11 @@ class BuildingBlock(BaseBlock):
     Place holder block when building that is not air. This block is removed when
     canceling and finishing building tasks
     """
-    def __init__(self, pos, material, finish_block, **kwargs):
+    def __init__(self, pos, material, finish_block, original_block, **kwargs):
         super().__init__(pos, **kwargs)
         self.material = material
         self.finish_block = finish_block
+        self.original_block = original_block
 
 
 class Block(BaseBlock):

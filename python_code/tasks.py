@@ -54,9 +54,12 @@ class TaskControl:
                     b = self.unreachable_block_tasks.pop(b, None)
                     if b:
                         self.reachable_block_tasks[b] = b
-            #make sure that the original block is replaced with air when canceling
+            #make sure to add the original back
             elif removed_type == "Building" and cancel == True:
-                self.board.remove_blocks([[block]])
+                if block.original_block != "Air":
+                    self.board.add_block(block.original_block)
+                else:
+                    self.board.remove_blocks([[block]])
 
     def get_task(self, worker_pos):
         """

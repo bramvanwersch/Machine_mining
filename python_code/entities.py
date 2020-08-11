@@ -345,7 +345,6 @@ class Worker(MovingEntity):
                 block.add_task(task)
                 self.task_queue.add(task, block)
 
-
 ##task management functions:
 
     def __start_task(self):
@@ -383,6 +382,8 @@ class Worker(MovingEntity):
             elif f_task.task_type == "Building":
                 self.board.add_block(f_block.finish_block)
                 self.inventory.get(f_block.finish_block.name(), 1)
+                if f_block.original_block != "Air":
+                    self.inventory.add_blocks(f_block.original_block)
                 self.task_control.remove(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()

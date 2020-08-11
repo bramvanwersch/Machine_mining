@@ -315,14 +315,13 @@ class Board(BoardEventHandler):
             building_block_i = Block
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
-                if block == "Air":
+                if material.name() != block.material.name():
                     finish_block = building_block_i(block.rect.topleft, material)
                     row_i_m = self.__p_to_r(block.rect.y)
                     column_i_m = self.__p_to_c(block.rect.x)
-                    self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block)
+                    self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
                     blocks[row_i][col_i] = self.matrix[row_i_m][column_i_m]
                 else:
-                    #ignore this block
                     blocks[row_i][col_i] = None
         return blocks
 
