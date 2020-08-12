@@ -209,15 +209,15 @@ class Board(BoardEventHandler):
         """
         return int(value / BLOCK_SIZE.width)
 
-    def _get_task_rectangles(self, blocks, task_type):
+    def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[]):
         """
-        Get all air spaces in the given matrix of blocks as a collection of
-        rectangles
+        Get all spaces of a certain block type, task or both
 
         :param blocks: a matrix of blocks
         :return: a list of rectangles
         """
         rectangles = []
+        approved_blocks = []
 
         #save covered coordinates in a same lenght matrix for faster checking
         covered_coordinates = [[] for row in blocks]
@@ -225,7 +225,9 @@ class Board(BoardEventHandler):
         #find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if task_type in block.allowed_tasks or n_col in covered_coordinates[n_row]:
+                if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types) or n_col in covered_coordinates[n_row]:
+                    if n_col not in covered_coordinates[n_row]:
+                        approved_blocks.append(block)
                     continue
 
                 #calculate the maximum lenght of a rectangle based on already
@@ -238,7 +240,7 @@ class Board(BoardEventHandler):
 
                 #find all air rectangles in a sub matrix
                 sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
-                lm_coord = self.__find_task_rectangle(sub_matrix, task_type)
+                lm_coord = self.__find_task_rectangle(sub_matrix, task_type, dissallowed_block_types)
 
                 # add newly covered coordinates
                 for x in range(lm_coord[0]+ 1):
@@ -249,9 +251,9 @@ class Board(BoardEventHandler):
                 air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in blocks[n_row:n_row + lm_coord[1] + 1]]
                 rect = rect_from_block_matrix(air_matrix)
                 rectangles.append(rect)
-        return rectangles
+        return rectangles, approved_blocks
 
-    def __find_task_rectangle(self, blocks, task_type):
+    def __find_task_rectangle(self, blocks, task_type, dissallowed_block_types):
         """
         Find in a matrix of blocks all blocks of a certain task type
 
@@ -262,7 +264,7 @@ class Board(BoardEventHandler):
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         for block in blocks[0][1:]:
-            if task_type in block.allowed_tasks:
+            if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types):
                 break
             x_size += 1
         matrix_coordinate = [x_size, 0]
@@ -271,13 +273,28 @@ class Board(BoardEventHandler):
         block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
-                if task_type in block.allowed_tasks:
+                if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types):
                     break
-            if block == None or task_type in block.allowed_tasks:
+            if block == None or (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types):
                 break
             matrix_coordinate[1] += 1
         return matrix_coordinate
 
+    def _assign_tasks(self, blocks):
+        rect = rect_from_block_matrix(blocks)
+        self.selection_image.add_highlight_rectangle(rect, self._mode.color)
+        if self._mode.name == "Building":
+            no_highlight_block = get_selected_item().name()
+            task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
+        else:
+            task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
+
+        for rect in task_rectangles:
+            self.selection_image.add_rect(rect, INVISIBLE_COLOR)
+        for index, block in enumerate(approved_blocks):
+            if hasattr(block, "original_block"):
+                approved_blocks[index] = block.original_block
+        self._add_tasks(approved_blocks)
 
     # task management
     def _add_tasks(self, blocks):
@@ -285,25 +302,24 @@ class Board(BoardEventHandler):
         Add tasks of the _mode.name type, tasks are added to the task control
         when they need to be assigned to workers or directly resolved otherwise
 
-        :param blocks: a matrix of blocks
+        :param blocks: a list of blocks
         """
+        print(blocks)
         if self._mode.name == "Mining":
-            self.task_control.add(self._mode.name, blocks)
+            self.task_control.add(self._mode.name, *blocks)
         elif self._mode.name == "Cancel":
             rect = rect_from_block_matrix(blocks)
             # remove highlight
             self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
-            for row in blocks:
-                self.task_control.remove(*row, cancel=True)
         elif self._mode.name == "Building":
             build_blocks = self.__change_to_building_blocks(blocks)
-            self.task_control.add(self._mode.name, build_blocks)
+            self.task_control.add(self._mode.name, *build_blocks)
 
     def __change_to_building_blocks(self, blocks):
         """
         change a matrix of blocks to instances of BuildingBlock
 
-        :param blocks: a matrix of blocks
+        :param blocks: a list of blocks
         :return: the original matrix where all the air blocks are filles with
         BuildingBlocks
         """
@@ -313,16 +329,15 @@ class Board(BoardEventHandler):
             building_block_i = getattr(buildings, name)
         else:
             building_block_i = Block
-        for row_i, row in enumerate(blocks):
-            for col_i, block in enumerate(row):
-                if material != block.material:
-                    finish_block = building_block_i(block.rect.topleft, material)
-                    row_i_m = self.__p_to_r(block.rect.y)
-                    column_i_m = self.__p_to_c(block.rect.x)
-                    self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
-                    blocks[row_i][col_i] = self.matrix[row_i_m][column_i_m]
-                else:
-                    blocks[row_i][col_i] = None
+        for col_i, block in enumerate(blocks):
+            if material != block.material:
+                finish_block = building_block_i(block.rect.topleft, material)
+                row_i_m = self.__p_to_r(block.rect.y)
+                column_i_m = self.__p_to_c(block.rect.x)
+                self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
+                blocks[col_i] = self.matrix[row_i_m][column_i_m]
+            else:
+                blocks[col_i] = None
         return blocks
 
 

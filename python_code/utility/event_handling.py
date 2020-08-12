@@ -162,21 +162,15 @@ class BoardEventHandler(EventHandler, ABC):
 
     def __process_selection(self):
         """
-        Process when the user is done selecting and a highlight should appear
-        of the area. Also try to add tasks for all selected blocks.
+        Process selection by adding tasks, and direct the board to highlight
+        the tasks
         """
         if self.selection_image == None or self.selection_image.selection_rectangle == None:
             return
         blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.orig_rect)
         # the user is selecting blocks
         if len(blocks) > 0:
-            rect = rect_from_block_matrix(blocks)
-            self.selection_image.add_highlight_rectangle(rect, self._mode.color)
-            task_rectangles = self._get_task_rectangles(blocks, self._mode.name)
-            for rect in task_rectangles:
-                self.selection_image.add_rect(rect, INVISIBLE_COLOR)
-            self._add_tasks(blocks)
-
+            self._assign_tasks(blocks)
 
     def __handle_mode_events(self):
         """

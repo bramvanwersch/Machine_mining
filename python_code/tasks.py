@@ -13,25 +13,22 @@ class TaskControl:
         self.board = board
         self.__terminal_inv = board.inventorie_blocks[0].inventory
 
-    def add(self, type, blocks, priority = 1):
+    def add(self, type, *blocks, priority = 1):
         """
         Add a task to the total list of tasks. This functions as a smart way of
         storing what tasks can likely be performed and which ones not.
         """
-        for row in blocks:
-            for block in row:
-                if block  == None or block == "Air":
-                    continue
-                task = Task(type, priority = priority)
+        for block in blocks:
+            task = Task(type, priority = priority)
 
-                #make sure to cancel a task when overriding
-                if block.task != None:
-                    self.remove(block, cancel=True)
-                if block.add_task(task):
-                    if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
-                        self.reachable_block_tasks[block] = block
-                    else:
-                        self.unreachable_block_tasks[block] = block
+            #make sure to cancel a task when overriding
+            if block.task != None:
+                self.remove(block, cancel=True)
+            if block.add_task(task):
+                if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
+                    self.reachable_block_tasks[block] = block
+                else:
+                    self.unreachable_block_tasks[block] = block
 
     def remove(self, *blocks, cancel = False):
         """
@@ -40,7 +37,7 @@ class TaskControl:
         :param blocks: a list of blocks for which tasks need to be removed
         """
         for block in blocks:
-            if block == None:
+            if block == None or block.task == None:
                 continue
             #make sure to hand in the task when canceling or finishen to prevent
             #2 workers finishing the same task

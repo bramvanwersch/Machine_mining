@@ -62,7 +62,7 @@ class Air(BaseMaterial):
 
 
 class BuildMaterial(BaseMaterial):
-    ALLOWED_TASKS = ["Cancel", "Building"]
+    ALLOWED_TASKS = ["Cancel", "Building", "Mining"]
 
     def _configure_surface(self, image):
         """
