@@ -24,7 +24,9 @@ class TaskControl:
                     continue
                 task = Task(type, priority = priority)
 
-                #if task is accepted
+                #make sure to cancel a task when overriding
+                if block.task != None:
+                    self.remove(block, cancel=True)
                 if block.add_task(task):
                     if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
                         self.reachable_block_tasks[block] = block
@@ -38,8 +40,11 @@ class TaskControl:
         :param blocks: a list of blocks for which tasks need to be removed
         """
         for block in blocks:
-            if block == None or block == "Air":
+            if block == None:
                 continue
+            #make sure to hand in the task when canceling or finishen to prevent
+            #2 workers finishing the same task
+            block.task.handed_in = True
             removed_type = block.remove_task()
             #if all the tasks are depleted
             if removed_type:
@@ -176,7 +181,7 @@ class Task:
 
         :return: a boolean
         """
-        return self.task_progress[0] >= self.task_progress[1]
+        return self.task_progress[0] >= self.task_progress[1] or self.handed_in
 
     def __getattr__(self, item):
         """

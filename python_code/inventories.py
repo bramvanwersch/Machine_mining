@@ -17,10 +17,9 @@ class Inventory:
         if item_name in self.__container:
             item = self.__container[item_name]
             available_amnt = self.__remove_quantity(item, amnt)
-
-            return Item(item.material, available_amnt)
-        else:
-            return None
+            if available_amnt > 0:
+                return Item(item.material, available_amnt)
+        return None
 
     def get_all_items(self):
         """
@@ -30,7 +29,9 @@ class Inventory:
         """
         items = []
         for key in list(self.__container.keys()):
-            items.append(self.get(key, self.__container[key].quantity))
+            item = self.get(key, self.__container[key].quantity)
+            if item:
+                items.append(item)
         return items
 
     def check_item(self, item_name, quantity):

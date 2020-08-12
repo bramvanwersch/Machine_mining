@@ -314,6 +314,8 @@ class Worker(MovingEntity):
                 #allow for extra tasks to be added to the stack depending on
                 #the type
                 if self.task_queue.task.task_type == "Building":
+                    #make sure that tasks are more efficiently assigned
+                    self.task_queue.task.start()
                     self.__get_build_items()
                     self.__empty_inventory()
                 self.__start_task()
@@ -351,6 +353,13 @@ class Worker(MovingEntity):
         """
         Called to start up the current task in the task_queue
         """
+        #do prelimenary checks that can rule out tasks
+        if self.task_queue.task.task_type == "Building":
+            #make sure that item retrieval was succesfull
+            required_item = self.task_queue.task_block.finish_block.name()
+            if not self.inventory.check_item(required_item, 1):
+                self.task_queue.next()
+                return
         path = self.board.pf.get_path(self.orig_rect,self.task_queue.task_block.rect)
         if path != None:
             self.task_queue.task.start()
@@ -390,7 +399,8 @@ class Worker(MovingEntity):
                 f_block.add(*items)
             elif f_task.task_type == "Take item":
                 item = f_block.inventory.get(f_task.req_block_name, 1)
-                self.inventory.add_items(item)
+                if item:
+                    self.inventory.add_items(item)
             f_task.handed_in = True
         if not self.task_queue.empty():
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)
