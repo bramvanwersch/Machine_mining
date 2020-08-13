@@ -51,17 +51,21 @@ class TaskControl:
 
             #if a task was completed that removes the block check if surrounding tasks can now be acceses
             if removed_type == "Mining":
-                surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
-                for b in surrounding_task_blocks:
-                    b = self.unreachable_block_tasks.pop(b, None)
-                    if b:
-                        self.reachable_block_tasks[b] = b
+                self.__check_surrounding_tasks(block)
             #make sure to add the original back
             elif removed_type == "Building" and cancel == True:
+                self.__check_surrounding_tasks(block)
                 if block.original_block != "Air":
                     self.board.add_block(block.original_block)
                 else:
                     self.board.remove_blocks([[block]])
+
+    def __check_surrounding_tasks(self, block):
+        surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
+        for b in surrounding_task_blocks:
+            b = self.unreachable_block_tasks.pop(b, None)
+            if b:
+                self.reachable_block_tasks[b] = b
 
     def get_task(self, worker_pos):
         """

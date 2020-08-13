@@ -101,7 +101,10 @@ class BuildingBlock(BaseBlock):
         super().__init__(pos, **kwargs)
         self.material = material
         self.finish_block = finish_block
-        self.original_block = original_block
+        if isinstance(original_block, BuildingBlock):
+            self.original_block = original_block.original_block
+        else:
+            self.original_block = original_block
 
     def add_task(self, task):
         """

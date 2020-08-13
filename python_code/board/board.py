@@ -283,17 +283,25 @@ class Board(BoardEventHandler):
     def _assign_tasks(self, blocks):
         rect = rect_from_block_matrix(blocks)
         self.selection_image.add_highlight_rectangle(rect, self._mode.color)
+        for row_i, row in enumerate(blocks):
+            for col_i, block in enumerate(row):
+                if hasattr(block, "original_block"):
+                    self.task_control.remove(block, cancel=True)
+                    blocks[row_i][col_i] = block.original_block
         if self._mode.name == "Building":
             no_highlight_block = get_selected_item().name()
             task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
+        elif self._mode.name == "Cancel":
+            # remove highlight
+            self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+            for row in blocks:
+                self.task_control.remove(*row, cancel=True)
+            return
         else:
             task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
 
         for rect in task_rectangles:
             self.selection_image.add_rect(rect, INVISIBLE_COLOR)
-        for index, block in enumerate(approved_blocks):
-            if hasattr(block, "original_block"):
-                approved_blocks[index] = block.original_block
         self._add_tasks(approved_blocks)
 
     # task management
@@ -304,13 +312,9 @@ class Board(BoardEventHandler):
 
         :param blocks: a list of blocks
         """
-        print(blocks)
+        self.task_control.remove(*blocks, cancel=True)
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, *blocks)
-        elif self._mode.name == "Cancel":
-            rect = rect_from_block_matrix(blocks)
-            # remove highlight
-            self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
         elif self._mode.name == "Building":
             build_blocks = self.__change_to_building_blocks(blocks)
             self.task_control.add(self._mode.name, *build_blocks)
