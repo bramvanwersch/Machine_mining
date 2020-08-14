@@ -67,7 +67,7 @@ class Inventory:
 
     @property
     def empty(self):
-        return len(self.__container) == 0
+        return self.wheight[0] == 0
 
     @property
     def item_names(self):

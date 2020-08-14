@@ -209,7 +209,7 @@ class Board(BoardEventHandler):
         """
         return int(value / BLOCK_SIZE.width)
 
-    def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[]):
+    def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[], dissallowed_task_types=[]):
         """
         Get all spaces of a certain block type, task or both
 
@@ -282,25 +282,31 @@ class Board(BoardEventHandler):
 
     def _assign_tasks(self, blocks):
         rect = rect_from_block_matrix(blocks)
+        #select the full area
         self.selection_image.add_highlight_rectangle(rect, self._mode.color)
+        #remove all tasks present
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
+                self.task_control.remove(block, cancel=True)
                 if hasattr(block, "original_block"):
-                    self.task_control.remove(block, cancel=True)
                     blocks[row_i][col_i] = block.original_block
+        #assign tasks to all blocks eligable
         if self._mode.name == "Building":
-            no_highlight_block = get_selected_item().name()
-            task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
+            item = get_selected_item()
+            if item == None:
+                self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+                return
+            no_highlight_block = item.name()
+            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
         elif self._mode.name == "Cancel":
             # remove highlight
             self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
-            for row in blocks:
-                self.task_control.remove(*row, cancel=True)
+
             return
         else:
-            task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
+            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
 
-        for rect in task_rectangles:
+        for rect in no_task_rectangles:
             self.selection_image.add_rect(rect, INVISIBLE_COLOR)
         self._add_tasks(approved_blocks)
 
@@ -334,14 +340,11 @@ class Board(BoardEventHandler):
         else:
             building_block_i = Block
         for col_i, block in enumerate(blocks):
-            if material != block.material:
-                finish_block = building_block_i(block.rect.topleft, material)
-                row_i_m = self.__p_to_r(block.rect.y)
-                column_i_m = self.__p_to_c(block.rect.x)
-                self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
-                blocks[col_i] = self.matrix[row_i_m][column_i_m]
-            else:
-                blocks[col_i] = None
+            finish_block = building_block_i(block.rect.topleft, material)
+            row_i_m = self.__p_to_r(block.rect.y)
+            column_i_m = self.__p_to_c(block.rect.x)
+            self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
+            blocks[col_i] = self.matrix[row_i_m][column_i_m]
         return blocks
 
 

@@ -21,9 +21,6 @@ class TaskControl:
         for block in blocks:
             task = Task(type, priority = priority)
 
-            #make sure to cancel a task when overriding
-            if block.task != None:
-                self.remove(block, cancel=True)
             if block.add_task(task):
                 if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
                     self.reachable_block_tasks[block] = block
@@ -50,7 +47,7 @@ class TaskControl:
                 self.unreachable_block_tasks.pop(block, None)
 
             #if a task was completed that removes the block check if surrounding tasks can now be acceses
-            if removed_type == "Mining":
+            if removed_type == "Mining" and cancel == False:
                 self.__check_surrounding_tasks(block)
             #make sure to add the original back
             elif removed_type == "Building" and cancel == True:

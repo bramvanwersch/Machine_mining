@@ -271,9 +271,12 @@ class Worker(MovingEntity):
     SIZE = (10,10)
     #in wheight
     INVENTORY_SIZE = 2
+    NUMBER = 0
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
                               max_speed=5, **kwargs)
+        self.number = Worker.NUMBER
+        Worker.NUMBER += 1
         self.board = board
         self.task_control = tasks
 
@@ -315,12 +318,11 @@ class Worker(MovingEntity):
                 #the type
                 if self.task_queue.task.task_type == "Building":
                     #make sure that tasks are more efficiently assigned
-                    self.task_queue.task.start()
                     self.__get_build_items()
                     self.__empty_inventory()
                 self.__start_task()
-            #if no available task add an empty inventory task
-            else:
+            #if no available task add an empty inventory task if there are items
+            elif not self.inventory.empty:
                 self.__empty_inventory()
 
     def __empty_inventory(self):
@@ -361,6 +363,7 @@ class Worker(MovingEntity):
                 self.task_queue.next()
                 return
         path = self.board.pf.get_path(self.orig_rect,self.task_queue.task_block.rect)
+        # print(self.number, path)
         if path != None:
             self.task_queue.task.start()
             self.path = path
@@ -380,20 +383,15 @@ class Worker(MovingEntity):
         #make sure to move the last step if needed, so the worker does not potentially stop in a block
         if len(self.path) > 0:
             self.path = self.path[-1]
-        else:
-            #handle last thing of last task
-            if f_task.handed_in:
-                pass
-            elif f_task.task_type == "Mining":
+        elif not f_task.handed_in:
+            if f_task.task_type == "Mining":
                 self.board.remove_blocks([[f_block]])
-                self.task_control.remove(f_block)
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
                 self.board.add_block(f_block.finish_block)
                 self.inventory.get(f_block.finish_block.name(), 1)
                 if f_block.original_block != "Air":
                     self.inventory.add_blocks(f_block.original_block)
-                self.task_control.remove(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
@@ -401,6 +399,7 @@ class Worker(MovingEntity):
                 item = f_block.inventory.get(f_task.req_block_name, 1)
                 if item:
                     self.inventory.add_items(item)
+            self.task_control.remove(f_block)
             f_task.handed_in = True
         if not self.task_queue.empty():
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)

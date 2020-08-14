@@ -15,7 +15,9 @@ def select_an_item(widget):
     pygame.event.post(newevent)
     
 def get_selected_item():
-    return SELECTED_WIDGET.item
+    if SELECTED_WIDGET:
+        return SELECTED_WIDGET.item
+    return None
 
 class BuildingInterface(EventHandler):
     def __init__(self, board, *groups):
