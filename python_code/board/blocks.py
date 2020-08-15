@@ -9,9 +9,9 @@ class BaseBlock(ABC):
     Base class for the blocks in image matrices
     """
     #all tasks types are allowed
+    SIZE = BLOCK_SIZE
     def __init__(self, pos):
-        self.size = BLOCK_SIZE
-        self.rect = pygame.Rect((*pos, *self.size))
+        self.rect = pygame.Rect((*pos, *self.SIZE))
         self.task = None
 
     @property

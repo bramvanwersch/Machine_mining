@@ -1,22 +1,35 @@
 from abc import abstractmethod
+import pygame
 
 from python_code.board.materials import *
 from python_code.utility.image_handling import image_sheets
 from python_code.utility.constants import BLOCK_SIZE
 from python_code.board.blocks import *
 from python_code.inventories import Inventory
+from python_code.utility.utilities import Size
 
-class Building(ABC):
+
+def block_i_from_material(material):
+    if isinstance(material, BuildingMaterial):
+        name = material.name().replace("Material", "")
+        building_block_i = globals()[name]
+    else:
+        building_block_i = Block
+    return building_block_i
+
+
+class Building(BaseBlock, ABC):
     """
     Abstract class for buildings. Buildings are multiblock (can be 1) structures
     that contain an image
     """
     BLOCK_TYPE = Block
+    SIZE = Size(*(BLOCK_SIZE * (2, 2)))
     def __init__(self, pos, material=None, **kwargs):
-        if material == None:
-            material = self.MATERIAL
+        self.material = self.MATERIAL()
         self.pos = pos
-        self.blocks = self._get_blocks( self.BLOCK_TYPE, material)
+        self.blocks = self._get_blocks( self.BLOCK_TYPE, self.MATERIAL)
+        self.rect = pygame.Rect((*pos, *self.SIZE))
 
     @property
     @abstractmethod
@@ -96,8 +109,6 @@ class Furnace(Building):
     IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = FurnaceMaterial
-    #to allow it to be instantiated like any normal block
-
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)

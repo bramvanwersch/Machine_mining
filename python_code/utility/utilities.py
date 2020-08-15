@@ -78,7 +78,12 @@ class Size:
         raise ValueError("Expected value of lenght 2. Got {}".format(type(other)))
 
     def __rsub__(self, other):
-        return self.__sub__(other)
+        try:
+            if len(other) == 2:
+                return Size(other[0] - self.width, other[1] - self.height)
+        except TypeError as e:
+            print(e)
+        raise ValueError("Expected value of lenght 2. Got {}".format(type(other)))
 
     def __mul__(self, other):
         try:
@@ -100,7 +105,12 @@ class Size:
         raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
 
     def __rtruediv__(self, other):
-        return self.__truediv__(other)
+        try:
+            if len(other) == 2:
+                return Size(other[0] / self.width, other[1] / self.height)
+        except TypeError as e:
+            print(e)
+        raise ValueError("Invalid lenght for division should be 1 or {}.".format(len(self)))
 
     def __getitem__(self, item):
         return self.size[item]

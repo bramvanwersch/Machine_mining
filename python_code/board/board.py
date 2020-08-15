@@ -26,12 +26,13 @@ class Board(BoardEventHandler):
         #setup the board
         self.matrix = self.__generate_foreground_matrix()
         self.back_matrix = self.__generate_background_matrix()
-        self.__add_starter_buildings()
         self.foreground_image = BoardImage(main_sprite_group,
                                            block_matrix = self.matrix, layer = BOARD_LAYER)
         self.background_image = BoardImage(main_sprite_group,
                                            block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
         self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
+
+        self.__add_starter_buildings()
 
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
@@ -45,6 +46,7 @@ class Board(BoardEventHandler):
         :param draw: Boolean telling if the foreground image should be updated
         mainly important when innitiating
         """
+        self.add_rectangle(INVISIBLE_COLOR, building_instance.rect, layer=1)
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
                 m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
@@ -63,10 +65,10 @@ class Board(BoardEventHandler):
         :return: a sub matrix of overlapping blocks
         """
         #make sure that blocks that are just selected are not included
-        row_start = self.__p_to_r(rect.top + BLOCK_SIZE.height * 0.3)
-        row_end = self.__p_to_r(rect.bottom - BLOCK_SIZE.height * 0.3)
-        column_start = self.__p_to_c(rect.left + BLOCK_SIZE.width * 0.3)
-        column_end = self.__p_to_c(rect.right - BLOCK_SIZE.width * 0.3)
+        row_start = self.__p_to_r(rect.top)
+        row_end = self.__p_to_r(rect.bottom)
+        column_start = self.__p_to_c(rect.left)
+        column_end = self.__p_to_c(rect.right)
         overlapping_blocks = []
         for row in self.matrix[row_start : row_end + 1]:
             add_row = row[column_start : column_end + 1]
@@ -122,12 +124,15 @@ class Board(BoardEventHandler):
 
         :param block: a BasicBlock object or inheriting class
         """
-        self.foreground_image.add_image(block.rect, block.surface)
-        # remove the highlight
-        self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
-        row = self.__p_to_r(block.rect.y)
-        column = self.__p_to_c(block.rect.x)
-        self.matrix[row][column] = block
+        if isinstance(block, Building):
+            self.add_building(block)
+        else:
+            self.foreground_image.add_image(block.rect, block.surface)
+            # remove the highlight
+            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
+            row = self.__p_to_r(block.rect.y)
+            column = self.__p_to_c(block.rect.x)
+            self.matrix[row][column] = block
 
     def closest_inventory(self, start):
         """
@@ -208,6 +213,39 @@ class Board(BoardEventHandler):
         :return: the corresponding column number
         """
         return int(value / BLOCK_SIZE.width)
+
+    def _handle_mouse_events(self):
+        """
+        Handle mouse events issued by the user.
+        """
+        #mousebutton1
+        if self.pressed(1):
+            if self._mode.name in ["Mining", "Cancel", "Selecting"]:
+                self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
+        elif self.unpressed(1):
+            #only select a single block
+            if self._mode.name == "Building":
+                item = get_selected_item()
+                #if no item is selected dont do anything
+                if item == None:
+                    return
+                material = get_selected_item().material
+                building_block_i = block_i_from_material(material)
+                self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight, size=building_block_i.SIZE)
+            self.__process_selection()
+            self.selection_image.remove_selection()
+
+    def __process_selection(self):
+        """
+        Process selection by adding tasks, and direct the board to highlight
+        the tasks
+        """
+        if self.selection_image == None or self.selection_image.selection_rectangle == None:
+            return
+        blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.orig_rect)
+        # the user is selecting blocks
+        if len(blocks) > 0:
+            self._assign_tasks(blocks)
 
     def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[], dissallowed_task_types=[]):
         """
@@ -295,12 +333,14 @@ class Board(BoardEventHandler):
 
         #assign tasks to all blocks elligable
         if self._mode.name == "Building":
-            item = get_selected_item()
-            if item == None:
+            no_highlight_block = get_selected_item().name()
+            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
+            #if not the full image was selected dont add tasks
+            if len(no_task_rectangles) > 0:
                 self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
                 return
-            no_highlight_block = item.name()
-            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
+            #the first block of the selection is the start block of the material
+            approved_blocks = blocks[0][0]
         elif self._mode.name == "Cancel":
             # remove highlight
             self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
@@ -323,30 +363,26 @@ class Board(BoardEventHandler):
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, *blocks)
         elif self._mode.name == "Building":
-            build_blocks = self.__change_to_building_blocks(blocks)
-            self.task_control.add(self._mode.name, *build_blocks)
+            build_block = self.__change_to_building_block(blocks)
+            self.task_control.add(self._mode.name, build_block)
 
-    def __change_to_building_blocks(self, blocks):
+    def __change_to_building_block(self, block):
         """
         change a matrix of blocks to instances of BuildingBlock
 
-        :param blocks: a list of blocks
+        :param block: a Block object
         :return: the original matrix where all the air blocks are filles with
         BuildingBlocks
         """
         material = get_selected_item().material
-        if isinstance(material, BuildingMaterial):
-            name = material.name().replace("Material", "")
-            building_block_i = getattr(buildings, name)
-        else:
-            building_block_i = Block
-        for col_i, block in enumerate(blocks):
-            finish_block = building_block_i(block.rect.topleft, material)
-            row_i_m = self.__p_to_r(block.rect.y)
-            column_i_m = self.__p_to_c(block.rect.x)
-            self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
-            blocks[col_i] = self.matrix[row_i_m][column_i_m]
-        return blocks
+        building_block_i = block_i_from_material(material)
+
+        finish_block = building_block_i(block.rect.topleft, material)
+        row_i_m = self.__p_to_r(block.rect.y)
+        column_i_m = self.__p_to_c(block.rect.x)
+        self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
+        build_block = self.matrix[row_i_m][column_i_m]
+        return build_block
 
 
 #### MAP GENERATION FUNCTIONS ###
@@ -394,7 +430,7 @@ class Board(BoardEventHandler):
         Add all starter building that should be placed before the game starts
         """
         t = Terminal((BOARD_SIZE[1] / 2 + 50, 30))
-        self.add_building(t, draw = False)
+        self.add_building(t)
 
     def __generate_background_matrix(self):
         """
@@ -576,21 +612,21 @@ class TransparantBoardImage(BoardImage):
         image.fill(INVISIBLE_COLOR)
         return image
 
-    def add_selection_rectangle(self, pos, keep = False):
+    def add_selection_rectangle(self, pos, keep = False, size=(10, 10)):
         """
         Add a rectangle that shows what the user is currently selecting
 
         :param pos: the event.pos of the rectangle
         :param keep: if the previous highlight should be kept
+        :param size: the size of the rectagle to add at the start
         """
         mouse_pos = self._screen_to_board_coordinate(pos)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
             self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
         self.selection_rectangle = SelectionRectangle(mouse_pos,
-                                                       (0, 0), pos,
-                                                       self.groups()[0],
-                                                       zoom=self._zoom)
+                                        size - BLOCK_SIZE, pos,
+                                        self.groups()[0],zoom=self._zoom)
 
     def add_highlight_rectangle(self, rect, color):
         """

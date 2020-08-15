@@ -143,34 +143,9 @@ class BoardEventHandler(EventHandler, ABC):
         :return: events that where not processed for wathever reason
         """
         leftover_events = EventHandler.handle_events(self, events)
-        self.__handle_mouse_events()
+        self._handle_mouse_events()
         self.__handle_mode_events()
         return leftover_events
-
-    def __handle_mouse_events(self):
-        """
-        Handle mouse events issued by the user.
-        """
-        #mousebutton1
-        if self.pressed(1):
-            self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
-
-        elif self.unpressed(1):
-            self.__process_selection()
-            self.selection_image.remove_selection()
-
-
-    def __process_selection(self):
-        """
-        Process selection by adding tasks, and direct the board to highlight
-        the tasks
-        """
-        if self.selection_image == None or self.selection_image.selection_rectangle == None:
-            return
-        blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.orig_rect)
-        # the user is selecting blocks
-        if len(blocks) > 0:
-            self._assign_tasks(blocks)
 
     def __handle_mode_events(self):
         """
