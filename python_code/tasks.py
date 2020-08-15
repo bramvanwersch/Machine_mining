@@ -22,10 +22,19 @@ class TaskControl:
             task = Task(type, priority = priority)
 
             if block.add_task(task):
-                if len([b for b in self.board.surrounding_blocks(block) if b == "Air"]) > 0:
+                surrounding_blocks = self.board.surrounding_blocks(block)
+                if len([b for b in surrounding_blocks if b == "Air"]) > 0:
                     self.reachable_block_tasks[block] = block
                 else:
                     self.unreachable_block_tasks[block] = block
+                #when adding building objectives you can make blocks unreachable
+                #check surrounding blocks to accomodate this
+                if task.task_type == "Building":
+                    for s_block in surrounding_blocks:
+                        if hash(s_block) in self.reachable_block_tasks:
+                            if len([b for b in self.board.surrounding_blocks(s_block) if b == "Air"]) == 0:
+                                self.reachable_block_tasks.pop(s_block, None)
+                                self.unreachable_block_tasks[s_block]= s_block
 
     def remove(self, *blocks, cancel = False):
         """
@@ -171,6 +180,9 @@ class Task:
         priority of accepting this task
         """
         self.started_task = True
+
+    def increase_priority(self, amnt = 1):
+        self.priority += amnt
 
     @property
     def finished(self):

@@ -282,15 +282,18 @@ class Board(BoardEventHandler):
 
     def _assign_tasks(self, blocks):
         rect = rect_from_block_matrix(blocks)
-        #select the full area
-        self.selection_image.add_highlight_rectangle(rect, self._mode.color)
+
         #remove all tasks present
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
                 self.task_control.remove(block, cancel=True)
                 if hasattr(block, "original_block"):
                     blocks[row_i][col_i] = block.original_block
-        #assign tasks to all blocks eligable
+
+        #select the full area
+        self.selection_image.add_highlight_rectangle(rect, self._mode.color)
+
+        #assign tasks to all blocks elligable
         if self._mode.name == "Building":
             item = get_selected_item()
             if item == None:
@@ -301,7 +304,6 @@ class Board(BoardEventHandler):
         elif self._mode.name == "Cancel":
             # remove highlight
             self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
-
             return
         else:
             no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
@@ -318,7 +320,6 @@ class Board(BoardEventHandler):
 
         :param blocks: a list of blocks
         """
-        self.task_control.remove(*blocks, cancel=True)
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, *blocks)
         elif self._mode.name == "Building":

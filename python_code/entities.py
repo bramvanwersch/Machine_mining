@@ -360,6 +360,7 @@ class Worker(MovingEntity):
             #make sure that item retrieval was succesfull
             required_item = self.task_queue.task_block.finish_block.name()
             if not self.inventory.check_item(required_item, 1):
+                self.task_queue.task.increase_priority()
                 self.task_queue.next()
                 return
         path = self.board.pf.get_path(self.orig_rect,self.task_queue.task_block.rect)
@@ -368,6 +369,7 @@ class Worker(MovingEntity):
             self.task_queue.task.start()
             self.path = path
         else:
+            self.task_queue.task.increase_priority()
             self.task_queue.next()
 
     def __next_task(self):
