@@ -107,8 +107,8 @@ class Board(BoardEventHandler):
         """
         row = self.__p_to_r(block.rect.y)
         column = self.__p_to_c(block.rect.x)
-        blocks = [None, None, None, None]
-        for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
+        blocks = []
+        for new_position in [(0, -1), (1, 0), (0, 1), (-1, 0)]:
             matrix_position = (column + new_position[0], row + new_position[1])
 
             # Make sure within range
@@ -117,7 +117,7 @@ class Board(BoardEventHandler):
                     matrix_position[1] > (len(self.matrix) - 1) or \
                     matrix_position[1] < 0:
                 continue
-            blocks[index] = self.matrix[matrix_position[1]][matrix_position[0]]
+            blocks.append(self.matrix[matrix_position[1]][matrix_position[0]])
         return blocks
 
     def remove_blocks(self, blocks):
