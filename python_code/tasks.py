@@ -19,11 +19,14 @@ class TaskControl:
         storing what tasks can likely be performed and which ones not.
         """
         for block in blocks:
-            task = Task(type, priority = priority, **kwargs)
+            if type == "Building":
+                task = BuildTask(type, priority = priority, **kwargs)
+            else:
+                task = Task(type, priority = priority, **kwargs)
 
             if block.add_task(task):
                 surrounding_blocks = self.board.surrounding_blocks(block)
-                if len([b for b in surrounding_blocks if b == "Air"]) > 0:
+                if len([b for b in surrounding_blocks if b.transparant_group != 0]) > 0:
                     self.reachable_block_tasks[block] = block
                 else:
                     self.unreachable_block_tasks[block] = block
@@ -32,7 +35,7 @@ class TaskControl:
                 if task.task_type == "Building":
                     for s_block in surrounding_blocks:
                         if hash(s_block) in self.reachable_block_tasks:
-                            if len([b for b in self.board.surrounding_blocks(s_block) if b == "Air"]) == 0:
+                            if len([b for b in self.board.surrounding_blocks(s_block) if b.transparant_group != 0]) == 0:
                                 self.reachable_block_tasks.pop(s_block, None)
                                 self.unreachable_block_tasks[s_block]= s_block
 
@@ -48,16 +51,18 @@ class TaskControl:
             #make sure to hand in the task when canceling or finishen to prevent
             #2 workers finishing the same task
             block.task.handed_in = True
-            removed_type = block.remove_task()
+            removed_task = block.remove_task()
             #if all the tasks are depleted
-            if removed_type:
+            if removed_task:
                 #pop a task if not already removed by another worker or not present in case of cancels
                 self.reachable_block_tasks.pop(block, None)
                 self.unreachable_block_tasks.pop(block, None)
 
             #if a task was completed that removes the block check if surrounding tasks can now be acceses
-            if removed_type == "Mining" and cancel == False:
+            if removed_task.task_type == "Mining" and cancel == False:
                 self.__check_surrounding_tasks(block)
+            elif removed_task.task_type == "Building" and cancel == True:
+                block.transparant_group = removed_task.original_group
 
     def __check_surrounding_tasks(self, block):
         surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
@@ -186,14 +191,14 @@ class Task:
         """
         return self.task_progress[0] >= self.task_progress[1] or self.handed_in
 
-    def __getattr__(self, item):
-        """
-        Allow to add some custom attributes using the kwargs. This can be small
-        things that allow to save some varaible
 
-        :param item: the name of a variable]
-        :return: the value of set variable as saved in the __additional_info
-        """
-        return self.__additional_info[item]
+class BuildTask(Task):
+    def __init__(self, task_type, finish_block, original_group, **kwargs):
+        super().__init__(task_type, **kwargs)
+        self.finish_block = finish_block
+        self.original_group = original_group
 
-
+class TakeTask(Task):
+    def __init__(self, task_type, req_block_name, **kwargs):
+        super().__init__(task_type, **kwargs)
+        self.req_block_name = req_block_name

@@ -2,7 +2,7 @@ from abc import ABC
 
 from python_code.utility.constants import *
 from python_code.inventories import Inventory
-from python_code.tasks import TaskQueue, Task
+from python_code.tasks import TaskQueue, Task, TakeTask
 from python_code.utility.event_handling import EventHandler
 
 
@@ -344,7 +344,7 @@ class Worker(MovingEntity):
         req_block = self.task_queue.task.finish_block
         if not self.inventory.check_item(req_block.name(), 1):
             block = self.board.closest_inventory(self.orig_rect)
-            task = Task("Take item", req_block_name=req_block.name())
+            task = TakeTask("Take item", req_block.name())
             if block:
                 block.add_task(task)
                 self.task_queue.add(task, block)

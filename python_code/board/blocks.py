@@ -75,9 +75,9 @@ class BaseBlock(ABC):
         :return: a list of task types that are removed.
         """
         if self.task != None:
-            type = self.task.task_type
+            task = self.task
             self.task = None
-            return type
+            return task
         return None
 
     def __eq__(self, other):
