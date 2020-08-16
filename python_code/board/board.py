@@ -32,11 +32,13 @@ class Board(BoardEventHandler):
                                            block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
         self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
+        self.__buildings = {}
         self.__add_starter_buildings()
 
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
         self.task_control = None
+        #list of buildings
 
     def add_building(self, building_instance, draw = True):
         """
@@ -47,6 +49,7 @@ class Board(BoardEventHandler):
         mainly important when innitiating
         """
         self.add_rectangle(INVISIBLE_COLOR, building_instance.rect, layer=1)
+        self.__buildings[building_instance.id] = building_instance.rect
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
                 m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
@@ -55,6 +58,20 @@ class Board(BoardEventHandler):
                     self.foreground_image.add_image(block.rect, block.surface)
                 if isinstance(block, ContainerBlock):
                     self.inventorie_blocks.append(block)
+
+    def remove_building(self, block):
+        rect = self.__buildings[block.id]
+        blocks = self.overlapping_blocks(rect)
+        self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
+        # remove the highlight
+        self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+        for row in blocks:
+            for block in row:
+                row = self.__p_to_r(block.rect.y)
+                column = self.__p_to_c(block.rect.x)
+                self.task_control.remove(block)
+                self.matrix[row][column] = AirBlock(block.rect.topleft,
+                                                materials.Air())
 
     def overlapping_blocks(self, rect):
         """
@@ -66,9 +83,9 @@ class Board(BoardEventHandler):
         """
         #make sure that blocks that are just selected are not included
         row_start = self.__p_to_r(rect.top)
-        row_end = self.__p_to_r(rect.bottom)
+        row_end = self.__p_to_r(rect.bottom - 1)
         column_start = self.__p_to_c(rect.left)
-        column_end = self.__p_to_c(rect.right)
+        column_end = self.__p_to_c(rect.right - 1)
         overlapping_blocks = []
         for row in self.matrix[row_start : row_end + 1]:
             add_row = row[column_start : column_end + 1]
@@ -113,9 +130,12 @@ class Board(BoardEventHandler):
         self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
         for row in blocks:
             for block in row:
-                row = self.__p_to_r(block.rect.y)
-                column = self.__p_to_c(block.rect.x)
-                self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
+                if block.id in self.__buildings:
+                    self.remove_building(block)
+                else:
+                    row = self.__p_to_r(block.rect.y)
+                    column = self.__p_to_c(block.rect.x)
+                    self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
 
     def add_block(self, block):
         """
@@ -190,9 +210,9 @@ class Board(BoardEventHandler):
     def __getitem__(self, item):
         return self.matrix[item]
 
-    def collide_air(self, point):
+    def transparant_collide(self, point):
         block = self.matrix[self.__p_to_r(point[1])][self.__p_to_c(point[0])]
-        if block == "Air":
+        if block.transparant:
             return True
         return False
 

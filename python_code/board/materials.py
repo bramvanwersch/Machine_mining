@@ -16,6 +16,7 @@ class BaseMaterial(ABC):
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name ] + ["Empty inventory"]
     TEXT_COLOR = (0,0,0)
+    TRANSPARANT = False
     def __init__(self, image = None, **kwargs):
         """
         :param image: a pygame Surface object that can be an image instead of
@@ -53,6 +54,7 @@ class BaseMaterial(ABC):
 class Air(BaseMaterial):
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Mining"]]  + ["Empty inventory"]
     TASK_TIME = 0
+    TRANSPARANT = True
 
     def _configure_surface(self, image):
         """
@@ -257,10 +259,12 @@ class TerminalMaterial(BuildingMaterial):
 class FurnaceMaterial(BuildingMaterial):
     TASK_TIME = 1000
     TEXT_COLOR = (255,255,255)
+    TRANSPARANT = True
 
 
 class StonePipeMaterial(ImageMaterial):
     TASK_TIME = 1000
+    TRANSPARANT = True
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((10,0), color_key=(255,255,255))

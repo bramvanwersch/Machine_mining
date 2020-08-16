@@ -440,9 +440,9 @@ class Worker(MovingEntity):
             self.speed.y = 0
 
         #check for collision
-        if not self.board.collide_air((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
+        if not self.board.transparant_collide((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
             self.speed.x = 0
-        if not self.board.collide_air((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):
+        if not self.board.transparant_collide((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):
             self.speed.y = 0
 
 

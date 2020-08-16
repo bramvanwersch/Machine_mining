@@ -25,11 +25,17 @@ class Building(BaseBlock, ABC):
     """
     BLOCK_TYPE = Block
     SIZE = Size(*(BLOCK_SIZE * (2, 2)))
+    ID = 0
     def __init__(self, pos, material=None, **kwargs):
         self.material = self.MATERIAL()
         self.pos = pos
+
+        self.id = "Building{}".format(self.ID)
+        Building.ID += 1
+
         self.blocks = self._get_blocks( self.BLOCK_TYPE, self.MATERIAL)
         self.rect = pygame.Rect((*pos, *self.SIZE))
+
 
     @property
     @abstractmethod
@@ -79,7 +85,7 @@ class Building(BaseBlock, ABC):
             for column_i, image in enumerate(row):
                 material = material_class(image = image)
                 pos = (self.pos[0] + column_i * BLOCK_SIZE.width, self.pos[1] + row_i * BLOCK_SIZE.height)
-                block_row.append(block_class(pos, material))
+                block_row.append(block_class(pos, material, id=self.id))
             blocks.append(block_row)
         return blocks
 

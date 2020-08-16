@@ -10,9 +10,16 @@ class BaseBlock(ABC):
     """
     #all tasks types are allowed
     SIZE = BLOCK_SIZE
-    def __init__(self, pos):
+    ID = 0
+    def __init__(self, pos, id=None):
         self.rect = pygame.Rect((*pos, *self.SIZE))
         self.task = None
+        if id == None:
+            self.id = self.ID
+            BaseBlock.ID += 1
+        else:
+            self.id = id
+
 
     @property
     def coord(self):
@@ -31,6 +38,10 @@ class BaseBlock(ABC):
         :return: a list of strings of allowable tasks
         """
         return self.material.ALLOWED_TASKS
+
+    @property
+    def transparant(self):
+        return self.material.TRANSPARANT
 
     def name(self):
         """
