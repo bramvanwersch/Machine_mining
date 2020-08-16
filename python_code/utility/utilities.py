@@ -1,6 +1,14 @@
 from pygame import Rect, image
 from math import pi, e, sqrt
 
+GROUP = 0
+
+def unique_group():
+    global GROUP
+    group_id = "u{}".format(GROUP)
+    GROUP += 1
+    return group_id
+
 
 def normalize(values, scale=1):
     """

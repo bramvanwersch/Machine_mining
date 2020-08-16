@@ -40,8 +40,12 @@ class BaseBlock(ABC):
         return self.material.ALLOWED_TASKS
 
     @property
-    def transparant(self):
-        return self.material.TRANSPARANT
+    def transparant_group(self):
+        return self.material.transparant_group
+
+    @transparant_group.setter
+    def transparant_group(self, value):
+        self.material.transparant_group = value
 
     def name(self):
         """
@@ -101,35 +105,6 @@ class AirBlock(BaseBlock):
     def __init__(self, pos, material, **kwargs):
         super().__init__(pos, **kwargs)
         self.material = material
-
-
-class BuildingBlock(BaseBlock):
-    """
-    Place holder block when building that is not air. This block is removed when
-    canceling and finishing building tasks
-    """
-    def __init__(self, pos, material, finish_block, original_block, **kwargs):
-        super().__init__(pos, **kwargs)
-        self.material = material
-        self.finish_block = finish_block
-        if isinstance(original_block, BuildingBlock):
-            self.original_block = original_block.original_block
-        else:
-            self.original_block = original_block
-
-    def add_task(self, task):
-        """
-        Can hold a task from each type
-
-        :param task: a Task object
-        :return: a boolean signifying if the task was added or not
-        """
-        if task.task_type in self.material.ALLOWED_TASKS:
-            self.task = task
-            task.task_progress = [0, self.finish_block.material.task_time() +
-                                  self.original_block.material.task_time()]
-            return True
-        return False
 
 
 class Block(BaseBlock):

@@ -48,8 +48,9 @@ class Board(BoardEventHandler):
         :param draw: Boolean telling if the foreground image should be updated
         mainly important when innitiating
         """
-        self.add_rectangle(INVISIBLE_COLOR, building_instance.rect, layer=1)
-        self.__buildings[building_instance.id] = building_instance.rect
+        building_rect = building_instance.rect
+        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
+        self.__buildings[building_instance.id] = building_rect
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
                 m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
@@ -61,7 +62,9 @@ class Board(BoardEventHandler):
 
     def remove_building(self, block):
         rect = self.__buildings[block.id]
-        blocks = self.overlapping_blocks(rect)
+        #make sure this does net just overlap with the next block
+        overlap_rect = pygame.Rect((*rect.topleft, rect.width - 1, rect.height - 1))
+        blocks = self.overlapping_blocks(overlap_rect)
         self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
         # remove the highlight
         self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
@@ -83,9 +86,9 @@ class Board(BoardEventHandler):
         """
         #make sure that blocks that are just selected are not included
         row_start = self.__p_to_r(rect.top)
-        row_end = self.__p_to_r(rect.bottom - 1)
+        row_end = self.__p_to_r(rect.bottom)
         column_start = self.__p_to_c(rect.left)
-        column_end = self.__p_to_c(rect.right - 1)
+        column_end = self.__p_to_c(rect.right)
         overlapping_blocks = []
         for row in self.matrix[row_start : row_end + 1]:
             add_row = row[column_start : column_end + 1]
@@ -212,7 +215,7 @@ class Board(BoardEventHandler):
 
     def transparant_collide(self, point):
         block = self.matrix[self.__p_to_r(point[1])][self.__p_to_c(point[0])]
-        if block.transparant:
+        if block.transparant_group != 0:
             return True
         return False
 
@@ -267,7 +270,7 @@ class Board(BoardEventHandler):
         if len(blocks) > 0:
             self._assign_tasks(blocks)
 
-    def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[], dissallowed_task_types=[]):
+    def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[]):
         """
         Get all spaces of a certain block type, task or both
 
@@ -345,8 +348,6 @@ class Board(BoardEventHandler):
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
                 self.task_control.remove(block, cancel=True)
-                if hasattr(block, "original_block"):
-                    blocks[row_i][col_i] = block.original_block
 
         #select the full area
         self.selection_image.add_highlight_rectangle(rect, self._mode.color)
@@ -360,7 +361,7 @@ class Board(BoardEventHandler):
                 self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
                 return
             #the first block of the selection is the start block of the material
-            approved_blocks = blocks[0][0]
+            approved_blocks = [blocks[0][0]]
         elif self._mode.name == "Cancel":
             # remove highlight
             self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
@@ -383,26 +384,16 @@ class Board(BoardEventHandler):
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, *blocks)
         elif self._mode.name == "Building":
-            build_block = self.__change_to_building_block(blocks)
-            self.task_control.add(self._mode.name, build_block)
+            #this should always be 1 block
+            block = blocks[0]
+            #add a transparant group to transparant blocks to keep them transparant but movable
+            if block.transparant_group != 0:
+                block.transparant_group = unique_group()
+            material = get_selected_item().material
+            building_block_i = block_i_from_material(material)
 
-    def __change_to_building_block(self, block):
-        """
-        change a matrix of blocks to instances of BuildingBlock
-
-        :param block: a Block object
-        :return: the original matrix where all the air blocks are filles with
-        BuildingBlocks
-        """
-        material = get_selected_item().material
-        building_block_i = block_i_from_material(material)
-
-        finish_block = building_block_i(block.rect.topleft, material)
-        row_i_m = self.__p_to_r(block.rect.y)
-        column_i_m = self.__p_to_c(block.rect.x)
-        self.matrix[row_i_m][column_i_m] = BuildingBlock(block.rect.topleft, BuildMaterial(), finish_block, block)
-        build_block = self.matrix[row_i_m][column_i_m]
-        return build_block
+            finish_block = building_block_i(block.rect.topleft, material)
+            self.task_control.add(self._mode.name, block, finish_block = finish_block)
 
 
 #### MAP GENERATION FUNCTIONS ###

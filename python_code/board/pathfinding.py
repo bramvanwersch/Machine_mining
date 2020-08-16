@@ -370,7 +370,7 @@ class PathfindingTree(threading.Thread):
         #find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if not block.transparant or n_col in covered_coordinates[n_row]:
+                if block.transparant_group == 0 or n_col in covered_coordinates[n_row]:
                     continue
 
                 #calculate the maximum lenght of a rectangle based on already
@@ -406,8 +406,9 @@ class PathfindingTree(threading.Thread):
         """
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
+        group = blocks[0][0].transparant_group
         for block in blocks[0][1:]:
-            if not block.transparant:
+            if block.transparant_group != group:
                 break
             x_size += 1
         matrix_coordinate = [x_size, 0]
@@ -416,9 +417,9 @@ class PathfindingTree(threading.Thread):
         block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
-                if not block.transparant:
+                if block.transparant_group != group:
                     break
-            if not block.transparant:
+            if block.transparant_group != group:
                 break
             matrix_coordinate[1] += 1
         return matrix_coordinate

@@ -13,13 +13,13 @@ class TaskControl:
         self.board = board
         self.__terminal_inv = board.inventorie_blocks[0].inventory
 
-    def add(self, type, *blocks, priority = 1):
+    def add(self, type, *blocks, priority = 1, **kwargs):
         """
         Add a task to the total list of tasks. This functions as a smart way of
         storing what tasks can likely be performed and which ones not.
         """
         for block in blocks:
-            task = Task(type, priority = priority)
+            task = Task(type, priority = priority, **kwargs)
 
             if block.add_task(task):
                 surrounding_blocks = self.board.surrounding_blocks(block)
@@ -58,13 +58,6 @@ class TaskControl:
             #if a task was completed that removes the block check if surrounding tasks can now be acceses
             if removed_type == "Mining" and cancel == False:
                 self.__check_surrounding_tasks(block)
-            #make sure to add the original back
-            elif removed_type == "Building" and cancel == True:
-                self.__check_surrounding_tasks(block)
-                if block.original_block != "Air":
-                    self.board.add_block(block.original_block)
-                else:
-                    self.board.remove_blocks([[block]])
 
     def __check_surrounding_tasks(self, block):
         surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
@@ -85,7 +78,7 @@ class TaskControl:
         for block in sorted_blocks:
             #if no materials are avaialable skip the building task
             if block.task.task_type == "Building":
-                if not self.__terminal_inv.check_item(block.finish_block.name(), 1):
+                if not self.__terminal_inv.check_item(block.task.finish_block.name(), 1):
                     continue
             return block.task, block
         return None, None
@@ -202,3 +195,5 @@ class Task:
         :return: the value of set variable as saved in the __additional_info
         """
         return self.__additional_info[item]
+
+

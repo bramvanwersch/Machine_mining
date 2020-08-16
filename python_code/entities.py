@@ -341,7 +341,7 @@ class Worker(MovingEntity):
         """
         Protocol for getting build materials.
         """
-        req_block = self.task_queue.task_block.finish_block
+        req_block = self.task_queue.task.finish_block
         if not self.inventory.check_item(req_block.name(), 1):
             block = self.board.closest_inventory(self.orig_rect)
             task = Task("Take item", req_block_name=req_block.name())
@@ -358,7 +358,7 @@ class Worker(MovingEntity):
         #do prelimenary checks that can rule out tasks
         if self.task_queue.task.task_type == "Building":
             #make sure that item retrieval was succesfull
-            required_item = self.task_queue.task_block.finish_block.name()
+            required_item = self.task_queue.task.finish_block.name()
             if not self.inventory.check_item(required_item, 1):
                 self.task_queue.task.increase_priority()
                 self.task_queue.next()
@@ -390,10 +390,10 @@ class Worker(MovingEntity):
                 self.board.remove_blocks([[f_block]])
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
-                self.board.add_block(f_block.finish_block)
-                self.inventory.get(f_block.finish_block.name(), 1)
-                if f_block.original_block != "Air":
-                    self.inventory.add_blocks(f_block.original_block)
+                self.board.add_block(f_task.finish_block)
+                self.inventory.get(f_task.finish_block.name(), 1)
+                if f_block != "Air":
+                    self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
