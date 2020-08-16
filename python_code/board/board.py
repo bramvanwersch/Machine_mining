@@ -150,9 +150,13 @@ class Board(BoardEventHandler):
         if isinstance(block, Building):
             self.add_building(block)
         else:
-            self.foreground_image.add_image(block.rect, block.surface)
             # remove the highlight
             self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
+            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
+
+            #add the block
+            self.foreground_image.add_image(block.rect, block.surface)
+
             row = self.__p_to_r(block.rect.y)
             column = self.__p_to_c(block.rect.x)
             self.matrix[row][column] = block
@@ -355,7 +359,7 @@ class Board(BoardEventHandler):
         #assign tasks to all blocks elligable
         if self._mode.name == "Building":
             no_highlight_block = get_selected_item().name()
-            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, no_highlight_block)
+            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, [no_highlight_block])
             #if not the full image was selected dont add tasks
             if len(no_task_rectangles) > 0:
                 self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
@@ -386,14 +390,11 @@ class Board(BoardEventHandler):
         elif self._mode.name == "Building":
             #this should always be 1 block
             block = blocks[0]
-            #add a transparant group to transparant blocks to keep them transparant but movable
-            if block.transparant_group != 0:
-                block.transparant_group = unique_group()
             material = get_selected_item().material
             building_block_i = block_i_from_material(material)
 
             finish_block = building_block_i(block.rect.topleft, material)
-            self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=finish_block.transparant_group)
+            self.task_control.add(self._mode.name, block, finish_block = finish_block)
 
 
 #### MAP GENERATION FUNCTIONS ###

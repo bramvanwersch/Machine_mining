@@ -30,14 +30,14 @@ class TaskControl:
                     self.reachable_block_tasks[block] = block
                 else:
                     self.unreachable_block_tasks[block] = block
-                #when adding building objectives you can make blocks unreachable
-                #check surrounding blocks to accomodate this
-                if task.task_type == "Building":
-                    for s_block in surrounding_blocks:
-                        if hash(s_block) in self.reachable_block_tasks:
-                            if len([b for b in self.board.surrounding_blocks(s_block) if b.transparant_group != 0]) == 0:
-                                self.reachable_block_tasks.pop(s_block, None)
-                                self.unreachable_block_tasks[s_block]= s_block
+                # #when adding building objectives you can make blocks unreachable
+                # #check surrounding blocks to accomodate this
+                # if task.task_type == "Building":
+                #     for s_block in surrounding_blocks:
+                #         if hash(s_block) in self.reachable_block_tasks:
+                #             if len([b for b in self.board.surrounding_blocks(s_block) if b.transparant_group != 0]) == 0:
+                #                 self.reachable_block_tasks.pop(s_block, None)
+                #                 self.unreachable_block_tasks[s_block]= s_block
 
     def remove(self, *blocks, cancel = False):
         """
@@ -58,11 +58,13 @@ class TaskControl:
                 self.reachable_block_tasks.pop(block, None)
                 self.unreachable_block_tasks.pop(block, None)
 
-            #if a task was completed that removes the block check if surrounding tasks can now be acceses
-            if removed_task.task_type == "Mining" and cancel == False:
-                self.__check_surrounding_tasks(block)
-            elif removed_task.task_type == "Building" and cancel == True:
-                block.transparant_group = removed_task.original_group
+                #if a task was completed that removes the block check if surrounding tasks can now be acceses
+                if removed_task.task_type == "Mining" and cancel == False:
+                    self.__check_surrounding_tasks(block)
+                elif removed_task.task_type == "Building" and cancel == False \
+                        and removed_task.finish_block.transparant_group != 0:
+                    self.__check_surrounding_tasks(block)
+
 
     def __check_surrounding_tasks(self, block):
         surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
@@ -193,10 +195,9 @@ class Task:
 
 
 class BuildTask(Task):
-    def __init__(self, task_type, finish_block, original_group, **kwargs):
+    def __init__(self, task_type, finish_block, **kwargs):
         super().__init__(task_type, **kwargs)
         self.finish_block = finish_block
-        self.original_group = original_group
 
 class TakeTask(Task):
     def __init__(self, task_type, req_block_name, **kwargs):
