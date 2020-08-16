@@ -54,15 +54,15 @@ class Main:
                 fps = FONTS[22].render(str(int(GAME_TIME.get_fps())), True,
                                     pygame.Color('black'))
                 self.screen.blit(fps, (10, 10))
-            if AIR_RECTANGLES:
-                self.draw_air_rectangles()
+            # if AIR_RECTANGLES:
+            #     self.draw_air_rectangles()
         #terminate thread to be sure
         self.board.pf.stop()
         pygame.quit()
 
-    def draw_air_rectangles(self):
-        for rect in self.board.pf.calculation_thread.rectangles:
-            pygame.draw.rect(self.board.foreground_image.image, (0,0,0), rect, 2)
+    # def draw_air_rectangles(self):
+    #     for rect in self.board.pf.calculation_thread.rectangles:
+    #         pygame.draw.rect(self.board.foreground_image.image, (0,0,0), rect, 2)
 
 class User:
     def __init__(self, camera_center, board, main_sprite_group):

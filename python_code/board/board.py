@@ -392,9 +392,11 @@ class Board(BoardEventHandler):
             block = blocks[0]
             material = get_selected_item().material
             building_block_i = block_i_from_material(material)
-
+            group = block.transparant_group
+            if group != 0:
+                block.transparant_group = unique_group()
             finish_block = building_block_i(block.rect.topleft, material)
-            self.task_control.add(self._mode.name, block, finish_block = finish_block)
+            self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group)
 
 
 #### MAP GENERATION FUNCTIONS ###

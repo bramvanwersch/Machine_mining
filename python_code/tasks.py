@@ -64,6 +64,8 @@ class TaskControl:
                 elif removed_task.task_type == "Building" and cancel == False \
                         and removed_task.finish_block.transparant_group != 0:
                     self.__check_surrounding_tasks(block)
+                elif removed_task.task_type == "Building" and cancel == True:
+                    block.transparant_group = removed_task.original_group
 
 
     def __check_surrounding_tasks(self, block):
@@ -195,9 +197,10 @@ class Task:
 
 
 class BuildTask(Task):
-    def __init__(self, task_type, finish_block, **kwargs):
+    def __init__(self, task_type, finish_block, original_group, **kwargs):
         super().__init__(task_type, **kwargs)
         self.finish_block = finish_block
+        self.original_group = original_group
 
 class TakeTask(Task):
     def __init__(self, task_type, req_block_name, **kwargs):
