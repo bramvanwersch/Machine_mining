@@ -46,6 +46,7 @@ class Inventory:
         return available_amnt
 
     def add_blocks(self, *blocks):
+
         for block in blocks:
             if not block.material.name() in self.__container:
                 self.__container[block.name()] = Item(block.material)

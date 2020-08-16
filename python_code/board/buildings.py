@@ -107,7 +107,7 @@ class Furnace(Building):
     Terminal building. The main interaction centrum for the workers
     """
     IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
-    BLOCK_TYPE = ContainerBlock
+    BLOCK_TYPE = Block
     MATERIAL = FurnaceMaterial
 
     def _get_blocks(self, block_class, material_class):

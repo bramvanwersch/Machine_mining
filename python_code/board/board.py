@@ -222,16 +222,16 @@ class Board(BoardEventHandler):
         if self.pressed(1):
             if self._mode.name in ["Mining", "Cancel", "Selecting"]:
                 self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
-        elif self.unpressed(1):
-            #only select a single block
-            if self._mode.name == "Building":
+            elif self._mode.name == "Building":
                 item = get_selected_item()
-                #if no item is selected dont do anything
+                # if no item is selected dont do anything
                 if item == None:
                     return
                 material = get_selected_item().material
                 building_block_i = block_i_from_material(material)
-                self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight, size=building_block_i.SIZE)
+                self.selection_image.add_building_rectangle(self.get_key(1).event.pos,size=building_block_i.SIZE)
+        elif self.unpressed(1):
+            #only select a single block
             self.__process_selection()
             self.selection_image.remove_selection()
 
@@ -624,17 +624,19 @@ class TransparantBoardImage(BoardImage):
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
             self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
-        self.selection_rectangle = SelectionRectangle(mouse_pos,
-                                        size - BLOCK_SIZE, pos,
-                                        self.groups()[0],zoom=self._zoom)
+        self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
+                                            self.groups()[0],zoom=self._zoom)
+
+    def add_building_rectangle(self, pos, size=(10, 10)):
+        mouse_pos = self._screen_to_board_coordinate(pos)
+        self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
+                                        self.groups()[0],zoom=self._zoom, color=INVISIBLE_COLOR)
 
     def add_highlight_rectangle(self, rect, color):
         """
         Add a rectangle to this image that functions as highlight from the
         current selection
 
-        :param rect: the rectangle to highlight, this is a slightly adjusted
-        rectangle compared to the selection rectangle
         :param color: the color of the highlight
         """
         self.__highlight_rectangle = rect

@@ -117,7 +117,7 @@ class SelectionRectangle(ZoomableEntity):
 
     def __update_image(self):
         """
-        Update the rectangle image tha represents a highlighted area.
+        Update the rectangle image that represents a highlighted area.
         """
         pos = self.__start_pos.copy()
         size = self.__size.size
