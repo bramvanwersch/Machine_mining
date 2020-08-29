@@ -30,14 +30,6 @@ class TaskControl:
                     self.reachable_block_tasks[block] = block
                 else:
                     self.unreachable_block_tasks[block] = block
-                # #when adding building objectives you can make blocks unreachable
-                # #check surrounding blocks to accomodate this
-                # if task.task_type == "Building":
-                #     for s_block in surrounding_blocks:
-                #         if hash(s_block) in self.reachable_block_tasks:
-                #             if len([b for b in self.board.surrounding_blocks(s_block) if b.transparant_group != 0]) == 0:
-                #                 self.reachable_block_tasks.pop(s_block, None)
-                #                 self.unreachable_block_tasks[s_block]= s_block
 
     def remove(self, *blocks, cancel = False):
         """
@@ -197,10 +189,11 @@ class Task:
 
 
 class BuildTask(Task):
-    def __init__(self, task_type, finish_block, original_group, **kwargs):
+    def __init__(self, task_type, finish_block, original_group, removed_blocks, **kwargs):
         super().__init__(task_type, **kwargs)
         self.finish_block = finish_block
         self.original_group = original_group
+        self.removed_blocks = [block for block in removed_blocks if block.name() != "Air"]
 
 class TakeTask(Task):
     def __init__(self, task_type, req_block_name, **kwargs):

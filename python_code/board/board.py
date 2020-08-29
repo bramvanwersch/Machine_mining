@@ -6,7 +6,7 @@ from python_code.board import materials
 from python_code.utility.constants import *
 from python_code.board.pathfinding import PathFinder
 from python_code.board import buildings
-from  python_code.board.buildings import *
+from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
 from python_code.building.building import get_selected_item
 
@@ -50,6 +50,7 @@ class Board(BoardEventHandler):
         """
         building_rect = building_instance.rect
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
+        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
         self.__buildings[building_instance.id] = building_rect
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
@@ -140,26 +141,27 @@ class Board(BoardEventHandler):
                     column = self.__p_to_c(block.rect.x)
                     self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
 
-    def add_block(self, block):
+    def add_block(self, *blocks):
         """
         Add a block to the board by changing the matrix and blitting the image
         to the foreground_layer
 
-        :param block: a BasicBlock object or inheriting class
+        :param block: one or more BasicBlock objects or inheriting classes
         """
-        if isinstance(block, Building):
-            self.add_building(block)
-        else:
-            # remove the highlight
-            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
-            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
+        for block in blocks:
+            if isinstance(block, Building):
+                self.add_building(block)
+            else:
+                # remove the highlight
+                self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
+                self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
 
-            #add the block
-            self.foreground_image.add_image(block.rect, block.surface)
+                #add the block
+                self.foreground_image.add_image(block.rect, block.surface)
 
-            row = self.__p_to_r(block.rect.y)
-            column = self.__p_to_c(block.rect.x)
-            self.matrix[row][column] = block
+                row = self.__p_to_r(block.rect.y)
+                column = self.__p_to_c(block.rect.x)
+                self.matrix[row][column] = block
 
     def closest_inventory(self, start):
         """
@@ -396,7 +398,14 @@ class Board(BoardEventHandler):
             if group != 0:
                 block.transparant_group = unique_group()
             finish_block = building_block_i(block.rect.topleft, material)
-            self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group)
+            if isinstance(finish_block, Building):
+                overlap_rect = pygame.Rect((*finish_block.rect.topleft, finish_block.rect.width - 1, finish_block.rect.height - 1))
+                overlap_blocks = self.overlapping_blocks(overlap_rect)
+                #flatten the matrix
+                overlap_blocks = [item for sub_list in overlap_blocks for item in sub_list]
+            else:
+                overlap_blocks = [block]
+            self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group, removed_blocks=overlap_blocks)
 
 
 #### MAP GENERATION FUNCTIONS ###

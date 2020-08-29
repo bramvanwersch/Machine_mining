@@ -317,7 +317,6 @@ class Worker(MovingEntity):
                 #allow for extra tasks to be added to the stack depending on
                 #the type
                 if self.task_queue.task.task_type == "Building":
-                    #make sure that tasks are more efficiently assigned
                     self.__get_build_items()
                     self.__empty_inventory()
                 self.__start_task()
@@ -350,7 +349,6 @@ class Worker(MovingEntity):
                 self.task_queue.add(task, block)
 
 ##task management functions:
-
     def __start_task(self):
         """
         Called to start up the current task in the task_queue
@@ -392,8 +390,7 @@ class Worker(MovingEntity):
             elif f_task.task_type == "Building":
                 self.board.add_block(f_task.finish_block)
                 self.inventory.get(f_task.finish_block.name(), 1)
-                if f_block != "Air":
-                    self.inventory.add_blocks(f_block)
+                self.inventory.add_blocks(*f_task.removed_blocks)
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
