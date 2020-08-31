@@ -1,4 +1,5 @@
 from python_code.utility.image_handling import image_sheets
+from python_code.board.blocks import ContainerBlock
 
 class Network:
     # made as follows:
@@ -29,7 +30,7 @@ class Network:
         update
         :return: None or a list Blocks that need an update to theire surface
         """
-        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if surrounding_blocks[i] == block]
+        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if surrounding_blocks[i] == block or isinstance(surrounding_blocks[i], ContainerBlock)]
         direction_indexes = "".join(direction_indexes)
         image_name = "{}_{}".format(len(direction_indexes), direction_indexes)
         block.surface = self.__pipe_images[image_name]
