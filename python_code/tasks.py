@@ -26,7 +26,7 @@ class TaskControl:
 
             if block.add_task(task):
                 surrounding_blocks = self.board.surrounding_blocks(block)
-                if len([b for b in surrounding_blocks if b.transparant_group != 0]) > 0:
+                if len([b for b in surrounding_blocks if b != None and b.transparant_group != 0]) > 0:
                     self.reachable_block_tasks[block] = block
                 else:
                     self.unreachable_block_tasks[block] = block
