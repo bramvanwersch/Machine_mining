@@ -117,6 +117,10 @@ class Block(BaseBlock):
         self.surface = self.material.surface
         self.rect = self.surface.get_rect(topleft=pos)
 
+class NetworkBlock(Block):
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, material, **kwargs)
+
 
 class ContainerBlock(Block):
     """
@@ -131,4 +135,3 @@ class ContainerBlock(Block):
     def add(self, *items):
         if self.inventory != None:
             self.inventory.add_items(*items)
-

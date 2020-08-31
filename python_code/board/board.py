@@ -9,6 +9,7 @@ from python_code.board import buildings
 from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
 from python_code.building.building import get_selected_item
+from python_code.network.pipes import Network
 
 class Board(BoardEventHandler):
     """
@@ -38,44 +39,9 @@ class Board(BoardEventHandler):
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
         self.task_control = None
-        #list of buildings
 
-    def add_building(self, building_instance, draw = True):
-        """
-        Add a building into the matrix and potentially draw it when requested
-
-        :param building_instance: an instance of Building
-        :param draw: Boolean telling if the foreground image should be updated
-        mainly important when innitiating
-        """
-        building_rect = building_instance.rect
-        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
-        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
-        self.__buildings[building_instance.id] = building_rect
-        for row_i, row in enumerate(building_instance.blocks):
-            for column_i, block in enumerate(row):
-                m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
-                self.matrix[m_pos[1]][m_pos[0]] = block
-                if draw:
-                    self.foreground_image.add_image(block.rect, block.surface)
-                if isinstance(block, ContainerBlock):
-                    self.inventorie_blocks.append(block)
-
-    def remove_building(self, block):
-        rect = self.__buildings[block.id]
-        #make sure this does net just overlap with the next block
-        overlap_rect = pygame.Rect((*rect.topleft, rect.width - 1, rect.height - 1))
-        blocks = self.overlapping_blocks(overlap_rect)
-        self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
-        # remove the highlight
-        self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
-        for row in blocks:
-            for block in row:
-                row = self.__p_to_r(block.rect.y)
-                column = self.__p_to_c(block.rect.x)
-                self.task_control.remove(block)
-                self.matrix[row][column] = AirBlock(block.rect.topleft,
-                                                materials.Air())
+        #pipe network
+        self.pipe_network = Network()
 
     def overlapping_blocks(self, rect):
         """
@@ -139,19 +105,29 @@ class Board(BoardEventHandler):
                 else:
                     row = self.__p_to_r(block.rect.y)
                     column = self.__p_to_c(block.rect.x)
+                    change_block = self.matrix[row][column]
                     self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
+                    if isinstance(block, NetworkBlock):
+                        surrounding_blocks = self.surrounding_blocks(change_block)
+                        for block in surrounding_blocks:
+                            if isinstance(block, NetworkBlock):
+                                self.pipe_network.configure_block(block, self.surrounding_blocks(block))
+                                self.add_blocks(block)
 
-    def add_block(self, *blocks):
+    def add_blocks(self, *blocks, **kwargs):
         """
         Add a block to the board by changing the matrix and blitting the image
         to the foreground_layer
 
-        :param block: one or more BasicBlock objects or inheriting classes
+        :param blocks: one or more BasicBlock objects or inheriting classes
         """
+        update_blocks = None
         for block in blocks:
             if isinstance(block, Building):
                 self.add_building(block)
             else:
+                if isinstance(block, NetworkBlock):
+                    update_blocks = self.pipe_network.configure_block(block, self.surrounding_blocks(block), **kwargs)
                 # remove the highlight
                 self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
                 self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
@@ -162,6 +138,45 @@ class Board(BoardEventHandler):
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
                 self.matrix[row][column] = block
+        if update_blocks != None:
+            self.add_blocks(*update_blocks)
+
+    def add_building(self, building_instance, draw = True):
+        """
+        Add a building into the matrix and potentially draw it when requested
+
+        :param building_instance: an instance of Building
+        :param draw: Boolean telling if the foreground image should be updated
+        mainly important when innitiating
+        """
+        building_rect = building_instance.rect
+        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
+        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
+        self.__buildings[building_instance.id] = building_rect
+        for row_i, row in enumerate(building_instance.blocks):
+            for column_i, block in enumerate(row):
+                m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
+                self.matrix[m_pos[1]][m_pos[0]] = block
+                if draw:
+                    self.foreground_image.add_image(block.rect, block.surface)
+                if isinstance(block, ContainerBlock):
+                    self.inventorie_blocks.append(block)
+
+    def remove_building(self, block):
+        rect = self.__buildings[block.id]
+        #make sure this does net just overlap with the next block
+        overlap_rect = pygame.Rect((*rect.topleft, rect.width - 1, rect.height - 1))
+        blocks = self.overlapping_blocks(overlap_rect)
+        self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
+        # remove the highlight
+        self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+        for row in blocks:
+            for block in row:
+                row = self.__p_to_r(block.rect.y)
+                column = self.__p_to_c(block.rect.x)
+                self.task_control.remove(block)
+                self.matrix[row][column] = AirBlock(block.rect.topleft,
+                                                materials.Air())
 
     def closest_inventory(self, start):
         """

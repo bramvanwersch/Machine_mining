@@ -388,7 +388,7 @@ class Worker(MovingEntity):
                 self.board.remove_blocks([[f_block]])
                 self.inventory.add_blocks(f_block)
             elif f_task.task_type == "Building":
-                self.board.add_block(f_task.finish_block)
+                self.board.add_blocks(f_task.finish_block, update=True)
                 self.inventory.get(f_task.finish_block.name(), 1)
                 self.inventory.add_blocks(*f_task.removed_blocks)
             elif f_task.task_type == "Empty inventory":

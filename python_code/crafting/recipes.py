@@ -205,7 +205,6 @@ class CraftableRecipe:
     defined by a concept recipe
     """
     def __init__(self, material_grid, recipe):
-        self.block_type = recipe.BLOCK_TYPE
         self.material = recipe.material
         self.quantity = recipe.quantity
 
@@ -240,11 +239,6 @@ class BaseConceptRecipe(ABC):
 
         :return: a RecipeGrid object
         """
-        return None
-
-    @property
-    @abstractmethod
-    def BLOCK_TYPE(self):
         return None
 
     def get_size(self):
@@ -323,7 +317,6 @@ class BaseConceptRecipe(ABC):
 
 
 class FurnaceRecipe(BaseConceptRecipe):
-    BLOCK_TYPE = Furnace
     def __init__(self):
         mat = FurnaceMaterial(image=Furnace((0,0)).full_image())
         BaseConceptRecipe.__init__(self, mat)
@@ -344,7 +337,6 @@ class FurnaceRecipe(BaseConceptRecipe):
         return grid
 
 class CompactStoneRecipe(BaseConceptRecipe):
-    BLOCK_TYPE = Block
     def __init__(self):
         mat = StoneBrickMaterial()
         BaseConceptRecipe.__init__(self, mat)
@@ -358,10 +350,10 @@ class CompactStoneRecipe(BaseConceptRecipe):
         return grid
 
 class StonePipe(BaseConceptRecipe):
-    BLOCK_TYPE = Block
     def __init__(self):
         mat = StonePipeMaterial()
         BaseConceptRecipe.__init__(self, mat)
+        self.quantity = 2
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(3, 5), Size(3, 3))

@@ -4,7 +4,7 @@ from random import randint
 
 from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER
 from python_code.utility.image_handling import image_sheets
-
+from python_code.board.blocks import *
 
 class BaseMaterial(ABC):
     """
@@ -18,6 +18,8 @@ class BaseMaterial(ABC):
     TEXT_COLOR = (0,0,0)
     #group 0 are not transparant
     TRANSPARANT_GROUP = 0
+
+    BLOCK_TYPE = Block
     def __init__(self, image = None, **kwargs):
         """
         :param image: a pygame Surface object that can be an image instead of
@@ -267,6 +269,7 @@ class FurnaceMaterial(BuildingMaterial):
 class StonePipeMaterial(ImageMaterial):
     TASK_TIME = 1000
     TRANSPARANT_GROUP = 2
+    BLOCK_TYPE = NetworkBlock
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((10,0), color_key=(255,255,255))

@@ -14,7 +14,7 @@ def block_i_from_material(material):
         name = material.name().replace("Material", "")
         building_block_i = globals()[name]
     else:
-        building_block_i = Block
+        building_block_i = material.BLOCK_TYPE
     return building_block_i
 
 
@@ -97,7 +97,6 @@ class Terminal(Building):
     IMAGE_SPECIFICATIONS = ["buildings", (0, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = TerminalMaterial
-
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)

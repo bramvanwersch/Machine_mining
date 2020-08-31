@@ -57,6 +57,7 @@ class Spritesheet:
         """
         specify rectangles from where images need to be extracted. The rectangles need to be multiples of the size
         dimensions
+
         :param rects: tuple of lenght 4 or pygame.Rect objects
         :return: a list of images in the rectanges in the order of the specified rectangles aswell as
         """
