@@ -117,9 +117,11 @@ class Block(BaseBlock):
         self.surface = self.material.surface
         self.rect = self.surface.get_rect(topleft=pos)
 
+
 class NetworkBlock(Block):
     def __init__(self, pos, material, **kwargs):
         super().__init__(pos, material, **kwargs)
+        self.network_group = 1
 
 
 class ContainerBlock(Block):
