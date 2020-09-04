@@ -109,12 +109,13 @@ class Board(BoardEventHandler):
                     self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
                     if isinstance(block, NetworkBlock):
                         surrounding_blocks = self.surrounding_blocks(change_block)
+                        self.pipe_network.remove(change_block)
                         for block in surrounding_blocks:
                             if isinstance(block, NetworkBlock):
                                 self.pipe_network.configure_block(block, self.surrounding_blocks(block))
                                 self.add_blocks(block)
 
-    def add_blocks(self, *blocks, **kwargs):
+    def add_blocks(self, *blocks, update=False):
         """
         Add a block to the board by changing the matrix and blitting the image
         to the foreground_layer
@@ -127,7 +128,9 @@ class Board(BoardEventHandler):
                 self.add_building(block)
             else:
                 if isinstance(block, NetworkBlock):
-                    update_blocks = self.pipe_network.configure_block(block, self.surrounding_blocks(block), **kwargs)
+                    update_blocks = self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update)
+                    if update:
+                        self.pipe_network.add(block)
                 # remove the highlight
                 self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
                 self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
