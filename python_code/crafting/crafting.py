@@ -1,10 +1,8 @@
-from python_code.widgets import *
+from python_code.interfaces.widgets import *
 from python_code.crafting.recipes import RecipeBook
 from python_code.board.materials import Air
 from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
-from python_code.board.materials import BuildingMaterial
-
 
 #crafting globals
 #this is for managing a selected item. I am not super happy with it.

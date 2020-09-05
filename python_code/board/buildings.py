@@ -26,7 +26,7 @@ class Building(BaseBlock, ABC):
     BLOCK_TYPE = Block
     SIZE = Size(*(BLOCK_SIZE * (2, 2)))
     ID = 0
-    def __init__(self, pos, material=None, **kwargs):
+    def __init__(self, pos, material=None):
         self.material = self.MATERIAL()
         self.pos = pos
 
@@ -35,6 +35,16 @@ class Building(BaseBlock, ABC):
 
         self.blocks = self._get_blocks( self.BLOCK_TYPE, self.MATERIAL)
         self.rect = pygame.Rect((*pos, *self.SIZE))
+
+
+    def _action_function(self, *args):
+        """
+        Can be overwritten to trigger an action on all blocks of the building
+        when requested.
+
+        :param args: optional arguments.
+        """
+        pass
 
 
     @property
@@ -85,7 +95,7 @@ class Building(BaseBlock, ABC):
             for column_i, image in enumerate(row):
                 material = material_class(image = image)
                 pos = (self.pos[0] + column_i * BLOCK_SIZE.width, self.pos[1] + row_i * BLOCK_SIZE.height)
-                block_row.append(block_class(pos, material, id=self.id))
+                block_row.append(block_class(pos, material, id=self.id, action=self._action_function))
             blocks.append(block_row)
         return blocks
 

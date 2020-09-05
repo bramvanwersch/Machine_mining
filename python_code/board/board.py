@@ -1,14 +1,13 @@
-from random import randint, choices, choice
+from random import choices, choice
 
 from python_code.entities import ZoomableEntity, SelectionRectangle
 from python_code.utility.utilities import *
 from python_code.board import materials
 from python_code.utility.constants import *
 from python_code.board.pathfinding import PathFinder
-from python_code.board import buildings
 from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
-from python_code.building.building import get_selected_item
+from python_code.interfaces.building_interface import get_selected_item
 from python_code.network.pipes import Network
 
 class Board(BoardEventHandler):

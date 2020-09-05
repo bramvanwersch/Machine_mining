@@ -1,4 +1,5 @@
-from python_code.widgets import *
+from python_code.interfaces.widgets import *
+from python_code.interfaces.base_interface import Window
 
 #globals
 SELECTED_WIDGET = None
@@ -19,45 +20,11 @@ def get_selected_item():
         return SELECTED_WIDGET.item
     return None
 
-class BuildingInterface(EventHandler):
-    def __init__(self, board, *groups):
-        EventHandler.__init__(self, [])
-        self.board = board
-        self.__window = BuildingWindow(self.board.inventorie_blocks[0].inventory, *groups)
 
-    def show(self, value):
-        """
-        Toggle showing the crafting window or not. This also makes sure that no
-        real updates are pushed while the window is invisible
-
-        :param value: a boolean
-        """
-        self.__window.visible = value
-
-    def handle_events(self, events):
-        """
-        Handle events issued by the user not consumed by the Main module. This
-        function can also be used as an update method for all things that only
-        need updates with new inputs.
-
-        Note: this will trager quite often considering that moving the mouse is
-        also considered an event.
-
-        :param events: a list of events
-        """
-        leftovers = super().handle_events(events)
-        if self.__window.visible:
-            self.__window.handle_events(events)
-
-
-class BuildingWindow(Frame):
-    COLOR = (173, 94, 29, 150)
+class BuildingWindow(Window):
     def __init__(self, terminal_inventory, *groups):
-        Frame.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
-                       *groups, layer=INTERFACE_LAYER, color=self.COLOR,
-                       title = "PICK ITEM TO BUILD:")
-        self.visible = False
-        self.static = False
+        super().__init__(INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
+                       *groups, layer=INTERFACE_LAYER, title = "PICK AN ITEM TO BUILD:")
         self.__inventory = terminal_inventory
         self._inventory_sp = None
         self.__initiate_widgets()
@@ -67,8 +34,6 @@ class BuildingWindow(Frame):
     def update(self, *args):
         """
         Entity update method, add labels to the scroll pane when needed.
-
-        :See: Entity.update()
         """
         super().update(*args)
         if self.__prev_no_items < self.__inventory.number_of_items:

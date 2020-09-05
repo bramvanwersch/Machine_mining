@@ -41,7 +41,6 @@ class HoverAction:
         Set and trigger an hover event when appropraite
 
         :param hover: a boolean that tells if the mouse is hovering or not
-        :return:
         """
         if hover != self.__prev_hover_state or self.__continious:
             if self.__action_functions[hover]:
@@ -396,12 +395,9 @@ class Frame(Entity, Pane):
     Container for widgets, that is an entity so it can act as a window. Every
     gui should have a frame to be able to display and handle updates
     """
-    TEXTCOLOR = (0,0,0)
-    def __init__(self, pos, size, *groups, title=None, **kwargs):
+    def __init__(self, pos, size, *groups, **kwargs):
         Entity.__init__(self, pos, size, *groups, **kwargs)
         Pane.__init__(self, pos, size, **kwargs)
-        if title:
-            self._set_title(title)
 
     def update(self, *args):
         """
@@ -439,18 +435,6 @@ class Frame(Entity, Pane):
                     widget.action(key.name, type)
                     #remove event as to not trigger it twice
                     del keys[index]
-
-    def _set_title(self, title):
-        """
-        Permanently add a title tot the frame. This is displayed at the top of
-        the frame
-
-        :param title: String of what should be displayed
-        """
-        title = FONTS[30].render(title, True, self.TEXTCOLOR)
-        tr = title.get_rect()
-        #center the title above the widet
-        self.orig_image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
     def add_border(self, widget):
         """
