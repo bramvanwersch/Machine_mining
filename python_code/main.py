@@ -7,7 +7,7 @@ from python_code.board.board import Board
 from python_code.utility.constants import *
 from python_code.tasks import TaskControl
 from python_code.utility.image_handling import load_images
-from python_code.crafting.crafting_interface import CraftingWindow
+from python_code.interfaces.crafting_interface import CraftingWindow
 from python_code.interfaces.building_interface import BuildingWindow
 
 

@@ -1,6 +1,5 @@
 from python_code.interfaces.widgets import *
 from python_code.interfaces.base_interface import Window
-from python_code.crafting.recipes import RecipeBook
 from python_code.board.materials import Air
 from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
