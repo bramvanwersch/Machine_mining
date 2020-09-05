@@ -61,23 +61,18 @@ class Network:
             for rem_edge in connected_edges:
                 new_edge.add_edge(rem_edge)
                 self.edges.remove(rem_edge)
-        print(len(self.edges))
-        print([len(e) for e in self.edges])
 
     def remove(self, block):
         for edge in self.edges:
             if block in edge:
                 new_location_lists = edge.remove_segment(block)
-                print(new_location_lists)
                 if len(edge.segments) == 0:
                     self.edges.remove(edge)
                 for location_edge in new_location_lists:
-                    print(location_edge)
                     new_edge = NetworkEdge(block.network_group)
                     new_edge.add_string_location(*location_edge)
                     self.edges.add(new_edge)
-        print(len(self.edges))
-        print([len(e) for e in self.edges])
+                break
 
 
 class NetworkNode:
@@ -121,13 +116,17 @@ class NetworkEdge:
     def remove_segment(self, block):
         loc = self.block_to_location_string(block)
         self.segments.remove(loc)
-        sur_locs = self.__surrounding_locations(loc)
+        sur_locs = [loc for loc in self.__surrounding_locations(loc) if loc in self.segments]
         if len(sur_locs) <= 1:
             return []
         else:
             new_edges = self.check_connected(sur_locs)
-            self.segments = new_edges.pop()
-            return new_edges
+            if len(new_edges) > 0:
+                self.segments = new_edges.pop()
+                return new_edges
+            else:
+                self.segments = set()
+                return []
 
     def check_connected(self, locations):
         locations = set(locations)
@@ -146,12 +145,8 @@ class NetworkEdge:
                         check_locations.append(sur_loc)
                         if sur_loc in locations:
                             locations.remove(sur_loc)
-                            if len(locations) == 0:
-                                break
-                if len(locations) == 0:
-                    break
-
-            new_edges.append(used_segments)
+            if len(used_segments) > 0:
+                new_edges.append(used_segments)
         return new_edges
 
     def __surrounding_locations(self, location):
