@@ -219,7 +219,13 @@ class Button(Label):
 
     def _create_image(self, size, color, **kwargs):
         image = super()._create_image(size, color, **kwargs)
+        if "hover_image" in kwargs:
+            self._hover_image = kwargs["hover_image"]
+        else:
+            self._create_hover_image(size, color, image, **kwargs)
+        return image
 
+    def _create_hover_image(self, size, color, image, **kwargs):
         hover_image = image.copy()
         hover_image.fill(self.__hover_color(color))
         #add a potential border
@@ -234,8 +240,7 @@ class Button(Label):
             center_pos = (self.rect.width / 2 - text_rect.width / 2, self.rect.height / 2 - text_rect.height / 2)
             image.blit(text, center_pos)
             hover_image.blit(text, center_pos)
-        self._hover_image = hover_image
-        return image
+        return hover_image
 
     def __hover_color(self, color):
         new_color = []

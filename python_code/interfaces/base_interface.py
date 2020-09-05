@@ -24,8 +24,9 @@ class Window(Frame, EventHandler):
         self.add_widget(top_label)
         if title != None:
             top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25, add=True)
-        button_image = image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE)
-        exit_button = Button((size.width - self.EXIT_BUTTON_SIZE.width, 0), self.EXIT_BUTTON_SIZE, image=button_image)
+        button_image = image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE, color_key=(255,255,255))
+        hover_image = image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE, color_key=(255, 255, 255))
+        exit_button = Button((size.width - self.EXIT_BUTTON_SIZE.width, 0), self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image)
         exit_button.set_action(1, self.__close_window)
         self.add_widget(exit_button)
 
