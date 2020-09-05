@@ -11,15 +11,22 @@ class BaseBlock(ABC):
     #all tasks types are allowed
     SIZE = BLOCK_SIZE
     ID = 0
-    def __init__(self, pos, id=None):
+    def __init__(self, pos, id=None, action=None):
         self.rect = pygame.Rect((*pos, *self.SIZE))
         self.task = None
+        self.__action_function = action
         if id == None:
             self.id = self.ID
             BaseBlock.ID += 1
         else:
             self.id = id
 
+    def action(self):
+        """
+        Function to allow a action being triggered when needed
+        """
+        if self.__action_function != None:
+            self.__action_function()
 
     @property
     def coord(self):

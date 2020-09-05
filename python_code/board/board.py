@@ -269,6 +269,9 @@ class Board(BoardEventHandler):
         if self.pressed(1):
             if self._mode.name in ["Mining", "Cancel", "Selecting"]:
                 self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
+                if self._mode.name == "Selecting":
+                    board_coord = self.foreground_image._screen_to_board_coordinate(self.get_key(1).event.pos)
+                    self.matrix[self.__p_to_r(board_coord[1])][self.__p_to_c(board_coord[0])].action()
             elif self._mode.name == "Building":
                 item = get_selected_item()
                 # if no item is selected dont do anything
@@ -278,7 +281,6 @@ class Board(BoardEventHandler):
                 building_block_i = block_i_from_material(material)
                 self.selection_image.add_building_rectangle(self.get_key(1).event.pos,size=building_block_i.SIZE)
         elif self.unpressed(1):
-            #only select a single block
             self.__process_selection()
             self.selection_image.remove_selection()
 
