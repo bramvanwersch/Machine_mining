@@ -7,7 +7,7 @@ from python_code.board.board import Board
 from python_code.utility.constants import *
 from python_code.tasks import TaskControl
 from python_code.utility.image_handling import load_images
-from python_code.crafting.crafting import CraftingInterface
+from python_code.crafting.crafting_interface import CraftingWindow
 from python_code.interfaces.building_interface import BuildingWindow
 
 
@@ -93,7 +93,7 @@ class User:
         for _ in range(10):
             self.workers.append(Worker((1000, 40), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
-        self.crafting_interface = CraftingInterface(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
+        self.crafting_interface = CraftingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
 
     def update(self):

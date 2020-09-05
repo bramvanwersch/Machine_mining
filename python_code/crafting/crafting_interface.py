@@ -1,4 +1,5 @@
 from python_code.interfaces.widgets import *
+from python_code.interfaces.base_interface import Window
 from python_code.crafting.recipes import RecipeBook
 from python_code.board.materials import Air
 from python_code.utility.image_handling import image_sheets
@@ -20,61 +21,13 @@ def select_a_widget(widget):
         SELECTED_LABEL.set_selected(False)
     SELECTED_LABEL = widget
 
-
-class CraftingInterface(EventHandler):
-    """
-    Contains all the crafting GUI and all associated methods
-    """
-    def __init__(self, terminal_inventory, *groups):
-        EventHandler.__init__(self, [])
-        self.__window = CraftingWindow(terminal_inventory, *groups)
-        self.__recipe_book = RecipeBook()
-
-    def show(self, value):
-        """
-        Toggle showing the crafting window or not. This also makes sure that no
-        real updates are pushed while the window is invisible
-
-        :param value: a boolean
-        """
-        self.__window.visible = value
-
-    def handle_events(self, events):
-        """
-        Handle events issued by the user not consumed by the Main module. This
-        function can also be used as an update method for all things that only
-        need updates with new inputs.
-
-        Note: this will trager quite often considering that moving the mouse is
-        also considered an event.
-
-        :param events: a list of events
-        """
-        leftovers = super().handle_events(events)
-        if self.__window.visible:
-            self.__window.handle_events(events)
-            #check if the rescipe changed. If that is the case update the crafting window
-            new_recipe_grid = self.__window.grid_pane.get_new_recipe_grid()
-            if new_recipe_grid:
-                recipe = self.__recipe_book.get_recipe(new_recipe_grid)
-                if recipe != None:
-                    self.__window._craftable_item_lbl.set_display(recipe.material)
-                    self.__window._craftable_item_recipe = recipe
-                else:
-                    self.__window._craftable_item_lbl.set_display(None)
-
-
-class CraftingWindow(Frame):
+class CraftingWindow(Window):
     """
     A Frame for the crafting GUI
     """
-    COLOR = (173, 94, 29, 150)
     def __init__(self, terminal_inventory, *groups):
-        Frame.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
-                       *groups, layer=INTERFACE_LAYER, color=self.COLOR,
-                       title = "CRAFTING:")
-        self.visible = False
-        self.static = False
+        Window.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
+                       *groups, layer=INTERFACE_LAYER, title = "CRAFTING:")
         self._grid_pane = None
         self.__inventory = terminal_inventory
         self.__prev_no_items = self.__inventory.number_of_items
@@ -96,6 +49,29 @@ class CraftingWindow(Frame):
         if self.__prev_no_items < self.__inventory.number_of_items:
             self.__prev_no_items = self.__inventory.number_of_items
             self.__add_item_labels()
+
+    def handle_events(self, events):
+        """
+        Handle events issued by the user not consumed by the Main module. This
+        function can also be used as an update method for all things that only
+        need updates with new inputs.
+
+        Note: this will trager quite often considering that moving the mouse is
+        also considered an event.
+
+        :param events: a list of events
+        """
+        leftovers = super().handle_events(events)
+        if self.visible:
+            #check if the rescipe changed. If that is the case update the crafting window
+            new_recipe_grid = self.grid_pane.get_new_recipe_grid()
+            if new_recipe_grid:
+                recipe = self.__recipe_book.get_recipe(new_recipe_grid)
+                if recipe != None:
+                    self._craftable_item_lbl.set_display(recipe.material)
+                    self._craftable_item_recipe = recipe
+                else:
+                    self._craftable_item_lbl.set_display(None)
 
     def __add_item_labels(self):
         """
