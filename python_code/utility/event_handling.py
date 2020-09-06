@@ -29,21 +29,31 @@ class EventHandler(ABC):
             if event.type == KEYDOWN:
                 if event.key in self.__pressed_keys:
                     self.__pressed_keys[event.key].press(event)
+                else:
+                    leftover_events.append(event)
+
             elif event.type == KEYUP:
                 if event.key in self.__pressed_keys:
                     self.__pressed_keys[event.key].unpress(event)
+                else:
+                    leftover_events.append(event)
             elif event.type == MOUSEBUTTONDOWN:
                 if event.button in self.__pressed_keys:
                     self.__pressed_keys[event.button].press(event)
                     if event.button == 1:
                         self._dragging = True
+                else:
+                    leftover_events.append(event)
             elif event.type == MOUSEBUTTONUP:
                 if event.button in self.__pressed_keys:
                     self.__pressed_keys[event.button].unpress(event)
                     if event.button == 1:
                         self._dragging = False
+                else:
+                    leftover_events.append(event)
             else:
                 leftover_events.append(event)
+
         return leftover_events
 
     def get_key(self, key):

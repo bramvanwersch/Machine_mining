@@ -27,7 +27,8 @@ class CraftingWindow(Window):
     """
     def __init__(self, terminal_inventory, *groups):
         Window.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
-                       *groups, layer=INTERFACE_LAYER, title = "CRAFTING:")
+                       *groups, layer=INTERFACE_LAYER, title = "CRAFTING:",
+                        allowed_events=[1, 3, K_ESCAPE])
         self.__recipe_book = RecipeBook()
         self._grid_pane = None
         self.__inventory = terminal_inventory

@@ -15,6 +15,9 @@ class WindowManager:
         self.__target = target
 
     def add(self, window):
+        #dont add the same window multiple times
+        if window.id in self.windows:
+            return
         self.windows[window.id] = window
         if len(self.window_order) == 0:
             window._layer = INTERFACE_LAYER
@@ -38,7 +41,6 @@ class WindowManager:
 
         #determine what window was clicked
         board_coord = self._screen_to_board_coordinate(event_pos)
-        print(board_coord)
         selected_window = None
         for window in self.windows.values():
             if window.static:

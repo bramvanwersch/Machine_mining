@@ -11,7 +11,7 @@ def select_an_item(widget):
     SELECTED_WIDGET = widget
     #add an event that presses the building key to exit the interface
     newevent = pygame.event.Event(KEYDOWN, unicode="b",
-                                  key=pygame.locals.K_b,
+                                  key=pygame.locals.K_ESCAPE,
                                   mod=pygame.locals.KMOD_NONE)  # create the event
     pygame.event.post(newevent)
     
@@ -24,7 +24,8 @@ def get_selected_item():
 class BuildingWindow(Window):
     def __init__(self, terminal_inventory, *groups):
         super().__init__(INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
-                       *groups, layer=INTERFACE_LAYER, title = "PICK AN ITEM TO BUILD:")
+                       *groups, layer=INTERFACE_LAYER, title = "PICK AN ITEM TO BUILD:",
+                         allowed_events=[1, K_ESCAPE])
         self.__inventory = terminal_inventory
         self._inventory_sp = None
         self.__initiate_widgets()
