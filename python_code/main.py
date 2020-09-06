@@ -9,6 +9,7 @@ from python_code.tasks import TaskControl
 from python_code.utility.image_handling import load_images
 from python_code.interfaces.crafting_interface import CraftingWindow
 from python_code.interfaces.building_interface import BuildingWindow
+from python_code.interfaces.managers import create_window_manager
 
 
 class Main:
@@ -31,6 +32,9 @@ class Main:
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))
         self.main_sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
         self.board = Board(self.main_sprite_group)
+
+        #load a window manager to manage window events
+        create_window_manager(self.camera_center)
 
         # make sure to configure the layers so that the sprites are correctly made
         for sprite in self.main_sprite_group.sprites():
@@ -66,15 +70,16 @@ class Main:
 
 class User:
     def __init__(self, camera_center, board, main_sprite_group):
+        #import needs to happen here since the main first has to create the object
+        from python_code.interfaces.managers import window_manager
+        self.window_manager= window_manager
+
         self.camera_center = camera_center
         self.board = board
         self.main_sprite_group = main_sprite_group
 
         #varaible that controls the game loop
         self.going = True
-
-        #the entity that is selected and going to receive the left over events
-        self.event_handler_entity = self.board
 
         #zoom variables
         self._zoom = 1
@@ -115,40 +120,27 @@ class User:
                     event.key in CAMERA_KEYS:
                 cam_events.append(event)
             elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
-                if self.event_handler_entity != self.board:
-                    leftover_events.append(event)
+                if event.button == 4:
+                    self.__zoom_entities(0.1)
+                elif event.button == 5:
+                    self.__zoom_entities(-0.1)
                 else:
-                    if event.button == 4:
-                        self.__zoom_entities(0.1)
-                    elif event.button == 5:
-                        self.__zoom_entities(-0.1)
-                    else:
-                        leftover_events.append(event)
+                    leftover_events.append(event)
             else:
                 leftover_events.append(event)
-
         if cam_events:
             self.camera_center.handle_events(cam_events)
         if leftover_events:
-            self.event_handler_entity.handle_events(leftover_events)
+            leftover_events = self.window_manager.handle_events(leftover_events)
+            self.board.handle_events(leftover_events)
 
 #handeling of events
 
     def __handle_interface_selection_events(self, event):
-        if event.key == CRAFTING and self.event_handler_entity != self.crafting_interface:
-            self.event_handler_entity = self.crafting_interface
-            self.crafting_interface.show(True)
-            self.building_interface.show(False)
-        elif event.key == BUILDING and self.event_handler_entity != self.building_interface:
-            self.event_handler_entity = self.building_interface
-            self.crafting_interface.show(False)
-            self.building_interface.show(True)
-        elif event.key == K_ESCAPE or event.key == CRAFTING or event.key == BUILDING:
-            self.event_handler_entity = self.board
-            self.crafting_interface.show(False)
-            self.building_interface.show(False)
-        else:
-            return event
+        if event.key == CRAFTING:
+            self.window_manager.add(self.crafting_interface)
+        elif event.key == BUILDING:
+            self.window_manager.add(self.building_interface)
 
     def __zoom_entities(self, increase):
         """

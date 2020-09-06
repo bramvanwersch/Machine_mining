@@ -327,9 +327,9 @@ class Pane(Label, EventHandler, FreeConstraints):
     Container widget that allows selecting and acts as an image for a number
     of widgets
     """
-    def __init__(self, pos, size, **kwargs):
+    def __init__(self, pos, size, allowed_events = "ALL", **kwargs):
         Label.__init__(self, pos, size, **kwargs)
-        EventHandler.__init__(self, "ALL")
+        EventHandler.__init__(self, allowed_events)
         self.widgets = []
         self._set_constraints()
 
@@ -363,7 +363,7 @@ class Pane(Label, EventHandler, FreeConstraints):
         :return: a list of selected widgets with the bottommost one at the end
         of the list
         """
-        selected_widgets = []
+        selected_widgets = [self]
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
         for widget in self.widgets:
             collide = widget.rect.collidepoint(adjusted_pos)
@@ -423,7 +423,7 @@ class Frame(Entity, Pane):
         all widgets that the user hovers over at this moment). It then tries
         to apply these events to all widgets in this list.
         """
-        super().handle_events(events)
+        leftover_events = super().handle_events(events)
         selected = self._find_selected_widgets(pygame.mouse.get_pos())
 
         pressed = self.get_pressed()
@@ -440,6 +440,7 @@ class Frame(Entity, Pane):
                     widget.action(key.name, type)
                     #remove event as to not trigger it twice
                     del keys[index]
+        return leftover_events
 
     def add_border(self, widget):
         """

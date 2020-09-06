@@ -1,7 +1,7 @@
 import pygame
 from python_code.utility.event_handling import EventHandler
 from python_code.utility.utilities import Size
-from python_code.utility.constants import KEYDOWN
+from python_code.utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
 from python_code.interfaces.widgets import Frame, Label, Button
 from python_code.utility.image_handling import image_sheets
 
@@ -11,12 +11,20 @@ class Window(Frame, EventHandler):
     COLOR = (173, 94, 29, 150)
     TOP_BAR_COLOR = (195, 195, 195)
     TEXT_COLOR = (0,0,0)
+    ID = 0
 
     def __init__(self, pos, size, *groups, color=COLOR, title=None, **kwargs):
         EventHandler.__init__(self, [])
         Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
+        from python_code.interfaces.managers import window_manager
+        self.window_manager = window_manager
         self.static = False
         self.visible = False
+        self.id = "window {}".format(self.ID)
+        Window.ID += 1
+
+        #make closable with escape
+        self.set_action(K_ESCAPE, self._close_window)
         self.__add_top_border(size, title)
 
     def __add_top_border(self, size, title):
@@ -27,7 +35,7 @@ class Window(Frame, EventHandler):
         button_image = image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE, color_key=(255,255,255))
         hover_image = image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE, color_key=(255, 255, 255))
         exit_button = Button((size.width - self.EXIT_BUTTON_SIZE.width, 0), self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image)
-        exit_button.set_action(1, self.__close_window)
+        exit_button.set_action(1, self._close_window)
         self.add_widget(exit_button)
 
     def _set_title(self, title):
@@ -42,15 +50,11 @@ class Window(Frame, EventHandler):
         #center the title above the widet
         self.orig_image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
-    def __close_window(self):
+    def _close_window(self):
         """
         Press the escape key to close the window
         """
-        self.visible = False
-        newevent = pygame.event.Event(KEYDOWN, unicode="^[",
-                                      key=pygame.locals.K_ESCAPE,
-                                      mod=pygame.locals.KMOD_NONE)  # create the event
-        pygame.event.post(newevent)
+        self.window_manager.remove(self)
 
     def show(self, value: bool):
         """
@@ -74,3 +78,5 @@ class Window(Frame, EventHandler):
         """
         if self.visible:
             leftovers = super().handle_events(events)
+            return leftovers
+        return events

@@ -73,6 +73,7 @@ class CraftingWindow(Window):
                     self._craftable_item_recipe = recipe
                 else:
                     self._craftable_item_lbl.set_display(None)
+        return leftovers
 
     def __add_item_labels(self):
         """
