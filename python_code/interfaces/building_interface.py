@@ -22,6 +22,7 @@ def get_selected_item():
 
 
 class BuildingWindow(Window):
+    CLOSE_LIST = ["CraftingWindow"]
     def __init__(self, terminal_inventory, *groups):
         super().__init__(INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
                        *groups, layer=INTERFACE_LAYER, title = "PICK AN ITEM TO BUILD:",

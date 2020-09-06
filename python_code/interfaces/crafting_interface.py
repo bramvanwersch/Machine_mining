@@ -25,6 +25,7 @@ class CraftingWindow(Window):
     """
     A Frame for the crafting GUI
     """
+    CLOSE_LIST = ["BuildingWindow"]
     def __init__(self, terminal_inventory, *groups):
         Window.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
                        *groups, layer=INTERFACE_LAYER, title = "CRAFTING:",

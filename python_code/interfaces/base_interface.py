@@ -12,6 +12,9 @@ class Window(Frame, EventHandler):
     TOP_BAR_COLOR = (195, 195, 195)
     TEXT_COLOR = (0,0,0)
     ID = 0
+    #optional list of class names of windows that should be closed when this
+    # window ia opened or ['ALL'] if all windows need to be closed
+    CLOSE_LIST = []
 
     def __init__(self, pos, size, *groups, color=COLOR, title=None, static=False, **kwargs):
         EventHandler.__init__(self, [])
@@ -80,3 +83,7 @@ class Window(Frame, EventHandler):
             leftovers = super().handle_events(events)
             return leftovers
         return events
+
+    @classmethod
+    def name(self):
+        return self.__name__

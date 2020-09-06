@@ -18,6 +18,14 @@ class WindowManager:
         #dont add the same window multiple times
         if window.id in self.windows:
             return
+        close_all = False
+        for name in window.CLOSE_LIST:
+            if name == 'ALL':
+                close_all = True
+            for index in range(len(self.window_order) - 1, -1, -1):
+                open_window = self.window_order[index]
+                if open_window.name() == name or close_all:
+                    self.remove(open_window)
         self.windows[window.id] = window
         if len(self.window_order) == 0:
             window._layer = INTERFACE_LAYER
