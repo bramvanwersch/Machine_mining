@@ -22,6 +22,7 @@ class Board(BoardEventHandler):
     def __init__(self, main_sprite_group):
         BoardEventHandler.__init__(self, [1, 2, 3, 4, MINING, CANCEL, BUILDING, SELECTING])
         self.inventorie_blocks = []
+        self.main_sprite_group = main_sprite_group
 
         #setup the board
         self.matrix = self.__generate_foreground_matrix()
@@ -416,7 +417,10 @@ class Board(BoardEventHandler):
             group = block.transparant_group
             if group != 0:
                 block.transparant_group = unique_group()
-            finish_block = building_block_i(block.rect.topleft, material)
+            if issubclass(building_block_i, InterafaceBuilding):
+                finish_block = building_block_i(block.rect.topleft, self.main_sprite_group, material=material)
+            else:
+                finish_block = building_block_i(block.rect.topleft, material=material)
             if isinstance(finish_block, Building):
                 overlap_rect = pygame.Rect((*finish_block.rect.topleft, finish_block.rect.width - 1, finish_block.rect.height - 1))
                 overlap_blocks = self.overlapping_blocks(overlap_rect)

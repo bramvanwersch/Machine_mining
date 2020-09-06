@@ -3,6 +3,7 @@ from python_code.interfaces.base_interface import Window
 from python_code.board.materials import Air
 from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
+from python_code.recipes import RecipeBook
 
 #crafting globals
 #this is for managing a selected item. I am not super happy with it.
@@ -27,6 +28,7 @@ class CraftingWindow(Window):
     def __init__(self, terminal_inventory, *groups):
         Window.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
                        *groups, layer=INTERFACE_LAYER, title = "CRAFTING:")
+        self.__recipe_book = RecipeBook()
         self._grid_pane = None
         self.__inventory = terminal_inventory
         self.__prev_no_items = self.__inventory.number_of_items

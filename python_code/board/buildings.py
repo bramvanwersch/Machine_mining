@@ -7,6 +7,7 @@ from python_code.utility.constants import BLOCK_SIZE
 from python_code.board.blocks import *
 from python_code.inventories import Inventory
 from python_code.utility.utilities import Size
+from python_code.interfaces.furnace_interface import FurnaceWindow
 
 
 def block_i_from_material(material):
@@ -100,7 +101,13 @@ class Building(BaseBlock, ABC):
         return blocks
 
 
-class Terminal(Building):
+class InterafaceBuilding(Building):
+    def __init__(self, pos, *groups, **kwargs):
+        super().__init__(pos, **kwargs)
+        self.sprite_groups = groups
+
+
+class Terminal(InterafaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -117,7 +124,7 @@ class Terminal(Building):
         return blocks
 
 
-class Furnace(Building):
+class Furnace(InterafaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -125,10 +132,12 @@ class Furnace(Building):
     BLOCK_TYPE = Block
     MATERIAL = FurnaceMaterial
 
-    def _get_blocks(self, block_class, material_class):
-        blocks = super()._get_blocks(block_class, material_class)
-        shared_inventory = Inventory(-1)
-        for row in blocks:
-            for block in row:
-                block.inventory = shared_inventory
-        return blocks
+    def __init__(self, pos, *groups, **kwargs):
+        super().__init__(pos, *groups, **kwargs)
+        self.__interface = FurnaceWindow(self, self.sprite_groups)
+
+
+    def _action_function(self, *args):
+        self.__interface.visible = True
+
+

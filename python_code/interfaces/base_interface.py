@@ -46,6 +46,7 @@ class Window(Frame, EventHandler):
         """
         Press the escape key to close the window
         """
+        self.visible = False
         newevent = pygame.event.Event(KEYDOWN, unicode="^[",
                                       key=pygame.locals.K_ESCAPE,
                                       mod=pygame.locals.KMOD_NONE)  # create the event
