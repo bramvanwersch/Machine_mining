@@ -222,7 +222,7 @@ class Button(Label):
         if "hover_image" in kwargs:
             self._hover_image = kwargs["hover_image"]
         else:
-            self._create_hover_image(size, color, image, **kwargs)
+            self._hover_image = self._create_hover_image(size, color, image, **kwargs)
         return image
 
     def _create_hover_image(self, size, color, image, **kwargs):
