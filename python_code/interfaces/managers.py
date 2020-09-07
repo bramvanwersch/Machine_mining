@@ -1,5 +1,5 @@
 import pygame
-from python_code.utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN
+from python_code.utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 
 window_manager = None
 
@@ -45,24 +45,20 @@ class WindowManager:
                 window._layer -= 1
         window.show(False)
 
-    def __set_top_window(self, event_pos):
-
-        #determine what window was clicked
-        board_coord = self._screen_to_board_coordinate(event_pos)
-        selected_window = None
-        for window in self.windows.values():
-            if window.static:
-                if window.orig_rect.collidepoint(event_pos) and \
-                    (selected_window == None or selected_window._layer < window._layer):
-                    selected_window = window
-            else:
-                if window.orig_rect.collidepoint(board_coord) and \
-                    (selected_window == None or selected_window._layer < window._layer):
-                    selected_window = window
+    def __set_top_window(self, window):
         #set as top window if not already top
-        if selected_window != None and selected_window != self.window_order[-1]:
+        if window != self.window_order[-1]:
             self.remove(selected_window)
             self.add(selected_window)
+
+    def __find_hovered_window(self, mouse_pos):
+        board_coord = self._screen_to_board_coordinate(mouse_pos)
+        selected_window = None
+        for window in self.windows.values():
+            if window.orig_rect.collidepoint(board_coord) and \
+                    (selected_window == None or selected_window._layer < window._layer):
+                selected_window = window
+        return selected_window
 
     def handle_events(self, events):
         """
@@ -72,13 +68,26 @@ class WindowManager:
         """
         if len(self.windows) == 0:
             return events
+        hovered_window = self.__find_hovered_window(pygame.mouse.get_pos())
+        window_events = []
+        ignored_events = []
+        #select a window when the user clicks it and collect all mouse events (and others)
+        #if hovering over the window
         for event in events:
-            if event.type == MOUSEBUTTONDOWN and event.button == 1:
-                self.__set_top_window(event.pos)
+            if event.type in (MOUSEBUTTONDOWN, MOUSEBUTTONUP):
+                if hovered_window != None:
+                    if event.button == 1:
+                        self.__set_top_window(hovered_window)
+                    window_events.append(event)
+                else:
+                    ignored_events.append(event)
+            else:
+                window_events.append(event)
+        leftover_events = []
         if len(self.window_order) > 0:
             event_handling_window = self.window_order[-1]
-            events = event_handling_window.handle_events(events)
-        return events
+            leftover_events = event_handling_window.handle_events(window_events)
+        return leftover_events + ignored_events
 
     def _screen_to_board_coordinate(self, coord):
         """

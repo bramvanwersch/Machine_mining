@@ -27,7 +27,7 @@ class Window(Frame, EventHandler):
         Window.ID += 1
 
         #make closable with escape
-        self.set_action(K_ESCAPE, self._close_window)
+        self.set_action(K_ESCAPE, self._close_window, types=["unpressed"])
         self.__add_top_border(size, title)
 
     def __add_top_border(self, size, title):

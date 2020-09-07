@@ -268,6 +268,10 @@ class Board(BoardEventHandler):
         #mousebutton1
         if self.pressed(1):
             if self._mode.name in ["Mining", "Cancel", "Selecting"]:
+                keep = False
+                if self._mode.name == "Mining":
+                    keep = True
+                self.selection_image.reset_selection_and_highlight(keep)
                 self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
 
             elif self._mode.name == "Building":
