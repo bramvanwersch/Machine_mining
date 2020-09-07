@@ -36,10 +36,6 @@ class Main:
         #load a window manager to manage window events
         create_window_manager(self.camera_center)
 
-        # make sure to configure the layers so that the sprites are correctly made
-        for sprite in self.main_sprite_group.sprites():
-            self.main_sprite_group.change_layer(sprite, sprite._layer)
-
         self.user = User(self.camera_center, self.board, self.main_sprite_group)
 
         self.run()
@@ -103,6 +99,9 @@ class User:
 
     def update(self):
         self.__handle_events()
+        # make sure to configure the layers so that the sprites are correctly made
+        for sprite in self.main_sprite_group.sprites():
+            self.main_sprite_group.change_layer(sprite, sprite._layer)
 
     def __handle_events(self):
         events = pygame.event.get()
