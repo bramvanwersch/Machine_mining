@@ -103,6 +103,10 @@ class ZoomableEntity(Entity):
         rect = self.image.get_rect(center = orig_pos)
         return rect
 
+    @rect.setter
+    def rect(self, rect):
+        self.orig_rect = rect
+
 
 class SelectionRectangle(ZoomableEntity):
     """

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from python_code.entities import Entity
+from python_code.entities import ZoomableEntity
 from python_code.utility.constants import *
 from python_code.utility.event_handling import EventHandler
 
@@ -395,13 +395,13 @@ class Pane(Label, EventHandler, FreeConstraints):
         self.changed_image = True
 
 
-class Frame(Entity, Pane):
+class Frame(ZoomableEntity, Pane):
     """
     Container for widgets, that is an entity so it can act as a window. Every
     gui should have a frame to be able to display and handle updates
     """
     def __init__(self, pos, size, *groups, **kwargs):
-        Entity.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         Pane.__init__(self, pos, size, **kwargs)
 
     def update(self, *args):
@@ -412,6 +412,29 @@ class Frame(Entity, Pane):
         """
         super().update(*args)
         self.wupdate(*args)
+
+    def zoom(self, zoom):
+        self._zoom = zoom
+
+    @property
+    def rect(self):
+        """
+        Returns a rectangle that represents the zoomed version of the
+        self.orig_rect
+
+        :return: a pygame Rect object
+        """
+        if self._zoom == 1 or not self.static:
+            return self.orig_rect
+        orig_pos = list(self.orig_rect.center)
+        orig_pos[0] *= self._zoom
+        orig_pos[1] *= self._zoom
+        rect = self.image.get_rect(center = orig_pos)
+        return rect
+
+    @rect.setter
+    def rect(self, rect):
+        self.orig_rect = rect
 
     def handle_events(self, events):
         """
