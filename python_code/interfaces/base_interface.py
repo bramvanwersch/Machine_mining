@@ -38,7 +38,7 @@ class Window(Frame, EventHandler):
         button_image = image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE, color_key=(255,255,255))
         hover_image = image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE, color_key=(255, 255, 255))
         exit_button = Button((size.width - self.EXIT_BUTTON_SIZE.width, 0), self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image)
-        exit_button.set_action(1, self._close_window)
+        exit_button.set_action(1, self._close_window, types=["unpressed"])
         self.add_widget(exit_button)
 
     def _set_title(self, title):

@@ -48,16 +48,21 @@ class WindowManager:
     def __set_top_window(self, window):
         #set as top window if not already top
         if window != self.window_order[-1]:
-            self.remove(selected_window)
-            self.add(selected_window)
+            self.remove(window)
+            self.add(window)
 
     def __find_hovered_window(self, mouse_pos):
         board_coord = self._screen_to_board_coordinate(mouse_pos)
         selected_window = None
         for window in self.windows.values():
-            if window.orig_rect.collidepoint(board_coord) and \
-                    (selected_window == None or selected_window._layer < window._layer):
-                selected_window = window
+            if window.static:
+                if window.orig_rect.collidepoint(board_coord) and \
+                        (selected_window == None or selected_window._layer < window._layer):
+                    selected_window = window
+            else:
+                if window.orig_rect.collidepoint(mouse_pos) and \
+                        (selected_window == None or selected_window._layer < window._layer):
+                    selected_window = window
         return selected_window
 
     def handle_events(self, events):
