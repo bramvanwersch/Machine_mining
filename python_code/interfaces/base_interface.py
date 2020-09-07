@@ -57,6 +57,9 @@ class Window(Frame, EventHandler):
         """
         Press the escape key to close the window
         """
+        if self.window_manager == None:
+            from python_code.interfaces.managers import window_manager
+            self.window_manager = window_manager
         self.window_manager.remove(self)
 
     def show(self, value: bool):

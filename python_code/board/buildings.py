@@ -7,7 +7,7 @@ from python_code.utility.constants import BLOCK_SIZE
 from python_code.board.blocks import *
 from python_code.inventories import Inventory
 from python_code.utility.utilities import Size
-from python_code.interfaces.furnace_interface import FurnaceWindow
+from python_code.interfaces.small_interfaces import FurnaceWindow, TerminalWindow
 
 
 def block_i_from_material(material):
@@ -101,10 +101,26 @@ class Building(BaseBlock, ABC):
         return blocks
 
 
-class InterafaceBuilding(Building):
+class InterafaceBuilding(Building, ABC):
     def __init__(self, pos, *groups, **kwargs):
-        super().__init__(pos, **kwargs)
+        Building.__init__(self, pos, **kwargs)
+        from python_code.interfaces.managers import window_manager
+        self.window_manager = window_manager
         self.sprite_groups = groups
+
+        #make sure that this is reaised when not defined in a subclass when calling the interface
+        self._interface = NotImplementedError
+
+    @property
+    def interface(self):
+        return self._interface
+
+    def _action_function(self, *args):
+        #make sure to update the window manager when needed
+        if self.window_manager == None:
+            from python_code.interfaces.managers import window_manager
+            self.window_manager = window_manager
+        self.window_manager.add(self.interface)
 
 
 class Terminal(InterafaceBuilding):
@@ -114,6 +130,10 @@ class Terminal(InterafaceBuilding):
     IMAGE_SPECIFICATIONS = ["buildings", (0, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = TerminalMaterial
+
+    def __init__(self, pos, *groups, **kwargs):
+        super().__init__(pos, *groups, **kwargs)
+        self._interface = TerminalWindow(self, self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
@@ -134,10 +154,6 @@ class Furnace(InterafaceBuilding):
 
     def __init__(self, pos, *groups, **kwargs):
         super().__init__(pos, *groups, **kwargs)
-        self.__interface = FurnaceWindow(self, self.sprite_groups)
-
-
-    def _action_function(self, *args):
-        self.__interface.visible = True
+        self._interface = FurnaceWindow(self, self.sprite_groups)
 
 
