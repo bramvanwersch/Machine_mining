@@ -10,7 +10,7 @@ def select_an_item(widget):
         SELECTED_WIDGET.set_selected(False)
     SELECTED_WIDGET = widget
     #add an event that presses the building key to exit the interface
-    newevent = pygame.event.Event(KEYDOWN, unicode="b",
+    newevent = pygame.event.Event(KEYUP, unicode="^/",
                                   key=pygame.locals.K_ESCAPE,
                                   mod=pygame.locals.KMOD_NONE)  # create the event
     pygame.event.post(newevent)
