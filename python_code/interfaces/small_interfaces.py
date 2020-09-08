@@ -24,3 +24,10 @@ class TerminalWindow(Window):
         Window.__init__(self, location, self.SIZE,
                         *groups, layer=INTERFACE_LAYER, title="TERMINAL",
                         allowed_events=[1, K_ESCAPE], static=True)
+        self.__add_widgets()
+
+    def __add_widgets(self):
+        sp = ScrollPane((10, 10), self.SIZE - (20, 20), color=(173, 94, 29))
+        self.add_widget(sp)
+        self.add_border(sp)
+

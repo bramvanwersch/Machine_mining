@@ -87,6 +87,7 @@ class ZoomableEntity(Entity):
         new_height = orig_rect.height * zoom
         self.image = pygame.transform.scale(self.orig_image, (int(new_width),
                                                               int(new_height)))
+
     @property
     def rect(self):
         """
