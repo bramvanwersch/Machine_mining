@@ -453,7 +453,7 @@ class Frame(ZoomableEntity, Pane):
         pos = pygame.mouse.get_pos()
 
         if self.static:
-            pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
+            pos = screen_to_board_coordinate(pos, self.groups()[0].target, 1)
         selected = self._find_selected_widgets(pos)
 
         pressed = self.get_pressed()
