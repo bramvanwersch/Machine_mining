@@ -9,6 +9,7 @@ from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
 from python_code.interfaces.building_interface import get_selected_item
 from python_code.network.pipes import Network
+from python_code.interfaces.interface_utility import screen_to_board_coordinate
 
 class Board(BoardEventHandler):
     """
@@ -284,7 +285,7 @@ class Board(BoardEventHandler):
                 self.selection_image.add_building_rectangle(self.get_key(1).event.pos,size=building_block_i.SIZE)
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
-                board_coord = self.foreground_image._screen_to_board_coordinate(self.get_key(1).event.pos)
+                board_coord = screen_to_board_coordinate(self.get_key(1).event.pos, self.foreground_image.groups()[0].target, self.foreground_image._zoom)
                 self.matrix[self.__p_to_r(board_coord[1])][self.__p_to_c(board_coord[0])].action()
             self.__process_selection()
             self.selection_image.remove_selection()
@@ -613,17 +614,7 @@ class BoardImage(ZoomableEntity):
 
     #for determining mouse position on the board given the screen coordinate
     def _screen_to_board_coordinate(self, coord):
-        """
-        Calculate the screen to current board size coordinate. That is the
-        zoomed in board. Then revert the coordinate back to the normal screen
 
-        :param coord: a coordinate with x and y value within the screen region
-        :return: a coordinate with x and y vale within the ORIGINAL_BOARD_SIZE.
-
-        The value is scaled back to the original size after instead of
-        being calculated as the original size on the spot because the screen
-        coordinate can not be converted between zoom levels so easily.
-        """
         c = self.groups()[0].target.rect.center
         #last half a screen of the board
         if BOARD_SIZE.width - c[0] - SCREEN_SIZE.width / 2 < 0:
@@ -671,7 +662,7 @@ class TransparantBoardImage(BoardImage):
         :param keep: if the previous highlight should be kept
         :param size: the size of the rectagle to add at the start
         """
-        mouse_pos = self._screen_to_board_coordinate(pos)
+        mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
             self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
@@ -679,7 +670,7 @@ class TransparantBoardImage(BoardImage):
                                             self.groups()[0],zoom=self._zoom)
 
     def add_building_rectangle(self, pos, size=(10, 10)):
-        mouse_pos = self._screen_to_board_coordinate(pos)
+        mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
         self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
                                         self.groups()[0],zoom=self._zoom, color=INVISIBLE_COLOR)
 

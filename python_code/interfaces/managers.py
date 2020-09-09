@@ -1,5 +1,6 @@
 import pygame
 from python_code.utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
+from python_code.interfaces.interface_utility import screen_to_board_coordinate
 
 window_manager = None
 
@@ -52,7 +53,7 @@ class WindowManager:
             self.add(window)
 
     def __find_hovered_window(self, mouse_pos):
-        board_coord = self._screen_to_board_coordinate(mouse_pos)
+        board_coord = screen_to_board_coordinate(mouse_pos, self.__target, self.__target._zoom)
         selected_window = None
         for window in self.windows.values():
             if window.static:
@@ -94,27 +95,6 @@ class WindowManager:
             leftover_events = event_handling_window.handle_events(window_events)
         return leftover_events + ignored_events
 
-    def _screen_to_board_coordinate(self, coord):
-        """
-
-        """
-        c = self.__target.rect.center
-        # last half a screen of the board
-        if BOARD_SIZE.width - c[0] - SCREEN_SIZE.width / 2 < 0:
-            x = BOARD_SIZE.width - (SCREEN_SIZE.width - coord[0])
-        # the rest of the board
-        elif c[0] - SCREEN_SIZE.width / 2 > 0:
-            x = coord[0] + (c[0] - SCREEN_SIZE.width / 2)
-        # first half a screen of the board
-        else:
-            x = coord[0]
-        if BOARD_SIZE.height - c[1] - SCREEN_SIZE.height / 2 < 0:
-            y = BOARD_SIZE.height - (SCREEN_SIZE.height - coord[1])
-        elif c[1] - SCREEN_SIZE.height / 2 > 0:
-            y = coord[1] + (c[1] - SCREEN_SIZE.height / 2)
-        else:
-            y = coord[1]
-        return [x, y]
 
 
 

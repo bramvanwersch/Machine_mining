@@ -4,7 +4,7 @@ from python_code.utility.utilities import Size
 
 
 class FurnaceWindow(Window):
-    SIZE = Size(100, 100)
+    SIZE = Size(200, 200)
 
     def __init__(self, furnace_object, *groups):
         self.furnace = furnace_object
@@ -13,6 +13,17 @@ class FurnaceWindow(Window):
         Window.__init__(self,location , self.SIZE,
                        *groups, layer=INTERFACE_LAYER, title = "FURNACE",
                         allowed_events=[1, K_ESCAPE], static=True)
+        self.__add_widgets()
+
+    def __add_widgets(self):
+        self.__to_smelt_lbl = Label((10,10), (50, 50), color=(150, 150, 150))
+        self.add_widget(self.__to_smelt_lbl)
+        self.add_border(self.__to_smelt_lbl, color=(75,75,75))
+
+        self.__smelted_lbl = Label((100,10), (50,50), color=(150, 150, 150))
+        self.add_widget(self.__smelted_lbl)
+        self.add_border(self.__smelted_lbl, color=(75,75,75))
+
 
 class TerminalWindow(Window):
     SIZE = Size(200, 100)

@@ -3,6 +3,8 @@ from abc import ABC, abstractmethod
 from python_code.entities import ZoomableEntity
 from python_code.utility.constants import *
 from python_code.utility.event_handling import EventHandler
+from python_code.interfaces.interface_utility import screen_to_board_coordinate
+
 
 class ActionFunction:
     """
@@ -448,7 +450,11 @@ class Frame(ZoomableEntity, Pane):
         to apply these events to all widgets in this list.
         """
         leftover_events = super().handle_events(events)
-        selected = self._find_selected_widgets(pygame.mouse.get_pos())
+        pos = pygame.mouse.get_pos()
+
+        if self.static:
+            pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
+        selected = self._find_selected_widgets(pos)
 
         pressed = self.get_pressed()
         unpressed = self.get_unpressed()
@@ -466,14 +472,14 @@ class Frame(ZoomableEntity, Pane):
                     del keys[index]
         return leftover_events
 
-    def add_border(self, widget):
+    def add_border(self, widget, color=(0,0,0)):
         """
         add a border around a specified widget. The widget should be in the frame
         :param widget:
         :return:
         """
         rect = widget.rect.inflate(4, 4)
-        pygame.draw.rect(self.orig_image, (0,0,0), rect, 3)
+        pygame.draw.rect(self.orig_image, color, rect, 3)
         self.image = self.orig_image.copy()
 
 
