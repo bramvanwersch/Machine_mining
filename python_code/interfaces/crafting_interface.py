@@ -26,14 +26,17 @@ class CraftingWindow(Window):
     A Frame for the crafting GUI
     """
     CLOSE_LIST = ["BuildingWindow"]
-    def __init__(self, terminal_inventory, *groups):
-        Window.__init__(self, INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
-                       *groups, layer=INTERFACE_LAYER, title = "CRAFTING:",
-                        allowed_events=[1, 3, K_ESCAPE])
+    SIZE = Size(300, 250)
+    def __init__(self, factory, *groups):
+        self.__factory = factory
+        fr = self.__factory.rect
+        location = fr.bottomleft
+        Window.__init__(self, location, self.SIZE,
+                       *groups, title = "CRAFTING:", allowed_events=[1, 3, K_ESCAPE])
+        self.static = True
+        #TODO move this
         self.__recipe_book = RecipeBook()
         self._grid_pane = None
-        self.__inventory = terminal_inventory
-        self.__prev_no_items = self.__inventory.number_of_items
 
         #just ti signify that this exists
         self.__inventory_sp = None
@@ -49,9 +52,6 @@ class CraftingWindow(Window):
         :See: Entity.update()
         """
         super().update(*args)
-        if self.__prev_no_items < self.__inventory.number_of_items:
-            self.__prev_no_items = self.__inventory.number_of_items
-            self.__add_item_labels()
 
     def handle_events(self, events):
         """
@@ -66,7 +66,7 @@ class CraftingWindow(Window):
         """
         leftovers = super().handle_events(events)
         if self.visible:
-            #check if the rescipe changed. If that is the case update the crafting window
+            #check if the recipe changed. If that is the case update the crafting window
             new_recipe_grid = self.grid_pane.get_new_recipe_grid()
             if new_recipe_grid:
                 recipe = self.__recipe_book.get_recipe(new_recipe_grid)
@@ -104,50 +104,30 @@ class CraftingWindow(Window):
         start
         """
         #create material_grid
-        self.grid_pane = CraftingGrid((25, 50), (450, 450), color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((10, 10), (125, 125), color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
 
-        #create scrollable inventory
-        self._inventory_sp  = ScrollPane((25, 525), (450, 150), color=self.COLOR[:-1])
+        # #create scrollable inventory
+        self._inventory_sp  = ScrollPane((10, 150), (280, 90), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
-
-        #add craft button
-        craft_button = Button((565, 325), (100, 40), text="CRAFT", border=True, color=self.COLOR[:-1])
-        craft_button.set_action(1, self.craft_button_action, types=["unpressed"])
-
-        self.add_widget(craft_button)
+        for recipe in self.__recipe_book:
+            dl = Label((0,0), (30,30))
+            dl.set_image(image=recipe.get_image(), size= (27, 27))
+            self._inventory_sp.add_widget(dl)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = DisplayLabel((575, 222), (75, 75), color=self.COLOR[:-1])
+        self._craftable_item_lbl = DisplayLabel((200, 50), (50, 50), color=self.COLOR[:-1])
         self.add_widget(self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl)
 
         #add arrow pointing from grid to display
         arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
-        arrow_image = pygame.transform.scale(arrow_image, (70,70))
-        a_lbl = Label((489, 225), (70, 70), color=INVISIBLE_COLOR)
+        arrow_image = pygame.transform.scale(arrow_image, (50,50))
+        a_lbl = Label((140, 50), (50, 50), color=INVISIBLE_COLOR)
         a_lbl.set_image(arrow_image)
         self.add_widget(a_lbl)
-
-    def craft_button_action(self):
-        """
-        Action function activated when pressing the crafting button
-        """
-        if self._craftable_item_recipe == None:
-            return
-        #check if all materials are available
-        for item, quantity in self._craftable_item_recipe.required_materials.items():
-            if not self.__inventory.check_item(item, quantity):
-                print("no materials")
-                #TODO push a message notifying that there are not enough materials
-                return
-        self.__inventory.add_items(Item(self._craftable_item_recipe.material, self._craftable_item_recipe.quantity))
-
-        #remove the items from the inventory
-        for item, quantity in self._craftable_item_recipe.required_materials.items():
-            self.__inventory.get(item, quantity)
 
 
 class CraftingGrid(Pane):
@@ -156,8 +136,8 @@ class CraftingGrid(Pane):
     contain materials
     """
     COLOR = (173, 94, 29)
-    GRID_SIZE = Size(9, 9)
-    GRID_PIXEL_SIZE = Size(450, 450)
+    GRID_SIZE = Size(4, 4)
+    GRID_PIXEL_SIZE = Size(120, 120)
     # take the border into account
     GRID_SQUARE = Size(*(GRID_PIXEL_SIZE / GRID_SIZE)) - (1, 1)
     def __init__(self, pos, size, **kwargs):
@@ -300,7 +280,7 @@ class DisplayLabel(Label):
         if material == None:
             self.set_image(None)
         elif material != None:
-            image = pygame.transform.scale(material.surface, (70, 70))
+            image = pygame.transform.scale(material.surface, Size(*self.rect.size) - (3,3))
             # text = self._create_text(block_inst)
             self.set_image(image)
             # self.set_image(text, pos=(100, 0))

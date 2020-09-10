@@ -8,6 +8,7 @@ from python_code.board.blocks import *
 from python_code.inventories import Inventory
 from python_code.utility.utilities import Size
 from python_code.interfaces.small_interfaces import FurnaceWindow, TerminalWindow
+from python_code.interfaces.crafting_interface import CraftingWindow
 
 
 def block_i_from_material(material):
@@ -77,6 +78,7 @@ class Building(BaseBlock, ABC):
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].images_at_rectangle(
             self.IMAGE_SPECIFICATIONS[1], **self.IMAGE_SPECIFICATIONS[2])
 
+    @classmethod
     def full_image(self):
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].image_at(self.IMAGE_SPECIFICATIONS[1][0:2],
                             size = self.IMAGE_SPECIFICATIONS[1][2:4], **self.IMAGE_SPECIFICATIONS[2])
@@ -156,4 +158,13 @@ class Furnace(InterafaceBuilding):
         super().__init__(pos, *groups, **kwargs)
         self._interface = FurnaceWindow(self, self.sprite_groups)
 
+
+class Factory(InterafaceBuilding):
+    IMAGE_SPECIFICATIONS = ["buildings", (40, 0, 20, 20), {"color_key" : (255,255,255)}]
+    BLOCK_TYPE = Block
+    MATERIAL = FactoryMaterial
+
+    def __init__(self, pos, *groups, **kwargs):
+        super().__init__(pos, *groups, **kwargs)
+        self._interface = CraftingWindow(self, self.sprite_groups)
 

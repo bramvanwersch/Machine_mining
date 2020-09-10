@@ -94,7 +94,6 @@ class User:
         for _ in range(10):
             self.workers.append(Worker((1000, 40), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
-        self.crafting_interface = CraftingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
 
     def update(self):
@@ -136,9 +135,7 @@ class User:
 #handeling of events
 
     def __handle_interface_selection_events(self, event):
-        if event.key == CRAFTING:
-            self.window_manager.add(self.crafting_interface)
-        elif event.key == BUILDING:
+        if event.key == BUILDING:
             self.window_manager.add(self.building_interface)
 
     def __zoom_entities(self, increase):

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import pygame
 
 from python_code.entities import ZoomableEntity
 from python_code.utility.constants import *
@@ -153,7 +154,7 @@ class Label(Widget):
 
         self.changed_image = True
 
-    def set_image(self, image, pos = "center"):
+    def set_image(self, image, pos = "center", size=None):
         """
         Change the full image of a widget or change it back to the orig_image
         by setting image to None
@@ -164,6 +165,8 @@ class Label(Widget):
         if image == None:
             self.image = self.orig_image.copy()
         else:
+            if size != None:
+                image = pygame.transform.scale(image, size)
             rect = image.get_rect()
             if pos == "center":
                 pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)

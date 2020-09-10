@@ -482,7 +482,9 @@ class Board(BoardEventHandler):
         Add all starter building that should be placed before the game starts
         """
         t = Terminal((BOARD_SIZE[1] / 2 + 50, 30), self.main_sprite_group)
+        c = Factory((BOARD_SIZE[1] / 2 + 30, 30), self.main_sprite_group)
         self.add_building(t)
+        self.add_building(c)
 
     def __generate_background_matrix(self):
         """

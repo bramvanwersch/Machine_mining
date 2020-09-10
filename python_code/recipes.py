@@ -3,7 +3,7 @@ from abc import abstractmethod, ABC
 
 from python_code.board import materials
 from python_code.utility.utilities import Size
-from python_code.board.buildings import *
+from python_code.board import buildings
 
 
 class RecipeBook:
@@ -40,6 +40,9 @@ class RecipeBook:
             if recipe.compare(material_grid):
                 return CraftableRecipe(material_grid, recipe)
         return None
+
+    def __iter__(self):
+        return iter(self.recipes)
 
 
 class RecipeGrid:
@@ -229,7 +232,7 @@ class BaseConceptRecipe(ABC):
     """
     def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
-        self.material = material
+        self._material = material
         self.quantity = 1
 
     @abstractmethod
@@ -240,6 +243,9 @@ class BaseConceptRecipe(ABC):
         :return: a RecipeGrid object
         """
         return None
+
+    def get_image(self):
+        return self._material().surface
 
     def get_size(self):
         """
@@ -318,8 +324,11 @@ class BaseConceptRecipe(ABC):
 
 class FurnaceRecipe(BaseConceptRecipe):
     def __init__(self):
-        mat = FurnaceMaterial(image=Furnace((0,0)).full_image())
+        mat = materials.FurnaceMaterial
         BaseConceptRecipe.__init__(self, mat)
+
+    def get_image(self):
+        return buildings.Furnace.full_image()
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(7, 7), Size(3, 3))
@@ -338,7 +347,7 @@ class FurnaceRecipe(BaseConceptRecipe):
 
 class CompactStoneRecipe(BaseConceptRecipe):
     def __init__(self):
-        mat = StoneBrickMaterial()
+        mat = materials.StoneBrickMaterial
         BaseConceptRecipe.__init__(self, mat)
         self.quantity = 2
 
@@ -351,7 +360,7 @@ class CompactStoneRecipe(BaseConceptRecipe):
 
 class StonePipe(BaseConceptRecipe):
     def __init__(self):
-        mat = StonePipeMaterial()
+        mat = materials.StonePipeMaterial
         BaseConceptRecipe.__init__(self, mat)
         self.quantity = 2
 

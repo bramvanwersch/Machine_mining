@@ -1,6 +1,7 @@
 from python_code.interfaces.widgets import *
 from python_code.interfaces.base_interface import Window
 from python_code.utility.utilities import Size
+from python_code.utility.image_handling import image_sheets
 
 
 class FurnaceWindow(Window):

@@ -250,8 +250,6 @@ class BuildingMaterial(ImageMaterial, ABC):
     Abstraction level for all building materials, at the moment is useless
     """
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building"]]
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
 
 class TerminalMaterial(BuildingMaterial):
@@ -264,6 +262,12 @@ class FurnaceMaterial(BuildingMaterial):
     TASK_TIME = 1000
     TEXT_COLOR = (255,255,255)
     TRANSPARANT_GROUP = 2
+
+
+class FactoryMaterial(BuildingMaterial):
+    TASK_TIME = 1000
+    TEXT_COLOR = (255, 255, 255)
+    TRANSPARANT_GROUP = 3
 
 
 class StonePipeMaterial(ImageMaterial):
