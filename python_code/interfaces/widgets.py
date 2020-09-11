@@ -294,6 +294,7 @@ class FreeConstraints(BaseConstraints):
         self.orig_image.blit(widget.image, widget.rect)
         self.image = self.orig_image.copy()
 
+
 #note this class has not been tested yet
 class GridConstraints(BaseConstraints):
     """

@@ -107,13 +107,12 @@ class CraftingWindow(Window):
         self.grid_pane = CraftingGrid((10, 10), (125, 125), color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
-
         # #create scrollable inventory
         self._inventory_sp  = ScrollPane((10, 150), (280, 90), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
         for recipe in self.__recipe_book:
-            dl = Label((0,0), (30,30))
+            dl = Label((0,0), (30,30), color=self.COLOR[:-1])
             dl.set_image(image=recipe.get_image(), size= (27, 27))
             self._inventory_sp.add_widget(dl)
 
