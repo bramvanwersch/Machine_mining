@@ -5,21 +5,6 @@ from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
 from python_code.recipes import RecipeBook
 
-#crafting globals
-#this is for managing a selected item. I am not super happy with it.
-SELECTED_LABEL = None
-
-def select_a_widget(widget):
-    """
-    Select a widget from ScrollPane
-
-    :param widget: a subclass of Widget object
-    :return:
-    """
-    global SELECTED_LABEL
-    if SELECTED_LABEL and widget != SELECTED_LABEL:
-        SELECTED_LABEL.set_selected(False)
-    SELECTED_LABEL = widget
 
 class CraftingWindow(Window):
     """
@@ -27,6 +12,7 @@ class CraftingWindow(Window):
     """
     CLOSE_LIST = ["BuildingWindow"]
     SIZE = Size(300, 250)
+
     def __init__(self, factory, *groups):
         self.__factory = factory
         fr = self.__factory.rect
@@ -44,14 +30,6 @@ class CraftingWindow(Window):
 
         self._craftable_item_recipe = None
 
-    def update(self, *args):
-        """
-        Entity update method, add labels to the scroll pane when needed.
-
-        :See: Entity.update()
-        """
-        super().update(*args)
-
     def handle_events(self, events):
         """
         Handle events issued by the user not consumed by the Main module. This
@@ -68,27 +46,6 @@ class CraftingWindow(Window):
             pass
         return leftovers
 
-    def __add_item_labels(self):
-        """
-        When more different items are encountered then previously in the
-        inventory a new label is added for an item. The labels are added to the
-        scrollpane
-
-        First it is figured out what items are new and then a label for each is
-        constructed
-        """
-        covered_items = [widget.item.name() for widget in self._inventory_sp.widgets]
-        for item in self.__inventory.items:
-            if item.name() not in covered_items:
-                #remove the alpha channel
-                lbl = ItemLabel((0, 0), item, color=self.COLOR[:-1])
-                def set_selected(self, selected):
-                    self.set_selected(selected)
-                    if selected:
-                        select_a_widget(self)
-                lbl.set_action(1, set_selected, [lbl, True], ["pressed"])
-                self._inventory_sp.add_widget(lbl)
-
     def __innitiate_widgets(self):
         """
         Innitiate all the widgets neccesairy for the crafting window at the
@@ -103,6 +60,11 @@ class CraftingWindow(Window):
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
 
+        #add label to display the possible item image
+        self._craftable_item_lbl = ItemLabel((200, 50), (50, 50), None, color=self.COLOR[:-1])
+        self.add_widget(self._craftable_item_lbl)
+        self.add_border(self._craftable_item_lbl)
+
         s1 = SelectionGroup()
         for recipe in self.__recipe_book:
             #create an image with a background
@@ -116,14 +78,10 @@ class CraftingWindow(Window):
                 self._craftable_item_recipe = recipe
                 s1.select(lbl, (0, 0, 0))
                 self.grid_pane.add_recipe(recipe)
+                self._craftable_item_lbl.add_item(Item(recipe._material(), 0))
             lbl.set_action(1, recipe_action, values=[self, recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)
             self._inventory_sp.add_widget(lbl)
-
-        #add label to display the possible item image
-        self._craftable_item_lbl = DisplayLabel((200, 50), (50, 50), color=self.COLOR[:-1])
-        self.add_widget(self._craftable_item_lbl)
-        self.add_border(self._craftable_item_lbl)
 
         #add arrow pointing from grid to display
         arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
@@ -180,8 +138,6 @@ class CraftingGrid(Pane):
         for row in self._crafting_grid:
             for lbl in row:
                 lbl.set_image(None)
-
-
 
 
 class DisplayLabel(Label):

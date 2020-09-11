@@ -5,6 +5,8 @@ from python_code.entities import ZoomableEntity
 from python_code.utility.constants import *
 from python_code.utility.event_handling import EventHandler
 from python_code.interfaces.interface_utility import screen_to_board_coordinate
+from python_code.board.materials import BuildingMaterial
+import python_code.board.buildings
 
 
 class ActionFunction:
@@ -606,16 +608,28 @@ class ItemLabel(Label):
     Specialized label specifically for displaying items
     """
     SIZE = Size(42, 42)
-    ITEM_SIZE = Size(30, 30)
-    def __init__(self, pos, item, **kwargs):
+
+    def __init__(self, pos, size, item, **kwargs):
         self.item = item
         #is set when innitailising label, just to make sure
         self.item_image = None
-        Label.__init__(self, pos, self.SIZE, **kwargs)
-        self.previous_total = self.item.quantity
-        # when innitiating make sure the number is displayed
-        self.set_text(str(self.previous_total), (10, 10),
-                      color=self.item.TEXT_COLOR)
+        Label.__init__(self, pos, size, **kwargs)
+        if self.item != None:
+            self.previous_total = self.item.quantity
+            # when innitiating make sure the number is displayed
+            self.set_text(str(self.previous_total), (10, 10),
+                          color=self.item.TEXT_COLOR)
+
+    def add_item(self, item):
+        self.item = item
+        self.image = self._create_image(self.rect.size, self.color)
+        self.orig_image = self.image.copy()
+        if self.item != None:
+            self.previous_total = self.item.quantity
+            self.set_text(str(self.previous_total), (10, 10),
+                          color=self.item.TEXT_COLOR)
+
+        self.changed_image = True
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -624,26 +638,33 @@ class ItemLabel(Label):
         :See: Label._create_image()
         :return: pygame Surface object
         """
+        size = Size(*size)
+        item_size = size - (10, 10)
         # create a background surface
-        image = pygame.Surface(self.SIZE)
+        image = pygame.Surface(size)
         image.fill(color)
 
-        # get the item image and place it in the center
-        self.item_image = pygame.transform.scale(self.item.surface, self.ITEM_SIZE)
-        image.blit(self.item_image, (self.SIZE.width / 2 - self.ITEM_SIZE.width / 2,
-                            self.SIZE.height / 2 - self.ITEM_SIZE.height / 2))
+        if self.item != None:
+            # get the item image and place it in the center
+            if isinstance(self.item.material, BuildingMaterial):
+                item_image = python_code.board.buildings.building_type_from_material(self.item.material).full_image()
+            else:
+                item_image = self.item.material.surface
+            self.item_image = pygame.transform.scale(item_image, item_size)
+            image.blit(self.item_image, (size.width / 2 - item_size.width / 2,
+                                size.height / 2 - item_size.height / 2))
 
-        # draw rectangle slightly smaller then image
-        rect = image.get_rect()
-        rect.inflate_ip(-4, -4)
-        pygame.draw.rect(image, (0, 0, 0), rect, 3)
+            # draw rectangle slightly smaller then image
+            rect = image.get_rect()
+            rect.inflate_ip(-4, -4)
+            pygame.draw.rect(image, (0, 0, 0), rect, 3)
         return image
 
     def wupdate(self):
         """
         Make sure to update the amount whenever it changes.
         """
-        if self.previous_total != self.item.quantity:
+        if self.item != None and self.previous_total != self.item.quantity:
             self.previous_total = self.item.quantity
             self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
 

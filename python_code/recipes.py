@@ -183,7 +183,6 @@ class BaseConceptRecipe(ABC):
             for material_type in row:
                 if issubclass(material_type, materials.BuildingMaterial):
                     image_row.append(buildings.building_type_from_material(material_type).full_image())
-                    print(buildings.building_type_from_material(material_type).full_image())
                 else:
                     image_row.append(material_type().surface)
             image_grid.append(image_row)
