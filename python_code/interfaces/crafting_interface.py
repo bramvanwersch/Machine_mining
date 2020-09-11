@@ -111,9 +111,18 @@ class CraftingWindow(Window):
         self._inventory_sp  = ScrollPane((10, 150), (280, 90), color=self.COLOR[:-1])
         self.add_widget(self._inventory_sp)
         self.add_border(self._inventory_sp)
+
+        s1 = SelectionGroup()
         for recipe in self.__recipe_book:
-            dl = Label((0,0), (30,30), color=self.COLOR[:-1])
-            dl.set_image(image=recipe.get_image(), size= (27, 27))
+            #create an image with a background
+            background = pygame.Surface((30, 30)).convert()
+            background.fill(self.COLOR[:-1])
+            image = pygame.transform.scale(recipe.get_image(), (26,26))
+            background.blit(image, (2,2,26,26))
+
+            dl = Label((0,0), (30,30), color=self.COLOR[:-1], image=background)
+            dl.set_action(1, s1.select, values=[dl, (0,0,0)])
+            s1.add(dl)
             self._inventory_sp.add_widget(dl)
 
         #add label to display the possible item image

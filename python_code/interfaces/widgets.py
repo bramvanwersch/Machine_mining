@@ -57,6 +57,28 @@ class HoverAction:
         self.__action_functions[False] = ActionFunction(action, values)
 
 
+class SelectionGroup:
+    def __init__(self, multiple=False):
+        self.multi_mode = multiple
+        self.__widgets = set()
+
+    def add(self, widget):
+        self.__widgets.add(widget)
+
+    def select(self, widget, *args):
+        if not self.multi_mode:
+            for w in self.__widgets:
+                w.set_selected(False)
+        widget.set_selected(True, *args)
+
+    def off(self):
+        [w.set_selected(False) for w in self.__widgets]
+
+    def on(self):
+        if self.multi_mode:
+            [w.set_selected(True) for w in self.__widgets]
+
+
 class Widget(ABC):
     """
     Basic widget class
@@ -119,7 +141,8 @@ class Label(Widget):
         self.color = color
         #parameter that tells the container widget containing this widget to
         #reblit it onto its surface.
-        self.changed_image = False
+        #always reblit at the start
+        self.changed_image = True
         self.text_image = None
 
     def _create_image(self, size, color, **kwargs):
@@ -141,14 +164,16 @@ class Label(Widget):
         image.fill(color)
         return image
 
-    def set_selected(self, selected):
+    def set_selected(self, selected, color=None):
         """
         Add a border around the outside of a widget when it is selected
         :See: Widget.set_selected()
         """
         super().set_selected(selected)
+        if color == None:
+            color = self.SELECTED_COLOR
         if self.selected:
-            pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)
+            pygame.draw.rect(self.image, color, self.image.get_rect(), 3)
         else:
             self._clean_image(text = False)
 
