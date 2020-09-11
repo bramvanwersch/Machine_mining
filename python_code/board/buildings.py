@@ -19,6 +19,8 @@ def block_i_from_material(material):
         building_block_i = material.BLOCK_TYPE
     return building_block_i
 
+def building_type_from_material(material):
+    return material_mapping[material.name()]
 
 class Building(BaseBlock, ABC):
     """
@@ -168,3 +170,6 @@ class Factory(InterafaceBuilding):
         super().__init__(pos, *groups, **kwargs)
         self._interface = CraftingWindow(self, self.sprite_groups)
 
+material_mapping = {"TerminalMaterial" : Terminal,
+                    "FurnaceMaterial" : Furnace,
+                    "FactoryMaterial" : Factory}

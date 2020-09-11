@@ -31,8 +31,7 @@ class CraftingWindow(Window):
         self.__factory = factory
         fr = self.__factory.rect
         location = fr.bottomleft
-        Window.__init__(self, location, self.SIZE,
-                       *groups, title = "CRAFTING:", allowed_events=[1, 3, K_ESCAPE])
+        Window.__init__(self, location, self.SIZE, *groups, title = "CRAFTING:", allowed_events=[1, 3, K_ESCAPE])
         self.static = True
         #TODO move this
         self.__recipe_book = RecipeBook()
@@ -66,15 +65,7 @@ class CraftingWindow(Window):
         """
         leftovers = super().handle_events(events)
         if self.visible:
-            #check if the recipe changed. If that is the case update the crafting window
-            new_recipe_grid = self.grid_pane.get_new_recipe_grid()
-            if new_recipe_grid:
-                recipe = self.__recipe_book.get_recipe(new_recipe_grid)
-                if recipe != None:
-                    self._craftable_item_lbl.set_display(recipe.material)
-                    self._craftable_item_recipe = recipe
-                else:
-                    self._craftable_item_lbl.set_display(None)
+            pass
         return leftovers
 
     def __add_item_labels(self):
@@ -120,10 +111,14 @@ class CraftingWindow(Window):
             image = pygame.transform.scale(recipe.get_image(), (26,26))
             background.blit(image, (2,2,26,26))
 
-            dl = Label((0,0), (30,30), color=self.COLOR[:-1], image=background)
-            dl.set_action(1, s1.select, values=[dl, (0,0,0)])
-            s1.add(dl)
-            self._inventory_sp.add_widget(dl)
+            lbl = Label((0,0), (30,30), color=self.COLOR[:-1], image=background)
+            def recipe_action(self, recipe, lbl, s1):
+                self._craftable_item_recipe = recipe
+                s1.select(lbl, (0, 0, 0))
+                self.grid_pane.add_recipe(recipe)
+            lbl.set_action(1, recipe_action, values=[self, recipe, lbl, s1], types=["unpressed"])
+            s1.add(lbl)
+            self._inventory_sp.add_widget(lbl)
 
         #add label to display the possible item image
         self._craftable_item_lbl = DisplayLabel((200, 50), (50, 50), color=self.COLOR[:-1])
@@ -163,112 +158,31 @@ class CraftingGrid(Pane):
         """
         Innitialize the crafting grid and fill it with CraftingLabels
         """
-        start_pos= [5,5]
+        start_pos = [5,5]
         for row_i in range(self.GRID_SIZE.height):
             row = []
             for col_i in range(self.GRID_SIZE.width):
                 pos = start_pos + self.GRID_SQUARE * (col_i, row_i) + (2, 2)
-                lbl = CraftingLabel(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR)
+                lbl = Label(pos, self.GRID_SQUARE - (4, 4), color = self.COLOR)
                 self.add_widget(lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
 
-    def wupdate(self, *args):
-        """
-        Trigger for updating widgets. Checks all the CraftingLabels for changes
-        and finds a rectangle of selected labels when changes where made
+    def add_recipe(self, recipe):
+        self.reset()
+        for row_i, row in enumerate(recipe.get_image_grid()):
+            for col_i, image in enumerate(row):
+                if image != None:
+                    image = pygame.transform.scale(image, Size(*self._crafting_grid[row_i][col_i].rect.size) - (4,4))
+                    self._crafting_grid[row_i][col_i].set_image(image)
 
-        :param args: optional arguments
-        """
-        super().wupdate()
-        updated_recipe = False
+    def reset(self):
         for row in self._crafting_grid:
             for lbl in row:
-                if lbl.changed_item and not updated_recipe:
-                    self._recipe_grid = self._get_recipe_grid()
-                    self.__recipe_changed = True
-                lbl.changed_item = False
-
-    def get_new_recipe_grid(self):
-        """
-        Get a new recipe grid, called when crafting labels change
-
-        :return: a recipe grid or None when there is no change
-        """
-        if self.__recipe_changed:
-            self.__recipe_changed = False
-            return self._recipe_grid
-        return None
-
-    def _get_recipe_grid(self):
-        """
-        Get the recipe grid by finding a square of CraftingLabels that are have
-        items in them
-
-        :return: return a matrix of  CraftingLabels potentially with items in
-        them
-        """
-        col_start = self.size.width
-        col_end = 0
-        row_start = self.size.height
-        row_end = 0
-        recipe_grid = []
-        for row_i, row in enumerate(self._crafting_grid):
-            material_row = [Air for _ in range(len(row))]
-            material_present = False
-            for col_i, lbl in enumerate(row):
-                if lbl.item != None:
-                    material_present = True
-                    material_row[col_i] = type(lbl.item.material)
-                    # figure out the start end end inxed of the items in the row
-                    if col_i < col_start:
-                        col_start = col_i
-                        col_end = col_i
-                    elif col_i > col_end:
-                        col_end = col_i
-
-            recipe_grid.append(material_row)
-            if material_present:
-                if row_i < row_start:
-                    row_start = row_i
-                    row_end = row_i
-                elif row_i > row_end:
-                    row_end = row_i
-
-        #cut the material_grid to the right size
-        reduced_recipe_grid = []
-        for row_i in range(row_start, row_end + 1):
-            reduced_recipe_grid.append(recipe_grid[row_i][col_start:col_end + 1])
-
-        return reduced_recipe_grid
+                lbl.set_image(None)
 
 
-class CraftingLabel(Label):
-    """
-    Labels that can hold items as pictures in them
-    """
-    def __init__(self, pos, size, **kwargs):
-        Label.__init__(self, pos, size, **kwargs)
-        self.set_action(1, self.set_image, types=["pressed"])
-        self.set_action(3, self.set_image, values=[False], types=["pressed"])
-        self.changed_item = False
-        self.item = None
 
-    def set_image(self, add = True):
-        """
-        Change the image of the label
-        
-        :param add: boolean. If true the image of the self.item is added otherwise
-        remove any image
-        """
-        if SELECTED_LABEL== None:
-            return
-        image = self.item = None
-        if add:
-            self.item = SELECTED_LABEL.item
-            image = SELECTED_LABEL.item_image
-        super().set_image(image)
-        self.changed_item = True
 
 class DisplayLabel(Label):
     """
