@@ -63,7 +63,7 @@ class TerminalWindow(Window):
         for item in self.__terminal_inv.items:
             if item.name() not in covered_items:
                 #remove the alpha channel
-                lbl = ItemLabel((0, 0), (30, 30), item, color=(173, 94, 29))
+                lbl = ItemLabel((0, 0), (42, 42), item, color=(173, 94, 29))
 
                 self.__inventory_pane.add_widget(lbl)
 

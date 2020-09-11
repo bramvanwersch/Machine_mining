@@ -61,7 +61,7 @@ class CraftingWindow(Window):
         self.add_border(self._inventory_sp)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = ItemLabel((200, 50), (50, 50), None, color=self.COLOR[:-1])
+        self._craftable_item_lbl = ItemLabel((200, 50), (50, 50), None, border=False, color=self.COLOR[:-1])
         self.add_widget(self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl)
 

@@ -171,6 +171,11 @@ class BaseConceptRecipe(ABC):
         """
         return None
 
+    @property
+    @abstractmethod
+    def CRAFTING_TIME(self):
+        return None
+
     def get_image(self):
         if issubclass(self._material, materials.BuildingMaterial):
             return buildings.building_type_from_material(self._material).full_image()
@@ -190,6 +195,7 @@ class BaseConceptRecipe(ABC):
 
 
 class FurnaceRecipe(BaseConceptRecipe):
+    CRAFTING_TIME = 10
     def __init__(self):
         mat = materials.FurnaceMaterial
         BaseConceptRecipe.__init__(self, mat)
@@ -204,6 +210,7 @@ class FurnaceRecipe(BaseConceptRecipe):
         return grid
 
 class CompactStoneRecipe(BaseConceptRecipe):
+    CRAFTING_TIME = 0.1
     def __init__(self):
         mat = materials.StoneBrickMaterial
         BaseConceptRecipe.__init__(self, mat)
@@ -217,6 +224,7 @@ class CompactStoneRecipe(BaseConceptRecipe):
         return grid
 
 class StonePipe(BaseConceptRecipe):
+    CRAFTING_TIME = 1
     def __init__(self):
         mat = materials.StonePipeMaterial
         BaseConceptRecipe.__init__(self, mat)

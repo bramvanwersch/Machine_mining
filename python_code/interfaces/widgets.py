@@ -607,17 +607,17 @@ class ItemLabel(Label):
     """
     Specialized label specifically for displaying items
     """
-    SIZE = Size(42, 42)
 
-    def __init__(self, pos, size, item, **kwargs):
+    def __init__(self, pos, size, item, border = True, **kwargs):
         self.item = item
         #is set when innitailising label, just to make sure
         self.item_image = None
+        self.__border = border
         Label.__init__(self, pos, size, **kwargs)
         if self.item != None:
             self.previous_total = self.item.quantity
             # when innitiating make sure the number is displayed
-            self.set_text(str(self.previous_total), (10, 10),
+            self.set_text(str(self.previous_total), (6,6),
                           color=self.item.TEXT_COLOR)
 
     def add_item(self, item):
@@ -626,7 +626,7 @@ class ItemLabel(Label):
         self.orig_image = self.image.copy()
         if self.item != None:
             self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (10, 10),
+            self.set_text(str(self.previous_total), (6,6),
                           color=self.item.TEXT_COLOR)
 
         self.changed_image = True
@@ -655,9 +655,10 @@ class ItemLabel(Label):
                                 size.height / 2 - item_size.height / 2))
 
             # draw rectangle slightly smaller then image
-            rect = image.get_rect()
-            rect.inflate_ip(-4, -4)
-            pygame.draw.rect(image, (0, 0, 0), rect, 3)
+            if self.__border:
+                rect = image.get_rect()
+                rect.inflate_ip(-4, -4)
+                pygame.draw.rect(image, (0, 0, 0), rect, 3)
         return image
 
     def wupdate(self):
@@ -666,7 +667,7 @@ class ItemLabel(Label):
         """
         if self.item != None and self.previous_total != self.item.quantity:
             self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (10, 10), color=self.item.TEXT_COLOR)
+            self.set_text(str(self.previous_total), (6,6), color=self.item.TEXT_COLOR)
 
 ### ALL OLD STUFF ### could come in handy later
 

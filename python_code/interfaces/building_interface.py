@@ -55,7 +55,7 @@ class BuildingWindow(Window):
         for item in self.__inventory.items:
             if item.name() not in covered_items:
                 #remove the alpha channel
-                lbl = ItemLabel((0, 0), (30, 30), item, color=self.COLOR[:-1])
+                lbl = ItemLabel((0, 0), (42, 42), item, color=self.COLOR[:-1])
                 def set_selected(self, selected):
                     self.set_selected(selected)
                     if selected:
