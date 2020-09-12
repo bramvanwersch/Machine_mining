@@ -157,6 +157,7 @@ class Board(BoardEventHandler):
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
         self.__buildings[building_instance.id] = building_rect
+        self.inventorie_blocks
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
                 m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
@@ -182,34 +183,19 @@ class Board(BoardEventHandler):
                 self.matrix[row][column] = AirBlock(block.rect.topleft,
                                                 materials.Air())
 
-    def closest_inventory(self, start):
+    def closest_inventory(self, start, *item_names, deposit=True):
         """
-        Shortcut function for finding the closest inventory using __get_closest_block
-        from a certain position of the worker.
-
-        :param start: The coordinate of the worker looking for an inventory
-        :return: a Block that is the closest inventory
-        """
-        return self.__get_closest_block(start, *self.inventorie_blocks)
-
-    def __get_closest_block(self, start, *blocks):
-        """
-        Get the closest block in a list of blocks.
-
-        :param start: a coordinate from where the closest blocks should be
-        estimated
-        :param blocks: a list of blocks that funtion as destinateion
-        coordinates
-        :return: a block from the list of blocks that is the closest or None
-        when no block is reachable.
-
-        The function uses pathfinding to estimate this so it should be used
-        with care, meaning on lists of blocks that are not to big
         """
         #any distance should be shorter possible on the board
         shortest_distance = 10000000000000
         closest_block = None
-        for block in blocks:
+        for block in self.inventorie_blocks:
+            if (deposit == False and all([block.inventory.check_item_get(name, 1) for name in item_names])):
+               pass
+            elif (deposit == True and all([block.inventory.check_item_deposit(name) for name in item_names])):
+                pass
+            else:
+                continue
             path = self.pf.get_path(start, block.rect)
             if path != None and path.path_lenght < shortest_distance:
                 shortest_distance = path.path_lenght

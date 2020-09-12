@@ -334,7 +334,7 @@ class Worker(MovingEntity):
         Protocol for emptying an inventory into the closest inventory
         """
         if not self.inventory.empty:
-            block = self.board.closest_inventory(self.orig_rect)
+            block = self.board.closest_inventory(self.orig_rect, *self.inventory.item_names)
             task = Task("Empty inventory")
             if block:
                 block.add_task(task)
@@ -346,10 +346,10 @@ class Worker(MovingEntity):
         Protocol for getting build materials.
         """
         req_block = self.task_queue.task.finish_block
-        if not self.inventory.check_item(req_block.name(), 1):
-            block = self.board.closest_inventory(self.orig_rect)
-            task = TakeTask("Take item", req_block.name())
+        if not self.inventory.check_item_get(req_block.name(), 1):
+            block = self.board.closest_inventory(self.orig_rect, req_block.name(), deposit=False)
             if block:
+                task = TakeTask("Take item", req_block.name())
                 block.add_task(task)
                 self.task_queue.add(task, block)
 
@@ -362,7 +362,7 @@ class Worker(MovingEntity):
         if self.task_queue.task.task_type == "Building":
             #make sure that item retrieval was succesfull
             required_item = self.task_queue.task.finish_block.name()
-            if not self.inventory.check_item(required_item, 1):
+            if not self.inventory.check_item_get(required_item, 1):
                 self.task_queue.task.increase_priority()
                 self.task_queue.next()
                 return

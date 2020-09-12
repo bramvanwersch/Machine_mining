@@ -79,7 +79,7 @@ class TaskControl:
         for block in sorted_blocks:
             #if no materials are avaialable skip the building task
             if block.task.task_type == "Building":
-                if not self.__terminal_inv.check_item(block.task.finish_block.name(), 1):
+                if not self.__terminal_inv.check_item_get(block.task.finish_block.name(), 1):
                     continue
             return block.task, block
         return None, None

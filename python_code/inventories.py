@@ -1,9 +1,11 @@
 
 
 class Inventory:
-    def __init__(self, max_wheight):
+    def __init__(self, max_wheight, blacklist=[], whitelist=[]):
         self.__container = {}
         self.wheight = [0, max_wheight]
+        self.blacklist = set(blacklist)
+        self.whitelist = set(whitelist)
 
     def get(self, item_name, amnt):
         """
@@ -34,10 +36,16 @@ class Inventory:
                 items.append(item)
         return items
 
-    def check_item(self, item_name, quantity):
+    def check_item_get(self, item_name, quantity):
         if item_name in self.__container and self.__container[item_name].quantity >= quantity:
             return True
         return False
+
+    def check_item_deposit(self, item_name):
+        if (len(self.whitelist) > 0 and item_name() not in self.whitelist) or \
+                item_name in self.blacklist:
+            return False
+        return True
 
     def __remove_quantity(self, item, amnt):
         available_amnt = min(item.quantity, amnt)
@@ -48,6 +56,9 @@ class Inventory:
     def add_blocks(self, *blocks):
 
         for block in blocks:
+            if (len(self.whitelist) > 0 and block.material.name() not in self.whitelist) or\
+                block.material.name() in self.blacklist:
+                return
             if not block.material.name() in self.__container:
                 self.__container[block.name()] = Item(block.material)
             else:
@@ -56,6 +67,9 @@ class Inventory:
 
     def add_items(self, *items):
         for item in items:
+            if (len(self.whitelist) > 0 and item.name() not in self.whitelist) or\
+                item.name() in self.blacklist:
+                return
             if not item.name() in self.__container:
                 self.__container[item.name()] = item
             else:
