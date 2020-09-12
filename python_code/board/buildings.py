@@ -5,7 +5,7 @@ from python_code.board.materials import *
 from python_code.utility.image_handling import image_sheets
 from python_code.utility.constants import BLOCK_SIZE
 from python_code.board.blocks import *
-from python_code.inventories import Inventory
+from python_code.inventories import Inventory, Filter
 from python_code.utility.utilities import Size
 from python_code.interfaces.small_interfaces import FurnaceWindow, TerminalWindow
 from python_code.interfaces.crafting_interface import CraftingWindow
@@ -153,22 +153,39 @@ class Furnace(InterafaceBuilding):
     Terminal building. The main interaction centrum for the workers
     """
     IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
-    BLOCK_TYPE = Block
+    BLOCK_TYPE = ContainerBlock
     MATERIAL = FurnaceMaterial
 
     def __init__(self, pos, *groups, **kwargs):
         super().__init__(pos, *groups, **kwargs)
         self._interface = FurnaceWindow(self, self.sprite_groups)
 
+    def _get_blocks(self, block_class, material_class):
+        blocks = super()._get_blocks(block_class, material_class)
+        #inventories that do not accept items
+        shared_inventory = Inventory(200, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
+        for row in blocks:
+            for block in row:
+                block.inventory = shared_inventory
+        return blocks
+
 
 class Factory(InterafaceBuilding):
     IMAGE_SPECIFICATIONS = ["buildings", (40, 0, 20, 20), {"color_key" : (255,255,255)}]
-    BLOCK_TYPE = Block
+    BLOCK_TYPE = ContainerBlock
     MATERIAL = FactoryMaterial
 
     def __init__(self, pos, *groups, **kwargs):
         super().__init__(pos, *groups, **kwargs)
         self._interface = CraftingWindow(self, self.sprite_groups)
+
+    def _get_blocks(self, block_class, material_class):
+        blocks = super()._get_blocks(block_class, material_class)
+        shared_inventory = Inventory(300, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
+        for row in blocks:
+            for block in row:
+                block.inventory = shared_inventory
+        return blocks
 
 material_mapping = {"TerminalMaterial" : Terminal,
                     "FurnaceMaterial" : Furnace,

@@ -1,11 +1,30 @@
 
 
+class Filter:
+    def __init__(self, blacklist=[], whitelist=[]):
+        self.__blacklist = set(blacklist)
+        self.__whitelist = set(whitelist)
+
+    def allowed(self, item_name):
+        if (len(self.__whitelist) > 0 and item_name not in self.__whitelist) or \
+                item_name in self.__blacklist:
+            return False
+        return True
+
+    def set_blacklist(self, *item_names):
+        self.__blacklist = set(item_names)
+
+    def set_whitelist(self, *item_names):
+        self.__whitelist = set(item_names)
+
+
 class Inventory:
-    def __init__(self, max_wheight, blacklist=[], whitelist=[]):
+    def __init__(self, max_wheight, in_filter=None, out_filter=None):
         self.__container = {}
         self.wheight = [0, max_wheight]
-        self.blacklist = set(blacklist)
-        self.whitelist = set(whitelist)
+
+        self.in_filter = in_filter
+        self.out_filter = out_filter
 
     def get(self, item_name, amnt):
         """
@@ -31,19 +50,20 @@ class Inventory:
         """
         items = []
         for key in list(self.__container.keys()):
+            if not self.check_item_get(key, 1):
+                continue
             item = self.get(key, self.__container[key].quantity)
             if item:
                 items.append(item)
         return items
 
     def check_item_get(self, item_name, quantity):
-        if item_name in self.__container and self.__container[item_name].quantity >= quantity:
-            return True
-        return False
+        if self.out_filter and not self.out_filter.allowed(item_name):
+            return False
+        return True
 
     def check_item_deposit(self, item_name):
-        if (len(self.whitelist) > 0 and item_name() not in self.whitelist) or \
-                item_name in self.blacklist:
+        if self.in_filter and not self.in_filter.allowed(item_name):
             return False
         return True
 
@@ -54,11 +74,9 @@ class Inventory:
         return available_amnt
 
     def add_blocks(self, *blocks):
-
         for block in blocks:
-            if (len(self.whitelist) > 0 and block.material.name() not in self.whitelist) or\
-                block.material.name() in self.blacklist:
-                return
+            if not self.check_item_deposit(block.material.name()):
+                continue
             if not block.material.name() in self.__container:
                 self.__container[block.name()] = Item(block.material)
             else:
@@ -67,9 +85,8 @@ class Inventory:
 
     def add_items(self, *items):
         for item in items:
-            if (len(self.whitelist) > 0 and item.name() not in self.whitelist) or\
-                item.name() in self.blacklist:
-                return
+            if not self.check_item_deposit(item.name()):
+                continue
             if not item.name() in self.__container:
                 self.__container[item.name()] = item
             else:
