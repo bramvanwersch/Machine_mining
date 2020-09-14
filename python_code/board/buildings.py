@@ -9,6 +9,7 @@ from python_code.inventories import Inventory, Filter
 from python_code.utility.utilities import Size
 from python_code.interfaces.small_interfaces import FurnaceWindow, TerminalWindow
 from python_code.interfaces.crafting_interface import CraftingWindow
+from python_code.network.pipes import NetworkNode
 
 
 def block_i_from_material(material):
@@ -127,7 +128,7 @@ class InterafaceBuilding(Building, ABC):
         self.window_manager.add(self.interface)
 
 
-class Terminal(InterafaceBuilding):
+class Terminal(InterafaceBuilding, NetworkNode):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -136,19 +137,19 @@ class Terminal(InterafaceBuilding):
     MATERIAL = TerminalMaterial
 
     def __init__(self, pos, *groups, **kwargs):
-        super().__init__(pos, *groups, **kwargs)
+        self.inventory = Inventory(-1)
+        InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
+        NetworkNode.__init__(self)
         self._interface = TerminalWindow(self, self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
-        shared_inventory = Inventory(-1)
         for row in blocks:
             for block in row:
-                block.inventory = shared_inventory
+                block.inventory = self.inventory
         return blocks
 
-
-class Furnace(InterafaceBuilding):
+class Furnace(InterafaceBuilding, NetworkNode):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -157,34 +158,35 @@ class Furnace(InterafaceBuilding):
     MATERIAL = FurnaceMaterial
 
     def __init__(self, pos, *groups, **kwargs):
-        super().__init__(pos, *groups, **kwargs)
+        self.inventory = Inventory(200, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
+        InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
+        NetworkNode.__init__(self)
         self._interface = FurnaceWindow(self, self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
-        #inventories that do not accept items
-        shared_inventory = Inventory(200, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         for row in blocks:
             for block in row:
-                block.inventory = shared_inventory
+                block.inventory = self.inventory
         return blocks
 
 
-class Factory(InterafaceBuilding):
+class Factory(InterafaceBuilding, NetworkNode):
     IMAGE_SPECIFICATIONS = ["buildings", (40, 0, 20, 20), {"color_key" : (255,255,255)}]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = FactoryMaterial
 
     def __init__(self, pos, *groups, **kwargs):
-        super().__init__(pos, *groups, **kwargs)
+        self.inventory = Inventory(300, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
+        InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
+        NetworkNode.__init__(self)
         self._interface = CraftingWindow(self, self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
-        shared_inventory = Inventory(300, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         for row in blocks:
             for block in row:
-                block.inventory = shared_inventory
+                block.inventory = self.inventory
         return blocks
 
 material_mapping = {"TerminalMaterial" : Terminal,

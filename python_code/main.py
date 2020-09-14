@@ -82,7 +82,7 @@ class User:
 
         #tasks
         self.tasks = TaskControl(self.board)
-        board.task_control = self.tasks
+        board.set_task_control(self.tasks)
 
         #for some more elaborate setting up of variables
         self.workers = []
@@ -98,9 +98,10 @@ class User:
 
     def update(self):
         self.__handle_events()
-        # make sure to configure the layers so that the sprites are correctly made
+        # make sure to configure the layers so that the sprites are correctly placed
         for sprite in self.main_sprite_group.sprites():
             self.main_sprite_group.change_layer(sprite, sprite._layer)
+        self.board.pipe_network.update()
 
     def __handle_events(self):
         events = pygame.event.get()

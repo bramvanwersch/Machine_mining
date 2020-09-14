@@ -58,7 +58,8 @@ class Inventory:
         return items
 
     def check_item_get(self, item_name, quantity):
-        if self.out_filter and not self.out_filter.allowed(item_name):
+        if (self.out_filter and not self.out_filter.allowed(item_name)) or \
+                item_name not in self.__container or self.__container[item_name].quantity == 0:
             return False
         return True
 
@@ -73,25 +74,31 @@ class Inventory:
         self.wheight[0] -= item.WHEIGHT * available_amnt
         return available_amnt
 
-    def add_blocks(self, *blocks):
+    def add_blocks(self, *blocks, ignore_filter = False):
         for block in blocks:
-            if not self.check_item_deposit(block.material.name()):
-                continue
-            if not block.material.name() in self.__container:
-                self.__container[block.name()] = Item(block.material)
-            else:
-                self.__container[block.name()].quantity += 1
-            self.wheight[0] += self.__container[block.name()].WHEIGHT
+            item = Item(block.material)
+            self.__add_item(item, ignore_filter=ignore_filter)
 
-    def add_items(self, *items):
+    def add_materials(self, *materials, ignore_filter=False):
+        for material in materials:
+            item = Item(material)
+            self.__add_item(item, ignore_filter=ignore_filter)
+
+    def add_items(self, *items, ignore_filter = False):
         for item in items:
-            if not self.check_item_deposit(item.name()):
-                continue
-            if not item.name() in self.__container:
-                self.__container[item.name()] = item
-            else:
-                self.__container[item.name()].quantity += item.quantity
-            self.wheight[0] += self.__container[item.name()].WHEIGHT * item.quantity
+            self.__add_item(item, ignore_filter=ignore_filter)
+
+    def __add_item(self, item, ignore_filter=False):
+        if not ignore_filter and not self.check_item_deposit(item.name()):
+            return
+        if not item.name() in self.__container:
+            self.__container[item.name()] = item
+        else:
+            self.__container[item.name()].quantity += item.quantity
+        self.wheight[0] += self.__container[item.name()].WHEIGHT * item.quantity
+
+    def __contains__(self, name):
+        return name in self.__container
 
     @property
     def full(self):
@@ -115,6 +122,11 @@ class Inventory:
     @property
     def items(self):
         return self.__container.values()
+
+    def item_pointer(self, name):
+        if name in self.__container:
+            return self.__container[name]
+        return None
 
 class Item:
     """

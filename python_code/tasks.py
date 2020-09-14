@@ -21,6 +21,9 @@ class TaskControl:
         for block in blocks:
             if type == "Building":
                 task = BuildTask(type, priority = priority, **kwargs)
+            elif type == "Request":
+                req_material = kwargs.pop("req_material")
+                task = RequestTask(type, req_material, priority=priority, **kwargs)
             else:
                 task = Task(type, priority = priority, **kwargs)
 
@@ -166,7 +169,6 @@ class Task:
         #determined by material
         self.task_progress = [0, 1]
         self.handed_in = False
-        self.__additional_info = kwargs
 
     def start(self):
         """
@@ -195,7 +197,12 @@ class BuildTask(Task):
         self.original_group = original_group
         self.removed_blocks = [block for block in removed_blocks if block.name() != "Air"]
 
-class TakeTask(Task):
+class FetchTask(Task):
     def __init__(self, task_type, req_block_name, **kwargs):
         super().__init__(task_type, **kwargs)
         self.req_block_name = req_block_name
+
+class RequestTask(Task):
+    def __init__(self, task_type, req_material, **kwargs):
+        super().__init__(task_type, **kwargs)
+        self.req_material = req_material

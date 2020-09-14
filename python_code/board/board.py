@@ -34,15 +34,20 @@ class Board(BoardEventHandler):
                                            block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
         self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
+        self.task_control = None
+
+        #pipe network
+        self.pipe_network = Network(self.task_control)
+
         self.__buildings = {}
         self.__add_starter_buildings()
 
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
-        self.task_control = None
 
-        #pipe network
-        self.pipe_network = Network()
+    def set_task_control(self, task_control):
+        self.task_control = task_control
+        self.pipe_network.task_control = task_control
 
     def overlapping_blocks(self, rect):
         """
@@ -131,7 +136,7 @@ class Board(BoardEventHandler):
                 if isinstance(block, NetworkBlock):
                     update_blocks = self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update)
                     if update:
-                        self.pipe_network.add(block)
+                        self.pipe_network.add_pipe(block)
                 # remove the highlight
                 self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
                 self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
@@ -157,7 +162,8 @@ class Board(BoardEventHandler):
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
         self.__buildings[building_instance.id] = building_rect
-        self.inventorie_blocks
+        if isinstance(building_instance, NetworkNode):
+            self.pipe_network.add_node(building_instance)
         for row_i, row in enumerate(building_instance.blocks):
             for column_i, block in enumerate(row):
                 m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))

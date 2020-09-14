@@ -2,7 +2,7 @@ from abc import ABC
 
 from python_code.utility.constants import *
 from python_code.inventories import Inventory
-from python_code.tasks import TaskQueue, Task, TakeTask
+from python_code.tasks import TaskQueue, Task, FetchTask
 from python_code.utility.event_handling import EventHandler
 
 
@@ -322,8 +322,11 @@ class Worker(MovingEntity):
                 #allow for extra tasks to be added to the stack depending on
                 #the type
                 if self.task_queue.task.task_type == "Building":
-                    self.__get_build_items()
+                    self.__fetch_item(self.task_queue.task.finish_block.name())
                     self.__empty_inventory()
+                if self.task_queue.task.task_type == "Request":
+                    self.__fetch_item(self.task_queue.task.req_material.name())
+
                 self.__start_task()
             #if no available task add an empty inventory task if there are items
             elif not self.inventory.empty:
@@ -341,15 +344,14 @@ class Worker(MovingEntity):
                 self.task_queue.add(task, block)
                 self.__start_task()
 
-    def __get_build_items(self):
+    def __fetch_item(self, block_name):
         """
         Protocol for getting build materials.
         """
-        req_block = self.task_queue.task.finish_block
-        if not self.inventory.check_item_get(req_block.name(), 1):
-            block = self.board.closest_inventory(self.orig_rect, req_block.name(), deposit=False)
+        if not self.inventory.check_item_get(block_name, 1):
+            block = self.board.closest_inventory(self.orig_rect, block_name, deposit=False)
             if block:
-                task = TakeTask("Take item", req_block.name())
+                task = FetchTask("Fetch", block_name)
                 block.add_task(task)
                 self.task_queue.add(task, block)
 
@@ -363,6 +365,12 @@ class Worker(MovingEntity):
             #make sure that item retrieval was succesfull
             required_item = self.task_queue.task.finish_block.name()
             if not self.inventory.check_item_get(required_item, 1):
+                self.task_queue.task.increase_priority()
+                self.task_queue.next()
+                return
+        elif self.task_queue.task.task_type == "Request":
+            required_material = self.task_queue.task.req_material.name()
+            if not self.inventory.check_item_get(required_material, 1):
                 self.task_queue.task.increase_priority()
                 self.task_queue.next()
                 return
@@ -399,10 +407,12 @@ class Worker(MovingEntity):
             elif f_task.task_type == "Empty inventory":
                 items = self.inventory.get_all_items()
                 f_block.add(*items)
-            elif f_task.task_type == "Take item":
+            elif f_task.task_type == "Fetch":
                 item = f_block.inventory.get(f_task.req_block_name, 1)
                 if item:
                     self.inventory.add_items(item)
+            elif f_task.task_type == "Request":
+                f_block.inventory.add_materials(f_task.req_material)
             self.task_control.remove(f_block)
             f_task.handed_in = True
         if not self.task_queue.empty():

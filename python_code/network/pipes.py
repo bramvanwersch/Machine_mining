@@ -1,6 +1,8 @@
 from python_code.utility.image_handling import image_sheets
 from python_code.board.blocks import ContainerBlock
 from python_code.utility.constants import BLOCK_SIZE
+from python_code.utility.utilities import manhattan_distance
+from python_code.board import materials
 
 class Network:
     # made as follows:
@@ -8,12 +10,67 @@ class Network:
     # then 2 to 4 letters for n = 0, e = 1, s = 2, w = 3, with that order
     IMAGE_NAMES = ["2_13", "2_02", "2_23", "2_03", "2_12", "2_01", "3_013", "3_012", "3_023", "3_123", "4_0123",
                    "1_3", "1_0", "1_1", "1_2", "0_"]
-    def __init__(self):
+    def __init__(self, task_control):
         #connections between them
         self.edges = set()
         #furnaces chests etc.
         self.nodes = set()
         self.__pipe_images = self.__get_pipe_images()
+        self.task_control = task_control
+
+    def update(self):
+        for node in self.nodes:
+            if len(node.requested_items) > 0:
+                self.request_items(node)
+
+    def request_items(self, node):
+        storage_nodes = self.check_connected_storage_get(node)
+        retrieved_all = False
+        for s_node in storage_nodes:
+            self.__retrieve_from_storage(node.requested_items, s_node)
+            if len(node.requested_items) == 0:
+                retrieved_all = True
+                break
+        if retrieved_all:
+            return
+        for a_node in self.nodes:
+            if not hasattr(a_node, "inventory"):
+                continue
+            self.__retrieve_from_task(node, a_node)
+            if len(node.requested_items) == 0:
+                break
+
+    def __retrieve_from_storage(self, requested_items, node):
+        items = []
+        # TODO make a system to make this time dependant based on pipe lenght
+        for item, quantity in requested_items.items():
+            #check if at least one item is present
+            if node.inventory.check_item_get(item, 1):
+                fetched_item = c_noce.inventory.get(item, quantity)
+                if item.quantity == fetched_item.quantity:
+                    del node.requested_items[item]
+                else:
+                    requested_items[item] -= fetched_item.quantity
+                items.append(fetched_item)
+        return items
+
+    def __retrieve_from_task(self, destination_node, node):
+        items_quantities = [item for item in destination_node.requested_items.items()]
+        for item, quantity in items_quantities:
+            if node.inventory.check_item_get(item, 1):
+                #take top left block as target
+                self.task_control.add("Request", destination_node.blocks[0][0], req_material=getattr(materials, item)())
+                destination_node.requested_items[item] -= 1
+                if destination_node.requested_items[item] == 0:
+                    del destination_node.requested_items[item]
+
+    def check_connected_storage_get(self, node):
+        storage_nodes = []
+        for c_nodes in node.connected_edges.values():
+            for c_node in c_nodes:
+                if hasattr(c_node, "inventory"):
+                    storage_nodes.append(node)
+        return storage_nodes
 
     def __get_pipe_images(self):
         images = image_sheets["materials"].images_at_rectangle((10, 0, 90, 10), color_key=(255,255,255))[0]
@@ -40,7 +97,7 @@ class Network:
             return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if surrounding_blocks[i] == block]
         return None
 
-    def add(self, block):
+    def add_pipe(self, block):
         connected_edges = []
         for edge in self.edges:
             if edge.can_add(block):
@@ -50,34 +107,71 @@ class Network:
                     break
         #if no edges are connected add a new edge
         if len(connected_edges) == 0:
-            new_edge = NetworkEdge(block.network_group)
-            new_edge.add_block(block)
-            self.edges.add(new_edge)
+            new_edge = self.__add_edge(block)
         #merge
         else:
             new_edge = connected_edges.pop()
             new_edge.add_block(block)
             #merge any remaining edges that are also connected
             for rem_edge in connected_edges:
-                new_edge.add_edge(rem_edge)
-                self.edges.remove(rem_edge)
+                new_edge.add_pipe(rem_edge)
+                self.__remove_edge(edge)
+        #make sure that new pipes are potentially connected to nodes
+        for node in self.nodes:
+            if new_edge.is_node_adjacent(node):
+                node.add_edge(new_edge)
+
+    def __remove_edge(self, edge):
+        self.edges.remove(edge)
+        for node in self.nodes:
+            if edge in node:
+                node.remove_edge(edge)
+
+    def __add_edge(self, block):
+        new_edge = NetworkEdge(block.network_group)
+        new_edge.add_block(block)
+        self.edges.add(new_edge)
+        for node in self.nodes:
+            if new_edge.is_node_adjacent(node):
+                node.add_edge(new_edge)
+        return new_edge
+
+    def add_node(self, building):
+        self.nodes.add(building)
+        for edge in self.edges:
+            if edge.is_node_adjacent(building):
+                building.add_edge(edge)
 
     def remove(self, block):
         for edge in self.edges:
             if block in edge:
                 new_location_lists = edge.remove_segment(block)
                 if len(edge.segments) == 0:
-                    self.edges.remove(edge)
+                    self.__remove_edge(edge)
                 for location_edge in new_location_lists:
-                    new_edge = NetworkEdge(block.network_group)
-                    new_edge.add_string_location(*location_edge)
-                    self.edges.add(new_edge)
+                    self.__add_edge(block)
                 break
 
 
 class NetworkNode:
     def __init__(self):
-        self.connected_edges = []
+        self.connected_edges = {}
+        #dictionary with keys of item names and the values being the number of that item
+        self.requested_items = {}
+        self.pushed_items = set()
+
+    def __contains__(self, edge):
+        return edge in self.connected_edges
+
+    def add_edge(self, edge):
+        self.connected_edges[edge] = {}
+        for node in edge.connected_nodes:
+            self.connected_edges[edge][node] = manhattan_distance(self.rect.center, node.rect.center)
+        edge.connected_nodes.add(self)
+
+    def remove_edge(self, edge):
+        del self.connected_edges[edge]
+        edge.connected_nodes.remove(self)
 
 
 class NetworkEdge:
@@ -85,6 +179,7 @@ class NetworkEdge:
     def __init__(self, group):
         self.segments = set()
         self.network_group = group
+        self.connected_nodes = set()
 
     def can_add(self, block):
         if self.network_group != block.network_group:
@@ -94,6 +189,13 @@ class NetworkEdge:
         for l in surrounding_locations:
             if l in self.segments:
                 return True
+        return False
+
+    def is_node_adjacent(self, node):
+        for row in node.blocks:
+            for block in node:
+                if self.can_add(block):
+                    return True
         return False
 
     def add_block(self, *blocks):

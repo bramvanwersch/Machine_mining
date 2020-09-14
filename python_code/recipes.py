@@ -23,23 +23,10 @@ class RecipeBook:
         #filter out all the recipes.
         recipes = []
         for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-            if issubclass(obj, BaseConceptRecipe) and obj != BaseConceptRecipe:
+            if issubclass(obj, BaseRecipe) and obj != BaseRecipe:
                 #add an instance of the recipe
                 recipes.append(obj())
         return recipes
-
-    def get_recipe(self, material_grid):
-        """
-        Check if a certain grid of varaibles corresponds to a recipe.
-
-        :param material_grid: a matrix containing material types for the
-        materials presnet in the crafting grid
-        :return: TBD
-        """
-        for recipe in self.recipes:
-            if recipe.compare(material_grid):
-                return CraftableRecipe(material_grid, recipe)
-        return None
 
     def __iter__(self):
         return iter(self.recipes)
@@ -128,31 +115,7 @@ class RecipeGrid:
         return longest
 
 
-class CraftableRecipe:
-    """
-    Defines a crafting grid and items that can be used to create the item
-    defined by a concept recipe
-    """
-    def __init__(self, material_grid, recipe):
-        self.material = recipe.material
-        self.quantity = recipe.quantity
-
-        # saves the amount of the materials in the grid
-        self.required_materials = self.__count_grid(material_grid)
-
-    def __count_grid(self, grid):
-        counts = {}
-        for row in grid:
-            for value in row:
-                if value.name() != "Air":
-                    if value.name() not in counts:
-                        counts[value.name()] = 1
-                    else:
-                        counts[value.name()] += 1
-        return counts
-
-
-class BaseConceptRecipe(ABC):
+class BaseRecipe(ABC):
     """
     Base class for all recipe concepts. It saves a recipe a grid that is a
     potential of all recipes that can be.
@@ -160,7 +123,19 @@ class BaseConceptRecipe(ABC):
     def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
         self._material = material
+        self.needed_materials = self.__count_grid()
         self.quantity = 1
+
+    def __count_grid(self):
+        counts = {}
+        for row in self.__recipe_grid:
+            for value in row:
+                if value.name() != "Air":
+                    if value.name() not in counts:
+                        counts[value.name()] = 1
+                    else:
+                        counts[value.name()] += 1
+        return counts
 
     @abstractmethod
     def _create_recipe_grid(self):
@@ -194,11 +169,11 @@ class BaseConceptRecipe(ABC):
         return image_grid
 
 
-class FurnaceRecipe(BaseConceptRecipe):
-    CRAFTING_TIME = 10
+class FurnaceRecipe(BaseRecipe):
+    CRAFTING_TIME = 10000
     def __init__(self):
         mat = materials.FurnaceMaterial
-        BaseConceptRecipe.__init__(self, mat)
+        BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = RecipeGrid(Size(3, 3))
@@ -209,11 +184,11 @@ class FurnaceRecipe(BaseConceptRecipe):
         grid.add_all_rows(row1, row2, row1)
         return grid
 
-class CompactStoneRecipe(BaseConceptRecipe):
-    CRAFTING_TIME = 0.1
+class CompactStoneRecipe(BaseRecipe):
+    CRAFTING_TIME = 100
     def __init__(self):
         mat = materials.StoneBrickMaterial
-        BaseConceptRecipe.__init__(self, mat)
+        BaseRecipe.__init__(self, mat)
         self.quantity = 2
 
     def _create_recipe_grid(self):
@@ -223,11 +198,11 @@ class CompactStoneRecipe(BaseConceptRecipe):
         grid.add_all_rows(row, row)
         return grid
 
-class StonePipe(BaseConceptRecipe):
-    CRAFTING_TIME = 1
+class StonePipe(BaseRecipe):
+    CRAFTING_TIME = 1000
     def __init__(self):
         mat = materials.StonePipeMaterial
-        BaseConceptRecipe.__init__(self, mat)
+        BaseRecipe.__init__(self, mat)
         self.quantity = 2
 
     def _create_recipe_grid(self):

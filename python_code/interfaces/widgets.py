@@ -669,6 +669,15 @@ class ItemLabel(Label):
             self.previous_total = self.item.quantity
             self.set_text(str(self.previous_total), (6,6), color=self.item.TEXT_COLOR)
 
+
+class ProgressArrow(Label):
+    def __init__(self, pos, size, **kwargs):
+        super().__init__(pos, size, **kwargs)
+        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
+        arrow_image = pygame.transform.scale(arrow_image, (50,50))
+        a_lbl = Label((140, 50), (50, 50), color=INVISIBLE_COLOR)
+        a_lbl.set_image(arrow_image)
+
 ### ALL OLD STUFF ### could come in handy later
 
 # class Button(Widget):

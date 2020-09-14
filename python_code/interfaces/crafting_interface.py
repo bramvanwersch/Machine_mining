@@ -29,6 +29,9 @@ class CraftingWindow(Window):
         self.__innitiate_widgets()
 
         self._craftable_item_recipe = None
+        self.__crafting = False
+        #current target
+        self.__crafting_time = [0, 0]
 
     def handle_events(self, events):
         """
@@ -45,6 +48,35 @@ class CraftingWindow(Window):
         if self.visible:
             pass
         return leftovers
+
+    def update(self, *args):
+        super().update(*args)
+        if self._craftable_item_recipe != None and not self.__crafting:
+            self.__factory.requested_items = self._craftable_item_recipe.needed_materials.copy()
+            self.__crafting = True
+        elif self.__crafting and self.__check_materials():
+            self.__crafting_time[0] += GAME_TIME.get_time()
+            over_time = self.__crafting_time[1] - self.__crafting_time[0]
+            if over_time <= 0:
+                self.__crafting = False
+                self.__crafting_time[0] = abs(over_time)
+                item = Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
+                self.__factory.inventory.add_items(item, ignore_filter=True)
+                self.__factory.pushed_items.add(item)
+                for item, quantity in self._craftable_item_recipe.needed_materials.items():
+                    self.__factory.inventory.get(item, quantity)
+
+
+    def __check_materials(self):
+        for name, quantity in self._craftable_item_recipe.needed_materials.items():
+            present = False
+            for item in self.__factory.inventory.items:
+                if item.name() == name and item.quantity >= quantity:
+                    present = True
+                    break
+            if not present:
+                return False
+        return True
 
     def __innitiate_widgets(self):
         """
@@ -78,7 +110,16 @@ class CraftingWindow(Window):
                 self._craftable_item_recipe = recipe
                 s1.select(lbl, (0, 0, 0))
                 self.grid_pane.add_recipe(recipe)
-                self._craftable_item_lbl.add_item(Item(recipe._material(), 0))
+                self.__factory.inventory.in_filter.set_whitelist(*recipe.needed_materials.keys())
+                self.__factory.inventory.out_filter.set_whitelist(recipe._material.name())
+                if recipe._material.name() in self.__factory.inventory:
+                    item = self.__factory.inventory.item_pointer(recipe._material.name())
+                else:
+                    item = Item(recipe._material(), 0)
+                    self.__factory.inventory.add_items(item, ignore_filter=True)
+                self._craftable_item_lbl.add_item(item)
+
+                self.__crafting_time[1] = recipe.CRAFTING_TIME
             lbl.set_action(1, recipe_action, values=[self, recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)
             self._inventory_sp.add_widget(lbl)
