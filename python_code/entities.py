@@ -324,9 +324,13 @@ class Worker(MovingEntity):
                 if self.task_queue.task.task_type == "Building":
                     self.__fetch_item(self.task_queue.task.finish_block.name())
                     self.__empty_inventory()
-                if self.task_queue.task.task_type == "Request":
+                elif self.task_queue.task.task_type == "Request":
                     self.__fetch_item(self.task_queue.task.req_material.name())
-
+                elif self.task_queue.task.task_type == "Deliver":
+                    #hack to remove the actual task
+                    task.handed_in = True
+                    self.__empty_inventory()
+                    self.__fetch_item(self.task_queue.task.pushed_item.name(), inventory_block=block)
                 self.__start_task()
             #if no available task add an empty inventory task if there are items
             elif not self.inventory.empty:
@@ -344,12 +348,15 @@ class Worker(MovingEntity):
                 self.task_queue.add(task, block)
                 self.__start_task()
 
-    def __fetch_item(self, block_name):
+    def __fetch_item(self, block_name, inventory_block=None):
         """
         Protocol for getting build materials.
         """
         if not self.inventory.check_item_get(block_name, 1):
-            block = self.board.closest_inventory(self.orig_rect, block_name, deposit=False)
+            if inventory_block == None:
+                block = self.board.closest_inventory(self.orig_rect, block_name, deposit=False)
+            else:
+                block = inventory_block
             if block:
                 task = FetchTask("Fetch", block_name)
                 block.add_task(task)

@@ -24,6 +24,10 @@ class TaskControl:
             elif type == "Request":
                 req_material = kwargs.pop("req_material")
                 task = RequestTask(type, req_material, priority=priority, **kwargs)
+            elif type == "Deliver":
+                print("task delivered")
+                push_item = kwargs.pop("pushed_item")
+                task = DeliverTask(type, push_item, priority=priority, **kwargs)
             else:
                 task = Task(type, priority = priority, **kwargs)
 
@@ -206,3 +210,8 @@ class RequestTask(Task):
     def __init__(self, task_type, req_material, **kwargs):
         super().__init__(task_type, **kwargs)
         self.req_material = req_material
+
+class DeliverTask(Task):
+    def __init__(self, task_type, pushed_item, **kwargs):
+        super().__init__(task_type, **kwargs)
+        self.pushed_item = pushed_item

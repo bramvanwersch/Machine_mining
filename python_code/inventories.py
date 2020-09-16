@@ -128,6 +128,12 @@ class Inventory:
             return self.__container[name]
         return None
 
+    def __str__(self):
+        final_str = ""
+        for item in self.__container.values():
+            final_str += "{}: {}\n".format(item.name(), item.quantity)
+        return final_str[:-1]
+
 class Item:
     """
     Tracks a single item using the __material of the item and a quantity
