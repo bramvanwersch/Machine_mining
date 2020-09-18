@@ -318,22 +318,24 @@ class Worker(MovingEntity):
             task = self.task_control.get_task(self.rect.center)
             if task:
                 self.task_queue.add(task)
+                print(self.task_queue.tasks)
                 self.__start_task()
             elif not self.inventory.empty:
                 self.task_queue.add(EmptyInventoryTask(self))
                 self.__start_task()
 
     def __start_task(self):
-        if self.task_queue.task.block == None:
-            self.task_queue.task.cancel()
+        self.task_queue.task.start(self)
+        if self.task_queue.task.canceled():
+            return
+        path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
+        if path != None:
+            self.path = path
         else:
-            path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
-            if path != None:
-                self.task_queue.task.start(self)
-                self.path = path
-            else:
-                self.task_queue.task.decrease_priority()
-                self.task_queue.next()
+            self.task_queue.task.decrease_priority()
+            self.task_queue.next()
+            if not self.task_queue.empty():
+                self.__start_task()
 
     ##task management functions:
     def __next_task(self):
@@ -350,6 +352,8 @@ class Worker(MovingEntity):
         elif not f_task.handed_in():
             f_task.hand_in(self)
             self.task_control.remove_tasks(f_task)
+        if not self.task_queue.empty():
+            self.__start_task()
 
     def __perform_task(self):
         """

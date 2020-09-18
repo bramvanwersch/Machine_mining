@@ -23,11 +23,9 @@ class TaskControl:
             if type == "Building":
                 task = BuildTask(block, priority = priority, **kwargs)
             elif type == "Request":
-                req_material = kwargs.pop("req_material")
-                task = RequestTask(block, req_material, priority=priority, **kwargs)
+                task = RequestTask(block, priority=priority, **kwargs)
             elif type == "Deliver":
-                push_item = kwargs.pop("pushed_item")
-                task = DeliverTask(block, push_item, priority=priority, **kwargs)
+                task = DeliverTask(block, priority=priority, **kwargs)
             elif type == "Mining":
                 task = MiningTask(block, priority=priority, **kwargs)
             else:
@@ -277,11 +275,12 @@ class BuildTask(Task):
 
     def start(self, entity, **kwargs):
         #first start potentail other tasks
+        if entity.inventory.empty:
+            self.__emptied = True
         if not self.__emptied:
-            if not entity.inventory.empty:
-                task = EmptyInventoryTask(entity)
-                entity.task_queue.add(task)
-                task.start(entity, **kwargs)
+            task = EmptyInventoryTask(entity)
+            entity.task_queue.add(task)
+            task.start(entity, **kwargs)
             self.__emptied = True
         elif not entity.inventory.check_item_get(self.finish_block.name(), 1):
             print("fetching")
@@ -291,6 +290,7 @@ class BuildTask(Task):
         else:
             print("supering")
             super().start(entity, **kwargs)
+        print(self.started_task)
         self.__subtask_count += 1
         if self.__subtask_count > self.MAX_RETRIES:
             self.ccancel()
@@ -304,12 +304,12 @@ class BuildTask(Task):
 
 class FetchTask(Task):
     def __init__(self, entity, req_block_name, inventory_block = None, **kwargs):
+        self.req_block_name = req_block_name
         if inventory_block != None:
             block = inventory_block
         else:
             block = entity.board.closest_inventory(entity.orig_rect, self.req_block_name, deposit=False)
         super().__init__(block, **kwargs)
-        self.req_block_name = req_block_name
 
     def start(self, entity, inventory_block=None, **kwargs):
         if self.block:
@@ -326,6 +326,7 @@ class FetchTask(Task):
             item = self.block.inventory.get(self.req_block_name, 1)
             if item:
                 entity.inventory.add_items(item)
+
 
 class EmptyInventoryTask(Task):
     def __init__(self, entity, **kwargs):
@@ -381,11 +382,12 @@ class DeliverTask(Task):
 
     def start(self, entity, **kwargs):
         # first start potentail other tasks
+        if entity.inventory.empty:
+            self.__emptied = True
         if not self.__emptied:
-            if not entity.inventory.empty:
-                task = EmptyInventoryTask(entity)
-                entity.task_queue.add(task)
-                task.start(entity, **kwargs)
+            task = EmptyInventoryTask(entity)
+            entity.task_queue.add(task)
+            task.start(entity, **kwargs)
             self.__emptied = True
         elif not entity.inventory.check_item_get(self.pushed_item.name(), 1):
             task = FetchTask(entity, self.pushed_item.name(), **kwargs)
