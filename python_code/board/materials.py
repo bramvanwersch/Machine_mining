@@ -2,7 +2,7 @@ import pygame
 from abc import ABC, abstractmethod
 from random import randint
 
-from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, TASK_LIST
+from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
 from python_code.utility.image_handling import image_sheets
 from python_code.board.blocks import *
 
@@ -15,7 +15,7 @@ class BaseMaterial(ABC):
     TASK_TIME = 250
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
-    ALLOWED_TASKS = TASK_LIST
+    ALLOWED_TASKS = MULTI_TASKS
     TEXT_COLOR = (0,0,0)
     #group 0 are not transparant
     TRANSPARANT_GROUP = 0
@@ -57,7 +57,7 @@ class BaseMaterial(ABC):
 
 
 class Air(BaseMaterial):
-    ALLOWED_TASKS = [task for task in TASK_LIST if task not in ["Mining"]]
+    ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Mining"]]
     TASK_TIME = 0
     TRANSPARANT_GROUP = 1
 
@@ -249,7 +249,7 @@ class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
-    ALLOWED_TASKS = ALLOWED_TASKS = [task for task in TASK_LIST if task not in ["Building"]]
+    ALLOWED_TASKS = ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Building"]]
 
 
 class TerminalMaterial(BuildingMaterial):

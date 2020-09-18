@@ -371,7 +371,7 @@ class Board(BoardEventHandler):
         #remove all tasks present
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
-                self.task_control.remove(block, cancel=True)
+                self.task_control.cancel_tasks(block)
 
         #select the full area
         self.selection_image.add_highlight_rectangle(rect, self._mode.color)

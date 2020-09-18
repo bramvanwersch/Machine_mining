@@ -72,7 +72,7 @@ MODES = {MINING : Mode(MINING, "Mining", (9, 108, 128, 100)),
          BUILDING : Mode(BUILDING, "Building", (255, 64, 229, 100)),
          CANCEL : Mode(CANCEL, "Cancel", (255, 0, 0, 100), False),
          SELECTING : Mode(SELECTING, "Selecting", (59, 191, 70, 100), False)}
-TASK_LIST = ["Mining", "Building", "Cancel", "Selecting", "Empty inventory", "Fetch", "Request", "Deliver"]
+MULTI_TASKS = {"Mining" : False, "Building" : False, "Cancel" : False, "Selecting" : False, "Empty inventory" : True, "Fetch" : True, "Request" : True, "Deliver" : True}
 
 #interface control
 CRAFTING = K_c

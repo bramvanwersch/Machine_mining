@@ -6,7 +6,7 @@ class Filter:
         self.__whitelist = set(whitelist)
 
     def allowed(self, item_name):
-        if (len(self.__whitelist) > 0 and item_name not in self.__whitelist) or \
+        if len(self.__whitelist) > 0 and item_name not in self.__whitelist or \
                 item_name in self.__blacklist:
             return False
         return True
@@ -23,8 +23,14 @@ class Inventory:
         self.__container = {}
         self.wheight = [0, max_wheight]
 
-        self.in_filter = in_filter
-        self.out_filter = out_filter
+        if in_filter != None:
+            self.in_filter = in_filter
+        else:
+            self.in_filter = Filter()
+        if out_filter != None:
+            self.out_filter = out_filter
+        else:
+            self.out_filter = Filter()
 
     def get(self, item_name, amnt):
         """
@@ -58,13 +64,13 @@ class Inventory:
         return items
 
     def check_item_get(self, item_name, quantity):
-        if (self.out_filter and not self.out_filter.allowed(item_name)) or \
-                item_name not in self.__container or self.__container[item_name].quantity == 0:
+        if not self.out_filter.allowed(item_name) or \
+                item_name not in self.__container or self.__container[item_name].quantity < quantity:
             return False
         return True
 
     def check_item_deposit(self, item_name):
-        if self.in_filter and not self.in_filter.allowed(item_name):
+        if not self.in_filter.allowed(item_name):
             return False
         return True
 

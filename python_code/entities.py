@@ -2,7 +2,7 @@ from abc import ABC
 
 from python_code.utility.constants import *
 from python_code.inventories import Inventory
-from python_code.tasks import TaskQueue, Task, FetchTask
+from python_code.tasks import TaskQueue, Task, FetchTask, EmptyInventoryTask
 from python_code.utility.event_handling import EventHandler
 
 
@@ -312,119 +312,44 @@ class Worker(MovingEntity):
         elif not self.task_queue.empty():
             self.__perform_task()
         elif self.inventory.full:
-            self.__empty_inventory()
-
-        #request a new task from task control if there are no tasks left
+            self.task_queue.add(EmptyInventoryTask(self))
+            self.__start_task()
         elif self.task_queue.empty():
-            task, block = self.task_control.get_task(self.orig_rect.topleft)
+            task = self.task_control.get_task(self.rect.center)
             if task:
-                self.task_queue.add(task, block)
-                #allow for extra tasks to be added to the stack depending on
-                #the type
-                if self.task_queue.task.task_type == "Building":
-                    self.__fetch_item(self.task_queue.task.finish_block.name())
-                    self.__empty_inventory()
-                elif self.task_queue.task.task_type == "Request":
-                    self.__fetch_item(self.task_queue.task.req_material.name())
-                elif self.task_queue.task.task_type == "Deliver":
-                    #hack to remove the actual task
-                    task.handed_in = True
-                    self.__empty_inventory()
-                    self.__fetch_item(self.task_queue.task.pushed_item.name(), inventory_block=block)
+                self.task_queue.add(task)
                 self.__start_task()
-            #if no available task add an empty inventory task if there are items
             elif not self.inventory.empty:
-                self.__empty_inventory()
-
-    def __empty_inventory(self):
-        """
-        Protocol for emptying an inventory into the closest inventory
-        """
-        if not self.inventory.empty:
-            block = self.board.closest_inventory(self.orig_rect, *self.inventory.item_names)
-            task = Task("Empty inventory")
-            if block:
-                block.add_task(task)
-                self.task_queue.add(task, block)
+                self.task_queue.add(EmptyInventoryTask(self))
                 self.__start_task()
 
-    def __fetch_item(self, block_name, inventory_block=None):
-        """
-        Protocol for getting build materials.
-        """
-        if not self.inventory.check_item_get(block_name, 1):
-            if inventory_block == None:
-                block = self.board.closest_inventory(self.orig_rect, block_name, deposit=False)
-            else:
-                block = inventory_block
-            if block:
-                task = FetchTask("Fetch", block_name)
-                block.add_task(task)
-                self.task_queue.add(task, block)
-
-##task management functions:
     def __start_task(self):
-        """
-        Called to start up the current task in the task_queue
-        """
-        #do prelimenary checks that can rule out tasks
-        if self.task_queue.task.task_type == "Building":
-            #make sure that item retrieval was succesfull
-            required_item = self.task_queue.task.finish_block.name()
-            if not self.inventory.check_item_get(required_item, 1):
-                self.task_queue.task.increase_priority()
-                self.task_queue.next()
-                return
-        elif self.task_queue.task.task_type == "Request":
-            required_material = self.task_queue.task.req_material.name()
-            if not self.inventory.check_item_get(required_material, 1):
-                self.task_queue.task.increase_priority()
-                self.task_queue.next()
-                return
-        path = self.board.pf.get_path(self.orig_rect,self.task_queue.task_block.rect)
-        # print(self.number, path)
-        if path != None:
-            self.task_queue.task.start()
-            self.path = path
+        if self.task_queue.task.block == None:
+            self.task_queue.task.cancel()
         else:
-            self.task_queue.task.increase_priority()
-            self.task_queue.next()
+            path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
+            if path != None:
+                self.task_queue.task.start(self)
+                self.path = path
+            else:
+                self.task_queue.task.decrease_priority()
+                self.task_queue.next()
 
+    ##task management functions:
     def __next_task(self):
-        """
-        For progressing to the next task in the queue.
 
-        It is made sure certain last things are handled for certain task types
-        as well as starting a new task if one is available in the queue
-        """
         f_task, f_block = self.task_queue.next()
         # make sure that the entity stops when the task is sudenly finshed
         self.speed.x = self.speed.y = 0
         #make sure to move the last step if needed, so the worker does not potentially stop in a block
         if len(self.path) > 0:
             self.path = self.path[-1]
-        elif not f_task.handed_in:
-            if f_task.task_type == "Mining":
-                self.board.remove_blocks([[f_block]])
-                self.inventory.add_blocks(f_block)
-            elif f_task.task_type == "Building":
-                self.board.add_blocks(f_task.finish_block, update=True)
-                self.inventory.get(f_task.finish_block.name(), 1)
-                self.inventory.add_blocks(*f_task.removed_blocks)
-            elif f_task.task_type == "Empty inventory":
-                items = self.inventory.get_all_items()
-                f_block.add(*items)
-            elif f_task.task_type == "Fetch":
-                item = f_block.inventory.get(f_task.req_block_name, 1)
-                if item:
-                    self.inventory.add_items(item)
-            elif f_task.task_type == "Request":
-                f_block.inventory.add_materials(f_task.req_material)
-            self.task_control.remove(f_block)
-            f_task.handed_in = True
-        if not self.task_queue.empty():
-            path = self.board.pf.get_path(self.orig_rect, self.task_queue.task_block.rect)
-            self.__start_task()
+        elif f_task.canceled():
+            #cannot be completed so decrease priority
+            f_task.decrease_priority()
+        elif not f_task.handed_in():
+            f_task.hand_in(self)
+            self.task_control.remove_tasks(f_task)
 
     def __perform_task(self):
         """

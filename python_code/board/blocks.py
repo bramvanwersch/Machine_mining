@@ -1,7 +1,7 @@
 import pygame
 from abc import ABC
 
-from python_code.utility.constants import BLOCK_SIZE
+from python_code.utility.constants import BLOCK_SIZE, MULTI_TASKS
 
 
 class BaseBlock(ABC):
@@ -13,7 +13,6 @@ class BaseBlock(ABC):
     ID = 0
     def __init__(self, pos, id=None, action=None):
         self.rect = pygame.Rect((*pos, *self.SIZE))
-        self.task = None
         self.__action_function = action
         if id == None:
             self.id = self.ID
@@ -61,31 +60,6 @@ class BaseBlock(ABC):
         :return: a string
         """
         return self.material.name()
-
-    def add_task(self, task):
-        """
-        Can hold a task from each type
-
-        :param task: a Task object
-        :return: a boolean signifying if the task was added or not
-        """
-        if task.task_type in self.material.ALLOWED_TASKS:
-            self.task = task
-            task.task_progress = [0, self.material.task_time()]
-            return True
-        return False
-
-    def remove_task(self):
-        """
-        remove a task from a block
-
-        :return: a list of task types that are removed.
-        """
-        if self.task != None:
-            task = self.task
-            self.task = None
-            return task
-        return None
 
     def __eq__(self, other):
         """
