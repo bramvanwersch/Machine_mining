@@ -98,8 +98,13 @@ class TaskControl:
 
         for task_dict in sorted_task_dicts:
             for tasks in sorted(task_dict.values(), key=lambda x: self.__best_task_sort_tuple(task_dict, worker_pos)):
-                # if no materials are avaialable skip the building task
-                task = tasks[0]
+                task = None
+                for t in tasks:
+                    if not t.started_task:
+                        task = t
+                        break
+                if task == None:
+                    continue
                 if isinstance(task, BuildTask):
                     #TODO make this a total inventory of all inventories on the map
                     if not self.__terminal_inv.check_item_get(task.finish_block.name(), 1):
@@ -218,15 +223,14 @@ class Task:
         self.__canceled = False
 
     def start(self, entity, **kwargs):
-        if not self.started_task:
-            self.started_task = True
-            self._set_task_progress()
+        self.started_task = True
+        self._set_task_progress()
 
     def _set_task_progress(self):
         self.task_progress = [0, self.block.material.task_time()]
 
-    def cancel(self):
-        self.__canceled = True
+    def cancel(self, value=True):
+        self.__canceled = value
 
     def decrease_priority(self, amnt = -1):
         self.priority += amnt
@@ -253,6 +257,10 @@ class Task:
         """
         return self.task_progress[0] >= self.task_progress[1] or self.__handed_in or self.__canceled
 
+    def __str__(self):
+        return "Task object {}:\nBlock: {}\nPriority: {}\nStarted: {}\nProgress: {}\nFinished: {}".\
+            format(super().__str__(), self.block, self.priority, self.started_task, self.task_progress, self.finished)
+
 
 class MiningTask(Task):
 
@@ -275,25 +283,25 @@ class BuildTask(Task):
 
     def start(self, entity, **kwargs):
         #first start potentail other tasks
-        if entity.inventory.empty:
-            self.__emptied = True
-        if not self.__emptied:
-            task = EmptyInventoryTask(entity)
-            entity.task_queue.add(task)
-            task.start(entity, **kwargs)
-            self.__emptied = True
-        elif not entity.inventory.check_item_get(self.finish_block.name(), 1):
-            print("fetching")
+        # if entity.inventory.empty:
+        #     self.__emptied = True
+        # if not self.__emptied:
+        #     task = EmptyInventoryTask(entity)
+        #     entity.task_queue.add(task)
+        #     task.start(entity, **kwargs)
+        #     self.__emptied = True
+        if not entity.inventory.check_item_get(self.finish_block.name(), 1):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
         else:
-            print("supering")
             super().start(entity, **kwargs)
-        print(self.started_task)
         self.__subtask_count += 1
         if self.__subtask_count > self.MAX_RETRIES:
-            self.ccancel()
+            self.cancel()
+
+    def _set_task_progress(self):
+        self.task_progress = [0, self.finish_block.material.task_time() + sum(b.material.task_time() for b in self.removed_blocks)]
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
@@ -369,7 +377,10 @@ class RequestTask(Task):
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
-        self.block.inventory.add_materials(self.req_material)
+        item = entity.get(self.req_material.name(), 1)
+        self.block.add_items(item)
+        print(str(self.block.inventory))
+
 
 
 class DeliverTask(Task):

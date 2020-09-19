@@ -185,7 +185,7 @@ class Board(BoardEventHandler):
             for block in row:
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
-                self.task_control.remove(block)
+                self.task_control.cancel_tasks(block)
                 self.matrix[row][column] = AirBlock(block.rect.topleft,
                                                 materials.Air())
 

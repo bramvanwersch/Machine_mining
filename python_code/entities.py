@@ -318,7 +318,6 @@ class Worker(MovingEntity):
             task = self.task_control.get_task(self.rect.center)
             if task:
                 self.task_queue.add(task)
-                print(self.task_queue.tasks)
                 self.__start_task()
             elif not self.inventory.empty:
                 self.task_queue.add(EmptyInventoryTask(self))
@@ -326,13 +325,17 @@ class Worker(MovingEntity):
 
     def __start_task(self):
         self.task_queue.task.start(self)
-        if self.task_queue.task.canceled():
+
+        if self.task_queue.task.block == None:
+        #     print(str(self.task_queue.task))
+            self.task_queue.task.started_task = False
             return
         path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
         if path != None:
             self.path = path
         else:
             self.task_queue.task.decrease_priority()
+            self.task_queue.task.started_task = False
             self.task_queue.next()
             if not self.task_queue.empty():
                 self.__start_task()
@@ -349,6 +352,7 @@ class Worker(MovingEntity):
         elif f_task.canceled():
             #cannot be completed so decrease priority
             f_task.decrease_priority()
+            f_task.cancel(False)
         elif not f_task.handed_in():
             f_task.hand_in(self)
             self.task_control.remove_tasks(f_task)
