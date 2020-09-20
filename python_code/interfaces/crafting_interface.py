@@ -53,6 +53,7 @@ class CraftingWindow(Window):
         super().update(*args)
         if self._craftable_item_recipe != None and not self.__crafting:
             self.__factory.requested_items = self._craftable_item_recipe.needed_materials.copy()
+            print(self.__factory.requested_items)
             self.__crafting = True
         elif self.__crafting and self.__check_materials():
             self.__crafting_time[0] += GAME_TIME.get_time()
@@ -65,7 +66,6 @@ class CraftingWindow(Window):
                 self.__factory.pushed_items.add(item)
                 for item, quantity in self._craftable_item_recipe.needed_materials.items():
                     self.__factory.inventory.get(item, quantity)
-
 
     def __check_materials(self):
         for name, quantity in self._craftable_item_recipe.needed_materials.items():
@@ -107,11 +107,13 @@ class CraftingWindow(Window):
 
             lbl = Label((0,0), (30,30), color=self.COLOR[:-1], image=background)
             def recipe_action(self, recipe, lbl, s1):
+                self.__crafting = False
                 self._craftable_item_recipe = recipe
                 s1.select(lbl, (0, 0, 0))
                 self.grid_pane.add_recipe(recipe)
                 self.__factory.inventory.in_filter.set_whitelist(*recipe.needed_materials.keys())
                 self.__factory.inventory.out_filter.set_whitelist(recipe._material.name())
+                #show an item in the label
                 if recipe._material.name() in self.__factory.inventory:
                     item = self.__factory.inventory.item_pointer(recipe._material.name())
                 else:

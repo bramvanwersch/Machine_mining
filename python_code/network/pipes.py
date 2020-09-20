@@ -92,7 +92,6 @@ class Network:
             if destination_node.inventory.check_item_deposit(item.name()):
                 node.pushed_items.remove(item)
                 self.task_control.add("Deliver", node.blocks[0][0], pushed_item = item)
-                print(str(node.inventory))
 
     def check_connected_storage_get(self, node):
         storage_nodes = []
