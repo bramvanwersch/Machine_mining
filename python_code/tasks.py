@@ -272,24 +272,16 @@ class MiningTask(Task):
 
 class BuildTask(Task):
     #amount of times this task can retry the subtasks until it is
-    MAX_RETRIES = 10
+    MAX_RETRIES = 5
     def __init__(self, block, finish_block, original_group, removed_blocks, **kwargs):
         super().__init__(block, **kwargs)
         self.finish_block = finish_block
         self.original_group = original_group
         self.removed_blocks = [block for block in removed_blocks if block.name() != "Air"]
         self.__subtask_count = 0
-        self.__emptied = False
 
     def start(self, entity, **kwargs):
-        #first start potentail other tasks
-        # if entity.inventory.empty:
-        #     self.__emptied = True
-        # if not self.__emptied:
-        #     task = EmptyInventoryTask(entity)
-        #     entity.task_queue.add(task)
-        #     task.start(entity, **kwargs)
-        #     self.__emptied = True
+        self.started_task = True
         if not entity.inventory.check_item_get(self.finish_block.name(), 1):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
             entity.task_queue.add(task)
@@ -311,8 +303,9 @@ class BuildTask(Task):
 
 
 class FetchTask(Task):
-    def __init__(self, entity, req_block_name, inventory_block = None, **kwargs):
+    def __init__(self, entity, req_block_name, inventory_block = None, quantity=1, **kwargs):
         self.req_block_name = req_block_name
+        self.quantity = quantity
         if inventory_block != None:
             block = inventory_block
         else:
@@ -331,7 +324,7 @@ class FetchTask(Task):
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
         if self.block:
-            item = self.block.inventory.get(self.req_block_name, 1)
+            item = self.block.inventory.get(self.req_block_name, self.quantity)
             if item:
                 entity.inventory.add_items(item)
 
@@ -365,6 +358,7 @@ class RequestTask(Task):
         self.__subtask_count = 0
 
     def start(self, entity, **kwargs):
+        self.started_task = True
         if not entity.inventory.check_item_get(self.req_material.name(), 1):
             task = FetchTask(entity, self.req_material.name(), **kwargs)
             entity.task_queue.add(task)
@@ -377,35 +371,33 @@ class RequestTask(Task):
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
-        item = entity.get(self.req_material.name(), 1)
-        self.block.add_items(item)
-        print(str(self.block.inventory))
-
+        item = entity.inventory.get(self.req_material.name(), 1)
+        self.block.inventory.add_items(item)
 
 
 class DeliverTask(Task):
-    MAX_RETRIES = 10
+    MAX_RETRIES = 5
     def __init__(self, block, pushed_item, **kwargs):
         super().__init__(block, **kwargs)
         self.pushed_item = pushed_item
         self.__subtask_count = 0
-        self.__emptied = False
+        self.final_inventory = None
 
     def start(self, entity, **kwargs):
         # first start potentail other tasks
-        if entity.inventory.empty:
-            self.__emptied = True
-        if not self.__emptied:
-            task = EmptyInventoryTask(entity)
-            entity.task_queue.add(task)
-            task.start(entity, **kwargs)
-            self.__emptied = True
-        elif not entity.inventory.check_item_get(self.pushed_item.name(), 1):
-            task = FetchTask(entity, self.pushed_item.name(), **kwargs)
+        self.started_task = True
+        if not entity.inventory.check_item_get(self.pushed_item.name(), 1):
+            task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
         else:
+            self.final_inventory = entity.board.closest_inventory(entity.orig_rect, self.pushed_item.name(), deposit=True)
             super().start(entity, **kwargs)
         self.__subtask_count += 1
         if self.__subtask_count > self.MAX_RETRIES:
             self.cancel()
+
+    def hand_in(self, entity, **kwargs):
+        super().hand_in(entity, **kwargs)
+        item = entity.inventory.get(self.pushed_item.name(), self.pushed_item.quantity)
+        self.final_inventory.inventory.add_items(item)
