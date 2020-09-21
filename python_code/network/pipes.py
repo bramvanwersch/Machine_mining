@@ -28,69 +28,69 @@ class Network:
     def request_items(self, node):
         storage_nodes = self.check_connected_storage_get(node)
         for s_node in storage_nodes:
-            items = self.__retrieve_from_storage(node.requested_items, s_node)
+            items = self.__retrieve_with_pipes(node, s_node)
             node.inventory.add_items(*items)
             if len(node.requested_items) == 0:
                 return
         for a_node in self.nodes:
             if not hasattr(a_node, "inventory"):
                 continue
-            self.__retrieve_from_task(node, a_node)
+            self.__retrieve_with_task(node, a_node)
             if len(node.requested_items) == 0:
                 break
 
-    def __retrieve_from_storage(self, requested_items, node):
+    def __retrieve_with_pipes(self, destination_node, node):
         items = []
-        item_quantities = [item for item in requested_items.items()]
+        tot_len = len(destination_node.requested_items) - 1
         # TODO make a system to make this time dependant based on pipe lenght
-        for item_name, quantity in item_quantities:
+        for index, item_name in enumerate(destination_node.requested_items[::-1]):
             #check if at least one item is present
             if node.inventory.check_item_get(item_name, 1):
-                fetched_item = c_noce.inventory.get(item_name, quantity)
-                if item_name.quantity == fetched_item.quantity:
-                    del node.requested_items[item_name]
+                fetched_item = node.inventory.get(item_name, quantity)
+                if destination_node.requested_items[tot_len - index].quantity == fetched_item.quantity:
+                    del destination_node.requested_items[tot_len - index]
                 else:
-                    requested_items[item_name] -= fetched_item.quantity
+                    destination_node.requested_items[tot_len - index].quantity -= fetched_item.quantity
                 items.append(fetched_item)
         return items
 
-    def __retrieve_from_task(self, destination_node, node):
-        items_quantities = [item for item in destination_node.requested_items.items()]
-        for item_name, quantity in items_quantities:
-            if node.inventory.check_item_get(item_name, 1):
+    def __retrieve_with_task(self, destination_node, node):
+        tot_len = len(destination_node.requested_items) - 1
+        for index, item in enumerate(destination_node.requested_items[::-1]):
+            if node.inventory.check_item_get(item.name(), 1):
                 #take top left block as target
-                self.task_control.add("Request", destination_node.blocks[0][0], req_material=getattr(materials, item_name)())
-                destination_node.requested_items[item_name] -= 1
-                if destination_node.requested_items[item_name] == 0:
-                    del destination_node.requested_items[item_name]
+                self.task_control.add("Request", destination_node.blocks[0][0], req_material=item)
+                #request all items at once
+                del destination_node.requested_items[tot_len - index]
 
     def push_items(self, node):
         storage_nodes = self.check_connected_storage_get(node)
         for s_node in storage_nodes:
-            self.__push_items_to_storage(s_node, node)
+            self.__push_items_with_pipe(s_node, node)
             if len(node.pushed_items) == 0:
                 return
         for a_node in self.nodes:
-            if not hasattr(node, "inventory"):
+            if not hasattr(a_node, "inventory"):
                 continue
             self.__push_with_task(a_node, node)
             if len(node.pushed_items) == 0:
                 break
 
-    def __push_items_to_storage(self, destination_node, node):
-        items_copy = node.pushed_items.copy()
-        for item in items_copy:
+    def __push_items_with_pipe(self, destination_node, node):
+        tot_len = len(node.pushed_items) - 1
+        for index, item in enumerate(node.pushed_items[::-1]):
             #TODO make this time dependant on pipe lenght
             if destination_node.inventory.check_item_deposit(item):
                 destination_node.inventory.add_items(item)
-                node.pushed_items.remove(item)
+                del node.pushed_items[tot_len - index]
                 node.inventory.get(item.name(), item.quantity)
 
     def __push_with_task(self, destination_node, node):
-        items_copy = node.pushed_items.copy()
-        for item in items_copy:
+        tot_len = len(node.pushed_items) - 1
+        for index, item in enumerate(node.pushed_items[::-1]):
+            print(item)
             if destination_node.inventory.check_item_deposit(item.name()):
-                node.pushed_items.remove(item)
+                del node.pushed_items[tot_len - index]
                 self.task_control.add("Deliver", node.blocks[0][0], pushed_item = item)
 
     def check_connected_storage_get(self, node):
@@ -186,9 +186,10 @@ class Network:
 class NetworkNode:
     def __init__(self):
         self.connected_edges = {}
-        #dictionary with keys of item names and the values being the number of that item
-        self.requested_items = {}
-        self.pushed_items = set()
+        #a list of item objects that are requested to be delivered
+        self.requested_items = []
+        #items that are pushed to the be pushed away
+        self.pushed_items = []
 
     def __contains__(self, edge):
         return edge in self.connected_edges

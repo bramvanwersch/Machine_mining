@@ -155,3 +155,6 @@ class Item:
         :return:
         """
         return getattr(self.material, item)
+
+    def copy(self):
+        return Item(self.material, self.quantity)

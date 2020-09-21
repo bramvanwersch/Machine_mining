@@ -4,6 +4,7 @@ from abc import abstractmethod, ABC
 from python_code.board import materials
 from python_code.utility.utilities import Size
 from python_code.board import buildings
+from python_code.inventories import Item
 
 
 class RecipeBook:
@@ -123,6 +124,7 @@ class BaseRecipe(ABC):
     def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
         self._material = material
+        # list of item objects
         self.needed_materials = self.__count_grid()
         self.quantity = 1
 
@@ -135,7 +137,8 @@ class BaseRecipe(ABC):
                         counts[value.name()] = 1
                     else:
                         counts[value.name()] += 1
-        return counts
+        items = [Item(getattr(materials, name)(), value) for name, value in counts.items()]
+        return items
 
     @abstractmethod
     def _create_recipe_grid(self):
@@ -170,7 +173,7 @@ class BaseRecipe(ABC):
 
 
 class FurnaceRecipe(BaseRecipe):
-    CRAFTING_TIME = 10000
+    CRAFTING_TIME = 1000
     def __init__(self):
         mat = materials.FurnaceMaterial
         BaseRecipe.__init__(self, mat)

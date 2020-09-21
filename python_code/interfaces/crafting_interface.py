@@ -52,8 +52,10 @@ class CraftingWindow(Window):
     def update(self, *args):
         super().update(*args)
         if self._craftable_item_recipe != None and not self.__crafting:
-            self.__factory.requested_items = self._craftable_item_recipe.needed_materials.copy()
-            print(self.__factory.requested_items)
+            self.__cancel_requested_items()
+            self.__crafting_time[0] = 0
+            self.__factory.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_materials]
+            print([(item.name(), item.quantity) for item in self.__factory.requested_items])
             self.__crafting = True
         elif self.__crafting and self.__check_materials():
             self.__crafting_time[0] += GAME_TIME.get_time()
@@ -63,20 +65,34 @@ class CraftingWindow(Window):
                 self.__crafting_time[0] = abs(over_time)
                 item = Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
                 self.__factory.inventory.add_items(item, ignore_filter=True)
-                self.__factory.pushed_items.add(item)
-                for item, quantity in self._craftable_item_recipe.needed_materials.items():
-                    self.__factory.inventory.get(item, quantity)
+                self.__factory.pushed_items.append(item)
+                for item in self._craftable_item_recipe.needed_materials:
+                    self.__factory.inventory.get(item.name(), item.quantity)
 
     def __check_materials(self):
-        for name, quantity in self._craftable_item_recipe.needed_materials.items():
+        for n_item in self._craftable_item_recipe.needed_materials:
             present = False
             for item in self.__factory.inventory.items:
-                if item.name() == name and item.quantity >= quantity:
+                if item.name() == n_item.name() and item.quantity >= n_item.quantity:
                     present = True
                     break
             if not present:
                 return False
         return True
+
+    def __cancel_requested_items(self):
+        """
+        Add items to a list that will remove items from the inventory regardless of
+        filters
+        """
+        pass
+        # delivered_materials = self._craftable_item_recipe.needed_materials.copy()
+        # for index, item in enumerate(self.__factory.requested_items):
+        #     for d_index, d_item in enumerate(delivered_materials):
+        #         if d_item.name() == item.name():
+        #             delivered_materials[d_index].quantity -= self.__factory.requested_items[index].quantity
+        #             if delivered_materials[d_index].quantity > 0:
+        #                 self.__factory.pushed_items.append(item)
 
     def __innitiate_widgets(self):
         """
@@ -111,7 +127,7 @@ class CraftingWindow(Window):
                 self._craftable_item_recipe = recipe
                 s1.select(lbl, (0, 0, 0))
                 self.grid_pane.add_recipe(recipe)
-                self.__factory.inventory.in_filter.set_whitelist(*recipe.needed_materials.keys())
+                self.__factory.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_materials])
                 self.__factory.inventory.out_filter.set_whitelist(recipe._material.name())
                 #show an item in the label
                 if recipe._material.name() in self.__factory.inventory:

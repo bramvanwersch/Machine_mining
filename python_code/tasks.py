@@ -359,7 +359,8 @@ class RequestTask(Task):
 
     def start(self, entity, **kwargs):
         self.started_task = True
-        if not entity.inventory.check_item_get(self.req_material.name(), 1):
+        #TODO make this dependant on what the entity can cary
+        if not entity.inventory.check_item_get(self.req_material.name(), self.req_material.quantity):
             task = FetchTask(entity, self.req_material.name(), **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
