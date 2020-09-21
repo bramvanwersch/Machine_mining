@@ -59,7 +59,7 @@ class Network:
         for index, item in enumerate(destination_node.requested_items[::-1]):
             if node.inventory.check_item_get(item.name(), 1):
                 #take top left block as target
-                self.task_control.add("Request", destination_node.blocks[0][0], req_material=item)
+                self.task_control.add("Request", destination_node.blocks[0][0], req_item=item)
                 #request all items at once
                 del destination_node.requested_items[tot_len - index]
 
@@ -88,7 +88,6 @@ class Network:
     def __push_with_task(self, destination_node, node):
         tot_len = len(node.pushed_items) - 1
         for index, item in enumerate(node.pushed_items[::-1]):
-            print(item)
             if destination_node.inventory.check_item_deposit(item.name()):
                 del node.pushed_items[tot_len - index]
                 self.task_control.add("Deliver", node.blocks[0][0], pushed_item = item)

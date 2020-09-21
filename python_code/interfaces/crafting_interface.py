@@ -55,7 +55,6 @@ class CraftingWindow(Window):
             self.__cancel_requested_items()
             self.__crafting_time[0] = 0
             self.__factory.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_materials]
-            print([(item.name(), item.quantity) for item in self.__factory.requested_items])
             self.__crafting = True
         elif self.__crafting and self.__check_materials():
             self.__crafting_time[0] += GAME_TIME.get_time()
@@ -85,14 +84,13 @@ class CraftingWindow(Window):
         Add items to a list that will remove items from the inventory regardless of
         filters
         """
-        pass
-        # delivered_materials = self._craftable_item_recipe.needed_materials.copy()
-        # for index, item in enumerate(self.__factory.requested_items):
-        #     for d_index, d_item in enumerate(delivered_materials):
-        #         if d_item.name() == item.name():
-        #             delivered_materials[d_index].quantity -= self.__factory.requested_items[index].quantity
-        #             if delivered_materials[d_index].quantity > 0:
-        #                 self.__factory.pushed_items.append(item)
+        delivered_materials = [item.copy() for item in self._craftable_item_recipe.needed_materials]
+        for index, item in enumerate(self.__factory.requested_items):
+            for d_index, d_item in enumerate(delivered_materials):
+                if d_item.name() == item.name():
+                    delivered_materials[d_index].quantity -= self.__factory.requested_items[index].quantity
+                    if delivered_materials[d_index].quantity > 0:
+                        self.__factory.pushed_items.append(delivered_materials[d_index])
 
     def __innitiate_widgets(self):
         """
