@@ -231,6 +231,8 @@ class Task(ABC):
         self.task_progress = [0, self.block.material.task_time()]
 
     def cancel(self, value=True):
+        if value == False:
+            self.started_task = False
         self.__canceled = value
 
     def decrease_priority(self, amnt = -1):
@@ -347,7 +349,7 @@ class FetchTask(Task):
         super().hand_in(entity, **kwargs)
         if self.block:
             item = self.block.inventory.get(self.req_block_name, self.quantity)
-            if item:
+            if item and item.quantity == self.quantity:
                 entity.inventory.add_items(item)
 
 
