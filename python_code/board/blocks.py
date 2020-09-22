@@ -65,7 +65,7 @@ class BaseBlock(ABC):
         """
         Method used when == is called using this object
 
-        :param other: anything. But the expected value is a string
+        :param other: a string that is the name of a block
         :return: a boolean
         """
         return other == self.material.name()

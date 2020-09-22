@@ -117,8 +117,8 @@ class Board(BoardEventHandler):
                         surrounding_blocks = self.surrounding_blocks(change_block)
                         self.pipe_network.remove(change_block)
                         for block in surrounding_blocks:
-                            if isinstance(block, NetworkBlock):
-                                self.pipe_network.configure_block(block, self.surrounding_blocks(block))
+                            if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
+                                self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
                                 self.add_blocks(block)
 
     def add_blocks(self, *blocks, update=False):
@@ -128,13 +128,13 @@ class Board(BoardEventHandler):
 
         :param blocks: one or more BasicBlock objects or inheriting classes
         """
-        update_blocks = None
+        update_blocks = []
         for block in blocks:
             if isinstance(block, Building):
                 self.add_building(block)
             else:
                 if isinstance(block, NetworkBlock):
-                    update_blocks = self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update)
+                    update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update))
                     if update:
                         self.pipe_network.add_pipe(block)
                 # remove the highlight
@@ -147,7 +147,7 @@ class Board(BoardEventHandler):
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
                 self.matrix[row][column] = block
-        if update_blocks != None:
+        if len(update_blocks) > 0:
             self.add_blocks(*update_blocks)
 
     def add_building(self, building_instance, draw = True):
@@ -162,6 +162,7 @@ class Board(BoardEventHandler):
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
         self.__buildings[building_instance.id] = building_rect
+        update_blocks = []
         if isinstance(building_instance, NetworkNode):
             self.pipe_network.add_node(building_instance)
         for row_i, row in enumerate(building_instance.blocks):
@@ -172,6 +173,10 @@ class Board(BoardEventHandler):
                     self.foreground_image.add_image(block.rect, block.surface)
                 if isinstance(block, ContainerBlock):
                     self.inventorie_blocks.append(block)
+                    update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=True))
+        if len(update_blocks) > 0:
+            update_blocks = [block for block in update_blocks if not isinstance(block, ContainerBlock)]
+            self.add_blocks(*update_blocks)
 
     def remove_building(self, block):
         rect = self.__buildings[block.id]
@@ -186,8 +191,16 @@ class Board(BoardEventHandler):
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
                 self.task_control.cancel_tasks(block)
+                change_block = self.matrix[row][column]
                 self.matrix[row][column] = AirBlock(block.rect.topleft,
                                                 materials.Air())
+                if isinstance(block, NetworkBlock):
+                    surrounding_blocks = self.surrounding_blocks(change_block)
+                    self.pipe_network.remove(change_block)
+                    for block in surrounding_blocks:
+                        if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
+                            self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
+                            self.add_blocks(block)
 
     def closest_inventory(self, start, *item_names, deposit=True):
         """

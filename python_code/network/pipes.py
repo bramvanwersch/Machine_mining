@@ -1,5 +1,5 @@
 from python_code.utility.image_handling import image_sheets
-from python_code.board.blocks import ContainerBlock
+from python_code.board.blocks import ContainerBlock, NetworkBlock
 from python_code.utility.constants import BLOCK_SIZE
 from python_code.utility.utilities import manhattan_distance
 from python_code.board import materials
@@ -106,9 +106,9 @@ class Network:
         images.extend(image_sheets["materials"].images_at_rectangle((0, 10, 70, 10), color_key=(255,255,255))[0])
         return {self.IMAGE_NAMES[i] : images[i] for i in range(len(images))}
 
-    def configure_block(self, block, surrounding_blocks, update=False, add=False, remove=False):
+    def configure_block(self, block, surrounding_blocks, update=False, remove=False):
         """
-        Configure the pipe image of a newly added pipe and return a list of r=surrounding pipes that
+        Configure the pipe image of a newly added pipe and return a list of surrounding pipes that
         need to be reevaluated if update is True
 
         :param block: a Block instance
@@ -117,14 +117,15 @@ class Network:
         update
         :return: None or a list Blocks that need an update to theire surface
         """
-        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if surrounding_blocks[i] == block or \
-                             isinstance(surrounding_blocks[i], ContainerBlock)]
+        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], NetworkBlock)]
         direction_indexes = "".join(direction_indexes)
         image_name = "{}_{}".format(len(direction_indexes), direction_indexes)
-        block.surface = self.__pipe_images[image_name]
+        if not remove:
+            block.surface = self.__pipe_images[image_name]
         if update:
-            return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if surrounding_blocks[i] == block]
-        return None
+            return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], NetworkBlock)\
+                    and not isinstance(surrounding_blocks[i], ContainerBlock)]
+        return []
 
     def add_pipe(self, block):
         connected_edges = []
