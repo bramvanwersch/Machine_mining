@@ -143,7 +143,7 @@ class Network:
             new_edge.add_block(block)
             #merge any remaining edges that are also connected
             for rem_edge in connected_edges:
-                new_edge.add_pipe(rem_edge)
+                new_edge.add_edge(rem_edge)
                 self.__remove_edge(edge)
         #make sure that new pipes are potentially connected to nodes
         for node in self.nodes:
@@ -223,7 +223,7 @@ class NetworkEdge:
 
     def is_node_adjacent(self, node):
         for row in node.blocks:
-            for block in node:
+            for block in row:
                 if self.can_add(block):
                     return True
         return False

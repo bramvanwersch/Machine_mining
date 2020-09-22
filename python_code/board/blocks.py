@@ -105,7 +105,7 @@ class NetworkBlock(Block):
         self.network_group = 1
 
 
-class ContainerBlock(Block):
+class ContainerBlock(NetworkBlock):
     """
     Block that has an inventory
     """
