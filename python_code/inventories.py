@@ -158,3 +158,6 @@ class Item:
 
     def copy(self):
         return Item(self.material, self.quantity)
+
+    def __str__(self):
+        return "{}: {}".format(self.material.name(), self.quantity)

@@ -3,6 +3,8 @@ from python_code.board.blocks import ContainerBlock, NetworkBlock
 from python_code.utility.constants import BLOCK_SIZE
 from python_code.utility.utilities import manhattan_distance
 from python_code.board import materials
+from python_code.network.network_tasks import EdgeTaskQueue
+
 
 class Network:
     # made as follows:
@@ -24,12 +26,16 @@ class Network:
                 self.request_items(node)
             if len(node.pushed_items) > 0:
                 self.push_items(node)
+        for edge in self.edges:
+            edge.task_queue.work_tasks()
 
     def request_items(self, node):
-        storage_nodes = self.check_connected_storage_get(node)
-        for s_node in storage_nodes:
+        storage_connections = self.check_storage_connections(node)
+        for s_node, distance, edge in storage_connections:
             items = self.__retrieve_with_pipes(node, s_node)
-            node.inventory.add_items(*items)
+            for item in items:
+                if item != None:
+                    edge.task_queue.add_task("Request", node, distance, item=item, target_node=s_node)
             if len(node.requested_items) == 0:
                 return
         for a_node in self.nodes:
@@ -64,9 +70,12 @@ class Network:
                 del destination_node.requested_items[tot_len - index]
 
     def push_items(self, node):
-        storage_nodes = self.check_connected_storage_get(node)
-        for s_node in storage_nodes:
-            self.__push_items_with_pipe(s_node, node)
+        storage_connections = self.check_storage_connections(node)
+        for s_node, distance, edge in storage_connections:
+            items = self.__push_with_pipe(s_node, node, distance)
+            for item in items:
+                if item != None:
+                    edge.task_queue.add_task("Deliver", node, distance, item=item, target_node=s_node)
             if len(node.pushed_items) == 0:
                 return
         for a_node in self.nodes:
@@ -76,14 +85,16 @@ class Network:
             if len(node.pushed_items) == 0:
                 break
 
-    def __push_items_with_pipe(self, destination_node, node):
+    def __push_with_pipe(self, destination_node, node, distance):
         tot_len = len(node.pushed_items) - 1
+        items = []
         for index, item in enumerate(node.pushed_items[::-1]):
             #TODO make this time dependant on pipe lenght
             if destination_node.inventory.check_item_deposit(item.name()):
-                destination_node.inventory.add_items(item)
+                get_item = node.inventory.get(item.name(), item.quantity)
+                items.append(get_item)
                 del node.pushed_items[tot_len - index]
-                node.inventory.get(item.name(), item.quantity)
+        return items
 
     def __push_with_task(self, destination_node, node):
         tot_len = len(node.pushed_items) - 1
@@ -92,14 +103,14 @@ class Network:
                 del node.pushed_items[tot_len - index]
                 self.task_control.add("Deliver", node.blocks[0][0], pushed_item = item)
 
-    def check_connected_storage_get(self, node):
-        storage_nodes = []
+    def check_storage_connections(self, node):
+        storage_connections = []
         for edge in node.connected_edges:
             for c_node in edge.connected_nodes:
                 if hasattr(c_node, "inventory") and c_node != node:
-                    storage_nodes.append(c_node)
-        storage_nodes.sort(key=lambda x: manhattan_distance(node.rect.center, x.rect.center))
-        return storage_nodes
+                    storage_connections.append([c_node, manhattan_distance(node.rect.center, c_node.rect.center), edge])
+        storage_connections.sort(key=lambda x: x[1])
+        return storage_connections
 
     def __get_pipe_images(self):
         images = image_sheets["materials"].images_at_rectangle((10, 0, 90, 10), color_key=(255,255,255))[0]
@@ -183,12 +194,14 @@ class Network:
 
     def add_node(self, building):
         self.nodes.add(building)
+        building.destroyed = False
         for edge in self.edges:
             if edge.is_node_adjacent(building):
                 building.add_edge(edge)
 
     def remove_node(self, building):
         self.nodes.remove(building)
+        building.destroyed = True
         for edge in building.connected_edges:
             edge.connected_nodes.remove(building)
 
@@ -199,6 +212,8 @@ class NetworkNode:
         self.requested_items = []
         #items that are pushed to the be pushed away
         self.pushed_items = []
+        #flag to let tasks know not to push items to this node
+        self.destroyed = False
 
     def __contains__(self, edge):
         return edge in self.connected_edges
@@ -213,11 +228,15 @@ class NetworkNode:
 
 
 class NetworkEdge:
+    #TODO make this cinfigure based on worst pipe. this is temporary
+    MAX_REQUESTS = 10
+    MAX_REQUEST_SIZE = 4
     #the innitial blocks are assumed to be the same group and connected.
     def __init__(self, group):
         self.segments = set()
         self.network_group = group
         self.connected_nodes = set()
+        self.task_queue = EdgeTaskQueue(self.MAX_REQUESTS, self.MAX_REQUEST_SIZE)
 
     def can_add(self, block):
         if self.network_group != block.network_group:
@@ -251,6 +270,7 @@ class NetworkEdge:
         #edge removal wiil be done
         for node in network_edge.connected_nodes:
             node.add_edge(self)
+        self.task_queue.add_queue(network_edge.task_queue)
 
     def __contains__(self, block):
         loc  = self.block_to_location_string(block)
