@@ -419,5 +419,6 @@ class DeliverTask(MultiTask):
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
-        item = entity.inventory.get(self.pushed_item.name(), self.pushed_item.quantity)
-        self.final_inventory.inventory.add_items(item)
+        if self.final_inventory != None:
+            item = entity.inventory.get(self.pushed_item.name(), self.pushed_item.quantity)
+            self.final_inventory.inventory.add_items(item)
