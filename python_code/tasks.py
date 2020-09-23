@@ -263,22 +263,15 @@ class Task(ABC):
     def __str__(self):
         return "Task object {}:\nBlock: {}\nPriority: {}\nStarted: {}\nProgress: {}\nFinished: {}".\
             format(super().__str__(), self.block, self.priority, self.started_task, self.task_progress, self.finished)
-
-
-class MiningTask(Task):
-
-    def hand_in(self, entity, **kwargs):
-        super().hand_in(entity, **kwargs)
-        entity.board.remove_blocks([[self.block]])
-        entity.inventory.add_blocks(self.block)
-
+    
 
 class MultiTask(Task, ABC):
+    MAX_RETRIES = 5
     def __init__(self, block, **kwargs):
         Task.__init__(self, block, **kwargs)
-        self._max_retries = self.MAX_RETRIES
         self._subtask_count = 0
         self.finished_subtasks = False
+        self._max_retries = self._get_max_retries()
 
     def start(self, entity, **kwargs):
         self.started_task = True
@@ -293,14 +286,23 @@ class MultiTask(Task, ABC):
         self.finished_subtasks = False
         self._subtask_count = 0
 
-    @property
-    def MAX_RETRIES(self):
-        return 5
+    def _get_max_retries(self):
+        return self.MAX_RETRIES
+
+
+class MiningTask(Task):
+
+    def start(self, entity, **kwargs):
+        super().start(entity, **kwargs)
+
+    def hand_in(self, entity, **kwargs):
+        super().hand_in(entity, **kwargs)
+        entity.board.remove_blocks([[self.block]])
+        entity.inventory.add_blocks(self.block)
 
 
 class BuildTask(MultiTask):
     #amount of times this task can retry the subtasks until it is
-    MAX_RETRIES = 5
     def __init__(self, block, finish_block, original_group, removed_blocks, **kwargs):
         super().__init__(block, **kwargs)
         self.finish_block = finish_block
@@ -375,11 +377,12 @@ class EmptyInventoryTask(Task):
 
 
 class RequestTask(MultiTask):
-    MAX_RETRIES = 5
     def __init__(self, block, req_item, **kwargs):
-        super().__init__(block, **kwargs)
         self.req_item = req_item
-        self._max_retries = self.MAX_RETRIES + self.req_item.quantity
+        super().__init__(block, **kwargs)
+
+    def _get_max_retries(self):
+        return self.MAX_RETRIES + self.req_item.quantity
 
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
@@ -400,10 +403,12 @@ class RequestTask(MultiTask):
 class DeliverTask(MultiTask):
     MAX_RETRIES = 5
     def __init__(self, block, pushed_item, **kwargs):
-        super().__init__(block, **kwargs)
         self.pushed_item = pushed_item
+        super().__init__(block, **kwargs)
         self.final_inventory = None
-        self._max_retries = self.MAX_RETRIES + pushed_item.quantity
+
+    def _get_max_retries(self):
+        return self.MAX_RETRIES + self.pushed_item.quantity
 
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
