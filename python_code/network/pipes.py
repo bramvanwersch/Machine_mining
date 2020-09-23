@@ -48,7 +48,6 @@ class Network:
     def __retrieve_with_pipes(self, destination_node, node):
         items = []
         tot_len = len(destination_node.requested_items) - 1
-        # TODO make a system to make this time dependant based on pipe lenght
         for index, item in enumerate(destination_node.requested_items[::-1]):
             #check if at least one item is present
             if node.inventory.check_item_get(item.name(), 1):
@@ -89,7 +88,6 @@ class Network:
         tot_len = len(node.pushed_items) - 1
         items = []
         for index, item in enumerate(node.pushed_items[::-1]):
-            #TODO make this time dependant on pipe lenght
             if destination_node.inventory.check_item_deposit(item.name()):
                 get_item = node.inventory.get(item.name(), item.quantity)
                 items.append(get_item)
