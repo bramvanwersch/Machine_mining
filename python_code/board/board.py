@@ -115,7 +115,7 @@ class Board(BoardEventHandler):
                     self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
                     if isinstance(block, NetworkBlock):
                         surrounding_blocks = self.surrounding_blocks(change_block)
-                        self.pipe_network.remove(change_block)
+                        self.pipe_network.remove_pipe(change_block)
                         for block in surrounding_blocks:
                             if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
                                 self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
@@ -161,7 +161,7 @@ class Board(BoardEventHandler):
         building_rect = building_instance.rect
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
         self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
-        self.__buildings[building_instance.id] = building_rect
+        self.__buildings[building_instance.id] = building_instance
         update_blocks = []
         if isinstance(building_instance, NetworkNode):
             self.pipe_network.add_node(building_instance)
@@ -179,7 +179,10 @@ class Board(BoardEventHandler):
             self.add_blocks(*update_blocks)
 
     def remove_building(self, block):
-        rect = self.__buildings[block.id]
+        building_instance = self.__buildings[block.id]
+        rect = building_instance.rect
+        if isinstance(block, NetworkBlock):
+            self.pipe_network.remove_node(building_instance)
         #make sure this does net just overlap with the next block
         overlap_rect = pygame.Rect((*rect.topleft, rect.width - 1, rect.height - 1))
         blocks = self.overlapping_blocks(overlap_rect)
@@ -196,7 +199,7 @@ class Board(BoardEventHandler):
                                                 materials.Air())
                 if isinstance(block, NetworkBlock):
                     surrounding_blocks = self.surrounding_blocks(change_block)
-                    self.pipe_network.remove(change_block)
+                    self.pipe_network.remove_pipe(change_block)
                     for block in surrounding_blocks:
                         if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
                             self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)

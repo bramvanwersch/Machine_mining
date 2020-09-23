@@ -272,7 +272,7 @@ class Worker(MovingEntity):
     """
     A worker class that can perform tasks
     """
-    COLOR = (255, 0, 179)
+    COLOR = (255, 0, 0, 100)
     SIZE = (10,10)
     #in wheight
     INVENTORY_SIZE = 2

@@ -43,10 +43,10 @@ class Network:
         items = []
         tot_len = len(destination_node.requested_items) - 1
         # TODO make a system to make this time dependant based on pipe lenght
-        for index, item_name in enumerate(destination_node.requested_items[::-1]):
+        for index, item in enumerate(destination_node.requested_items[::-1]):
             #check if at least one item is present
-            if node.inventory.check_item_get(item_name, 1):
-                fetched_item = node.inventory.get(item_name, quantity)
+            if node.inventory.check_item_get(item.name(), 1):
+                fetched_item = node.inventory.get(item.name(), item.quantity)
                 if destination_node.requested_items[tot_len - index].quantity == fetched_item.quantity:
                     del destination_node.requested_items[tot_len - index]
                 else:
@@ -80,7 +80,7 @@ class Network:
         tot_len = len(node.pushed_items) - 1
         for index, item in enumerate(node.pushed_items[::-1]):
             #TODO make this time dependant on pipe lenght
-            if destination_node.inventory.check_item_deposit(item):
+            if destination_node.inventory.check_item_deposit(item.name()):
                 destination_node.inventory.add_items(item)
                 del node.pushed_items[tot_len - index]
                 node.inventory.get(item.name(), item.quantity)
@@ -94,10 +94,10 @@ class Network:
 
     def check_connected_storage_get(self, node):
         storage_nodes = []
-        for c_nodes in node.connected_edges.values():
-            for c_node in c_nodes:
-                if hasattr(c_node, "inventory"):
-                    storage_nodes.append(node)
+        for edge in node.connected_edges:
+            for c_node in edge.connected_nodes:
+                if hasattr(c_node, "inventory") and c_node != node:
+                    storage_nodes.append(c_node)
         storage_nodes.sort(key=lambda x: manhattan_distance(node.rect.center, x.rect.center))
         return storage_nodes
 
@@ -115,7 +115,8 @@ class Network:
         :param surrounding_blocks: a list of len 4 of surrounding blocks of the current block
         :param update: A boolean that signifies if a list of surrounding blocks need to be retuened to
         update
-        :return: None or a list Blocks that need an update to theire surface
+        :param remove: if the block is removed or not.
+        :return: a list Blocks that need an update to theire surface
         """
         direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], NetworkBlock)]
         direction_indexes = "".join(direction_indexes)
@@ -137,19 +138,42 @@ class Network:
                     break
         #if no edges are connected add a new edge
         if len(connected_edges) == 0:
-            new_edge = self.__add_edge(block)
+            new_edge = NetworkEdge(block.network_group)
+            new_edge.add_blocks(block)
+            self.__add_edge(new_edge)
         #merge
         else:
             new_edge = connected_edges.pop()
-            new_edge.add_block(block)
+            new_edge.add_blocks(block)
             #merge any remaining edges that are also connected
             for rem_edge in connected_edges:
                 new_edge.add_edge(rem_edge)
-                self.__remove_edge(edge)
+                self.__remove_edge(rem_edge)
         #make sure that new pipes are potentially connected to nodes
+        for node in self.nodes:
+            if node not in new_edge.connected_nodes and new_edge.is_node_adjacent(node):
+                node.add_edge(new_edge)
+
+    def remove_pipe(self, block):
+        for edge in self.edges:
+            if block in edge:
+                new_edges = edge.remove_segment(block)
+                if len(edge.segments) == 0:
+                    self.__remove_edge(edge)
+                else:
+                    for node in edge.connected_nodes.copy():
+                        if not edge.is_node_adjacent(node):
+                            node.remove_edge(edge)
+                for n_edge in new_edges:
+                    self.__add_edge(n_edge)
+                break
+
+    def __add_edge(self, new_edge):
+        self.edges.add(new_edge)
         for node in self.nodes:
             if new_edge.is_node_adjacent(node):
                 node.add_edge(new_edge)
+        return new_edge
 
     def __remove_edge(self, edge):
         self.edges.remove(edge)
@@ -157,35 +181,20 @@ class Network:
             if edge in node:
                 node.remove_edge(edge)
 
-    def __add_edge(self, block):
-        new_edge = NetworkEdge(block.network_group)
-        new_edge.add_block(block)
-        self.edges.add(new_edge)
-        for node in self.nodes:
-            if new_edge.is_node_adjacent(node):
-                node.add_edge(new_edge)
-        return new_edge
-
     def add_node(self, building):
         self.nodes.add(building)
         for edge in self.edges:
             if edge.is_node_adjacent(building):
                 building.add_edge(edge)
 
-    def remove(self, block):
-        for edge in self.edges:
-            if block in edge:
-                new_location_lists = edge.remove_segment(block)
-                if len(edge.segments) == 0:
-                    self.__remove_edge(edge)
-                for location_edge in new_location_lists:
-                    self.__add_edge(block)
-                break
-
+    def remove_node(self, building):
+        self.nodes.remove(building)
+        for edge in building.connected_edges:
+            edge.connected_nodes.remove(building)
 
 class NetworkNode:
     def __init__(self):
-        self.connected_edges = {}
+        self.connected_edges = set()
         #a list of item objects that are requested to be delivered
         self.requested_items = []
         #items that are pushed to the be pushed away
@@ -195,13 +204,11 @@ class NetworkNode:
         return edge in self.connected_edges
 
     def add_edge(self, edge):
-        self.connected_edges[edge] = {}
-        for node in edge.connected_nodes:
-            self.connected_edges[edge][node] = manhattan_distance(self.rect.center, node.rect.center)
+        self.connected_edges.add(edge)
         edge.connected_nodes.add(self)
 
     def remove_edge(self, edge):
-        del self.connected_edges[edge]
+        self.connected_edges.remove(edge)
         edge.connected_nodes.remove(self)
 
 
@@ -229,7 +236,7 @@ class NetworkEdge:
                     return True
         return False
 
-    def add_block(self, *blocks):
+    def add_blocks(self, *blocks):
         for block in blocks:
             loc = self.block_to_location_string(block)
             self.segments.add(loc)
@@ -241,6 +248,9 @@ class NetworkEdge:
     def add_edge(self, network_edge):
         for loc in network_edge.segments:
             self.segments.add(loc)
+        #edge removal wiil be done
+        for node in network_edge.connected_nodes:
+            node.add_edge(self)
 
     def __contains__(self, block):
         loc  = self.block_to_location_string(block)
@@ -255,7 +265,7 @@ class NetworkEdge:
         else:
             new_edges = self.check_connected(sur_locs)
             if len(new_edges) > 0:
-                self.segments = new_edges.pop()
+                self.segments = new_edges.pop().segments
                 return new_edges
             else:
                 self.segments = set()
@@ -267,7 +277,7 @@ class NetworkEdge:
         new_edges = []
         while len(locations) > 0:
             check_locations = [locations.pop()]
-            used_segments = set()
+            used_segments = set([check_locations[0]])
             while len(check_locations) > 0:
                 loc = check_locations.pop()
                 sur_locs = self.__surrounding_locations(loc)
@@ -278,8 +288,11 @@ class NetworkEdge:
                         check_locations.append(sur_loc)
                         if sur_loc in locations:
                             locations.remove(sur_loc)
+            #create a new edge
             if len(used_segments) > 0:
-                new_edges.append(used_segments)
+                new_edge = NetworkEdge(self.network_group)
+                new_edge.add_string_location(*used_segments)
+                new_edges.append(new_edge)
         return new_edges
 
     def __surrounding_locations(self, location):
