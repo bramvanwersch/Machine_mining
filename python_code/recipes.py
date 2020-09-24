@@ -6,16 +6,18 @@ from python_code.utility.utilities import Size
 from python_code.board import buildings
 from python_code.inventories import Item
 
+recipe_books = {}
+
+def create_recipe_book():
+    global recipe_books
+    recipe_books = {"factory": RecipeBook("factory")}
 
 class RecipeBook:
-    """
-    Holds and loads all recipes as well as determines a possible recipe from a
-    certain crafting configuration
-    """
-    def __init__(self):
-        self.recipes = self.__initiate_recipes()
 
-    def __initiate_recipes(self):
+    def __init__(self, recipe_type):
+        self.recipes = self.__initiate_recipes(recipe_type)
+
+    def __initiate_recipes(self, recipe_type):
         """
         Innitiate all the recipes defined in this file based on subclassing
         from BaseRecipe
@@ -24,7 +26,7 @@ class RecipeBook:
         #filter out all the recipes.
         recipes = []
         for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-            if issubclass(obj, BaseRecipe) and obj != BaseRecipe:
+            if issubclass(obj, BaseRecipe) and obj != BaseRecipe and getattr(obj, "TYPE") == recipe_type:
                 #add an instance of the recipe
                 recipes.append(obj())
         return recipes
@@ -154,6 +156,11 @@ class BaseRecipe(ABC):
     def CRAFTING_TIME(self):
         return None
 
+    @property
+    @abstractmethod
+    def TYPE(self):
+        return None
+
     def get_image(self):
         if issubclass(self._material, materials.BuildingMaterial):
             return buildings.building_type_from_material(self._material).full_image()
@@ -174,6 +181,7 @@ class BaseRecipe(ABC):
 
 class FurnaceRecipe(BaseRecipe):
     CRAFTING_TIME = 1000
+    TYPE = "factory"
     def __init__(self):
         mat = materials.FurnaceMaterial
         BaseRecipe.__init__(self, mat)
@@ -189,6 +197,7 @@ class FurnaceRecipe(BaseRecipe):
 
 class CompactStoneRecipe(BaseRecipe):
     CRAFTING_TIME = 100
+    TYPE = "factory"
     def __init__(self):
         mat = materials.StoneBrickMaterial
         BaseRecipe.__init__(self, mat)
@@ -203,6 +212,7 @@ class CompactStoneRecipe(BaseRecipe):
 
 class StonePipe(BaseRecipe):
     CRAFTING_TIME = 1000
+    TYPE = "factory"
     def __init__(self):
         mat = materials.StonePipeMaterial
         BaseRecipe.__init__(self, mat)

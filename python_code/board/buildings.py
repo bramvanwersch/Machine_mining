@@ -8,7 +8,8 @@ from python_code.board.blocks import *
 from python_code.inventories import Inventory, Filter
 from python_code.utility.utilities import Size
 from python_code.interfaces.small_interfaces import FurnaceWindow, TerminalWindow
-from python_code.interfaces.crafting_interface import CraftingWindow
+from python_code.interfaces.crafting_interfaces import FactoryWindow
+import python_code.recipes
 from python_code.network.pipes import NetworkNode
 
 
@@ -180,7 +181,7 @@ class Factory(InterafaceBuilding, NetworkNode):
         self.inventory = Inventory(300, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
         NetworkNode.__init__(self)
-        self._interface = CraftingWindow(self, self.sprite_groups)
+        self._interface = FactoryWindow(self, python_code.recipes.recipe_books["factory"], self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)

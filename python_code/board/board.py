@@ -491,8 +491,10 @@ class Board(BoardEventHandler):
         """
         t = Terminal((BOARD_SIZE[1] / 2 + 50, 30), self.main_sprite_group)
         c = Factory((BOARD_SIZE[1] / 2 + 30, 30), self.main_sprite_group)
+        f = Furnace((BOARD_SIZE[1] / 2 + 10, 30), self.main_sprite_group)
         self.add_building(t)
         self.add_building(c)
+        self.add_building(f)
 
     def __generate_background_matrix(self):
         """

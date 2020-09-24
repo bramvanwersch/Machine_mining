@@ -7,7 +7,8 @@ from python_code.board.board import Board
 from python_code.utility.constants import *
 from python_code.tasks import TaskControl
 from python_code.utility.image_handling import load_images
-from python_code.interfaces.crafting_interface import CraftingWindow
+from python_code.recipes import create_recipe_book
+from python_code.interfaces.crafting_interfaces import CraftingWindow
 from python_code.interfaces.building_interface import BuildingWindow
 from python_code.interfaces.managers import create_window_manager
 
@@ -27,6 +28,9 @@ class Main:
 
         #load all the images before running the game
         load_images()
+
+        #load all recipes
+        create_recipe_book()
 
         self.rect = self.screen.get_rect()
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))
