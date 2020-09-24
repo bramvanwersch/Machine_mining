@@ -295,9 +295,7 @@ class MiningTask(Task):
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
         if hasattr(self.block, "inventory"):
-            print(self.block.inventory.items)
             items = self.block.inventory.get_all_items(ignore_filter=True)
-            print([str(item) for item in items])
             entity.inventory.add_items(*items)
         entity.board.remove_blocks([[self.block]])
         entity.inventory.add_blocks(self.block)
