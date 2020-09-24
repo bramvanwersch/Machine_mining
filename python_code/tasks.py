@@ -108,7 +108,7 @@ class TaskControl:
                     continue
                 if isinstance(task, BuildTask):
                     #TODO make this a total inventory of all inventories on the map
-                    if not self.__terminal_inv.check_item_get(task.finish_block.name(), 1):
+                    if not self.__terminal_inv.check_item_get(task.finish_block.name()):
                         continue
                 return task
         return None
@@ -292,11 +292,13 @@ class MultiTask(Task, ABC):
 
 class MiningTask(Task):
 
-    def start(self, entity, **kwargs):
-        super().start(entity, **kwargs)
-
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
+        if hasattr(self.block, "inventory"):
+            print(self.block.inventory.items)
+            items = self.block.inventory.get_all_items(ignore_filter=True)
+            print([str(item) for item in items])
+            entity.inventory.add_items(*items)
         entity.board.remove_blocks([[self.block]])
         entity.inventory.add_blocks(self.block)
 
@@ -311,7 +313,7 @@ class BuildTask(MultiTask):
 
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
-        if not entity.inventory.check_item_get(self.finish_block.name(), 1):
+        if not entity.inventory.check_item_get(self.finish_block.name()):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
@@ -387,7 +389,7 @@ class RequestTask(MultiTask):
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
         #TODO make this dependant on what the entity can cary
-        if not entity.inventory.check_item_get(self.req_item.name(), self.req_item.quantity):
+        if not entity.inventory.check_item_get(self.req_item.name(), quantity=self.req_item.quantity):
             task = FetchTask(entity, self.req_item.name(), **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
@@ -397,7 +399,8 @@ class RequestTask(MultiTask):
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
         item = entity.inventory.get(self.req_item.name(), self.req_item.quantity)
-        self.block.inventory.add_items(item)
+        if item != None:
+            self.block.inventory.add_items(item)
 
 
 class DeliverTask(MultiTask):
@@ -414,7 +417,7 @@ class DeliverTask(MultiTask):
         super().start(entity, **kwargs)
         # first start potentail other tasks
         self.started_task = True
-        if not entity.inventory.check_item_get(self.pushed_item.name(), 1):
+        if not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
             task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)

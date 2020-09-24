@@ -212,8 +212,8 @@ class Board(BoardEventHandler):
         shortest_distance = 10000000000000
         closest_block = None
         for block in self.inventorie_blocks:
-            if (deposit == False and all([block.inventory.check_item_get(name, 1) for name in item_names])):
-               pass
+            if (deposit == False and all([block.inventory.check_item_get(name) for name in item_names])):
+                pass
             elif (deposit == True and all([block.inventory.check_item_deposit(name) for name in item_names])):
                 pass
             else:

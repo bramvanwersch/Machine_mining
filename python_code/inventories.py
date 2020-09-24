@@ -32,7 +32,7 @@ class Inventory:
         else:
             self.out_filter = Filter()
 
-    def get(self, item_name, amnt):
+    def get(self, item_name, amnt, ignore_filter=False):
         """
         Get an item and amount form the inventory
 
@@ -41,14 +41,16 @@ class Inventory:
         :return: None if no item available or the available amount up till the
         requested amount of the item in a new Item Object
         """
-        if item_name in self.__container:
+        if not ignore_filter and not self.check_item_get(item_name):
+            return
+        else:
             item = self.__container[item_name]
             available_amnt = self.__remove_quantity(item, amnt)
             if available_amnt > 0:
                 return Item(item.material, available_amnt)
         return None
 
-    def get_all_items(self):
+    def get_all_items(self, ignore_filter=False):
         """
         Get a list of all items and there total amounts in new Item objects.
         The amounts are removed from the original inventory.
@@ -56,16 +58,14 @@ class Inventory:
         """
         items = []
         for key in list(self.__container.keys()):
-            if not self.check_item_get(key, 1):
-                continue
-            item = self.get(key, self.__container[key].quantity)
+            item = self.get(key, self.__container[key].quantity, ignore_filter=ignore_filter)
             if item:
                 items.append(item)
         return items
 
-    def check_item_get(self, item_name, quantity):
-        if not self.out_filter.allowed(item_name) or \
-                item_name not in self.__container or self.__container[item_name].quantity < quantity:
+    def check_item_get(self, item_name, quantity=1):
+        if not self.out_filter.allowed(item_name) or item_name not in self.__container or\
+                self.__container[item_name].quantity < quantity:
             return False
         return True
 

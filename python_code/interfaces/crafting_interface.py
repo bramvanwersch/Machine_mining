@@ -66,15 +66,7 @@ class CraftingWindow(Window):
                 self.__factory.inventory.add_items(item, ignore_filter=True)
                 self.__factory.pushed_items.append(item)
                 for item in self._craftable_item_recipe.needed_materials:
-                    self.__factory.inventory.get(item.name(), item.quantity)
-        #requests failed, request again the missing items
-        # elif self.__crafting and len(self.__factory.requested_items) == 0:
-        #     needed_items = set([item.copy() for item in self._craftable_item_recipe.needed_materials])
-        #     for item in self.__factory.inventory.items:
-        #         if item in needed_items:
-        #             needed_items[item].quantity -= item.quantity
-        #     self.__factory.requested_items = [item for item in needed_items if item.quantity > 0]
-
+                    self.__factory.inventory.get(item.name(), item.quantity, ignore_filter=True)
 
     def __check_materials(self):
         for n_item in self._craftable_item_recipe.needed_materials:

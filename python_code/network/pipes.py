@@ -50,7 +50,7 @@ class Network:
         tot_len = len(destination_node.requested_items) - 1
         for index, item in enumerate(destination_node.requested_items[::-1]):
             #check if at least one item is present
-            if node.inventory.check_item_get(item.name(), 1):
+            if node.inventory.check_item_get(item.name()):
                 fetched_item = node.inventory.get(item.name(), item.quantity)
                 if destination_node.requested_items[tot_len - index].quantity == fetched_item.quantity:
                     del destination_node.requested_items[tot_len - index]
@@ -62,7 +62,7 @@ class Network:
     def __retrieve_with_task(self, destination_node, node):
         tot_len = len(destination_node.requested_items) - 1
         for index, item in enumerate(destination_node.requested_items[::-1]):
-            if node.inventory.check_item_get(item.name(), 1):
+            if node.inventory.check_item_get(item.name()):
                 #take top left block as target
                 self.task_control.add("Request", destination_node.blocks[0][0], req_item=item)
                 #request all items at once
