@@ -325,20 +325,14 @@ class Worker(MovingEntity):
 
     def __start_task(self):
         self.task_queue.task.start(self)
-
         if self.task_queue.task.block == None:
-        #     print(str(self.task_queue.task))
-            self.task_queue.task.started_task = False
-            return
-        path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
-        if path != None:
-            self.path = path
+            self.task_queue.task.cancel()
         else:
-            self.task_queue.task.decrease_priority()
-            self.task_queue.task.started_task = False
-            self.task_queue.next()
-            if not self.task_queue.empty():
-                self.__start_task()
+            path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
+            if path != None:
+                self.path = path
+            else:
+                self.task_queue.task.cancel()
 
     ##task management functions:
     def __next_task(self):
@@ -349,11 +343,7 @@ class Worker(MovingEntity):
         #make sure to move the last step if needed, so the worker does not potentially stop in a block
         if len(self.path) > 0:
             self.path = self.path[-1]
-        elif f_task.canceled():
-            #cannot be completed so decrease priority
-            f_task.decrease_priority()
-            f_task.cancel(False)
-        elif not f_task.handed_in():
+        elif not f_task.canceled() and not f_task.handed_in():
             f_task.hand_in(self)
             self.task_control.remove_tasks(f_task)
         if not self.task_queue.empty():

@@ -219,21 +219,23 @@ class Task(ABC):
         #change priority of assigning tasks
         self.started_task = False
         #determined by material
-        self.task_progress = [0, 1]
+        self.task_progress = [val for val in [0, 1000]]
         self.__handed_in = False
         self.__canceled = False
 
     def start(self, entity, **kwargs):
         self.started_task = True
+        #in case of canceled tasks
+        self.__canceled = False
         self._set_task_progress()
 
     def _set_task_progress(self):
         self.task_progress = [0, self.block.material.task_time()]
 
-    def cancel(self, value=True):
-        if value == False:
-            self.started_task = False
-        self.__canceled = value
+    def cancel(self):
+        self.started_task = False
+        self.decrease_priority()
+        self.__canceled = True
 
     def decrease_priority(self, amnt = -1):
         self.priority += amnt
@@ -277,12 +279,14 @@ class MultiTask(Task, ABC):
         self.started_task = True
         self._subtask_count += 1
         if self._subtask_count > self._max_retries:
+            #make sure to remove the task at the start of the task queue
+            entity.task_queue.next()
             self.cancel()
         elif self.finished_subtasks:
             super().start(entity, **kwargs)
 
-    def cancel(self, value=True):
-        super().cancel(value=value)
+    def cancel(self):
+        super().cancel()
         self.finished_subtasks = False
         self._subtask_count = 0
 
@@ -311,7 +315,7 @@ class BuildTask(MultiTask):
 
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
-        if not entity.inventory.check_item_get(self.finish_block.name()):
+        if not self.finished_subtasks and not entity.inventory.check_item_get(self.finish_block.name()):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
@@ -415,7 +419,7 @@ class DeliverTask(MultiTask):
         super().start(entity, **kwargs)
         # first start potentail other tasks
         self.started_task = True
-        if not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
+        if not self.finished_subtasks and not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
             task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, **kwargs)
             entity.task_queue.add(task)
             task.start(entity, **kwargs)
