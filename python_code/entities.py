@@ -310,29 +310,31 @@ class Worker(MovingEntity):
             self.__move_along_path()
         #perform a task if available
         elif not self.task_queue.empty():
-            self.__perform_task()
+            if not self.task_queue.task.started_task:
+                self.__start_task()
+            else:
+                self.__perform_task()
         elif self.inventory.full:
             self.task_queue.add(EmptyInventoryTask(self))
-            self.__start_task()
         elif self.task_queue.empty():
             task = self.task_control.get_task(self.rect.center)
             if task:
                 self.task_queue.add(task)
-                self.__start_task()
             elif not self.inventory.empty:
                 self.task_queue.add(EmptyInventoryTask(self))
-                self.__start_task()
 
     def __start_task(self):
         self.task_queue.task.start(self)
         if self.task_queue.task.block == None:
             self.task_queue.task.cancel()
+            self.__next_task()
         else:
             path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
             if path != None:
                 self.path = path
             else:
                 self.task_queue.task.cancel()
+                self.__next_task()
 
     ##task management functions:
     def __next_task(self):
@@ -343,11 +345,9 @@ class Worker(MovingEntity):
         #make sure to move the last step if needed, so the worker does not potentially stop in a block
         if len(self.path) > 0:
             self.path = self.path[-1]
-        elif not f_task.canceled() and not f_task.handed_in():
+        if not f_task.canceled() and not f_task.handed_in():
             f_task.hand_in(self)
             self.task_control.remove_tasks(f_task)
-        if not self.task_queue.empty():
-            self.__start_task()
 
     def __perform_task(self):
         """

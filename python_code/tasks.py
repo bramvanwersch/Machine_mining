@@ -100,8 +100,9 @@ class TaskControl:
         for task_dict in sorted_task_dicts:
             for tasks in sorted(task_dict.values(), key=lambda x: self.__best_task_sort_tuple(task_dict, worker_pos)):
                 task = None
+                # print([str(t) for t in tasks])
                 for t in tasks:
-                    if not t.started_task:
+                    if not t.selected:
                         task = t
                         break
                 if task == None:
@@ -110,6 +111,12 @@ class TaskControl:
                     #TODO make this a total inventory of all inventories on the map
                     if not self.__terminal_inv.check_item_get(task.finish_block.name()):
                         continue
+                elif isinstance(task, RequestTask):
+                    #TODO make this a total inventory of all inventories on the map
+                    if not self.__terminal_inv.check_item_get(task.req_item.name(), task.req_item.quantity):
+                        continue
+                if task != None:
+                    task.selected = True
                 return task
         return None
 
@@ -118,7 +125,7 @@ class TaskControl:
         for tasks in task_dictionary.values():
             task = tasks[0]
             distance = manhattan_distance(task.block.rect.topleft, worker_pos)
-            task_tuples.append((task.started_task, -1 * task.priority, distance))
+            task_tuples.append((task.selected, -1 * task.priority, distance))
         return sorted(task_tuples)
 
 
@@ -216,8 +223,9 @@ class Task(ABC):
     def __init__(self, block, priority = 1, **kwargs):
         self.block = block
         self.priority = priority
-        #change priority of assigning tasks
+
         self.started_task = False
+        self.selected = False
         #determined by material
         self.task_progress = [val for val in [0, 1000]]
         self.__handed_in = False
@@ -235,6 +243,7 @@ class Task(ABC):
     def cancel(self):
         self.started_task = False
         self.decrease_priority()
+        self.selected = False
         self.__canceled = True
 
     def decrease_priority(self, amnt = -1):
@@ -263,8 +272,8 @@ class Task(ABC):
         return self.task_progress[0] >= self.task_progress[1] or self.__handed_in or self.__canceled
 
     def __str__(self):
-        return "Task object {}:\nBlock: {}\nPriority: {}\nStarted: {}\nProgress: {}\nFinished: {}".\
-            format(super().__str__(), self.block, self.priority, self.started_task, self.task_progress, self.finished)
+        return "Task object {}:\nBlock: {}\nPriority: {}\nSelected: {}\nStarted: {}\nProgress: {}\nFinished: {}".\
+            format(super().__str__(), self.block, self.priority, self.selected, self.started_task, self.task_progress, self.finished)
     
 
 class MultiTask(Task, ABC):
@@ -276,7 +285,6 @@ class MultiTask(Task, ABC):
         self._max_retries = self._get_max_retries()
 
     def start(self, entity, **kwargs):
-        self.started_task = True
         self._subtask_count += 1
         if self._subtask_count > self._max_retries:
             #make sure to remove the task at the start of the task queue
@@ -284,6 +292,11 @@ class MultiTask(Task, ABC):
             self.cancel()
         elif self.finished_subtasks:
             super().start(entity, **kwargs)
+
+    def start_subtask(self, task, entity):
+        entity.task_queue.add(task)
+        task.selected = True
+        task.start(entity)
 
     def cancel(self):
         super().cancel()
@@ -315,10 +328,9 @@ class BuildTask(MultiTask):
 
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
-        if not self.finished_subtasks and not entity.inventory.check_item_get(self.finish_block.name()):
+        if not entity.inventory.check_item_get(self.finish_block.name()):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
-            entity.task_queue.add(task)
-            task.start(entity, **kwargs)
+            self.start_subtask(task, entity)
         else:
             self.finished_subtasks = True
 
@@ -343,7 +355,7 @@ class FetchTask(Task):
         super().__init__(block, **kwargs)
 
     def start(self, entity, inventory_block=None, **kwargs):
-        if self.block:
+        if self.block != None:
             super().start(entity, **kwargs)
         else:
             # cheat way to disregard the task
@@ -361,7 +373,7 @@ class FetchTask(Task):
 
 class EmptyInventoryTask(Task):
     def __init__(self, entity, **kwargs):
-        block = entity.board.closest_inventory(entity.orig_rect, *entity.inventory.item_names)
+        block = entity.board.closest_inventory(entity.orig_rect, *entity.inventory.item_names, deposit=True)
         super().__init__(block, **kwargs)
 
     def start(self, entity, **kwargs):
@@ -393,8 +405,7 @@ class RequestTask(MultiTask):
         #TODO make this dependant on what the entity can cary
         if not entity.inventory.check_item_get(self.req_item.name(), quantity=self.req_item.quantity):
             task = FetchTask(entity, self.req_item.name(), **kwargs)
-            entity.task_queue.add(task)
-            task.start(entity, **kwargs)
+            self.start_subtask(task, entity)
         else:
             self.finished_subtasks = True
 
@@ -410,7 +421,7 @@ class DeliverTask(MultiTask):
     def __init__(self, block, pushed_item, **kwargs):
         self.pushed_item = pushed_item
         super().__init__(block, **kwargs)
-        self.final_inventory = None
+        self.__finished_get = False
 
     def _get_max_retries(self):
         return self.MAX_RETRIES + self.pushed_item.quantity
@@ -418,17 +429,12 @@ class DeliverTask(MultiTask):
     def start(self, entity, **kwargs):
         super().start(entity, **kwargs)
         # first start potentail other tasks
-        self.started_task = True
-        if not self.finished_subtasks and not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
+        if not self.__finished_get and not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
             task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, **kwargs)
-            entity.task_queue.add(task)
-            task.start(entity, **kwargs)
+            self.start_subtask(task, entity)
+        elif not entity.inventory.empty:
+            self.__finished_get = True
+            task = EmptyInventoryTask(entity, **kwargs)
+            self.start_subtask(task, entity)
         else:
-            self.final_inventory = entity.board.closest_inventory(entity.orig_rect, self.pushed_item.name(), deposit=True)
             self.finished_subtasks = True
-
-    def hand_in(self, entity, **kwargs):
-        super().hand_in(entity, **kwargs)
-        if self.final_inventory != None:
-            item = entity.inventory.get(self.pushed_item.name(), self.pushed_item.quantity)
-            self.final_inventory.inventory.add_items(item)
