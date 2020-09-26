@@ -10,7 +10,7 @@ recipe_books = {}
 
 def create_recipe_book():
     global recipe_books
-    recipe_books = {"factory": RecipeBook("factory")}
+    recipe_books = {"factory": RecipeBook("factory"), "furnace": RecipeBook("furnace")}
 
 class RecipeBook:
 

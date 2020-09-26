@@ -1,29 +1,6 @@
 from python_code.interfaces.widgets import *
 from python_code.interfaces.base_interface import Window
 from python_code.utility.utilities import Size
-from python_code.utility.image_handling import image_sheets
-
-
-class FurnaceWindow(Window):
-    SIZE = Size(200, 200)
-
-    def __init__(self, furnace_object, *groups):
-        self.furnace = furnace_object
-        fr = self.furnace.rect
-        location = fr.bottomleft
-        Window.__init__(self,location , self.SIZE,
-                       *groups, layer=INTERFACE_LAYER, title = "FURNACE",
-                        allowed_events=[1, K_ESCAPE], static=True)
-        self.__add_widgets()
-
-    def __add_widgets(self):
-        self.__to_smelt_lbl = Label((10,10), (50, 50), color=(150, 150, 150))
-        self.add_widget(self.__to_smelt_lbl)
-        self.add_border(self.__to_smelt_lbl, color=(75,75,75))
-
-        self.__smelted_lbl = Label((100,10), (50,50), color=(150, 150, 150))
-        self.add_widget(self.__smelted_lbl)
-        self.add_border(self.__smelted_lbl, color=(75,75,75))
 
 
 class TerminalWindow(Window):

@@ -1,9 +1,14 @@
+from pygame.constants import K_ESCAPE
+
 from python_code.interfaces.widgets import *
 from python_code.interfaces.base_interface import Window
 from python_code.board.materials import Air
+from python_code.interfaces.widgets import Label
+from python_code.utility.constants import INTERFACE_LAYER
 from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
 from python_code.recipes import RecipeBook
+from python_code.utility.utilities import Size
 
 
 class CraftingWindow(Window):
@@ -12,11 +17,11 @@ class CraftingWindow(Window):
     """
     SIZE = Size(300, 250)
 
-    def __init__(self, craft_building, recipes, *groups):
+    def __init__(self, craft_building, recipes, *groups, **kwargs):
         self._craft_building = craft_building
         fr = self._craft_building.rect
         location = fr.bottomleft
-        Window.__init__(self, location, self.SIZE, *groups, title = "CRAFTING:", allowed_events=[1, K_ESCAPE])
+        Window.__init__(self, location, self.SIZE, *groups, **kwargs)
         self.static = True
 
         self._recipe_book = recipes
@@ -96,20 +101,13 @@ class CraftingWindow(Window):
         self.grid_pane.add_recipe(recipe)
         self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_materials])
         self._craft_building.inventory.out_filter.set_whitelist(recipe._material.name())
-        # show an item in the label
-        # if recipe._material.name() in self.__factory.inventory:
-        #     item = self._craft_building.inventory.item_pointer(recipe._material.name())
-        # else:
-        #     item = Item(recipe._material(), 0)
-        #     self._craft_building.inventory.add_items(item, ignore_filter=True)
-        # self._craftable_item_lbl.add_item(item)
 
         self._crafting_time[1] = recipe.CRAFTING_TIME
 
 
 class FactoryWindow(CraftingWindow):
     def __init__(self, craft_building, recipes, *groups):
-        super().__init__(craft_building, recipes, *groups)
+        super().__init__(craft_building, recipes, *groups, title = "CRAFTING:", allowed_events=[1, K_ESCAPE])
         self._grid_pane = None
         self._craftable_item_lbl = None
         self.__innitiate_widgets()
@@ -138,12 +136,7 @@ class FactoryWindow(CraftingWindow):
         self.add_widget(a_lbl)
 
     def recipe_action(self, recipe, lbl, s1):
-        self._crafting = False
-        self._craftable_item_recipe = recipe
-        s1.select(lbl, (0, 0, 0))
-        self.grid_pane.add_recipe(recipe)
-        self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_materials])
-        self._craft_building.inventory.out_filter.set_whitelist(recipe._material.name())
+        super().recipe_action(recipe, lbl, s1)
         # show an item in the label
         if recipe._material.name() in self._craft_building.inventory:
             item = self._craft_building.inventory.item_pointer(recipe._material.name())
@@ -151,9 +144,6 @@ class FactoryWindow(CraftingWindow):
             item = Item(recipe._material(), 0)
             self._craft_building.inventory.add_items(item, ignore_filter=True)
         self._craftable_item_lbl.add_item(item)
-
-        self._crafting_time[1] = recipe.CRAFTING_TIME
-
 
 
 class CraftingGrid(Pane):
@@ -203,3 +193,21 @@ class CraftingGrid(Pane):
         for row in self._crafting_grid:
             for lbl in row:
                 lbl.set_image(None)
+
+
+class FurnaceWindow(CraftingWindow):
+    SIZE = Size(200, 200)
+
+    def __init__(self, furnace_object, recipes, *groups):
+        super().__init__(furnace_object, recipes, *groups,layer=INTERFACE_LAYER, title = "FURNACE",
+                        allowed_events=[1, K_ESCAPE])
+        self.__add_widgets()
+
+    def __add_widgets(self):
+        self.__to_smelt_lbl = Label((10,10), (50, 50), color=(150, 150, 150))
+        self.add_widget(self.__to_smelt_lbl)
+        self.add_border(self.__to_smelt_lbl, color=(75,75,75))
+
+        self.__smelted_lbl = Label((100,10), (50,50), color=(150, 150, 150))
+        self.add_widget(self.__smelted_lbl)
+        self.add_border(self.__smelted_lbl, color=(75,75,75))
