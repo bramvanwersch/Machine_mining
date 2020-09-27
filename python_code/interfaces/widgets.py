@@ -427,6 +427,16 @@ class Pane(Label, EventHandler, FreeConstraints):
         self.image = self.orig_image.copy()
         self.changed_image = True
 
+    def add_border(self, widget, color=(0,0,0)):
+        """
+        add a border around a specified widget. The widget should be in the frame
+        :param widget:
+        :return:
+        """
+        rect = widget.rect.inflate(4, 4)
+        pygame.draw.rect(self.orig_image, color, rect, 3)
+        self.image = self.orig_image.copy()
+
 
 class Frame(ZoomableEntity, Pane):
     """
@@ -502,16 +512,6 @@ class Frame(ZoomableEntity, Pane):
                     #remove event as to not trigger it twice
                     del keys[index]
         return leftover_events
-
-    def add_border(self, widget, color=(0,0,0)):
-        """
-        add a border around a specified widget. The widget should be in the frame
-        :param widget:
-        :return:
-        """
-        rect = widget.rect.inflate(4, 4)
-        pygame.draw.rect(self.orig_image, color, rect, 3)
-        self.image = self.orig_image.copy()
 
 
 class ScrollPane(Pane, FreeConstraints):

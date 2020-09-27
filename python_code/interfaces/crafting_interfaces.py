@@ -1,3 +1,4 @@
+import pygame
 from pygame.constants import K_ESCAPE
 
 from python_code.interfaces.widgets import *
@@ -144,7 +145,7 @@ class FactoryWindow(CraftingWindow):
 
 
 class FurnaceWindow(CraftingWindow):
-    SIZE = Size(240, 250)
+    SIZE = Size(240, 220)
 
     def __init__(self, furnace_object, recipes, *groups):
         super().__init__(furnace_object, recipes, *groups,layer=INTERFACE_LAYER, title = "FURNACE",
@@ -153,26 +154,24 @@ class FurnaceWindow(CraftingWindow):
 
     def __init_widgets(self):
         #create material_grid
-        self.grid_pane = CraftingGrid((10, 10), (64, 64), Size(2, 2),  color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((40, 28), (64, 64), Size(2, 2),  color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
-        self.__fuel_label = Label((17, 85), (50, 50), color=(150, 150, 150))
-        self.add_widget(self.__fuel_label)
-        self.add_border(self.__fuel_label, color=(75, 75, 75))
+        self.__fuel_meter = FuelMeter((10,10), (25, 100))
+        self.add_widget(self.__fuel_meter)
 
         # add arrow pointing from grid to display
         arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
         arrow_image = pygame.transform.scale(arrow_image, (50, 50))
-        a_lbl = Label((85, 50), (50, 50), color=INVISIBLE_COLOR)
+        a_lbl = Label((110, 35), (50, 50), color=INVISIBLE_COLOR)
         a_lbl.set_image(arrow_image)
         self.add_widget(a_lbl)
 
-        self._craftable_item_lbl = Label((145, 45), (50, 50), color=(150, 150, 150))
+        self._craftable_item_lbl = Label((170, 32), (50, 50), color=(150, 150, 150))
         self.add_widget(self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl, color=(75, 75, 75))
 
-        self._create_recipe_selector((10, 150), (220, 90), self.COLOR[:-1])
-
+        self._create_recipe_selector((10, 120), (220, 90), self.COLOR[:-1])
 
 
 class CraftingGrid(Pane):
@@ -222,4 +221,37 @@ class CraftingGrid(Pane):
         for row in self._crafting_grid:
             for lbl in row:
                 lbl.set_image(None)
+
+
+class FuelMeter(Pane):
+    MAX_FUEL = 100
+    def __init__(self, pos, size, max_fuel=MAX_FUEL, **kwargs):
+        super().__init__(pos, size, color=INVISIBLE_COLOR, **kwargs)
+        self.__fuel_lvl = 0
+        self.__max_fuel = max_fuel
+
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        text_lbl = Label((0,0), (25, 10), color=INVISIBLE_COLOR)
+        text_lbl.set_text("Fuel", (0,0), font_size=16)
+        self.add_widget(text_lbl)
+
+        self.fuel_indicator = Label((2, 15), (20, self.rect.height - 20), color=INVISIBLE_COLOR)
+        self.add_border(self.fuel_indicator)
+        self.add_widget(self.fuel_indicator)
+
+    def add_fuel(self, value):
+        #dont allow above the max or under 0
+        self.__fuel_lvl = min(max(self.__fuel_lvl + value, 0), self.MAX_FUEL)
+        self.__change_fuel_indicator()
+
+    def __change_fuel_indicator(self):
+        img_height = int(self.fuel_indicator.rect.height * (self.__fuel_lvl / self.__max_fuel))
+        image = pygame.Surface((self.fuel_indicator.rect.width , img_height))
+        image.fill((0,255,0))
+
+        posy = self.fuel_indicator.rect.height - img_height
+        self.fuel_indicator.set_image(image, pos=(0, posy))
+        self.add_border(self.fuel_indicator)
 
