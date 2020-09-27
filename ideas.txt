@@ -2,12 +2,15 @@
 
 BUGS:
 - Workers can still get stuck doing a request task if the right amount of materials are not present i think. It is pretty rare and i thin it is a timing thing
+- Certain buildings are not added as nodes or duplicate instances are added leading to key errors when removing buildings
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Better terrain generation
 - Allot more recipes
 - An end goal.
 - Some narrative that gives some background to the story
+- Close window when the building with the window is destroyed
+- add an item that allows to select nothing for a certain recipe
 
 EXTRA FEATURES (features that can be in the game at some point):
--
+- Make windows dragable by clicking and holding the top border
