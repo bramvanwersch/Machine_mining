@@ -1,0 +1,13 @@
+
+
+BUGS:
+- Workers can still get stuck doing a request task if the right amount of materials are not present i think. It is pretty rare and i thin it is a timing thing
+
+NEEDED FEATURES (features that have to be added before the game is complete and playable):
+- Better terrain generation
+- Allot more recipes
+- An end goal.
+- Some narrative that gives some background to the story
+
+EXTRA FEATURES (features that can be in the game at some point):
+-
