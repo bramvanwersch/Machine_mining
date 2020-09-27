@@ -77,6 +77,7 @@ class BuildMaterial(BaseMaterial):
         """
         return None
 
+
 class ColorMaterial(BaseMaterial, ABC):
     """
     Materials can inherit this when they simply are one color
@@ -156,7 +157,6 @@ class Ore(ColorMaterial, ABC):
     """
     WHEIGHT = 2
 
-
     def _configure_color(self):
         """
         Make sure the color is not changed to make clearer what is a certain ore
@@ -164,6 +164,30 @@ class Ore(ColorMaterial, ABC):
         :return: the base color
         """
         return self.BASE_COLOR
+
+    @property
+    @abstractmethod
+    def MEAN_DEPTH(self):
+        return 0
+
+    @property
+    @abstractmethod
+    def SD(self):
+        return 0
+
+    @property
+    @abstractmethod
+    def CLUSTER_SIZE(self):
+        return
+
+
+class FuelMaterial(ABC):
+
+    @property
+    @abstractmethod
+    def FUEL_VALUE(self):
+        return 0
+
 
 class Iron(Ore):
 
@@ -199,13 +223,14 @@ class Copper(Ore):
     BASE_COLOR = (189, 99, 20)
 
 
-class Coal(Ore):
+class Coal(Ore, FuelMaterial):
 
     MEAN_DEPTH = 10
     SD = 50
     CLUSTER_SIZE = (6, 12)
     BASE_COLOR = (10, 10, 10)
     TEXT_COLOR = (255,255,255)
+    FUEL_VALUE = 5
 
 
 class Titanium(Ore):
