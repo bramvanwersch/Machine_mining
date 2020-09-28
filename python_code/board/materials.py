@@ -149,6 +149,10 @@ class Dirt(ColorMaterial):
     BASE_COLOR = (107, 49, 13)
 
 
+class IronIngot(ColorMaterial):
+    BASE_COLOR = (100, 100, 100)
+
+
 #ore materials
 class Ore(ColorMaterial, ABC):
     """

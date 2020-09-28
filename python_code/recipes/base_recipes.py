@@ -9,15 +9,17 @@ from python_code.inventories import Item
 recipe_books = {}
 
 def create_recipe_book():
+    import python_code.recipes.factory_recipes
+    import python_code.recipes.furnace_recipes
     global recipe_books
-    recipe_books = {"factory": RecipeBook("factory"), "furnace": RecipeBook("furnace")}
+    recipe_books = {"factory": RecipeBook("python_code.recipes.factory_recipes"), "furnace": RecipeBook("python_code.recipes.furnace_recipes")}
 
 class RecipeBook:
 
-    def __init__(self, recipe_type):
-        self.recipes = self.__initiate_recipes(recipe_type)
+    def __init__(self, recipe_module_name):
+        self.recipes = self.__initiate_recipes(recipe_module_name)
 
-    def __initiate_recipes(self, recipe_type):
+    def __initiate_recipes(self, recipe_module_name):
         """
         Innitiate all the recipes defined in this file based on subclassing
         from BaseRecipe
@@ -25,10 +27,10 @@ class RecipeBook:
         """
         #filter out all the recipes.
         recipes = []
-        for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-            if issubclass(obj, BaseRecipe) and obj != BaseRecipe and getattr(obj, "TYPE") == recipe_type:
-                #add an instance of the recipe
+        for name, obj in inspect.getmembers(sys.modules[recipe_module_name], inspect.isclass):
+            if issubclass(obj, BaseRecipe):
                 recipes.append(obj())
+
         return recipes
 
     def __iter__(self):
@@ -156,11 +158,6 @@ class BaseRecipe(ABC):
     def CRAFTING_TIME(self):
         return None
 
-    @property
-    @abstractmethod
-    def TYPE(self):
-        return None
-
     def get_image(self):
         if issubclass(self._material, materials.BuildingMaterial):
             return buildings.building_type_from_material(self._material).full_image()
@@ -178,49 +175,3 @@ class BaseRecipe(ABC):
             image_grid.append(image_row)
         return image_grid
 
-
-class FurnaceRecipe(BaseRecipe):
-    CRAFTING_TIME = 1000
-    TYPE = "factory"
-    def __init__(self):
-        mat = materials.FurnaceMaterial
-        BaseRecipe.__init__(self, mat)
-
-    def _create_recipe_grid(self):
-        grid = RecipeGrid(Size(3, 3))
-
-        row1 = [materials.Stone, materials.Stone, materials.Stone]
-        row2 = [materials.Stone, materials.Coal, materials.Stone]
-
-        grid.add_all_rows(row1, row2, row1)
-        return grid
-
-class CompactStoneRecipe(BaseRecipe):
-    CRAFTING_TIME = 100
-    TYPE = "factory"
-    def __init__(self):
-        mat = materials.StoneBrickMaterial
-        BaseRecipe.__init__(self, mat)
-        self.quantity = 2
-
-    def _create_recipe_grid(self):
-        grid = RecipeGrid(Size(2, 2))
-
-        row = [materials.Stone, materials.Stone]
-        grid.add_all_rows(row, row)
-        return grid
-
-class StonePipe(BaseRecipe):
-    CRAFTING_TIME = 1000
-    TYPE = "factory"
-    def __init__(self):
-        mat = materials.StonePipeMaterial
-        BaseRecipe.__init__(self, mat)
-        self.quantity = 2
-
-    def _create_recipe_grid(self):
-        grid = RecipeGrid(Size(3, 3))
-        top = [materials.Stone, materials.Stone, materials.Stone]
-        middle = [materials.Air, materials.Air, materials.Air]
-        grid.add_all_rows(top, middle, top)
-        return grid
