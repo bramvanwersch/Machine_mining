@@ -149,7 +149,7 @@ class FurnaceWindow(CraftingWindow):
 
     def __init_widgets(self):
         #create material_grid
-        self.grid_pane = CraftingGrid((40, 28), (64, 64), Size(2, 2),  color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((40, 28), (64, 64), Size(2, 2), color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
         self.__fuel_meter = FuelMeter((10,10), (25, 100))
@@ -162,7 +162,7 @@ class FurnaceWindow(CraftingWindow):
         a_lbl.set_image(arrow_image)
         self.add_widget(a_lbl)
 
-        self._craftable_item_lbl = Label((170, 32), (50, 50), color=(150, 150, 150))
+        self._craftable_item_lbl = ItemLabel((170, 32), (50, 50), None, border=False, color=(150, 150, 150))
         self.add_widget(self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl, color=(75, 75, 75))
 
