@@ -30,7 +30,6 @@ class CraftingWindow(Window):
     def update(self, *args):
         super().update(*args)
         if self._craftable_item_recipe != None and not self._crafting:
-            self.__cancel_requested_items()
             self._crafting_time[0] = 0
             self._craft_building.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_materials]
             self._crafting = True
@@ -62,6 +61,8 @@ class CraftingWindow(Window):
         Add items to a list that will remove items from the inventory regardless of
         filters
         """
+        if self._craftable_item_recipe == None:
+            return
         delivered_materials = [item.copy() for item in self._craftable_item_recipe.needed_materials]
         for index, item in enumerate(self._craft_building.requested_items):
             for d_index, d_item in enumerate(delivered_materials):
@@ -92,6 +93,7 @@ class CraftingWindow(Window):
 
     def recipe_action(self, recipe, lbl, s1):
         self._crafting = False
+        self.__cancel_requested_items()
         self._craftable_item_recipe = recipe
         s1.select(lbl, (0, 0, 0))
         self.grid_pane.add_recipe(recipe)
