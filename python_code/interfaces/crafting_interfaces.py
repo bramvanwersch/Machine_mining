@@ -296,4 +296,3 @@ class FuelMeter(Pane):
 
         self.fuel_indicator.set_image(full_image, pos=(0, 0))
         self.add_border(self.fuel_indicator)
-

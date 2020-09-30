@@ -158,10 +158,6 @@ class Dirt(ColorMaterial):
     BASE_COLOR = (107, 49, 13)
 
 
-class IronIngot(ColorMaterial):
-    BASE_COLOR = (100, 100, 100)
-
-
 #ore materials
 class Ore(ColorMaterial, ABC):
     """
@@ -278,8 +274,48 @@ class ImageMaterial(BaseMaterial, ABC):
 
 #craftables
 class StoneBrickMaterial(ImageMaterial):
+
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((0,0))
+        return image
+
+
+class UnbuildableMaterial:
+    ALLOWED_TASKS = ["Fetch", "Request", "Deliver"]
+
+
+class IronIngot(ImageMaterial, UnbuildableMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((70, 10), color_key=(255, 255, 255))
+        return image
+
+
+class GoldIngot(ImageMaterial, UnbuildableMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((80, 10), color_key=(255, 255, 255))
+        return image
+
+
+class ZincIngot(ImageMaterial, UnbuildableMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((90, 10), color_key=(255, 255, 255))
+        return image
+
+
+class CopperIngot(ImageMaterial, UnbuildableMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((0, 20), color_key=(255, 255, 255))
+        return image
+
+
+class TitaniumIngot(ImageMaterial, UnbuildableMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((10, 20), color_key=(255, 255, 255))
         return image
 
 
