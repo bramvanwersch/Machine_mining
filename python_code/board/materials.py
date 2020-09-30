@@ -1,10 +1,19 @@
-import pygame
+import pygame, sys, inspect
 from abc import ABC, abstractmethod
 from random import randint
 
 from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
 from python_code.utility.image_handling import image_sheets
 from python_code.board.blocks import *
+
+
+fuel_values = []
+
+def set_fuel_materials():
+    global fuel_values
+    for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+        if issubclass(obj, FuelMaterial) and obj != FuelMaterial:
+            fuel_values.append(obj.name())
 
 
 class BaseMaterial(ABC):

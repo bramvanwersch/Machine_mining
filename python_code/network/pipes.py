@@ -1,3 +1,5 @@
+from math import ceil
+
 from python_code.utility.image_handling import image_sheets
 from python_code.board.blocks import ContainerBlock, NetworkBlock
 from python_code.utility.constants import BLOCK_SIZE
@@ -22,6 +24,8 @@ class Network:
 
     def update(self):
         for node in self.nodes:
+            if node.requested_fuel > 0:
+                self.request_fuel(node)
             if len(node.requested_items) > 0:
                 self.request_items(node)
             if len(node.pushed_items) > 0:
@@ -44,6 +48,27 @@ class Network:
             self.__retrieve_with_task(node, a_node)
             if len(node.requested_items) == 0:
                 break
+
+    def request_fuel(self, node):
+        for a_node in self.nodes:
+            if not hasattr(a_node, "inventory"):
+                continue
+            for name in materials.fuel_values:
+                item_pointer = a_node.inventory.item_pointer(name)
+                if item_pointer == None:
+                    continue
+                max_needed = ceil(node.requested_fuel / item_pointer.FUEL_VALUE)
+
+                #refers to the quantity needed or present
+                present_quantity = min(max_needed, item_pointer.quantity)
+                if present_quantity > 0:
+                    requested_item = item_pointer.copy()
+                    requested_item.quantity = present_quantity
+                    node.requested_fuel -= max(0, item_pointer.FUEL_VALUE * present_quantity)
+                    node.requested_items.append(requested_item)
+                    node.inventory.in_filter.add_whitelist(requested_item.name())
+                    if node.requested_fuel <= 0:
+                        break
 
     def __retrieve_with_pipes(self, destination_node, node):
         items = []
@@ -210,6 +235,8 @@ class NetworkNode:
         self.requested_items = []
         #items that are pushed to the be pushed away
         self.pushed_items = []
+        #fuel that is needed, can be anything that act as fuel
+        self.requested_fuel = 0
         #flag to let tasks know not to push items to this node
         self.destroyed = False
 

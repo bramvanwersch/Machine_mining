@@ -31,7 +31,6 @@ class TaskControl:
                 task = MiningTask(block, priority=priority, **kwargs)
             else:
                 raise Exception("Invalid task name {}".format(type))
-            print(task)
 
             surrounding_blocks = self.board.surrounding_blocks(block)
             if len([b for b in surrounding_blocks if b != None and b.transparant_group != 0]) > 0:

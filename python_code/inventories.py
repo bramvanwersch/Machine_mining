@@ -14,8 +14,16 @@ class Filter:
     def set_blacklist(self, *item_names):
         self.__blacklist = set(item_names)
 
+    def add_blacklist(self, *item_names):
+        for item_name in item_names:
+            self.__blacklist.add(item_name)
+
     def set_whitelist(self, *item_names):
         self.__whitelist = set(item_names)
+
+    def add_whitelist(self, *item_names):
+        for item_name in item_names:
+            self.__whitelist.add(item_name)
 
 
 class Inventory:

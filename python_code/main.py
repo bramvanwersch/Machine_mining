@@ -1,4 +1,3 @@
-#sys.path.append(dirname(__file__))
 
 #own classes
 from python_code.entities import Worker, CameraCentre
@@ -10,6 +9,7 @@ from python_code.utility.image_handling import load_images
 from python_code.recipes.base_recipes import create_recipe_book
 from python_code.interfaces.building_interface import BuildingWindow
 from python_code.interfaces.managers import create_window_manager
+from python_code.board.materials import set_fuel_materials
 
 
 class Main:
@@ -30,6 +30,9 @@ class Main:
 
         #load all recipes
         create_recipe_book()
+
+        #load fuel materials
+        set_fuel_materials()
 
         self.rect = self.screen.get_rect()
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))

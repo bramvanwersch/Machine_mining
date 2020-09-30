@@ -5,6 +5,7 @@ from python_code.utility.constants import INTERFACE_LAYER
 from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
 from python_code.utility.utilities import Size
+from python_code.board.materials import fuel_values
 
 
 class CraftingWindow(Window):
@@ -29,11 +30,17 @@ class CraftingWindow(Window):
 
     def update(self, *args):
         super().update(*args)
+        self._set_recipe()
+        self._craft_item()
+
+    def _set_recipe(self):
         if self._craftable_item_recipe != None and not self._crafting:
             self._crafting_time[0] = 0
             self._craft_building.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_materials]
             self._crafting = True
-        elif self._crafting and self.__check_materials():
+
+    def _craft_item(self):
+        if self._crafting and self._check_materials():
             self._crafting_time[0] += GAME_TIME.get_time()
             over_time = self._crafting_time[1] - self._crafting_time[0]
             if over_time <= 0:
@@ -45,7 +52,7 @@ class CraftingWindow(Window):
                 for item in self._craftable_item_recipe.needed_materials:
                     self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
 
-    def __check_materials(self):
+    def _check_materials(self):
         for n_item in self._craftable_item_recipe.needed_materials:
             present = False
             for item in self._craft_building.inventory.items:
@@ -148,6 +155,42 @@ class FurnaceWindow(CraftingWindow):
         super().__init__(furnace_object, recipes, *groups,layer=INTERFACE_LAYER, title = "FURNACE",
                         allowed_events=[1, K_ESCAPE])
         self.__init_widgets()
+        self.__requested_fuel = False
+
+    def update(self):
+        super().update()
+        #configure fuel based on inventory fuel items.
+        total_fuel = 0
+        for mat_name in fuel_values:
+            fuel_pointer = self._craft_building.inventory.item_pointer(mat_name)
+            if fuel_pointer != None and fuel_pointer.quantity > 0:
+                total_fuel += fuel_pointer.FUEL_VALUE * fuel_pointer.quantity
+                #remove the fuel
+                fuel_pointer.quantity = 0
+        self.__fuel_meter.add_fuel(total_fuel)
+
+    def _set_recipe(self):
+        super()._set_recipe()
+        if self._craftable_item_recipe != None and not self.__requested_fuel:
+            needed_fuel = self._craftable_item_recipe.FUEL_CONSUMPTION - self.__fuel_meter._fuel_lvl
+            if needed_fuel > 0 and needed_fuel > self._craft_building.requested_fuel:
+                self._craft_building.requested_fuel += needed_fuel
+            self.__requested_fuel = True
+
+    def _craft_item(self):
+        if self._crafting and self._check_materials() and self.__fuel_meter._fuel_lvl >= self._craftable_item_recipe.FUEL_CONSUMPTION:
+            self._crafting_time[0] += GAME_TIME.get_time()
+            over_time = self._crafting_time[1] - self._crafting_time[0]
+            if over_time <= 0:
+                self._crafting = False
+                self.__requested_fuel = False
+                self._crafting_time[0] = abs(over_time)
+                item = Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
+                self._craft_building.inventory.add_items(item, ignore_filter=True)
+                self._craft_building.pushed_items.append(item)
+                self.__fuel_meter.add_fuel(-1 * self._craftable_item_recipe.FUEL_CONSUMPTION)
+                for item in self._craftable_item_recipe.needed_materials:
+                    self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
 
     def __init_widgets(self):
         #create material_grid
@@ -224,7 +267,7 @@ class FuelMeter(Pane):
     MAX_FUEL = 100
     def __init__(self, pos, size, max_fuel=MAX_FUEL, **kwargs):
         super().__init__(pos, size, color=INVISIBLE_COLOR, **kwargs)
-        self.__fuel_lvl = 0
+        self._fuel_lvl = 0
         self.__max_fuel = max_fuel
 
         self.__init_widgets()
@@ -240,15 +283,17 @@ class FuelMeter(Pane):
 
     def add_fuel(self, value):
         #dont allow above the max or under 0
-        self.__fuel_lvl = min(max(self.__fuel_lvl + value, 0), self.MAX_FUEL)
+        self._fuel_lvl = min(max(self._fuel_lvl + value, 0), self.MAX_FUEL)
         self.__change_fuel_indicator()
 
     def __change_fuel_indicator(self):
-        img_height = int(self.fuel_indicator.rect.height * (self.__fuel_lvl / self.__max_fuel))
-        image = pygame.Surface((self.fuel_indicator.rect.width , img_height))
-        image.fill((0,255,0))
+        full_image = pygame.Surface(self.fuel_indicator.rect.size)
+        full_image.fill((150,150,150))
+        img_height = int(self.fuel_indicator.rect.height * (self._fuel_lvl / self.__max_fuel))
+        fuel_image = pygame.Surface((self.fuel_indicator.rect.width , img_height))
+        fuel_image.fill((0,255,0))
+        full_image.blit(fuel_image, (0, self.fuel_indicator.rect.height - img_height, self.fuel_indicator.rect.width , img_height))
 
-        posy = self.fuel_indicator.rect.height - img_height
-        self.fuel_indicator.set_image(image, pos=(0, posy))
+        self.fuel_indicator.set_image(full_image, pos=(0, 0))
         self.add_border(self.fuel_indicator)
 
