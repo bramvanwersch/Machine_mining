@@ -70,7 +70,6 @@ class Network:
                     node.inventory.in_filter.add_whitelist(requested_item.name())
                     if node.requested_fuel <= 0:
                         break
-        print(node.requested_fuel, node.requested_items)
 
     def __retrieve_with_pipes(self, destination_node, node):
         items = []
