@@ -65,10 +65,12 @@ class Network:
                     requested_item = item_pointer.copy()
                     requested_item.quantity = present_quantity
                     node.requested_fuel -= max(0, item_pointer.FUEL_VALUE * present_quantity)
+                    node.requested_fuel = max(node.requested_fuel, 0)
                     node.requested_items.append(requested_item)
                     node.inventory.in_filter.add_whitelist(requested_item.name())
                     if node.requested_fuel <= 0:
                         break
+        print(node.requested_fuel, node.requested_items)
 
     def __retrieve_with_pipes(self, destination_node, node):
         items = []
