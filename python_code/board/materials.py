@@ -272,6 +272,13 @@ class ImageMaterial(BaseMaterial, ABC):
             surface.fill((0, 255, 13))
             return surface
 
+
+class CancelMaterial(ImageMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((20,20), color_key=(255, 255, 255))
+        return image
+
 #craftables
 class StoneBrickMaterial(ImageMaterial):
 

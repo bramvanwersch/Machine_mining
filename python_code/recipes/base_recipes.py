@@ -26,7 +26,7 @@ class RecipeBook:
         :return: a list of all recipes
         """
         #filter out all the recipes.
-        recipes = []
+        recipes = [CancelRecipe()]
         for name, obj in inspect.getmembers(sys.modules[recipe_module_name], inspect.isclass):
             if issubclass(obj, BaseRecipe):
                 recipes.append(obj())
@@ -129,7 +129,7 @@ class BaseRecipe(ABC):
         self.__recipe_grid = self._create_recipe_grid()
         self._material = material
         # list of item objects
-        self.needed_materials = self.__count_grid()
+        self.needed_items = self.__count_grid()
         self.quantity = 1
 
     def __count_grid(self):
@@ -175,3 +175,15 @@ class BaseRecipe(ABC):
             image_grid.append(image_row)
         return image_grid
 
+class CancelRecipe(BaseRecipe):
+    CRAFTING_TIME = 0
+    FUEL_CONSUMPTION = 0
+
+    def __init__(self):
+        mat = materials.CancelMaterial
+        super().__init__(mat)
+        self.quantity = 0
+        self.needed_items = [Item(self._material, 20)]
+
+    def _create_recipe_grid(self):
+        return RecipeGrid(Size(0,0))

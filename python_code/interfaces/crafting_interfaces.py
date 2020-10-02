@@ -36,11 +36,11 @@ class CraftingWindow(Window):
     def _set_recipe(self):
         if self._craftable_item_recipe != None and not self._crafting:
             self._crafting_time[0] = 0
-            self._craft_building.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_materials]
+            self._craft_building.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_items]
             self._crafting = True
 
     def _craft_item(self):
-        if self._crafting and self._check_materials():
+        if self._craftable_item_recipe != None and self._crafting and self._check_materials():
             self._crafting_time[0] += GAME_TIME.get_time()
             over_time = self._crafting_time[1] - self._crafting_time[0]
             if over_time <= 0:
@@ -49,11 +49,11 @@ class CraftingWindow(Window):
                 item = Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
                 self._craft_building.inventory.add_items(item, ignore_filter=True)
                 self._craft_building.pushed_items.append(item)
-                for item in self._craftable_item_recipe.needed_materials:
+                for item in self._craftable_item_recipe.needed_items:
                     self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
 
     def _check_materials(self):
-        for n_item in self._craftable_item_recipe.needed_materials:
+        for n_item in self._craftable_item_recipe.needed_items:
             present = False
             for item in self._craft_building.inventory.items:
                 if item.name() == n_item.name() and item.quantity >= n_item.quantity:
@@ -70,7 +70,7 @@ class CraftingWindow(Window):
         """
         if self._craftable_item_recipe == None:
             return
-        delivered_materials = [item.copy() for item in self._craftable_item_recipe.needed_materials]
+        delivered_materials = [item.copy() for item in self._craftable_item_recipe.needed_items]
         for index, item in enumerate(self._craft_building.requested_items):
             for d_index, d_item in enumerate(delivered_materials):
                 if d_item.name() == item.name():
@@ -104,7 +104,7 @@ class CraftingWindow(Window):
         self._craftable_item_recipe = recipe
         s1.select(lbl, (0, 0, 0))
         self.grid_pane.add_recipe(recipe)
-        self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_materials])
+        self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_items])
         self._craft_building.inventory.out_filter.set_whitelist(recipe._material.name())
         if recipe._material.name() in self._craft_building.inventory:
             item = self._craft_building.inventory.item_pointer(recipe._material.name())
@@ -189,7 +189,7 @@ class FurnaceWindow(CraftingWindow):
                 self._craft_building.inventory.add_items(item, ignore_filter=True)
                 self._craft_building.pushed_items.append(item)
                 self.__fuel_meter.add_fuel(-1 * self._craftable_item_recipe.FUEL_CONSUMPTION)
-                for item in self._craftable_item_recipe.needed_materials:
+                for item in self._craftable_item_recipe.needed_items:
                     self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
 
     def __init_widgets(self):
