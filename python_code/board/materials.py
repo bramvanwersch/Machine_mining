@@ -40,6 +40,7 @@ class BaseMaterial(ABC):
         """
         self.surface = self._configure_surface(image)
         self.transparant_group = self.TRANSPARANT_GROUP
+        self.unbuildable = False
 
     @classmethod
     def name(self):
@@ -287,39 +288,43 @@ class StoneBrickMaterial(ImageMaterial):
         return image
 
 
-class UnbuildableMaterial:
+class UnbuildableMaterial(ImageMaterial):
     ALLOWED_TASKS = ["Fetch", "Request", "Deliver"]
 
+    def __init__(self):
+        super().__init__()
+        self.unbuildable = True
 
-class IronIngot(ImageMaterial, UnbuildableMaterial):
+
+class IronIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((70, 10), color_key=(255, 255, 255))
         return image
 
 
-class GoldIngot(ImageMaterial, UnbuildableMaterial):
+class GoldIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((80, 10), color_key=(255, 255, 255))
         return image
 
 
-class ZincIngot(ImageMaterial, UnbuildableMaterial):
+class ZincIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((90, 10), color_key=(255, 255, 255))
         return image
 
 
-class CopperIngot(ImageMaterial, UnbuildableMaterial):
+class CopperIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((0, 20), color_key=(255, 255, 255))
         return image
 
 
-class TitaniumIngot(ImageMaterial, UnbuildableMaterial):
+class TitaniumIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((10, 20), color_key=(255, 255, 255))
