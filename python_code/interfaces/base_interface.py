@@ -3,6 +3,7 @@ from pygame.locals import *
 
 import python_code.interfaces.managers as window_managers
 from python_code.utility.event_handling import EventHandler
+from python_code.interfaces.interface_utility import screen_to_board_coordinate
 from python_code.utility.utilities import Size
 from python_code.utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
 from python_code.interfaces.widgets import Frame, Label, Button
@@ -27,7 +28,7 @@ class Window(Frame, EventHandler):
 
         #values for moving static windows
         self.__moving_window = False
-        self.__previous_mouse_pos = None
+        self.__previous_board_pos = None
 
         self.visible = False
         self.__focussed = False
@@ -65,14 +66,14 @@ class Window(Frame, EventHandler):
     def __top_label_action(self, value):
         self.__moving_window = value
         if value == True:
-            self.__previous_mouse_pos = pygame.mouse.get_pos()
+            self.__previous_board_pos = screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)
 
     def __move_window(self):
-        mouse_pos = pygame.mouse.get_pos()
-        moved_x = mouse_pos[0] - self.__previous_mouse_pos[0]
-        moved_y = mouse_pos[1] - self.__previous_mouse_pos[1]
-        self.__previous_mouse_pos = mouse_pos
-        self.rect.move_ip((moved_x, moved_y))
+        board_pos = screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)
+        moved_x = board_pos[0] - self.__previous_board_pos[0]
+        moved_y = board_pos[1] - self.__previous_board_pos[1]
+        self.__previous_board_pos = board_pos
+        self.orig_rect.move_ip((moved_x, moved_y))
 
     def _set_title(self, title):
         """
