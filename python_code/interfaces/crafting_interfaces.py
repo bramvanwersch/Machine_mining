@@ -18,8 +18,7 @@ class CraftingWindow(Window):
         self._craft_building = craft_building
         fr = self._craft_building.rect
         location = fr.bottomleft
-        Window.__init__(self, location, self.SIZE, *groups, **kwargs)
-        self.static = True
+        Window.__init__(self, location, self.SIZE, *groups, static=True, **kwargs)
 
         self._recipe_book = recipes
 
