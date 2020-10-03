@@ -1,4 +1,5 @@
 import pygame
+from pygame.locals import *
 
 import python_code.interfaces.managers as window_managers
 from python_code.utility.event_handling import EventHandler
@@ -23,7 +24,13 @@ class Window(Frame, EventHandler):
         Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
         self.window_manager = window_managers.window_manager
         self.static = static
+
+        #values for moving static windows
+        self.__moving_window = False
+        self.__previous_mouse_pos = None
+
         self.visible = False
+        self.__focussed = False
         self.id = "window {}".format(self.ID)
         Window.ID += 1
 
@@ -31,8 +38,16 @@ class Window(Frame, EventHandler):
         self.set_action(K_ESCAPE, self._close_window, types=["unpressed"])
         self.__add_top_border(size, title)
 
+    def update(self, *args):
+        super().update(*args)
+        if self.__moving_window:
+            self.__move_window()
+
     def __add_top_border(self, size, title):
         top_label = Label((0,0), Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height), color=self.TOP_BAR_COLOR)
+        if self.static:
+            top_label.set_action(1, self.__top_label_action, values=[True], types=["pressed"])
+            top_label.set_action(1, self.__top_label_action, values=[False], types=["unpressed"])
         self.add_widget(top_label, adjust=False)
         if title != None:
             top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25, add=True)
@@ -46,6 +61,18 @@ class Window(Frame, EventHandler):
         if adjust:
             widget.rect.move_ip(self.TOP_SIZE)
         super().add_widget(widget)
+
+    def __top_label_action(self, value):
+        self.__moving_window = value
+        if value == True:
+            self.__previous_mouse_pos = pygame.mouse.get_pos()
+
+    def __move_window(self):
+        mouse_pos = pygame.mouse.get_pos()
+        moved_x = mouse_pos[0] - self.__previous_mouse_pos[0]
+        moved_y = mouse_pos[1] - self.__previous_mouse_pos[1]
+        self.__previous_mouse_pos = mouse_pos
+        self.rect.move_ip((moved_x, moved_y))
 
     def _set_title(self, title):
         """
@@ -64,9 +91,14 @@ class Window(Frame, EventHandler):
         Press the escape key to close the window
         """
         if self.window_manager == None:
-            from python_code.interfaces.managers import window_manager
-            self.window_manager = window_manager
+            self.window_manager = window_managers.window_manager
         self.window_manager.remove(self)
+
+    def set_focus(self, value:bool):
+        #things called when losing focus of the window
+        self.__focussed = value
+        if value == False:
+            self.__moving_window = False
 
     def show(self, value: bool):
         """
@@ -76,6 +108,8 @@ class Window(Frame, EventHandler):
         :param value: a boolean
         """
         self.visible = value
+        if value == False:
+            self.__moving_window = False
 
     def handle_events(self, events):
         """
@@ -90,6 +124,11 @@ class Window(Frame, EventHandler):
         """
         if self.visible:
             leftovers = super().handle_events(events)
+            #check for events that are not normally triggered twice
+            for event in events:
+                if event.type == MOUSEBUTTONUP and event.button == 1:
+                    self.__moving_window = False
+                    break
             return leftovers
         return events
 

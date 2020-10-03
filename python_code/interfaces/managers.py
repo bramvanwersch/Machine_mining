@@ -82,9 +82,14 @@ class WindowManager:
         #if hovering over the window
         for event in events:
             if event.type in (MOUSEBUTTONDOWN, MOUSEBUTTONUP):
+                #make sure to unfocus when clicking outside
+                if hovered_window != self.window_order[-1]:
+                    self.window_order[-1].set_focus(False)
+
                 if hovered_window != None:
-                    if event.button == 1:
+                    if event.button == 1 and event.type == MOUSEBUTTONDOWN:
                         self.__set_top_window(hovered_window)
+                        hovered_window.set_focus(True)
                     window_events.append(event)
                 else:
                     ignored_events.append(event)

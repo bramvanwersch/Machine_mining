@@ -66,7 +66,7 @@ class EventHandler(ABC):
             return self.__pressed_keys[key].pressed(continious)
         return False
 
-    def get_pressed(self, continious = False):
+    def get_all_pressed(self, continious = False):
         pressed_keys = []
         for key in self.__pressed_keys:
             if key in self.__pressed_keys and self.__pressed_keys[key].pressed(continious):
@@ -78,7 +78,7 @@ class EventHandler(ABC):
             return self.__pressed_keys[key].unpressed(continious)
         return False
 
-    def get_unpressed(self, continious = False):
+    def get_all_unpressed(self, continious = False):
         unpressed_keys = []
         for key in self.__pressed_keys:
             if key in self.__pressed_keys and self.__pressed_keys[key].unpressed(continious):
@@ -133,6 +133,9 @@ class Key:
             self.__unpressed = False
         return up
 
+    def __str__(self):
+        return "Key {}. Is pressed {}/ is unpressed {}.".format(self.name, self.__pressed, self.__unpressed)
+
 
 class BoardEventHandler(EventHandler, ABC):
     """
@@ -163,7 +166,7 @@ class BoardEventHandler(EventHandler, ABC):
 
         :param event: a pygame event
         """
-        pressed_modes = self.get_pressed()
+        pressed_modes = self.get_all_pressed()
         if len(pressed_modes):
             #make sure to clear the board of any remnants before switching
             if pressed_modes[0].name in MODES:

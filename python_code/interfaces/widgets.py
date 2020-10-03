@@ -505,8 +505,8 @@ class Frame(ZoomableEntity, Pane):
             pos = screen_to_board_coordinate(pos, self.groups()[0].target, 1)
         selected = self._find_selected_widgets(pos)
 
-        pressed = self.get_pressed()
-        unpressed = self.get_unpressed()
+        pressed = self.get_all_pressed()
+        unpressed = self.get_all_unpressed()
         keys = [*zip(pressed, ["pressed"]* len(pressed)),
                 *zip(unpressed, ["unpressed"]* len(unpressed))]
 
