@@ -1,4 +1,6 @@
 import pygame
+
+import python_code.interfaces.managers as window_managers
 from python_code.utility.event_handling import EventHandler
 from python_code.utility.utilities import Size
 from python_code.utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
@@ -19,8 +21,7 @@ class Window(Frame, EventHandler):
     def __init__(self, pos, size, *groups, color=COLOR, title=None, static=False, **kwargs):
         EventHandler.__init__(self, [])
         Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
-        from python_code.interfaces.managers import window_manager
-        self.window_manager = window_manager
+        self.window_manager = window_managers.window_manager
         self.static = static
         self.visible = False
         self.id = "window {}".format(self.ID)

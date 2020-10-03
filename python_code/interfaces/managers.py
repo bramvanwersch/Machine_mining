@@ -53,11 +53,11 @@ class WindowManager:
             self.add(window)
 
     def __find_hovered_window(self, mouse_pos):
-        board_coord = screen_to_board_coordinate(mouse_pos, self.__target, self.__target._zoom)
+        board_coord = screen_to_board_coordinate(mouse_pos, self.__target, 1)
         selected_window = None
         for window in self.windows.values():
             if window.static:
-                if window.orig_rect.collidepoint(board_coord) and \
+                if window.rect.collidepoint(board_coord) and \
                         (selected_window == None or selected_window._layer < window._layer):
                     selected_window = window
             else:

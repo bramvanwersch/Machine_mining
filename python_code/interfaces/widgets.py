@@ -444,8 +444,8 @@ class Frame(ZoomableEntity, Pane):
     gui should have a frame to be able to display and handle updates
     """
     def __init__(self, pos, size, *groups, **kwargs):
-        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         Pane.__init__(self, pos, size, **kwargs)
+        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
 
     def update(self, *args):
         """
@@ -459,6 +459,7 @@ class Frame(ZoomableEntity, Pane):
     def zoom(self, zoom):
         self._zoom = zoom
 
+#need to be here otherwise rects are not properly chnaged
     @property
     def rect(self):
         """
