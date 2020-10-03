@@ -10,6 +10,7 @@ from python_code.recipes.base_recipes import create_recipe_book
 from python_code.interfaces.building_interface import BuildingWindow
 from python_code.interfaces.managers import create_window_manager
 from python_code.board.materials import set_fuel_materials
+import python_code.interfaces.managers as window_managers
 
 
 class Main:
@@ -73,8 +74,7 @@ class Main:
 class User:
     def __init__(self, camera_center, board, main_sprite_group):
         #import needs to happen here since the main first has to create the object
-        from python_code.interfaces.managers import window_manager
-        self.window_manager= window_manager
+        self.window_manager= window_managers.window_manager
 
         self.camera_center = camera_center
         self.board = board

@@ -1,4 +1,5 @@
 import pygame
+
 from python_code.utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 from python_code.interfaces.interface_utility import screen_to_board_coordinate
 
@@ -94,9 +95,3 @@ class WindowManager:
             event_handling_window = self.window_order[-1]
             leftover_events = event_handling_window.handle_events(window_events)
         return leftover_events + ignored_events
-
-
-
-
-
-
