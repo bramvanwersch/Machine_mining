@@ -9,20 +9,23 @@ from python_code.board.materials import BuildingMaterial
 import python_code.board.buildings
 
 
-class ActionFunction:
+class KeyActionFunctions:
     """
     Action function for defining actions for widgets. Can be called like a
     function
     """
-    def __init__(self, function, values = [], types = []):
+    def __init__(self, function, values = [], types=["pressed", "unpressed"]):
         """
         :param function: a function object that can be triggered
         :param values: a value or pointer to supply to the function
         :param types: a list of types that should trigger the function
         """
-        self.function = function
-        self.values = values
-        self.types = types
+        self.functions = {}
+        self.add_action(function, values, types)
+
+    def add_action(self, function, values=[], types=["pressed", "unpressed"]):
+        for type in types:
+            self.functions[type] = [function, values]
 
     def __call__(self, *args, **kwargs):
         """
@@ -31,8 +34,9 @@ class ActionFunction:
         :param args: optional args
         :param kwargs: optional kwargs
         """
-        if len(self.types) == 0 or args[0] in self.types:
-            self.function(*self.values)
+        if args[0] in self.functions:
+            function, values = self.functions[args[0]]
+            function(*values)
 
 
 class HoverAction:
@@ -49,14 +53,14 @@ class HoverAction:
         """
         if hover != self.__prev_hover_state or self.__continious:
             if self.__action_functions[hover]:
-                self.__action_functions[hover]()
+                self.__action_functions[hover]("hover")
         self.__prev_hover_state = hover
 
     def set_hover_action(self, action, values=[]):
-        self.__action_functions[True] = ActionFunction(action, values)
+        self.__action_functions[True] = KeyActionFunctions(action, values, ["hover"])
 
     def set_unhover_action(self, action, values=[]):
-        self.__action_functions[False] = ActionFunction(action, values)
+        self.__action_functions[False] = KeyActionFunctions(action, values, ["hover"])
 
 
 class SelectionGroup:
@@ -108,7 +112,7 @@ class Widget(ABC):
         """
         self.action_functions[key](type)
 
-    def set_action(self, key, action_function, values = [], types = ["pressed", "unpressed"]):
+    def set_action(self, key, action_function, values=[], types=["pressed", "unpressed"]):
         """
         Binds a certain key to an action function. Optional values can be
         supplied that are then added as args.
@@ -120,7 +124,10 @@ class Widget(ABC):
         :param: types: a list of event types that should trigger the action
         function
         """
-        self.action_functions[key] = ActionFunction(action_function, values, types)
+        if key in self.action_functions:
+            self.action_functions[key].add_action(action_function, values, types)
+        else:
+            self.action_functions[key] = KeyActionFunctions(action_function, values, types)
 
     def set_selected(self, selected):
         """
