@@ -104,7 +104,7 @@ class User:
 
     def update(self):
         self.__handle_events()
-        # make sure to configure the layers so that the sprites are correctly placed
+        # allow to assign values to the _layer attribute instead of calling change_layer
         for sprite in self.main_sprite_group.sprites():
             self.main_sprite_group.change_layer(sprite, sprite._layer)
         self.board.pipe_network.update()

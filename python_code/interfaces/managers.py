@@ -32,8 +32,10 @@ class WindowManager:
         if len(self.window_order) == 0:
             window._layer = INTERFACE_LAYER
         else:
+            print(window._layer)
             window._layer = self.window_order[-1]._layer + 1
         self.window_order.append(window)
+        print(window._layer)
         window.show(True)
 
     def remove(self, window):
@@ -43,8 +45,8 @@ class WindowManager:
             self.window_order.pop()
         else:
             self.window_order.pop(rem_index)
-            for window in self.window_order[rem_index +1 :]:
-                window._layer -= 1
+            for w in self.window_order[rem_index +1 :]:
+                w._layer -= 1
         window.show(False)
 
     def __set_top_window(self, window):
