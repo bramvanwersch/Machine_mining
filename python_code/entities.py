@@ -320,7 +320,7 @@ class Worker(MovingEntity):
             self.task_queue.add(EmptyInventoryTask(self))
         elif self.task_queue.empty():
             task = self.task_control.get_task(self.rect.center)
-            if task:
+            if task != None:
                 self.task_queue.add(task)
             elif not self.inventory.empty:
                 self.task_queue.add(EmptyInventoryTask(self))

@@ -333,12 +333,12 @@ class BuildTask(MultiTask):
         self.removed_blocks = [block for block in removed_blocks if block.name() != "Air"]
 
     def start(self, entity, **kwargs):
-        super().start(entity, **kwargs)
         if not entity.inventory.check_item_get(self.finish_block.name()):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
             self.start_subtask(task, entity)
         else:
             self.finished_subtasks = True
+        super().start(entity, **kwargs)
 
     def _set_task_progress(self):
         self.task_progress = [0, self.finish_block.material.task_time() + sum(b.material.task_time() for b in self.removed_blocks)]
@@ -407,13 +407,13 @@ class RequestTask(MultiTask):
         return self.MAX_RETRIES + self.req_item.quantity
 
     def start(self, entity, **kwargs):
-        super().start(entity, **kwargs)
         #TODO make this dependant on what the entity can cary
         if not entity.inventory.check_item_get(self.req_item.name(), quantity=self.req_item.quantity):
             task = FetchTask(entity, self.req_item.name(), **kwargs)
             self.start_subtask(task, entity)
         else:
             self.finished_subtasks = True
+        super().start(entity, **kwargs)
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
@@ -433,7 +433,6 @@ class DeliverTask(MultiTask):
         return self.MAX_RETRIES + self.pushed_item.quantity
 
     def start(self, entity, **kwargs):
-        super().start(entity, **kwargs)
         # first start potentail other tasks
         if not self.__finished_get and not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
             task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, **kwargs)
@@ -444,3 +443,4 @@ class DeliverTask(MultiTask):
             self.start_subtask(task, entity)
         else:
             self.finished_subtasks = True
+        super().start(entity, **kwargs)
