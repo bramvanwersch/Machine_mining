@@ -25,7 +25,7 @@ class CraftingWindow(Window):
         self._craftable_item_recipe = None
         self._crafting = False
         #current target
-        self._crafting_time = [0, 0]
+        self._crafting_time = [0, 1]
 
     def update(self, *args):
         super().update(*args)
@@ -140,10 +140,7 @@ class FactoryWindow(CraftingWindow):
         self._create_recipe_selector((10, 150), (280, 90), self.COLOR[:-1])
 
         #add arrow pointing from grid to display
-        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
-        arrow_image = pygame.transform.scale(arrow_image, (50,50))
-        a_lbl = Label((140, 50), (50, 50), color=INVISIBLE_COLOR)
-        a_lbl.set_image(arrow_image)
+        a_lbl = ProgressArrow((140, 50), (50, 50), self._crafting_time, color=INVISIBLE_COLOR)
         self.add_widget(a_lbl)
 
 
@@ -199,11 +196,8 @@ class FurnaceWindow(CraftingWindow):
         self.__fuel_meter = FuelMeter((10,10), (25, 100))
         self.add_widget(self.__fuel_meter)
 
-        # add arrow pointing from grid to display
-        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
-        arrow_image = pygame.transform.scale(arrow_image, (50, 50))
-        a_lbl = Label((110, 35), (50, 50), color=INVISIBLE_COLOR)
-        a_lbl.set_image(arrow_image)
+        # add arrow pointing from grid to displa
+        a_lbl = ProgressArrow((110, 35), (50, 50), self._crafting_time, color=INVISIBLE_COLOR)
         self.add_widget(a_lbl)
 
         self._craftable_item_lbl = ItemLabel((170, 32), (50, 50), None, border=False, color=(150, 150, 150))
@@ -260,6 +254,33 @@ class CraftingGrid(Pane):
         for row in self._crafting_grid:
             for lbl in row:
                 lbl.set_image(None)
+
+
+class ProgressArrow(Label):
+    def __init__(self, pos, size, progress_list, **kwargs):
+        super().__init__(pos, size, **kwargs)
+        self.__arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
+        self.__full_progress_arrow = image_sheets["general"].image_at((0, 20), size=(20, 20), color_key=(255, 255, 255))
+        self.__arrow_image = pygame.transform.scale(self.__arrow_image, size)
+        self.__full_progress_arrow = pygame.transform.scale(self.__full_progress_arrow, size)
+        self.__progress = progress_list
+        self.__previous_progress = progress_list[0]
+        self.__set_progress()
+
+    def wupdate(self):
+        super().wupdate()
+        if self.__previous_progress != self.__progress[0]:
+            self.__previous_progress = self.__progress[0]
+            self.__set_progress()
+
+    def __set_progress(self):
+        full_rect = self.__full_progress_arrow.get_rect()
+        fraction_progress = min(1, self.__progress[0] / self.__progress[1])
+        width = int(fraction_progress * full_rect.width)
+        actual_rect = (*full_rect.topleft, width, full_rect.height)
+        progress_arrow = self.__arrow_image.copy()
+        progress_arrow.blit(self.__full_progress_arrow, actual_rect, actual_rect)
+        self.set_image(progress_arrow)
 
 
 class FuelMeter(Pane):
