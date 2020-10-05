@@ -179,7 +179,9 @@ class Board(BoardEventHandler):
             self.add_blocks(*update_blocks)
 
     def remove_building(self, block):
-        building_instance = self.__buildings[block.id]
+        building_instance = self.__buildings.pop(block.id, None)
+        if building_instance == None:
+            return
         rect = building_instance.rect
         if isinstance(block, NetworkBlock):
             self.pipe_network.remove_node(building_instance)
@@ -193,10 +195,9 @@ class Board(BoardEventHandler):
             for block in row:
                 row = self.__p_to_r(block.rect.y)
                 column = self.__p_to_c(block.rect.x)
-                self.task_control.cancel_tasks(block)
+                self.task_control.cancel_tasks(block, remove=True)
                 change_block = self.matrix[row][column]
-                self.matrix[row][column] = AirBlock(block.rect.topleft,
-                                                materials.Air())
+                self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
                 if isinstance(block, NetworkBlock):
                     surrounding_blocks = self.surrounding_blocks(change_block)
                     self.pipe_network.remove_pipe(change_block)
@@ -387,7 +388,7 @@ class Board(BoardEventHandler):
         #remove all tasks present
         for row_i, row in enumerate(blocks):
             for col_i, block in enumerate(row):
-                self.task_control.cancel_tasks(block)
+                self.task_control.cancel_tasks(block, remove=True)
 
         #select the full area
         self.selection_image.add_highlight_rectangle(rect, self._mode.color)

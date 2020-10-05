@@ -65,7 +65,7 @@ class TaskControl:
             elif isinstance(task, BuildTask) and task.finish_block.transparant_group != 0:
                 self.__check_surrounding_tasks(task.block)
 
-    def cancel_tasks(self, *blocks):
+    def cancel_tasks(self, *blocks, remove=False):
         """
         Remove a task from a block and consider other things if needed
 
@@ -76,6 +76,8 @@ class TaskControl:
             if removed_tasks != None:
                 for tasks in removed_tasks.values():
                     for task in tasks:
+                        if remove == True:
+                            self.remove_tasks(task)
                         #make sure that entitties still performing the task stop
                         task.cancel()
             else:
@@ -216,6 +218,7 @@ class TaskQueue:
         finished_task = self.tasks.pop()
         return finished_task, finished_task.block
 
+
 class Task(ABC):
     """
     Object for storing a task and its progress
@@ -242,9 +245,12 @@ class Task(ABC):
 
     def cancel(self):
         self.started_task = False
-        self.decrease_priority()
         self.selected = False
         self.__canceled = True
+
+    def uncancel(self):
+        self.__canceled = False
+        self.decrease_priority()
 
     def decrease_priority(self, amnt = -1):
         self.priority += amnt
@@ -269,11 +275,11 @@ class Task(ABC):
 
         :return: a boolean
         """
-        return self.task_progress[0] >= self.task_progress[1] or self.__handed_in or self.__canceled
+        return self.task_progress[0] >= self.task_progress[1] or self.__handed_in
 
     def __str__(self):
-        return "Task object {}:\nBlock: {}\nPriority: {}\nSelected: {}\nStarted: {}\nProgress: {}\nFinished: {}".\
-            format(super().__str__(), self.block, self.priority, self.selected, self.started_task, self.task_progress, self.finished)
+        return "Task object {}:\nBlock: {}\nPriority: {}\nSelected: {}\nStarted: {}\nProgress: {}\nFinished: {}\nCanceled: {}\n".\
+            format(super().__str__(), self.block, self.priority, self.selected, self.started_task, self.task_progress, self.finished, self.__canceled)
     
 
 class MultiTask(Task, ABC):

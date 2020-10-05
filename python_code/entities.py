@@ -310,7 +310,9 @@ class Worker(MovingEntity):
             self.__move_along_path()
         #perform a task if available
         elif not self.task_queue.empty():
-            if not self.task_queue.task.started_task:
+            if self.task_queue.task.canceled():
+                self.__next_task()
+            elif not self.task_queue.task.started_task:
                 self.__start_task()
             else:
                 self.__perform_task()
@@ -345,7 +347,9 @@ class Worker(MovingEntity):
         #make sure to move the last step if needed, so the worker does not potentially stop in a block
         if len(self.path) > 0:
             self.path = self.path[-1]
-        if not f_task.canceled() and not f_task.handed_in():
+        if f_task.canceled():
+            f_task.uncancel()
+        elif not f_task.handed_in():
             f_task.hand_in(self)
             self.task_control.remove_tasks(f_task)
 
