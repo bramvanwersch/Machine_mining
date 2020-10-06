@@ -169,9 +169,10 @@ class BaseRecipe(ABC):
             image_row = []
             for material_type in row:
                 if issubclass(material_type, materials.BuildingMaterial):
-                    image_row.append(buildings.building_type_from_material(material_type).full_image())
+                    mat_type = buildings.building_type_from_material(material_type)
+                    image_row.append([mat_type.name(), mat_type.full_image()])
                 else:
-                    image_row.append(material_type().surface)
+                    image_row.append([material_type.name(), material_type().surface])
             image_grid.append(image_row)
         return image_grid
 

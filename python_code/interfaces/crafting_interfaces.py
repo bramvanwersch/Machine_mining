@@ -129,7 +129,7 @@ class FactoryWindow(CraftingWindow):
         start
         """
         #create material_grid
-        self.grid_pane = CraftingGrid((10, 10), (125, 125), Size(4, 4),  color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((10, 10), (125, 125), Size(4, 4), self._craft_building.inventory, color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
         #add label to display the possible item image
@@ -190,7 +190,7 @@ class FurnaceWindow(CraftingWindow):
 
     def __init_widgets(self):
         #create material_grid
-        self.grid_pane = CraftingGrid((40, 28), (64, 64), Size(2, 2), color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((40, 28), (64, 64), Size(2, 2), self._craft_building.inventory, color = (50, 50, 50))
         self.add_widget(self.grid_pane)
 
         self.__fuel_meter = FuelMeter((10,10), (25, 100))
@@ -214,16 +214,23 @@ class CraftingGrid(Pane):
     """
     COLOR = (173, 94, 29)
     BORDER_DISTANCE = 5
-    def __init__(self, pos, size, grid_size, **kwargs):
+    def __init__(self, pos, size, grid_size, inventory, **kwargs):
         super().__init__(pos, size, **kwargs)
         self._crafting_grid = []
+        self.__watching_inventory = inventory
+        self.__prev_no_items = -1
 
         #variables that track a recipe material_grid and if it is changed
         self._recipe_grid = []
+        self.__needed_materials = []
         self.__recipe_changed = False
 
         self.__init_grid(grid_size)
         self.size = Size(len(self._crafting_grid[0]), len(self._crafting_grid))
+
+    def wupdate(self, *args):
+        super().wupdate()
+        self.add_present_material_indicator()
 
     def __init_grid(self, grid_size):
         """
@@ -237,23 +244,76 @@ class CraftingGrid(Pane):
             row = []
             for col_i in range(grid_size.width):
                 pos = start_pos + grid_square * (col_i, row_i) + (2, 2)
-                lbl = Label(pos, grid_square - (4, 4), color = self.COLOR)
+                lbl = GridLabel(pos, grid_square - (4, 4), color = self.COLOR)
                 self.add_widget(lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
 
     def add_recipe(self, recipe):
         self.reset()
-        for row_i, row in enumerate(recipe.get_image_grid()):
-            for col_i, image in enumerate(row):
+        self._recipe_grid = recipe.get_image_grid()
+        self.__needed_materials = recipe.needed_items
+        for row_i, row in enumerate(self._recipe_grid):
+            for col_i, name_image in enumerate(row):
+                name, image = name_image
                 if image != None:
-                    image = pygame.transform.scale(image, Size(*self._crafting_grid[row_i][col_i].rect.size) - (4,4))
-                    self._crafting_grid[row_i][col_i].set_image(image)
+                    self._crafting_grid[row_i][col_i].set_item(image)
+
+    def add_present_material_indicator(self):
+        already_present = {}
+        for row_i, row in enumerate(self._recipe_grid):
+            for col_i, name_image in enumerate(row):
+                name, image = name_image
+                needed_item = self.__watching_inventory.item_pointer(name)
+                if needed_item == None:
+                    self._crafting_grid[row_i][col_i].set_present(False)
+                elif name in already_present and needed_item.quantity > already_present[name]:
+                    already_present[name] += 1
+                    self._crafting_grid[row_i][col_i].set_present(True)
+                elif needed_item.quantity > 0:
+                    already_present[name] = 1
+                    self._crafting_grid[row_i][col_i].set_present(True)
+                else:
+                    self._crafting_grid[row_i][col_i].set_present(False)
 
     def reset(self):
         for row in self._crafting_grid:
             for lbl in row:
-                lbl.set_image(None)
+                lbl.set_item(None)
+                lbl.set_present(None)
+
+
+class GridLabel(Label):
+    POS_COLOR = (0, 255, 0, 100)
+    NEG_COLOR = (255, 0, 0, 100)
+    def __init__(self, pos, size, **kwargs):
+        super().__init__(pos, size, **kwargs)
+        self.__item_present = None
+        self.__positive_mark = image_sheets["general"].image_at((80, 0), size=(10, 10), color_key=(255, 255, 255))
+
+        self.__negative_mark = image_sheets["general"].image_at((70, 0), size=(10, 10), color_key=(255, 255, 255))
+        self.__item_image = None
+
+    def set_item(self, item_image):
+        if item_image != None:
+            item_image = pygame.transform.scale(item_image, Size(*self.rect.size) - (4, 4))
+        self.__item_image = item_image
+        self.set_image(self.__item_image)
+
+    def set_present(self, value):
+        if value == self.__item_present:
+            return
+        self.__item_present = value
+        if self.__item_image == None:
+            return
+        if value == True:
+            image = self.__item_image.copy()
+            image.blit(self.__positive_mark, (self.rect.width - 10 - 4, 0))
+            self.set_image(image)
+        else:
+            image = self.__item_image.copy()
+            image.blit(self.__negative_mark, (self.rect.width - 10 - 4, 0))
+            self.set_image(image)
 
 
 class ProgressArrow(Label):
