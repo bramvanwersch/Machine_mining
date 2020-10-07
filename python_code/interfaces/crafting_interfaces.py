@@ -35,7 +35,15 @@ class CraftingWindow(Window):
     def _set_recipe(self):
         if self._craftable_item_recipe != None and not self._crafting:
             self._crafting_time[0] = 0
-            self._craft_building.requested_items = [item.copy() for item in self._craftable_item_recipe.needed_items]
+            needed_items = [item.copy() for item in self._craftable_item_recipe.needed_items]
+            for index, item in enumerate(needed_items):
+                inventory_pointer = self._craft_building.inventory.item_pointer(item.name())
+                if inventory_pointer == None:
+                    continue
+                item.quantity -= inventory_pointer.quantity
+                if item.quantity <= 0:
+                    del needed_items[index]
+            self._craft_building.requested_items = needed_items
             self._crafting = True
 
     def _craft_item(self):
