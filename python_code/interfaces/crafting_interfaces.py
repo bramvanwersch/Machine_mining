@@ -70,21 +70,6 @@ class CraftingWindow(Window):
                 return False
         return True
 
-    def __cancel_requested_items(self):
-        """
-        Add items to a list that will remove items from the inventory regardless of
-        filters
-        """
-        if self._craftable_item_recipe == None:
-            return
-        delivered_materials = [item.copy() for item in self._craftable_item_recipe.needed_items]
-        for index, item in enumerate(self._craft_building.requested_items):
-            for d_index, d_item in enumerate(delivered_materials):
-                if d_item.name() == item.name():
-                    delivered_materials[d_index].quantity -= self._craft_building.requested_items[index].quantity
-                    if delivered_materials[d_index].quantity > 0:
-                        self._craft_building.pushed_items.append(delivered_materials[d_index])
-
     def _create_recipe_selector(self, loc, size, color):
         # #create scrollable inventory
         inventory_s  = ScrollPane(loc, size, color=color)
@@ -107,7 +92,6 @@ class CraftingWindow(Window):
 
     def recipe_action(self, recipe, lbl, s1):
         self._crafting = False
-        self.__cancel_requested_items()
         self._craftable_item_recipe = recipe
         s1.select(lbl, (0, 0, 0))
         self.grid_pane.add_recipe(recipe)

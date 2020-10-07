@@ -1,8 +1,9 @@
+from abc import ABC, abstractmethod
+
 from python_code.utility.utilities import manhattan_distance
 from python_code.board.blocks import AirBlock
 from python_code.board.materials import Air
 from python_code.utility.constants import MULTI_TASKS
-from abc import ABC, abstractmethod
 
 class TaskControl:
     """
@@ -102,7 +103,6 @@ class TaskControl:
         for task_dict in sorted_task_dicts:
             for tasks in sorted(task_dict.values(), key=lambda x: self.__best_task_sort_tuple(task_dict, worker_pos)):
                 task = None
-                # print([str(t) for t in tasks])
                 for t in tasks:
                     if not t.selected:
                         task = t
@@ -115,7 +115,8 @@ class TaskControl:
                         continue
                 elif isinstance(task, RequestTask):
                     #TODO make this a total inventory of all inventories on the map
-                    if not self.__terminal_inv.check_item_get(task.req_item.name(), task.req_item.quantity):
+                    if not self.__terminal_inv.check_item_get(task.req_item.name(), 1) and\
+                            task.block.inventory.check_item_deposit(task.req_item.name()):
                         continue
                 if task != None:
                     task.selected = True
@@ -292,12 +293,13 @@ class MultiTask(Task, ABC):
 
     def start(self, entity, **kwargs):
         self._subtask_count += 1
-        if self._subtask_count > self._max_retries:
+        if self.finished_subtasks:
+            super().start(entity, **kwargs)
+        elif self._subtask_count > self._max_retries:
             #make sure to remove the task at the start of the task queue
             entity.task_queue.next()
             self.cancel()
-        elif self.finished_subtasks:
-            super().start(entity, **kwargs)
+
 
     def start_subtask(self, task, entity):
         entity.task_queue.add(task)
@@ -311,6 +313,9 @@ class MultiTask(Task, ABC):
 
     def _get_max_retries(self):
         return self.MAX_RETRIES
+
+    def __str__(self):
+        return "{}Finished subtasks: {}\n".format(super().__str__(), self.finished_subtasks)
 
 
 class MiningTask(Task):
@@ -374,7 +379,10 @@ class FetchTask(Task):
         if self.block:
             item = self.block.inventory.get(self.req_block_name, self.quantity)
             if item and item.quantity == self.quantity:
-                entity.inventory.add_items(item)
+                if entity.inventory.check_item_deposit(item.name()):
+                    entity.inventory.add_items(item)
+                else:
+                    self.block.inventory.add_items(item)
 
 
 class EmptyInventoryTask(Task):
@@ -395,7 +403,11 @@ class EmptyInventoryTask(Task):
         super().hand_in(entity, **kwargs)
         if self.block != None:
             items = entity.inventory.get_all_items()
-            self.block.add(*items)
+            for item in items:
+                if self.block.inventory.check_item_deposit(item.name()):
+                    self.block.inventory.add_items(item)
+                else:
+                    entity.inventory.add_items(item)
 
 
 class RequestTask(MultiTask):
@@ -408,18 +420,40 @@ class RequestTask(MultiTask):
 
     def start(self, entity, **kwargs):
         #TODO make this dependant on what the entity can cary
-        if not entity.inventory.check_item_get(self.req_item.name(), quantity=self.req_item.quantity):
-            task = FetchTask(entity, self.req_item.name(), **kwargs)
-            self.start_subtask(task, entity)
+        if not self.finished_subtasks and not entity.inventory.check_item_get(self.req_item.name(), quantity=self.req_item.quantity):
+            if entity.inventory.full and entity.inventory.check_item_get(self.req_item.name(), 1):
+                self.__push_new_request(entity)
+            #at least one item was retrieved
+            elif self._subtask_count + 1 > self._max_retries and entity.inventory.check_item_get(self.req_item.name(), 1):
+                self.__push_new_request(entity)
+            else:
+                task = FetchTask(entity, self.req_item.name(), **kwargs)
+                self.start_subtask(task, entity)
         else:
             self.finished_subtasks = True
         super().start(entity, **kwargs)
 
+    def __push_new_request(self, entity):
+        self.finished_subtasks = True
+        leftover = self.req_item.quantity - entity.inventory.item_pointer(self.req_item.name()).quantity
+        if leftover > 0:
+            new_item = self.req_item.copy()
+            new_item.quantity = leftover
+            entity.task_control.add("Request", self.block, req_item=new_item)
+
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
+        #grab the full amount or what is available
         item = entity.inventory.get(self.req_item.name(), self.req_item.quantity)
         if item != None:
-            self.block.inventory.add_items(item)
+            if self.block.inventory.check_item_deposit(item.name()):
+                self.block.inventory.add_items(item)
+            #add back item to not delete it
+            else:
+                entity.inventory.add_items(item)
+
+    def __str__(self):
+        return "{}Requested item: {}\n".format(super().__str__(), self.req_item)
 
 
 class DeliverTask(MultiTask):
@@ -444,3 +478,6 @@ class DeliverTask(MultiTask):
         else:
             self.finished_subtasks = True
         super().start(entity, **kwargs)
+
+    def __str__(self):
+        return "{}Deliver item: {}\n".format(super().__str__(), self.pushed_item)
