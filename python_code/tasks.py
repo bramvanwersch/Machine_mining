@@ -356,9 +356,10 @@ class BuildTask(MultiTask):
 
 
 class FetchTask(Task):
-    def __init__(self, entity, req_block_name, inventory_block = None, quantity=1, **kwargs):
+    def __init__(self, entity, req_block_name, inventory_block = None, quantity=1, ignore_filter=False, **kwargs):
         self.req_block_name = req_block_name
         self.quantity = quantity
+        self.ignore_filter = ignore_filter
         if inventory_block != None:
             block = inventory_block
         else:
@@ -377,7 +378,7 @@ class FetchTask(Task):
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
         if self.block:
-            item = self.block.inventory.get(self.req_block_name, self.quantity)
+            item = self.block.inventory.get(self.req_block_name, self.quantity, ignore_filter=self.ignore_filter)
             if item and item.quantity == self.quantity:
                 if entity.inventory.check_item_deposit(item.name()):
                     entity.inventory.add_items(item)
@@ -469,7 +470,7 @@ class DeliverTask(MultiTask):
     def start(self, entity, **kwargs):
         # first start potentail other tasks
         if not self.__finished_get and not entity.inventory.check_item_get(self.pushed_item.name(), quantity=self.pushed_item.quantity):
-            task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, **kwargs)
+            task = FetchTask(entity, self.pushed_item.name(), inventory_block=self.block, quantity=self.pushed_item.quantity, ignore_filter=True, **kwargs)
             self.start_subtask(task, entity)
         elif not entity.inventory.empty:
             self.__finished_get = True

@@ -342,8 +342,6 @@ class Worker(MovingEntity):
     def __next_task(self):
 
         f_task, f_block = self.task_queue.next()
-        print(f_task)
-        print(self.task_queue.task)
         # make sure that the entity stops when the task is sudenly finshed
         self.speed.x = self.speed.y = 0
         #make sure to move the last step if needed, so the worker does not potentially stop in a block
