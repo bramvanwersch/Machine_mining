@@ -270,7 +270,7 @@ class CraftingGrid(Pane):
                 elif name in already_present and needed_item.quantity > already_present[name]:
                     already_present[name] += 1
                     self._crafting_grid[row_i][col_i].set_present(True)
-                elif needed_item.quantity > 0:
+                elif needed_item.quantity > 0 and name not in already_present:
                     already_present[name] = 1
                     self._crafting_grid[row_i][col_i].set_present(True)
                 else:
