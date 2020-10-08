@@ -1,18 +1,22 @@
 
 
 BUGS:
-- Workers can still get stuck doing a request task if the right amount of materials are not present i think. It is pretty rare and i thin it is a timing thing
-- Certain buildings are not added as nodes or duplicate instances are added leading to key errors when removing buildings
-- Bugs with windows not updating there bounding box properly, meaning zooming makes it so the window cannot properly direct events
-
+- Windows dont close when buildings are destroyed
+- Windows dont appear when opening in zoomed in mode.
+- Fix blocks getting left behind while mining because of delayed pathfinding calculations
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Better terrain generation
-- Allot more recipes
+- A nice starting area
+- Extendable terrain generation
+- some form of light that blocks the view
+- Allot more recipes --> make a tree of progress using the recipes
 - An end goal.
 - Some narrative that gives some background to the story
+
+SPECIFIC FEATURES:
 - Close window when the building with the window is destroyed
 - add an item that allows to select nothing for a certain recipe
-- Make windows dragable by clicking and holding the top border
+- add tooltips
 
 EXTRA FEATURES (features that can be in the game at some point):
