@@ -10,6 +10,7 @@ from python_code.utility.event_handling import BoardEventHandler
 from python_code.interfaces.building_interface import get_selected_item
 from python_code.network.pipes import Network
 from python_code.interfaces.interface_utility import screen_to_board_coordinate
+from python_code.board.chunks import *
 
 class Board(BoardEventHandler):
     """
@@ -27,11 +28,10 @@ class Board(BoardEventHandler):
 
         #setup the board
         self.matrix = self.__generate_foreground_matrix()
+        self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
         self.back_matrix = self.__generate_background_matrix()
-        self.foreground_image = BoardImage(main_sprite_group,
-                                           block_matrix = self.matrix, layer = BOARD_LAYER)
-        self.background_image = BoardImage(main_sprite_group,
-                                           block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
+        self.foreground_image = BoardImage(main_sprite_group, block_matrix = self.matrix, layer = BOARD_LAYER)
+        self.background_image = BoardImage(main_sprite_group, block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
         self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
         self.task_control = None
@@ -44,6 +44,19 @@ class Board(BoardEventHandler):
 
         #variables needed when playing
         self.pf = PathFinder(self.matrix)
+
+    def __generate_chunk_matrix(self, main_sprite_group):
+        chunk_matrix = []
+        for col_c in range(CHUNK_GRID_SIZE.height):
+            chunk_row = []
+            for row_c in range(CHUNK_GRID_SIZE.width):
+                point_pos = (row_c * CHUNK_SIZE.width, col_c * CHUNK_SIZE.height)
+                if (row_c, col_c) == START_CHUNK_POS:
+                    chunk_row.append(StartChunk(point_pos, main_sprite_group))
+                else:
+                    chunk_row.append(Chunk(point_pos, main_sprite_group))
+            chunk_matrix.append(chunk_row)
+        return chunk_matrix
 
     def set_task_control(self, task_control):
         self.task_control = task_control
@@ -624,27 +637,6 @@ class BoardImage(ZoomableEntity):
         zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),round(rect.width * self._zoom),round(rect.height * self._zoom)))
         zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
         self.image.blit(zoomed_image, zoomed_rect)
-
-    #for determining mouse position on the board given the screen coordinate
-    def _screen_to_board_coordinate(self, coord):
-
-        c = self.groups()[0].target.rect.center
-        #last half a screen of the board
-        if BOARD_SIZE.width - c[0] - SCREEN_SIZE.width / 2 < 0:
-            x = BOARD_SIZE.width - (SCREEN_SIZE.width - coord[0])
-        #the rest of the board
-        elif c[0] - SCREEN_SIZE.width / 2 > 0:
-            x = coord[0] + (c[0] - SCREEN_SIZE.width / 2)
-        #first half a screen of the board
-        else:
-            x = coord[0]
-        if BOARD_SIZE.height - c[1] - SCREEN_SIZE.height / 2 < 0:
-            y = BOARD_SIZE.height - (SCREEN_SIZE.height - coord[1])
-        elif c[1] - SCREEN_SIZE.height / 2 > 0:
-            y = coord[1] + (c[1] - SCREEN_SIZE.height / 2)
-        else:
-            y = coord[1]
-        return [int(x / self._zoom), int(y / self._zoom)]
 
 class TransparantBoardImage(BoardImage):
     """

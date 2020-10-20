@@ -18,5 +18,6 @@ SPECIFIC FEATURES:
 - Close window when the building with the window is destroyed
 - add an item that allows to select nothing for a certain recipe
 - add tooltips
+- make finding the closest inventory more efficient
 
 EXTRA FEATURES (features that can be in the game at some point):
