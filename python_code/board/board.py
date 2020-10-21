@@ -9,7 +9,7 @@ from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
 from python_code.interfaces.building_interface import get_selected_item
 from python_code.network.pipes import Network
-from python_code.interfaces.interface_utility import screen_to_board_coordinate
+from python_code.interfaces.interface_utility import p_to_cc, p_to_cp, p_to_cr, p_to_c, p_to_r
 from python_code.board.chunks import *
 
 class Board(BoardEventHandler):
@@ -27,12 +27,12 @@ class Board(BoardEventHandler):
         self.main_sprite_group = main_sprite_group
 
         #setup the board
-        self.matrix = self.__generate_foreground_matrix()
+        # self.matrix = self.__generate_foreground_matrix()
         self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
-        self.back_matrix = self.__generate_background_matrix()
-        self.foreground_image = BoardImage(main_sprite_group, block_matrix = self.matrix, layer = BOARD_LAYER)
-        self.background_image = BoardImage(main_sprite_group, block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
-        self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
+        # self.back_matrix = self.__generate_background_matrix()
+        # self.foreground_image = BoardImage(main_sprite_group, block_matrix = self.matrix, layer = BOARD_LAYER)
+        # self.background_image = BoardImage(main_sprite_group, block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
+        # self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
         self.task_control = None
 
@@ -43,7 +43,7 @@ class Board(BoardEventHandler):
         self.__add_starter_buildings()
 
         #variables needed when playing
-        self.pf = PathFinder(self.matrix)
+        # self.pf = PathFinder(self.matrix)
 
     def __generate_chunk_matrix(self, main_sprite_group):
         chunk_matrix = []
@@ -57,6 +57,24 @@ class Board(BoardEventHandler):
                     chunk_row.append(Chunk(point_pos, main_sprite_group))
             chunk_matrix.append(chunk_row)
         return chunk_matrix
+
+    def __get_chunks_from_rect(self, rect):
+        affected_chunks = []
+        tl_column, tl_row = p_to_cp(rect.topleft)
+        br_column, br_row = p_to_cp(rect.bottomright)
+        left = rect.left
+        for column in range(tl_column - br_column + 1):
+            width = CHUNK_SIZE.width - (left % CHUNK_SIZE.width)
+            top = rect.top
+            for row in range(tl_row - br_row + 1):
+                height = CHUNK_SIZE.height - (top % CHUNK_SIZE.height)
+                topleft = (left, top)
+                new_rect = pygame.Rect((*topleft, width, height))
+                chunk = self.__chunk_from_point(topleft)
+                affected_chunks.append([chunk, new_rect])
+                top += height
+            left += width
+        return affected_chunks
 
     def set_task_control(self, task_control):
         self.task_control = task_control
@@ -91,19 +109,18 @@ class Board(BoardEventHandler):
         :param matrix: the matrix that contains the surrounding blocks
         :return: 4 Block or None objects
         """
-        row = self.__p_to_r(block.rect.y)
-        column = self.__p_to_c(block.rect.x)
         blocks = [None, None, None, None]
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
-            matrix_position = (column + new_position[0], row + new_position[1])
-
+            surrounding_pos = (block.rect.x + new_position[0], block.rect.y + new_position[1])
             # Make sure within range
-            if matrix_position[0] > (len(self.matrix[0]) - 1) or \
-                    matrix_position[0] < 0 or \
-                    matrix_position[1] > (len(self.matrix) - 1) or \
-                    matrix_position[1] < 0:
+            if surrounding_pos[0] > BOARD_SIZE.width or \
+                surrounding_pos[0] < 0 or \
+                surrounding_pos[1] > BOARD_SIZE.height or \
+                surrounding_pos[1] < 0:
                 continue
-            blocks[index] = (self.matrix[matrix_position[1]][matrix_position[0]])
+            chunk = self.__chunk_from_point(surrounding_pos)
+            surrouding_block = chunk.get_block(surrounding_pos)
+            blocks[index] = surrouding_block
         return blocks
 
     def remove_blocks(self, blocks):
@@ -170,20 +187,17 @@ class Board(BoardEventHandler):
         :param building_instance: an instance of Building
         :param draw: Boolean telling if the foreground image should be updated
         mainly important when innitiating
+        #TODO lookinto what the draw parameter ads
         """
         building_rect = building_instance.rect
-        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=1)
-        self.add_rectangle(INVISIBLE_COLOR, building_rect, layer=2)
         self.__buildings[building_instance.id] = building_instance
         update_blocks = []
         if isinstance(building_instance, NetworkNode):
             self.pipe_network.add_node(building_instance)
-        for row_i, row in enumerate(building_instance.blocks):
-            for column_i, block in enumerate(row):
-                m_pos = (self.__p_to_c(block.coord[0]), self.__p_to_r(block.coord[1]))
-                self.matrix[m_pos[1]][m_pos[0]] = block
-                if draw:
-                    self.foreground_image.add_image(block.rect, block.surface)
+        for row in building_instance.blocks:
+            for block in row:
+                chunk = self.__chunk_from_point(block.coord)
+                chunk.add_blocks(block)
                 if isinstance(block, ContainerBlock):
                     self.inventorie_blocks.append(block)
                     update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=True))
@@ -249,13 +263,9 @@ class Board(BoardEventHandler):
 
         This can be used to remove parts of the image or add something to it
         """
-        if layer == 1:
-            image = self.selection_image
-        elif layer == 2:
-            image = self.foreground_image
-        elif layer == 3:
-            image = self.background_image
-        image.add_rect(rect, color)
+        chunk_rectangles = self.__get_chunks_from_rect(rect)
+        for chunk, rect in chunk_rectangles:
+            chunk.add_rectangle(color, rect, layer)
 
     def __getitem__(self, item):
         return self.matrix[item]
@@ -266,23 +276,28 @@ class Board(BoardEventHandler):
             return True
         return False
 
-    def __p_to_r(self, value):
-        """
-        Point to row conversion. Convert a coordinate into a row number
+    def __chunk_from_point(self, point):
+        column, row = p_to_cp(point)
+        return self.chunk_matrix[row][column]
 
-        :param value: a coordinate
-        :return: the corresponding row number
-        """
-        return int(value / BLOCK_SIZE.height)
-
-    def __p_to_c(self, value):
-        """
-        Point to column conversion. Convert a coordinate into a column number
-
-        :param value: a coordinate
-        :return: the corresponding column number
-        """
-        return int(value / BLOCK_SIZE.width)
+    #
+    # def __p_to_r(self, value):
+    #     """
+    #     Point to row conversion. Convert a coordinate into a row number
+    #
+    #     :param value: a coordinate
+    #     :return: the corresponding row number
+    #     """
+    #     return int(value / BLOCK_SIZE.height)
+    #
+    # def __p_to_c(self, value):
+    #     """
+    #     Point to column conversion. Convert a coordinate into a column number
+    #
+    #     :param value: a coordinate
+    #     :return: the corresponding column number
+    #     """
+    #     return int(value / BLOCK_SIZE.width)
 
     def _handle_mouse_events(self):
         """

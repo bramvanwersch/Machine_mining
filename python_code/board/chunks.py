@@ -6,6 +6,7 @@ from python_code.utility.utilities import normalize, Gaussian
 from python_code.board.blocks import *
 from python_code.board import materials
 from python_code.entities import ZoomableEntity, SelectionRectangle
+from python_code.interfaces.interface_utility import p_to_c, p_to_r
 
 
 class Chunk:
@@ -16,11 +17,59 @@ class Chunk:
     def __init__(self, pos, main_sprite_group):
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
-        self.matrix = self._generate_foreground_matrix()
-        self.back_matrix = self.__generate_background_matrix()
-        self.foreground_image = BoardImage(main_sprite_group, block_matrix = self.matrix, layer = BOARD_LAYER)
-        self.background_image = BoardImage(main_sprite_group, block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
-        self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
+        self.__matrix = self._generate_foreground_matrix()
+        self.__back_matrix = self.__generate_background_matrix()
+        offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
+        self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
+        self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
+        self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER)
+
+    def add_rectangle(self, color, rect, layer=2):
+        if layer == 1:
+            image = self.selection_image
+        elif layer == 2:
+            image = self.foreground_image
+        elif layer == 3:
+            image = self.background_image
+        image.add_rect(rect, color)
+
+    def add_blocks(self, *blocks):
+        for block in blocks:
+            # remove the highlight
+            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
+            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
+
+            # add the block
+            self.foreground_image.add_image(block.rect, block.surface)
+
+            column, row = self.__block_loc_from_point(block.rect.topleft)
+            self.__matrix[row][column] = block
+
+    def get_block(self, point):
+        column, row = self.__block_loc_from_point(point)
+        return self.__matrix[row][column]
+
+    def __generate_background_matrix(self):
+        """
+        Generate the backdrop matrix.
+
+        :return: a matrix of the given size
+        """
+        matrix = []
+        for _ in range(p_to_r(BOARD_SIZE.height)):
+            row = ["Dirt"] * p_to_c(BOARD_SIZE.width)
+            matrix.append(row)
+        matrix = self.__create_blocks_from_string(matrix)
+        return matrix
+
+    def __block_loc_from_point(self, point):
+        #get the coordinate of a block in the local self.matrix grid
+        row = p_to_r(point[1]) - p_to_r(self.rect.y)
+        column = p_to_c(point[0]) - p_to_r(self.rect.x)
+        return [column, row]
+
+
+##GENERATE CHUNK FUNCTIONS
 
     def _generate_foreground_matrix(self):
         """
@@ -32,8 +81,8 @@ class Chunk:
 
         matrix = []
         #first make everything stone
-        for _ in range(self._p_to_r(self.rect.height)):
-            row = ["Stone"] * self._p_to_c(self.rect.width)
+        for _ in range(p_to_c(self.rect.height)):
+            row = ["Stone"] * p_to_r(self.rect.width)
             matrix.append(row)
 
         #generate some ores inbetween the start and end locations
@@ -51,37 +100,6 @@ class Chunk:
                         except IndexError:
                             #if outside board skip
                             continue
-        matrix = self.__create_blocks_from_string(matrix)
-        return matrix
-
-    def _p_to_r(self, value):
-        """
-        Point to row conversion. Convert a coordinate into a row number
-
-        :param value: a coordinate
-        :return: the corresponding row number
-        """
-        return int(value / BLOCK_SIZE.height)
-
-    def _p_to_c(self, value):
-        """
-        Point to column conversion. Convert a coordinate into a column number
-
-        :param value: a coordinate
-        :return: the corresponding column number
-        """
-        return int(value / BLOCK_SIZE.width)
-
-    def __generate_background_matrix(self):
-        """
-        Generate the backdrop matrix.
-
-        :return: a matrix of the given size
-        """
-        matrix = []
-        for _ in range(self._p_to_r(BOARD_SIZE.height)):
-            row = ["Dirt"] * self._p_to_c(BOARD_SIZE.width)
-            matrix.append(row)
         matrix = self.__create_blocks_from_string(matrix)
         return matrix
 
@@ -158,9 +176,9 @@ class StartChunk(Chunk):
     def _generate_foreground_matrix(self):
         matrix = super()._generate_foreground_matrix()
         #generate the air space at the start position
-        for row_i in range(self._p_to_r(self.START_RECTANGLE.bottom)):
-            for column_i in range(self._p_to_c(self.START_RECTANGLE.left),
-                                  self._p_to_c(self.START_RECTANGLE.right)):
+        for row_i in range(p_to_r(self.START_RECTANGLE.bottom)):
+            for column_i in range(p_to_c(self.START_RECTANGLE.left),
+                                  p_to_r(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"
         return matrix
 
@@ -171,22 +189,27 @@ class BoardImage(ZoomableEntity):
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """
-    def __init__(self, main_sprite_group, **kwargs):
-        ZoomableEntity.__init__(self, (0, 0), CHUNK_SIZE, main_sprite_group, **kwargs)
+    def __init__(self, pos, main_sprite_group, **kwargs):
+        ZoomableEntity.__init__(self, pos, CHUNK_SIZE, main_sprite_group, **kwargs)
         self.visible = True
+
+    def update(self, *args):
+        pass
 
     def _create_image(self, size, color, **kwargs):
         """
         Overwrites the image creation process in the basic Entity class
         """
         block_matrix = kwargs["block_matrix"]
+        offset = kwargs["offset"]
         image = pygame.Surface(size)
         image.set_colorkey((0,0,0), RLEACCEL)
         image = image.convert_alpha()
         for row in block_matrix:
             for block in row:
                 if block != "Air":
-                    image.blit(block.surface, block.rect)
+                    block_rect = (block.rect.left - offset[0] * CHUNK_SIZE.width, block.rect.top - offset[1] * CHUNK_SIZE.height,*block.rect.size)
+                    image.blit(block.surface, block_rect)
         return image
 
     def add_rect(self, rect, color):
@@ -218,8 +241,8 @@ class TransparantBoardImage(BoardImage):
     Slight variation on the basic Board image that creates a transparant
     surface on which selections can be drawn
     """
-    def __init__(self, main_sprite_group, **kwargs):
-        BoardImage.__init__(self, main_sprite_group, **kwargs)
+    def __init__(self, pos, main_sprite_group, **kwargs):
+        BoardImage.__init__(self, pos, main_sprite_group, **kwargs)
         #the current SelectionRectangle object that shows
         self.selection_rectangle = None
         #last placed highlighted rectangle
@@ -229,8 +252,9 @@ class TransparantBoardImage(BoardImage):
         """
         Overwrites the image creation process in the basic Entity class
         """
-        image = pygame.Surface(size).convert_alpha()
+        image = pygame.Surface(size)
         image.set_colorkey((0,0,0), RLEACCEL)
+        image = image.convert_alpha()
         image.fill(INVISIBLE_COLOR)
         return image
 
@@ -263,7 +287,6 @@ class TransparantBoardImage(BoardImage):
         """
         self.__highlight_rectangle = rect
         self.add_rect(rect, color)
-
 
     def remove_selection(self):
         """

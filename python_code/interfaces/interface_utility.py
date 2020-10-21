@@ -1,4 +1,4 @@
-from python_code.utility.constants import BOARD_SIZE, SCREEN_SIZE
+from python_code.utility.constants import BOARD_SIZE, SCREEN_SIZE, CHUNK_SIZE, BLOCK_SIZE
 
 
 
@@ -31,3 +31,33 @@ def screen_to_board_coordinate(coord, target, zoom):
     else:
         y = coord[1]
     return [int(x / zoom), int(y / zoom)]
+
+def p_to_r(value):
+    """
+    Point to row conversion. Convert a coordinate into a block row number
+
+    :param value: a coordinate
+    :return: the corresponding row number
+    """
+    return int(value / BLOCK_SIZE.height)
+
+def p_to_c(value):
+    """
+    Point to column conversion. Convert a coordinate into a column number
+
+    :param value: a coordinate
+    :return: the corresponding column number
+    """
+    return int(value / BLOCK_SIZE.width)
+
+def p_to_cp(point):
+    #poitn to chunk chunk point
+    return (p_to_cc(point[0]), p_to_cr(point[1]))
+
+def p_to_cr(value):
+    #to chunk row conversion
+    return int(value / CHUNK_SIZE.height)
+
+def p_to_cc(value):
+    #to chunk column conversion
+    return int(value / CHUNK_SIZE.width)

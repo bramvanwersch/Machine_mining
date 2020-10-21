@@ -95,7 +95,8 @@ class ColorMaterial(BaseMaterial, ABC):
     MIN_COLOR = (20, 20, 20)
 
     def __init__(self, depth = 0, **kwargs):
-        self._depth = depth
+        self._depth = 0
+        #TODO see waht to do with the depth stat
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
         super().__init__(**kwargs)
