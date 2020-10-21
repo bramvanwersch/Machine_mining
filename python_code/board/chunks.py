@@ -36,13 +36,15 @@ class Chunk:
     def add_blocks(self, *blocks):
         for block in blocks:
             # remove the highlight
-            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
-            self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
+            topleft = (block.rect.left % CHUNK_SIZE.width, block.rect.top % CHUNK_SIZE.height)
+            block_rect = pygame.Rect((*topleft, *block.rect.size))
+            self.add_rectangle(INVISIBLE_COLOR, block_rect, layer=1)
+            self.add_rectangle(INVISIBLE_COLOR, block_rect, layer=2)
 
             # add the block
-            self.foreground_image.add_image(block.rect, block.surface)
+            self.foreground_image.add_image(block_rect, block.surface)
 
-            column, row = self.__block_loc_from_point(block.rect.topleft)
+            column, row = self.__block_loc_from_point(block_rect.topleft)
             self.__matrix[row][column] = block
 
     def get_block(self, point):

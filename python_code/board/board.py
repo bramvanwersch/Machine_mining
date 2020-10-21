@@ -58,6 +58,15 @@ class Board(BoardEventHandler):
             chunk_matrix.append(chunk_row)
         return chunk_matrix
 
+    def get_start_chunk(self):
+        for row in self.chunk_matrix:
+            for chunk in row:
+                if isinstance(chunk, StartChunk):
+                    return chunk
+        #should not happen
+        return None
+
+
     def __get_chunks_from_rect(self, rect):
         affected_chunks = []
         tl_column, tl_row = p_to_cp(rect.topleft)
@@ -518,9 +527,11 @@ class Board(BoardEventHandler):
         """
         Add all starter building that should be placed before the game starts
         """
-        t = Terminal((BOARD_SIZE[1] / 2 + 50, 30), self.main_sprite_group)
-        c = Factory((BOARD_SIZE[1] / 2 + 30, 30), self.main_sprite_group)
-        f = Furnace((BOARD_SIZE[1] / 2 + 10, 30), self.main_sprite_group)
+        start_chunk = self.get_start_chunk()
+        appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / 10) * 10 + start_chunk.rect.left, start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height)
+        t = Terminal(appropriate_location + (60, -10), self.main_sprite_group)
+        c = Factory(appropriate_location + (40, -10), self.main_sprite_group)
+        f = Furnace(appropriate_location + (20, -10), self.main_sprite_group)
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)

@@ -97,9 +97,12 @@ class User:
         self.__setup_start()
 
     def __setup_start(self):
+        start_chunk = self.board.get_start_chunk()
+        appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / 10) * 10 + start_chunk.rect.left, start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height)
+
         for _ in range(10):
             #TODO find the start chink and spawn them there
-            self.workers.append(Worker((600, 40), self.board, self.tasks, self.main_sprite_group))
+            self.workers.append(Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
 
