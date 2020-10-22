@@ -17,8 +17,12 @@ class Chunk:
     def __init__(self, pos, main_sprite_group):
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
-        self.__matrix = self._generate_foreground_matrix()
-        self.__back_matrix = self.__generate_background_matrix()
+        string_matrix = self._generate_foreground_string_matrix()
+        self.__matrix = self.__create_blocks_from_string(string_matrix)
+
+        back_string_matrix = self._generate_background_string_matrix()
+        self.__back_matrix = self.__create_blocks_from_string(back_string_matrix)
+
         offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
         self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
         self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
@@ -65,7 +69,7 @@ class Chunk:
                 overlapping_blocks.append(add_row)
         return overlapping_blocks
 
-    def __generate_background_matrix(self):
+    def _generate_background_string_matrix(self):
         """
         Generate the backdrop matrix.
 
@@ -75,7 +79,6 @@ class Chunk:
         for _ in range(p_to_r(BOARD_SIZE.height)):
             row = ["Dirt"] * p_to_c(BOARD_SIZE.width)
             matrix.append(row)
-        matrix = self.__create_blocks_from_string(matrix)
         return matrix
 
     def __block_loc_from_point(self, point):
@@ -91,7 +94,7 @@ class Chunk:
 
 ##GENERATE CHUNK FUNCTIONS
 
-    def _generate_foreground_matrix(self):
+    def _generate_foreground_string_matrix(self):
         """
         Fill a matrix with names of the materials of the respective blocks
 
@@ -120,7 +123,6 @@ class Chunk:
                         except IndexError:
                             #if outside board skip
                             continue
-        matrix = self.__create_blocks_from_string(matrix)
         return matrix
 
     def __get_ore_at_depth(self, depth):
@@ -158,8 +160,7 @@ class Chunk:
             for index in range(2):
                 pos = choice([-1, 1])
                 #assert index is bigger then 0
-                location[index] = max(0, pos * randint(0,
-                                self.MAX_CLUSTER_SIZE) + center[index])
+                location[index] = max(0, pos * randint(0, self.MAX_CLUSTER_SIZE) + center[index])
             if location not in ore_locations:
                 ore_locations.append(location)
         return ore_locations
@@ -193,12 +194,11 @@ class Chunk:
 class StartChunk(Chunk):
     START_RECTANGLE = pygame.Rect((CHUNK_SIZE.width / 2 - 125, 0, 250, 50))
 
-    def _generate_foreground_matrix(self):
-        matrix = super()._generate_foreground_matrix()
+    def _generate_foreground_string_matrix(self):
+        matrix = super()._generate_foreground_string_matrix()
         #generate the air space at the start position
         for row_i in range(p_to_r(self.START_RECTANGLE.bottom)):
-            for column_i in range(p_to_c(self.START_RECTANGLE.left),
-                                  p_to_r(self.START_RECTANGLE.right)):
+            for column_i in range(p_to_c(self.START_RECTANGLE.left), p_to_r(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"
         return matrix
 
