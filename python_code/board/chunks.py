@@ -24,22 +24,25 @@ class Chunk:
         self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
         self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER)
 
-    def add_rectangle(self, color, rect, layer=2):
+    @property
+    def coord(self):
+        return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
+
+    def add_rectangle(self, rect, color, layer=2):
+        local_rect = self.__local_adjusted_rect(rect)
         if layer == 1:
             image = self.selection_image
         elif layer == 2:
             image = self.foreground_image
         elif layer == 3:
             image = self.background_image
-        image.add_rect(rect, color)
+        image.add_rect(local_rect, color)
 
     def add_blocks(self, *blocks):
         for block in blocks:
-            # remove the highlight
-            topleft = (block.rect.left % CHUNK_SIZE.width, block.rect.top % CHUNK_SIZE.height)
-            block_rect = pygame.Rect((*topleft, *block.rect.size))
-            self.add_rectangle(INVISIBLE_COLOR, block_rect, layer=1)
-            self.add_rectangle(INVISIBLE_COLOR, block_rect, layer=2)
+            block_rect = self.__local_adjusted_rect(block.rect)
+            self.add_rectangle(block_rect, INVISIBLE_COLOR, layer=1)
+            self.add_rectangle(block_rect, INVISIBLE_COLOR, layer=2)
 
             # add the block
             self.foreground_image.add_image(block_rect, block.surface)
@@ -50,6 +53,17 @@ class Chunk:
     def get_block(self, point):
         column, row = self.__block_loc_from_point(point)
         return self.__matrix[row][column]
+
+    def overlapping_blocks(self, rect):
+        column_start, row_start = self.__block_loc_from_point(rect.topleft)
+        column_end, row_end = self.__block_loc_from_point(rect.bottomright)
+
+        overlapping_blocks = []
+        for row in self.__matrix[row_start : row_end + 1]:
+            add_row = row[column_start : column_end + 1]
+            if len(add_row) > 0:
+                overlapping_blocks.append(add_row)
+        return overlapping_blocks
 
     def __generate_background_matrix(self):
         """
@@ -69,6 +83,10 @@ class Chunk:
         row = p_to_r(point[1]) - p_to_r(self.rect.y)
         column = p_to_c(point[0]) - p_to_r(self.rect.x)
         return [column, row]
+
+    def __local_adjusted_rect(self, rect):
+        topleft = (rect.left % CHUNK_SIZE.width, rect.top % CHUNK_SIZE.height)
+        return pygame.Rect((*topleft, *rect.size))
 
 
 ##GENERATE CHUNK FUNCTIONS
@@ -245,10 +263,6 @@ class TransparantBoardImage(BoardImage):
     """
     def __init__(self, pos, main_sprite_group, **kwargs):
         BoardImage.__init__(self, pos, main_sprite_group, **kwargs)
-        #the current SelectionRectangle object that shows
-        self.selection_rectangle = None
-        #last placed highlighted rectangle
-        self.__highlight_rectangle = None
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -260,53 +274,10 @@ class TransparantBoardImage(BoardImage):
         image.fill(INVISIBLE_COLOR)
         return image
 
-    def add_selection_rectangle(self, pos, keep = False, size=(10, 10)):
-        """
-        Add a rectangle that shows what the user is currently selecting
-
-        :param pos: the event.pos of the rectangle
-        :param keep: if the previous highlight should be kept
-        :param size: the size of the rectagle to add at the start
-        """
-        mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
-        # should the highlighted area stay when a new one is selected
-        if not keep and self.__highlight_rectangle:
-            self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
-        self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
-                                            self.groups()[0],zoom=self._zoom)
-
     def add_building_rectangle(self, pos, size=(10, 10)):
         mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
         self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
                                         self.groups()[0],zoom=self._zoom, color=INVISIBLE_COLOR)
 
-    def add_highlight_rectangle(self, rect, color):
-        """
-        Add a rectangle to this image that functions as highlight from the
-        current selection
-
-        :param color: the color of the highlight
-        """
-        self.__highlight_rectangle = rect
-        self.add_rect(rect, color)
-
-    def remove_selection(self):
-        """
-        Safely remove the selection rectangle
-        """
-        if self.selection_rectangle:
-            self.selection_rectangle.kill()
-            self.selection_rectangle = None
-
-    def reset_selection_and_highlight(self, keep):
-        """
-        Reset the selection of the selection layer and the highlight rectangle
-
-        :param keep: if the highlight rectangle should be saved or not
-        """
-        if not keep and self.__highlight_rectangle:
-            self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
-        self.__highlight_rectangle = None
-        self.remove_selection()
 
 

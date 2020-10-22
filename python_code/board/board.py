@@ -1,6 +1,6 @@
 from random import choices, choice
 
-from python_code.entities import ZoomableEntity, SelectionRectangle
+from python_code.entities import SelectionRectangle
 from python_code.utility.utilities import *
 from python_code.board import materials
 from python_code.utility.constants import *
@@ -9,7 +9,7 @@ from python_code.board.buildings import *
 from python_code.utility.event_handling import BoardEventHandler
 from python_code.interfaces.building_interface import get_selected_item
 from python_code.network.pipes import Network
-from python_code.interfaces.interface_utility import p_to_cc, p_to_cp, p_to_cr, p_to_c, p_to_r
+from python_code.interfaces.interface_utility import *
 from python_code.board.chunks import *
 
 class Board(BoardEventHandler):
@@ -35,6 +35,11 @@ class Board(BoardEventHandler):
         # self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
         self.task_control = None
+
+        #the current SelectionRectangle object that shows
+        self.selection_rectangle = None
+        #last placed highlighted rectangle
+        self.__highlight_rectangle = None
 
         #pipe network
         self.pipe_network = Network(self.task_control)
@@ -66,48 +71,33 @@ class Board(BoardEventHandler):
         #should not happen
         return None
 
-
     def __get_chunks_from_rect(self, rect):
         affected_chunks = []
         tl_column, tl_row = p_to_cp(rect.topleft)
         br_column, br_row = p_to_cp(rect.bottomright)
-        left = rect.left
-        for column in range(tl_column - br_column + 1):
-            width = CHUNK_SIZE.width - (left % CHUNK_SIZE.width)
-            top = rect.top
-            for row in range(tl_row - br_row + 1):
-                height = CHUNK_SIZE.height - (top % CHUNK_SIZE.height)
+        top = rect.top
+        for row in range(br_row - tl_row + 1):
+            if row == 0:
+                height = min(CHUNK_SIZE.height - (top % CHUNK_SIZE.height), rect.height)
+            else:
+                height = ((rect.bottom - top) % CHUNK_SIZE.height)
+            left = rect.left
+            for column in range(br_column - tl_column + 1):
+                if column == 0:
+                    width = min(CHUNK_SIZE.width - (left % CHUNK_SIZE.width), rect.width)
+                else:
+                    width = ((rect.right - left) % CHUNK_SIZE.width)
                 topleft = (left, top)
                 new_rect = pygame.Rect((*topleft, width, height))
                 chunk = self.__chunk_from_point(topleft)
                 affected_chunks.append([chunk, new_rect])
-                top += height
-            left += width
+                left += width
+            top += height
         return affected_chunks
 
     def set_task_control(self, task_control):
         self.task_control = task_control
         self.pipe_network.task_control = task_control
-
-    def overlapping_blocks(self, rect):
-        """
-        Get a list of all overlapping blocks with a certain rectangle. The list
-        is ordered from low to high x then y.
-
-        :param rect: pygame Rect object that tells where the overlap is desired
-        :return: a sub matrix of overlapping blocks
-        """
-        #make sure that blocks that are just selected are not included
-        row_start = self.__p_to_r(rect.top)
-        row_end = self.__p_to_r(rect.bottom)
-        column_start = self.__p_to_c(rect.left)
-        column_end = self.__p_to_c(rect.right)
-        overlapping_blocks = []
-        for row in self.matrix[row_start : row_end + 1]:
-            add_row = row[column_start : column_end + 1]
-            if len(add_row) > 0:
-                overlapping_blocks.append(add_row)
-        return overlapping_blocks
 
     def surrounding_blocks(self, block):
         """
@@ -261,7 +251,7 @@ class Board(BoardEventHandler):
                 closest_block = block
         return closest_block
 
-    def add_rectangle(self, color, rect, layer = 2):
+    def add_rectangle(self, rect, color, layer = 2):
         """
         Add a rectangle on to one of the layers.
 
@@ -274,7 +264,7 @@ class Board(BoardEventHandler):
         """
         chunk_rectangles = self.__get_chunks_from_rect(rect)
         for chunk, rect in chunk_rectangles:
-            chunk.add_rectangle(color, rect, layer)
+            chunk.add_rectangle(rect, color, layer)
 
     def __getitem__(self, item):
         return self.matrix[item]
@@ -289,24 +279,49 @@ class Board(BoardEventHandler):
         column, row = p_to_cp(point)
         return self.chunk_matrix[row][column]
 
-    #
-    # def __p_to_r(self, value):
-    #     """
-    #     Point to row conversion. Convert a coordinate into a row number
-    #
-    #     :param value: a coordinate
-    #     :return: the corresponding row number
-    #     """
-    #     return int(value / BLOCK_SIZE.height)
-    #
-    # def __p_to_c(self, value):
-    #     """
-    #     Point to column conversion. Convert a coordinate into a column number
-    #
-    #     :param value: a coordinate
-    #     :return: the corresponding column number
-    #     """
-    #     return int(value / BLOCK_SIZE.width)
+    def add_selection_rectangle(self, pos, keep = False):
+        """
+        Add a rectangle that shows what the user is currently selecting
+
+        :param pos: the event.pos of the rectangle
+        :param keep: if the previous highlight should be kept
+        """
+        #bit retarded
+        zoom = self.chunk_matrix[0][0].selection_image._zoom
+        mouse_pos = screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
+        # should the highlighted area stay when a new one is selected
+        if not keep and self.__highlight_rectangle:
+            self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
+        self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
+                                                      self.main_sprite_group,zoom=zoom)
+
+    def remove_selection(self):
+        """
+        Safely remove the selection rectangle
+        """
+        if self.selection_rectangle:
+            self.selection_rectangle.kill()
+            self.selection_rectangle = None
+
+    def reset_selection_and_highlight(self, keep):
+        """
+        Reset the selection of the selection layer and the highlight rectangle
+
+        :param keep: if the highlight rectangle should be saved or not
+        """
+        if not keep and self.__highlight_rectangle:
+            self.add_rectangle(self.__highlight_rectangle, INVISIBLE_COLOR, layer=1)
+        self.__highlight_rectangle = None
+        self.remove_selection()
+
+    def add_highlight_rectangle(self, rect, color):
+        """
+        Add a rectangle to this image that functions as highlight from the
+        current selection
+        :param color: the color of the highlight
+        """
+        self.__highlight_rectangle = rect
+        self.add_rectangle(rect, color, layer=1)
 
     def _handle_mouse_events(self):
         """
@@ -318,8 +333,8 @@ class Board(BoardEventHandler):
                 keep = False
                 if self._mode.name == "Mining":
                     keep = True
-                self.selection_image.reset_selection_and_highlight(keep)
-                self.selection_image.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
+                self.reset_selection_and_highlight(keep)
+                self.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
 
             elif self._mode.name == "Building":
                 item = get_selected_item()
@@ -331,22 +346,40 @@ class Board(BoardEventHandler):
                 self.selection_image.add_building_rectangle(self.get_key(1).event.pos,size=building_block_i.SIZE)
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
-                board_coord = screen_to_board_coordinate(self.get_key(1).event.pos, self.foreground_image.groups()[0].target, self.foreground_image._zoom)
-                self.matrix[self.__p_to_r(board_coord[1])][self.__p_to_c(board_coord[0])].action()
+                # bit retarded
+                zoom = self.chunk_matrix[0][0].selection_image._zoom
+                board_coord = screen_to_board_coordinate(self.get_key(1).event.pos, self.main_sprite_group.target, zoom)
+                chunk = self.__chunk_from_point(board_coord)
+                chunk.get_block(board_coord).action()
             self.__process_selection()
-            self.selection_image.remove_selection()
+            self.remove_selection()
 
     def __process_selection(self):
         """
         Process selection by adding tasks, and direct the board to highlight
         the tasks
         """
-        if self.selection_image == None or self.selection_image.selection_rectangle == None:
+        if self.selection_rectangle == None:
             return
-        blocks = self.overlapping_blocks(self.selection_image.selection_rectangle.orig_rect)
+        chunks_rectangles = self.__get_chunks_from_rect(self.selection_rectangle.orig_rect)
+        first_chunk = chunks_rectangles[0][0]
+        selection_matrix = first_chunk.overlapping_blocks(chunks_rectangles[0][1])
+        for chunk, rect in chunks_rectangles[1:]:
+            blocks = chunk.overlapping_blocks(rect)
+            #extending horizontal
+            if chunk.coord[0] > first_chunk.coord[0]:
+                extra_rows = len(selection_matrix) - len(blocks)
+                for row_i, row in enumerate(blocks):
+                    selection_matrix[extra_rows + row_i].extend(row)
+            #extending vertical
+            else:
+                for row_i, row in enumerate(blocks):
+                    selection_matrix.append(row)
+        for index in range(len(selection_matrix[1:])):
+            assert len(selection_matrix[index]) == len(selection_matrix[index - 1])
         # the user is selecting blocks
-        if len(blocks) > 0:
-            self._assign_tasks(blocks)
+        if len(selection_matrix) > 0:
+            self._assign_tasks(selection_matrix)
 
     def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[]):
         """
@@ -423,12 +456,12 @@ class Board(BoardEventHandler):
         rect = rect_from_block_matrix(blocks)
 
         #remove all tasks present
-        for row_i, row in enumerate(blocks):
-            for col_i, block in enumerate(row):
+        for row in blocks:
+            for block in row:
                 self.task_control.cancel_tasks(block, remove=True)
 
         #select the full area
-        self.selection_image.add_highlight_rectangle(rect, self._mode.color)
+        self.add_highlight_rectangle(rect, self._mode.color)
 
         #assign tasks to all blocks elligable
         if self._mode.name == "Building":
@@ -436,13 +469,13 @@ class Board(BoardEventHandler):
             no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, [no_highlight_block])
             #if not the full image was selected dont add tasks
             if len(no_task_rectangles) > 0:
-                self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+                self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
                 return
             #the first block of the selection is the start block of the material
             approved_blocks = [blocks[0][0]]
         elif self._mode.name == "Cancel":
             # remove highlight
-            self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+            self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
             return
         else:
             no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
@@ -485,43 +518,43 @@ class Board(BoardEventHandler):
 
 #### MAP GENERATION FUNCTIONS ###
 
-    def __generate_foreground_matrix(self):
-        """
-        Fill a matrix with names of the materials of the respective blocks
-
-        :return: a matrix containing strings corresponding to names of __material
-        classes.
-        """
-
-        matrix = []
-        #first make everything stone
-        for _ in range(self.__p_to_r(BOARD_SIZE.height)):
-            row = ["Stone"] * self.__p_to_c(BOARD_SIZE.width)
-            matrix.append(row)
-
-        #generate some ores inbetween the start and end locations
-        for row_i, row in enumerate(matrix):
-            for column_i, value in enumerate(row):
-                if randint(1, self.BLOCK_PER_CLUSRTER) == 1:
-                    #decide the ore
-                    ore = self.__get_ore_at_depth(row_i)
-                    #create a list of locations around the current location
-                    #where an ore is going to be located
-                    ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
-                    for loc in ore_locations:
-                        try:
-                            matrix[loc[1]][loc[0]] = ore
-                        except IndexError:
-                            #if outside board skip
-                            continue
-        #generate the air space at the start position
-        for row_i in range(self.__p_to_r(self.START_RECTANGLE.bottom)):
-            for column_i in range(self.__p_to_c(self.START_RECTANGLE.left),
-                                  self.__p_to_c(self.START_RECTANGLE.right)):
-                matrix[row_i][column_i] = "Air"
-
-        matrix = self.__create_blocks_from_string(matrix)
-        return matrix
+    # def __generate_foreground_matrix(self):
+    #     """
+    #     Fill a matrix with names of the materials of the respective blocks
+    #
+    #     :return: a matrix containing strings corresponding to names of __material
+    #     classes.
+    #     """
+    #
+    #     matrix = []
+    #     #first make everything stone
+    #     for _ in range(self.__p_to_r(BOARD_SIZE.height)):
+    #         row = ["Stone"] * self.__p_to_c(BOARD_SIZE.width)
+    #         matrix.append(row)
+    #
+    #     #generate some ores inbetween the start and end locations
+    #     for row_i, row in enumerate(matrix):
+    #         for column_i, value in enumerate(row):
+    #             if randint(1, self.BLOCK_PER_CLUSRTER) == 1:
+    #                 #decide the ore
+    #                 ore = self.__get_ore_at_depth(row_i)
+    #                 #create a list of locations around the current location
+    #                 #where an ore is going to be located
+    #                 ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
+    #                 for loc in ore_locations:
+    #                     try:
+    #                         matrix[loc[1]][loc[0]] = ore
+    #                     except IndexError:
+    #                         #if outside board skip
+    #                         continue
+    #     #generate the air space at the start position
+    #     for row_i in range(self.__p_to_r(self.START_RECTANGLE.bottom)):
+    #         for column_i in range(self.__p_to_c(self.START_RECTANGLE.left),
+    #                               self.__p_to_c(self.START_RECTANGLE.right)):
+    #             matrix[row_i][column_i] = "Air"
+    #
+    #     matrix = self.__create_blocks_from_string(matrix)
+    #     return matrix
 
     def __add_starter_buildings(self):
         """
@@ -536,203 +569,203 @@ class Board(BoardEventHandler):
         self.add_building(c)
         self.add_building(f)
 
-    def __generate_background_matrix(self):
-        """
-        Generate the backdrop matrix.
-
-        :return: a matrix of the given size
-        """
-        matrix = []
-        for _ in range(self.__p_to_r(BOARD_SIZE.height)):
-            row = ["Dirt"] * self.__p_to_c(BOARD_SIZE.width)
-            matrix.append(row)
-        matrix = self.__create_blocks_from_string(matrix)
-        return matrix
-
-    def __get_ore_at_depth(self, depth):
-        """
-        Figure out the likelyood of all ores and return a wheighted randomly
-        chosen ore
-
-        :param depth: the depth for the ore to be at
-        :return: a string that is an ore
-        """
-        likelyhoods = []
-        for name in ORE_LIST:
-            norm_depth = depth / MAX_DEPTH * 100
-            mean = getattr(materials, name).MEAN_DEPTH
-            sd = getattr(materials, name).SD
-            lh = Gaussian(mean, sd).probability_density(norm_depth)
-            likelyhoods.append(round(lh, 10))
-        norm_likelyhoods = normalize(likelyhoods)
-
-        return choices(ORE_LIST, norm_likelyhoods, k = 1)[0]
-
-    def __create_ore_cluster(self, ore, center):
-        """
-        Generate a list of index offsets for a certain ore
-
-        :param ore: string name of an ore
-        :param center: a coordinate around which the ore cluster needs to be
-        generated
-        :return: a list of offset indexes around 0,0
-        """
-        size = randint(*getattr(materials, ore).CLUSTER_SIZE)
-        ore_locations = []
-        while len(ore_locations) <= size:
-            location = [0,0]
-            for index in range(2):
-                pos = choice([-1, 1])
-                #assert index is bigger then 0
-                location[index] = max(0, pos * randint(0,
-                                self.MAX_CLUSTER_SIZE) + center[index])
-            if location not in ore_locations:
-                ore_locations.append(location)
-        return ore_locations
-
-    def __create_blocks_from_string(self, s_matrix):
-        """
-        Change strings into blocks
-
-        :param s_matrix: a string matrix that contains strings corresponding to
-        material classes
-        :return: the s_matrix filled with block class instances
-
-        """
-        for row_i, row in enumerate(s_matrix):
-            for column_i, value in enumerate(row):
-                #create position
-                pos = (column_i * BLOCK_SIZE.width,
-                       row_i * BLOCK_SIZE.height,)
-                material = getattr(materials, s_matrix[row_i][column_i])
-                if issubclass(material, materials.ColorMaterial):
-                    material_instance = material(depth=row_i)
-                else:
-                    material_instance = material()
-                if material.name() == "Air":
-                    block = AirBlock(pos, material_instance)
-                else:
-                    block = Block(pos, material_instance)
-                s_matrix[row_i][column_i] = block
-        return s_matrix
-
-
-class BoardImage(ZoomableEntity):
-    """
-    Convert a matrix of blocks into a surface that persists as an entity. This
-    is done to severly decrease the amount of blit calls and allow for layering
-    of images aswell as easily scaling.
-    """
-    def __init__(self, main_sprite_group, **kwargs):
-        ZoomableEntity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
-        self.visible = True
-
-    def _create_image(self, size, color, **kwargs):
-        """
-        Overwrites the image creation process in the basic Entity class
-        """
-        block_matrix = kwargs["block_matrix"]
-        image = pygame.Surface(size)
-        image.set_colorkey((0,0,0), RLEACCEL)
-        image = image.convert_alpha()
-        for row in block_matrix:
-            for block in row:
-                if block != "Air":
-                    image.blit(block.surface, block.rect)
-        return image
-
-    def add_rect(self, rect, color):
-        """
-        Add a rectangle to the image, this can be a transparant rectangle to
-        remove a part of the image or another rectangle
-
-        :param rect: a pygame rect object
-        """
-        pygame.draw.rect(self.orig_image, color, rect)
-        zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom), round(rect.width * self._zoom), round(rect.height * self._zoom)))
-        pygame.draw.rect(self.image, color, zoomed_rect)
-
-    def add_image(self, rect, image):
-        """
-        Add an image to the boardImage
-
-        :param rect: location of the image as a pygame Rect object
-        :param image: a pygame Surface object
-        """
-        self.orig_image.blit(image, rect)
-        zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),round(rect.width * self._zoom),round(rect.height * self._zoom)))
-        zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
-        self.image.blit(zoomed_image, zoomed_rect)
-
-class TransparantBoardImage(BoardImage):
-    """
-    Slight variation on the basic Board image that creates a transparant
-    surface on which selections can be drawn
-    """
-    def __init__(self, main_sprite_group, **kwargs):
-        BoardImage.__init__(self, main_sprite_group, **kwargs)
-        #the current SelectionRectangle object that shows
-        self.selection_rectangle = None
-        #last placed highlighted rectangle
-        self.__highlight_rectangle = None
-
-    def _create_image(self, size, color, **kwargs):
-        """
-        Overwrites the image creation process in the basic Entity class
-        """
-        image = pygame.Surface(size).convert_alpha()
-        image.set_colorkey((0,0,0), RLEACCEL)
-        image.fill(INVISIBLE_COLOR)
-        return image
-
-    def add_selection_rectangle(self, pos, keep = False, size=(10, 10)):
-        """
-        Add a rectangle that shows what the user is currently selecting
-
-        :param pos: the event.pos of the rectangle
-        :param keep: if the previous highlight should be kept
-        :param size: the size of the rectagle to add at the start
-        """
-        mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
-        # should the highlighted area stay when a new one is selected
-        if not keep and self.__highlight_rectangle:
-            self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
-        self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
-                                            self.groups()[0],zoom=self._zoom)
-
-    def add_building_rectangle(self, pos, size=(10, 10)):
-        mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
-        self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
-                                        self.groups()[0],zoom=self._zoom, color=INVISIBLE_COLOR)
-
-    def add_highlight_rectangle(self, rect, color):
-        """
-        Add a rectangle to this image that functions as highlight from the
-        current selection
-
-        :param color: the color of the highlight
-        """
-        self.__highlight_rectangle = rect
-        self.add_rect(rect, color)
+    # def __generate_background_matrix(self):
+    #     """
+    #     Generate the backdrop matrix.
+    #
+    #     :return: a matrix of the given size
+    #     """
+    #     matrix = []
+    #     for _ in range(self.__p_to_r(BOARD_SIZE.height)):
+    #         row = ["Dirt"] * self.__p_to_c(BOARD_SIZE.width)
+    #         matrix.append(row)
+    #     matrix = self.__create_blocks_from_string(matrix)
+    #     return matrix
+    #
+    # def __get_ore_at_depth(self, depth):
+    #     """
+    #     Figure out the likelyood of all ores and return a wheighted randomly
+    #     chosen ore
+    #
+    #     :param depth: the depth for the ore to be at
+    #     :return: a string that is an ore
+    #     """
+    #     likelyhoods = []
+    #     for name in ORE_LIST:
+    #         norm_depth = depth / MAX_DEPTH * 100
+    #         mean = getattr(materials, name).MEAN_DEPTH
+    #         sd = getattr(materials, name).SD
+    #         lh = Gaussian(mean, sd).probability_density(norm_depth)
+    #         likelyhoods.append(round(lh, 10))
+    #     norm_likelyhoods = normalize(likelyhoods)
+    #
+    #     return choices(ORE_LIST, norm_likelyhoods, k = 1)[0]
+    #
+    # def __create_ore_cluster(self, ore, center):
+    #     """
+    #     Generate a list of index offsets for a certain ore
+    #
+    #     :param ore: string name of an ore
+    #     :param center: a coordinate around which the ore cluster needs to be
+    #     generated
+    #     :return: a list of offset indexes around 0,0
+    #     """
+    #     size = randint(*getattr(materials, ore).CLUSTER_SIZE)
+    #     ore_locations = []
+    #     while len(ore_locations) <= size:
+    #         location = [0,0]
+    #         for index in range(2):
+    #             pos = choice([-1, 1])
+    #             #assert index is bigger then 0
+    #             location[index] = max(0, pos * randint(0,
+    #                             self.MAX_CLUSTER_SIZE) + center[index])
+    #         if location not in ore_locations:
+    #             ore_locations.append(location)
+    #     return ore_locations
+    #
+    # def __create_blocks_from_string(self, s_matrix):
+    #     """
+    #     Change strings into blocks
+    #
+    #     :param s_matrix: a string matrix that contains strings corresponding to
+    #     material classes
+    #     :return: the s_matrix filled with block class instances
+    #
+    #     """
+    #     for row_i, row in enumerate(s_matrix):
+    #         for column_i, value in enumerate(row):
+    #             #create position
+    #             pos = (column_i * BLOCK_SIZE.width,
+    #                    row_i * BLOCK_SIZE.height,)
+    #             material = getattr(materials, s_matrix[row_i][column_i])
+    #             if issubclass(material, materials.ColorMaterial):
+    #                 material_instance = material(depth=row_i)
+    #             else:
+    #                 material_instance = material()
+    #             if material.name() == "Air":
+    #                 block = AirBlock(pos, material_instance)
+    #             else:
+    #                 block = Block(pos, material_instance)
+    #             s_matrix[row_i][column_i] = block
+    #     return s_matrix
 
 
-    def remove_selection(self):
-        """
-        Safely remove the selection rectangle
-        """
-        if self.selection_rectangle:
-            self.selection_rectangle.kill()
-            self.selection_rectangle = None
-
-    def reset_selection_and_highlight(self, keep):
-        """
-        Reset the selection of the selection layer and the highlight rectangle
-
-        :param keep: if the highlight rectangle should be saved or not
-        """
-        if not keep and self.__highlight_rectangle:
-            self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
-        self.__highlight_rectangle = None
-        self.remove_selection()
-
-
+# class BoardImage(ZoomableEntity):
+#     """
+#     Convert a matrix of blocks into a surface that persists as an entity. This
+#     is done to severly decrease the amount of blit calls and allow for layering
+#     of images aswell as easily scaling.
+#     """
+#     def __init__(self, main_sprite_group, **kwargs):
+#         ZoomableEntity.__init__(self, (0, 0), BOARD_SIZE, main_sprite_group, **kwargs)
+#         self.visible = True
+#
+#     def _create_image(self, size, color, **kwargs):
+#         """
+#         Overwrites the image creation process in the basic Entity class
+#         """
+#         block_matrix = kwargs["block_matrix"]
+#         image = pygame.Surface(size)
+#         image.set_colorkey((0,0,0), RLEACCEL)
+#         image = image.convert_alpha()
+#         for row in block_matrix:
+#             for block in row:
+#                 if block != "Air":
+#                     image.blit(block.surface, block.rect)
+#         return image
+#
+#     def add_rect(self, rect, color):
+#         """
+#         Add a rectangle to the image, this can be a transparant rectangle to
+#         remove a part of the image or another rectangle
+#
+#         :param rect: a pygame rect object
+#         """
+#         pygame.draw.rect(self.orig_image, color, rect)
+#         zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom), round(rect.width * self._zoom), round(rect.height * self._zoom)))
+#         pygame.draw.rect(self.image, color, zoomed_rect)
+#
+#     def add_image(self, rect, image):
+#         """
+#         Add an image to the boardImage
+#
+#         :param rect: location of the image as a pygame Rect object
+#         :param image: a pygame Surface object
+#         """
+#         self.orig_image.blit(image, rect)
+#         zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),round(rect.width * self._zoom),round(rect.height * self._zoom)))
+#         zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
+#         self.image.blit(zoomed_image, zoomed_rect)
+#
+# class TransparantBoardImage(BoardImage):
+#     """
+#     Slight variation on the basic Board image that creates a transparant
+#     surface on which selections can be drawn
+#     """
+#     def __init__(self, main_sprite_group, **kwargs):
+#         BoardImage.__init__(self, main_sprite_group, **kwargs)
+#         #the current SelectionRectangle object that shows
+#         self.selection_rectangle = None
+#         #last placed highlighted rectangle
+#         self.__highlight_rectangle = None
+#
+#     def _create_image(self, size, color, **kwargs):
+#         """
+#         Overwrites the image creation process in the basic Entity class
+#         """
+#         image = pygame.Surface(size).convert_alpha()
+#         image.set_colorkey((0,0,0), RLEACCEL)
+#         image.fill(INVISIBLE_COLOR)
+#         return image
+#
+#     def add_selection_rectangle(self, pos, keep = False, size=(10, 10)):
+#         """
+#         Add a rectangle that shows what the user is currently selecting
+#
+#         :param pos: the event.pos of the rectangle
+#         :param keep: if the previous highlight should be kept
+#         :param size: the size of the rectagle to add at the start
+#         """
+#         mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
+#         # should the highlighted area stay when a new one is selected
+#         if not keep and self.__highlight_rectangle:
+#             self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
+#         self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
+#                                             self.groups()[0],zoom=self._zoom)
+#
+#     def add_building_rectangle(self, pos, size=(10, 10)):
+#         mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
+#         self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
+#                                         self.groups()[0],zoom=self._zoom, color=INVISIBLE_COLOR)
+#
+#     def add_highlight_rectangle(self, rect, color):
+#         """
+#         Add a rectangle to this image that functions as highlight from the
+#         current selection
+#
+#         :param color: the color of the highlight
+#         """
+#         self.__highlight_rectangle = rect
+#         self.add_rect(rect, color)
+#
+#
+#     def remove_selection(self):
+#         """
+#         Safely remove the selection rectangle
+#         """
+#         if self.selection_rectangle:
+#             self.selection_rectangle.kill()
+#             self.selection_rectangle = None
+#
+#     def reset_selection_and_highlight(self, keep):
+#         """
+#         Reset the selection of the selection layer and the highlight rectangle
+#
+#         :param keep: if the highlight rectangle should be saved or not
+#         """
+#         if not keep and self.__highlight_rectangle:
+#             self.add_rect(self.__highlight_rectangle, INVISIBLE_COLOR)
+#         self.__highlight_rectangle = None
+#         self.remove_selection()
+#
+#

@@ -170,7 +170,7 @@ class BoardEventHandler(EventHandler, ABC):
         if len(pressed_modes):
             #make sure to clear the board of any remnants before switching
             if pressed_modes[0].name in MODES:
-                self.selection_image.reset_selection_and_highlight(self._mode.persistent_highlight)
+                self.reset_selection_and_highlight(self._mode.persistent_highlight)
                 self._mode = MODES[pressed_modes[0].name]
                 #for now print what the mode is, TODO add this into the gui somewhere
                 print(self._mode.name)
