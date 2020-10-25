@@ -343,23 +343,24 @@ class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
     TASK_TIME = 200
+    TRANSPARANT_GROUP = 2
 
 
 class FurnaceMaterial(BuildingMaterial):
     TASK_TIME = 1000
     TEXT_COLOR = (255,255,255)
-    TRANSPARANT_GROUP = 2
+    TRANSPARANT_GROUP = 3
 
 
 class FactoryMaterial(BuildingMaterial):
     TASK_TIME = 1000
     TEXT_COLOR = (255, 255, 255)
-    TRANSPARANT_GROUP = 3
+    TRANSPARANT_GROUP = 4
 
 
 class StonePipeMaterial(ImageMaterial):
     TASK_TIME = 1000
-    TRANSPARANT_GROUP = 2
+    TRANSPARANT_GROUP = 5
     BLOCK_TYPE = NetworkBlock
 
     def _configure_surface(self, image):

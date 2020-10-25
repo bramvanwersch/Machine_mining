@@ -7,6 +7,7 @@ from python_code.board.blocks import *
 from python_code.board import materials
 from python_code.entities import ZoomableEntity, SelectionRectangle
 from python_code.interfaces.interface_utility import p_to_c, p_to_r
+from python_code.board.pathfinding import PathfindingChunk
 
 
 class Chunk:
@@ -27,12 +28,13 @@ class Chunk:
         self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
         self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
         self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER)
+        self.pathfinding_chunk = PathfindingChunk(self.__matrix)
 
     @property
     def coord(self):
         return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
 
-    def add_rectangle(self, rect, color, layer=2):
+    def add_rectangle(self, rect, color, layer=2, border=0):
         local_rect = self.__local_adjusted_rect(rect)
         if layer == 1:
             image = self.selection_image
@@ -40,27 +42,38 @@ class Chunk:
             image = self.foreground_image
         elif layer == 3:
             image = self.background_image
-        image.add_rect(local_rect, color)
+        image.add_rect(local_rect, color, border)
 
     def add_blocks(self, *blocks):
         for block in blocks:
-            block_rect = self.__local_adjusted_rect(block.rect)
-            self.add_rectangle(block_rect, INVISIBLE_COLOR, layer=1)
-            self.add_rectangle(block_rect, INVISIBLE_COLOR, layer=2)
+            local_block_rect = self.__local_adjusted_rect(block.rect)
+            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
+            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
 
             # add the block
-            self.foreground_image.add_image(block_rect, block.surface)
+            self.foreground_image.add_image(local_block_rect, block.surface)
 
-            column, row = self.__block_loc_from_point(block_rect.topleft)
+            column, row = self.__local_adusted_block_coordinate(local_block_rect.topleft)
             self.__matrix[row][column] = block
+            self.pathfinding_chunk.added_rects.append(block.rect)
+
+    def remove_blocks(self, *blocks):
+        for block in blocks:
+            local_block_rect = self.__local_adjusted_rect(block.rect)
+            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
+            # remove the highlight
+            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
+            column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
+            self.__matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
+            self.pathfinding_chunk.removed_rects.append(block.rect)
 
     def get_block(self, point):
-        column, row = self.__block_loc_from_point(point)
+        column, row = self.__local_adusted_block_coordinate(point)
         return self.__matrix[row][column]
 
     def overlapping_blocks(self, rect):
-        column_start, row_start = self.__block_loc_from_point(rect.topleft)
-        column_end, row_end = self.__block_loc_from_point(rect.bottomright)
+        column_start, row_start = self.__local_adusted_block_coordinate(rect.topleft)
+        column_end, row_end = self.__local_adusted_block_coordinate(rect.bottomright)
 
         overlapping_blocks = []
         for row in self.__matrix[row_start : row_end + 1]:
@@ -81,7 +94,7 @@ class Chunk:
             matrix.append(row)
         return matrix
 
-    def __block_loc_from_point(self, point):
+    def __local_adusted_block_coordinate(self, point):
         #get the coordinate of a block in the local self.matrix grid
         row = p_to_r(point[1]) - p_to_r(self.rect.y)
         column = p_to_c(point[0]) - p_to_r(self.rect.x)
@@ -232,16 +245,16 @@ class BoardImage(ZoomableEntity):
                     image.blit(block.surface, block_rect)
         return image
 
-    def add_rect(self, rect, color):
+    def add_rect(self, rect, color, border):
         """
         Add a rectangle to the image, this can be a transparant rectangle to
         remove a part of the image or another rectangle
 
         :param rect: a pygame rect object
         """
-        pygame.draw.rect(self.orig_image, color, rect)
+        pygame.draw.rect(self.orig_image, color, rect, border)
         zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom), round(rect.width * self._zoom), round(rect.height * self._zoom)))
-        pygame.draw.rect(self.image, color, zoomed_rect)
+        pygame.draw.rect(self.image, color, zoomed_rect, border)
 
     def add_image(self, rect, image):
         """

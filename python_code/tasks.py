@@ -65,6 +65,7 @@ class TaskControl:
                 self.__check_surrounding_tasks(task.block)
             elif isinstance(task, BuildTask) and task.finish_block.transparant_group != 0:
                 self.__check_surrounding_tasks(task.block)
+        return
 
     def cancel_tasks(self, *blocks, remove=False):
         """
@@ -325,7 +326,7 @@ class MiningTask(Task):
         if hasattr(self.block, "inventory"):
             items = self.block.inventory.get_all_items(ignore_filter=True)
             entity.inventory.add_items(*items)
-        entity.board.remove_blocks([[self.block]])
+        entity.board.remove_blocks(self.block)
         entity.inventory.add_blocks(self.block)
 
 

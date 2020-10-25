@@ -28,6 +28,7 @@ class Board(BoardEventHandler):
 
         #setup the board
         # self.matrix = self.__generate_foreground_matrix()
+        self.pf = PathFinder()
         self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
         # self.back_matrix = self.__generate_background_matrix()
         # self.foreground_image = BoardImage(main_sprite_group, block_matrix = self.matrix, layer = BOARD_LAYER)
@@ -48,7 +49,6 @@ class Board(BoardEventHandler):
         self.__add_starter_buildings()
 
         #variables needed when playing
-        # self.pf = PathFinder(self.matrix)
 
     def __generate_chunk_matrix(self, main_sprite_group):
         chunk_matrix = []
@@ -57,9 +57,11 @@ class Board(BoardEventHandler):
             for row_c in range(CHUNK_GRID_SIZE.width):
                 point_pos = (row_c * CHUNK_SIZE.width, col_c * CHUNK_SIZE.height)
                 if (row_c, col_c) == START_CHUNK_POS:
-                    chunk_row.append(StartChunk(point_pos, main_sprite_group))
+                    chunk = StartChunk(point_pos, main_sprite_group)
                 else:
-                    chunk_row.append(Chunk(point_pos, main_sprite_group))
+                    chunk = Chunk(point_pos, main_sprite_group)
+                chunk_row.append(chunk)
+                self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
             chunk_matrix.append(chunk_row)
         return chunk_matrix
 
@@ -110,7 +112,7 @@ class Board(BoardEventHandler):
         """
         blocks = [None, None, None, None]
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
-            surrounding_pos = (block.rect.x + new_position[0], block.rect.y + new_position[1])
+            surrounding_pos = (block.rect.x + new_position[0] * BLOCK_SIZE.width, block.rect.y + new_position[1] * BLOCK_SIZE.height)
             # Make sure within range
             if surrounding_pos[0] > BOARD_SIZE.width or \
                 surrounding_pos[0] < 0 or \
@@ -122,33 +124,33 @@ class Board(BoardEventHandler):
             blocks[index] = surrouding_block
         return blocks
 
-    def remove_blocks(self, blocks):
-        """
-        Remove a matrix of blocks from the second board layer by replacing them
-        with air
+    def remove_blocks(self, *blocks):
+        for block in blocks:
+            if block.id in self.__buildings:
+                self.remove_building(block)
+            else:
+                chunk = self.__chunk_from_point(block.rect.topleft)
+                chunk.remove_blocks(block)
+            if isinstance(block, NetworkBlock):
+                surrounding_blocks = self.surrounding_blocks(block)
+                self.pipe_network.remove_pipe(block)
+                for block in surrounding_blocks:
+                    if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
+                        self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
+                        self.add_blocks(block)
 
-        :param blocks: a matrix of blocks
-        """
-        rect = rect_from_block_matrix(blocks)
-        self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
-        # remove the highlight
-        self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
+    def remove_building(self, block):
+        building_instance = self.__buildings.pop(block.id, None)
+        if building_instance == None:
+            return
+        rect = building_instance.rect
+        if isinstance(block, NetworkBlock):
+            self.pipe_network.remove_node(building_instance)
         for row in blocks:
             for block in row:
-                if block.id in self.__buildings:
-                    self.remove_building(block)
-                else:
-                    row = self.__p_to_r(block.rect.y)
-                    column = self.__p_to_c(block.rect.x)
-                    change_block = self.matrix[row][column]
-                    self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
-                    if isinstance(block, NetworkBlock):
-                        surrounding_blocks = self.surrounding_blocks(change_block)
-                        self.pipe_network.remove_pipe(change_block)
-                        for block in surrounding_blocks:
-                            if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
-                                self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
-                                self.add_blocks(block)
+                self.task_control.cancel_tasks(block, remove=True)
+                chunk = self.__chunk_from_point(block.rect.topleft)
+                chunk.remove_blocks(block)
 
     def add_blocks(self, *blocks, update=False):
         """
@@ -166,16 +168,8 @@ class Board(BoardEventHandler):
                     update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update))
                     if update:
                         self.pipe_network.add_pipe(block)
-                # remove the highlight
-                self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=1)
-                self.add_rectangle(INVISIBLE_COLOR, block.rect, layer=2)
-
-                #add the block
-                self.foreground_image.add_image(block.rect, block.surface)
-
-                row = self.__p_to_r(block.rect.y)
-                column = self.__p_to_c(block.rect.x)
-                self.matrix[row][column] = block
+                chunk = self.__chunk_from_point(block.coord)
+                chunk.add_blocks(block)
         if len(update_blocks) > 0:
             self.add_blocks(*update_blocks)
 
@@ -204,34 +198,6 @@ class Board(BoardEventHandler):
             update_blocks = [block for block in update_blocks if not isinstance(block, ContainerBlock)]
             self.add_blocks(*update_blocks)
 
-    def remove_building(self, block):
-        building_instance = self.__buildings.pop(block.id, None)
-        if building_instance == None:
-            return
-        rect = building_instance.rect
-        if isinstance(block, NetworkBlock):
-            self.pipe_network.remove_node(building_instance)
-        #make sure this does net just overlap with the next block
-        overlap_rect = pygame.Rect((*rect.topleft, rect.width - 1, rect.height - 1))
-        blocks = self.overlapping_blocks(overlap_rect)
-        self.add_rectangle(INVISIBLE_COLOR, rect, layer=2)
-        # remove the highlight
-        self.add_rectangle(INVISIBLE_COLOR, rect, layer=1)
-        for row in blocks:
-            for block in row:
-                row = self.__p_to_r(block.rect.y)
-                column = self.__p_to_c(block.rect.x)
-                self.task_control.cancel_tasks(block, remove=True)
-                change_block = self.matrix[row][column]
-                self.matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
-                if isinstance(block, NetworkBlock):
-                    surrounding_blocks = self.surrounding_blocks(change_block)
-                    self.pipe_network.remove_pipe(change_block)
-                    for block in surrounding_blocks:
-                        if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
-                            self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
-                            self.add_blocks(block)
-
     def closest_inventory(self, start, *item_names, deposit=True):
         """
         """
@@ -251,7 +217,7 @@ class Board(BoardEventHandler):
                 closest_block = block
         return closest_block
 
-    def add_rectangle(self, rect, color, layer = 2):
+    def add_rectangle(self, rect, color, layer=2, border=0):
         """
         Add a rectangle on to one of the layers.
 
@@ -264,13 +230,14 @@ class Board(BoardEventHandler):
         """
         chunk_rectangles = self.__get_chunks_from_rect(rect)
         for chunk, rect in chunk_rectangles:
-            chunk.add_rectangle(rect, color, layer)
+            chunk.add_rectangle(rect, color, layer, border)
 
     def __getitem__(self, item):
         return self.matrix[item]
 
     def transparant_collide(self, point):
-        block = self.matrix[self.__p_to_r(point[1])][self.__p_to_c(point[0])]
+        chunk = self.__chunk_from_point(point)
+        block = chunk.get_block(point)
         if block.transparant_group != 0:
             return True
         return False
@@ -481,7 +448,7 @@ class Board(BoardEventHandler):
             no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
 
         for rect in no_task_rectangles:
-            self.selection_image.add_rect(rect, INVISIBLE_COLOR)
+            self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
         self._add_tasks(approved_blocks)
 
     # task management

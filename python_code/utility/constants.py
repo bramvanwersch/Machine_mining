@@ -85,7 +85,7 @@ INTERFACE_KEYS = [CRAFTING, K_ESCAPE, BUILDING]
 #visual control
 SHOW_BLOCK_BORDER = False
 FPS = True
-AIR_RECTANGLES = False
+AIR_RECTANGLES = True
 
 #warning control for debugging purposes
 WARNINGS = True

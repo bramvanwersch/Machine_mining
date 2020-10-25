@@ -61,3 +61,13 @@ def p_to_cr(value):
 def p_to_cc(value):
     #to chunk column conversion
     return int(value / CHUNK_SIZE.width)
+
+
+def relative_closest_direction(point):
+    distances = []
+    #caclulate to what side of the board the point is closest return an index corresponding to N, E, S, W
+    distances.append(BOARD_SIZE.height - (BOARD_SIZE.height - point[1]))
+    distances.append(BOARD_SIZE.width - point[0])
+    distances.append(BOARD_SIZE.height - point[1])
+    distances.append(BOARD_SIZE.width - (BOARD_SIZE.width - point[0]))
+    return distances.index(min(distances))

@@ -51,25 +51,33 @@ class Main:
         # Main Loop
         while self.user.going:
             GAME_TIME.tick(200)
-            pygame.display.update()
+            if AIR_RECTANGLES:
+                self.remove_air_rectangles()
             self.user.update()
             self.screen.fill((255,255,255))
-
+            if AIR_RECTANGLES:
+                self.draw_air_rectangles()
             self.main_sprite_group.update()
             self.main_sprite_group.draw(self.screen)
+
             if FPS:
                 fps = FONTS[22].render(str(int(GAME_TIME.get_fps())), True,
                                     pygame.Color('black'))
                 self.screen.blit(fps, (10, 10))
-            # if AIR_RECTANGLES:
-            #     self.draw_air_rectangles()
-        #terminate thread to be sure
-        self.board.pf.stop()
+            pygame.display.update()
+
         pygame.quit()
 
-    # def draw_air_rectangles(self):
-    #     for rect in self.board.pf.calculation_thread.rectangles:
-    #         pygame.draw.rect(self.board.foreground_image.image, (0,0,0), rect, 2)
+    def draw_air_rectangles(self):
+        for key in self.board.pf.pathfinding_tree.rectangles[0]:
+            for rect in self.board.pf.pathfinding_tree.rectangles[0][key]:
+                self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
+
+    def remove_air_rectangles(self):
+        for key in self.board.pf.pathfinding_tree.rectangles[0]:
+            for rect in self.board.pf.pathfinding_tree.rectangles[0][key]:
+                self.board.add_rectangle(rect, INVISIBLE_COLOR, layer=1, border=2)
+
 
 class User:
     def __init__(self, camera_center, board, main_sprite_group):
@@ -112,6 +120,7 @@ class User:
         for sprite in self.main_sprite_group.sprites():
             self.main_sprite_group.change_layer(sprite, sprite._layer)
         self.board.pipe_network.update()
+        self.board.pf.update()
 
     def __handle_events(self):
         events = pygame.event.get()

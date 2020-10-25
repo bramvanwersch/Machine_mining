@@ -1,7 +1,8 @@
 import threading
 
-from python_code.utility.constants import BLOCK_SIZE
-from python_code.utility.utilities import rect_from_block_matrix, manhattan_distance
+from python_code.utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE
+from python_code.utility.utilities import rect_from_block_matrix, manhattan_distance, side_by_side
+from python_code.interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction
 
 class PathFinder:
     """
@@ -9,11 +10,12 @@ class PathFinder:
     of rectangles and finding paths using that network
     """
     DIRECTIONS = ["N", "E", "S", "W"]
-    def __init__(self, matrix):
-        #calculation thread for continously updating the network
-        self.calculation_thread = PathfindingTree(matrix)
+    def __init__(self):
+        self.pathfinding_tree = PathfindingTree()
 
-        self.calculation_thread.start()
+    def update(self):
+        for pf_chunk in self.pathfinding_tree.pathfinding_chunks:
+            pf_chunk.update()
 
     def get_path(self, start, end_rect):
         """
@@ -25,19 +27,34 @@ class PathFinder:
         """
         start_rect = None
         #find start rectangle
-        for rect in self.calculation_thread.rectangles:
-            if rect.collidepoint(start.center):
-                start_rect = rect
+        direction_index = relative_closest_direction(start.center)
+        found = False
+        for key in self.pathfinding_tree.rectangles[direction_index]:
+            if (direction_index == 0 and key < start.centery) or (direction_index == 1 and key > start.centerx) or\
+                (direction_index == 2 and key > start.centery) or (direction_index == 3 and key < start.centerx):
+                adjacent_rects = self.pathfinding_tree.rectangles[direction_index][key]
+            else:
+                continue
+            for rect in adjacent_rects:
+                if rect.collidepoint(start.center):
+                    start_rect = rect
+                    found = True
+                    break
+            if found:
                 break
         if start_rect == None:
             return None
 
         #check if there is a rectangle next to the end rectangle
         can_find = False
-        for rect in self.calculation_thread.rectangles:
-            if self.calculation_thread._side_by_side(end_rect, rect) != None:
-                can_find = True
-                break
+        for index, direction_size in enumerate((end_rect.top, end_rect.right, end_rect.bottom, end_rect.left)):
+            if direction_size in self.pathfinding_tree.rectangles[index - 2]:
+                for rect in self.pathfinding_tree.rectangles[index - 2][direction_size]:
+                    if side_by_side(end_rect, rect) != None:
+                        can_find = True
+                        break
+                if can_find:
+                    break
         #there is no rectangle adjacent that could find a path
         if not can_find:
             return None
@@ -152,7 +169,7 @@ class PathFinder:
             closed_list.append(current_node)
 
             # Found the goal on block infront of destination
-            connection_direction = self.calculation_thread._side_by_side(current_node.rect, end_node.rect)
+            connection_direction = side_by_side(current_node.rect, end_node.rect)
             if connection_direction is not None:
                 end_node.parent = current_node
                 end_node.direction_index = connection_direction
@@ -190,8 +207,6 @@ class PathFinder:
                 open_list.append(child)
         return None
 
-    def stop(self):
-        self.calculation_thread.keep_calculating = False
 
 class Path:
     """
@@ -261,140 +276,180 @@ class Node:
     def __eq__(self, other):
         return self.position == other.position
 
-class PathfindingTree(threading.Thread):
+
+class PathfindingTree:
     """
     Tree that is continiously recalculated for the pathfinding algorithm to use
 
     Note: the self.rectangles could be a more efficient format then a list
     """
-    def __init__(self, matrix):
+    def __init__(self):
         """
         :param matrix: a matrix over which changes are made.
         """
-        threading.Thread.__init__(self)
+        #shared dictionary that acts as the tree of connections between rectangles in the chunks
+        self.rectangles = [{}, {}, {}, {}]
+        self.pathfinding_chunks = []
+
+    def add_chunk(self, pf_chunk):
+        self.pathfinding_chunks.append(pf_chunk)
+        pf_chunk.configure(self.rectangles)
+
+
+class PathfindingChunk:
+    def __init__(self, matrix):
         self.matrix = matrix
-        self.rectangles = self.get_air_rectangles(self.matrix)
-        self.build_tree(self.rectangles)
-        self.keep_calculating = True
+        self.rectangles = None
+        self.added_rects = []
+        self.removed_rects = []
 
-    def run(self):
-        """
-        Funtion for starting the calculation thread.
-        """
-        while self.keep_calculating:
-            self.lazzy_update()
+    def configure(self, rectangles):
+        self.rectangles = rectangles
+        covered_coordinates = [[] for _ in range(len(self.matrix))]
 
-    def lazzy_update(self):
-        """
-        A protocol for lazily updating all the air rectangles.
+        #innitial configuration
+        self.get_air_rectangles(self.matrix, covered_coordinates)
 
-        Note: in the future a function that would take only removed rectangles
-        should replace this function for updating the air rectangles
-        """
-        ar = self.get_air_rectangles(self.matrix)
-        self.rectangles = ar
+    def update(self):
+        if len(self.removed_rects) > 0:
+            sub_matrix, covered_coordinates = self.__find_removal_sub_matrix()
+            self.get_air_rectangles(sub_matrix, covered_coordinates)
+            self.removed_rects = []
+        if len(self.added_rects) > 0:
+            sub_matrix, covered_coordinates = self.__find_add_sub_matrix()
+            self.get_air_rectangles(sub_matrix, covered_coordinates)
+            self.added_rects = []
 
-        self.build_tree(ar)
+    def __find_add_sub_matrix(self):
+        adjacent_rectangles = []
 
-    def build_tree(self, rectangles):
-        """
-        Figure out how all rectangles in a set of rectangles are connected to
-        one another based on if these are adjacent or not
-
-        :param rectangles: a list of AirRectangle objects
-        """
-        for rect1 in rectangles:
-            for rect2 in rectangles:
-                if rect1 == rect2:
+        corners = [self.added_rects[0].left, self.added_rects[0].top,
+                   self.added_rects[0].bottom, self.added_rects[0].right]
+        for rect in self.added_rects:
+            direction_index = relative_closest_direction(rect.center)
+            all_found = False
+            for key in self.rectangles[direction_index]:
+                if (direction_index == 0 and key < rect.centery) or (direction_index == 1 and key > rect.centerx) or\
+                    (direction_index == 2 and key > rect.centery) or (direction_index == 3 and key < rect.centerx):
+                    adjacent_rects = self.rectangles[direction_index][key]
+                else:
                     continue
-                direction_index = self._side_by_side(rect1, rect2)
-                if direction_index != None:
-                    rect1.connecting_rects[direction_index].append(rect2)
+                for adj_rect in adjacent_rects:
+                    if adj_rect.colliderect(rect):
+                        adjacent_rectangles.append(adj_rect)
+                        self.__remove_rectangle(adj_rect)
+                        if adj_rect.left < corners[0]:
+                            corners[0] = adj_rect.left
+                        if adj_rect.top < corners[1]:
+                            corners[1] = adj_rect.top
+                        if adj_rect.bottom > corners[2]:
+                            corners[2] = adj_rect.bottom
+                        if adj_rect.right > corners[3]:
+                            corners[3] = adj_rect.right
+                        if adj_rect.contains(rect):
+                            all_found = True
+                            break
+                if all_found:
+                    break
+        all_rectangles = self.added_rects + adjacent_rectangles
+        return self.__sub_matrix_from_corners(corners, all_rectangles)
 
+    def __find_removal_sub_matrix(self):
+        adjacent_rectangles = []
 
-    def _side_by_side(self, rect1, rect2):
-        """
-        Check if two rectangles are side by side and are touching.
+        #find all adacent rectangles and the box that ontains them all
+        corners = [self.removed_rects[0].left, self.removed_rects[0].top,
+                   self.removed_rects[0].bottom, self.removed_rects[0].right]
+        for rect in self.removed_rects:
+            for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
+                if direction_size not in self.rectangles[index - 2]:
+                    continue
+                for adj_rect in self.rectangles[index - 2][direction_size].copy():
 
-        :param rect1: pygame rect 1
-        :param rect2:  pygame rect 2
-        :return: a number giving a direction index that coresponds to the list
-        [N, E, S, W]
-        """
+                    if side_by_side(rect, adj_rect) is not None:
+                        if adj_rect.left < corners[0]:
+                            corners[0] = adj_rect.left
+                        if adj_rect.top < corners[1]:
+                            corners[1] = adj_rect.top
+                        if adj_rect.bottom > corners[2]:
+                            corners[2] = adj_rect.bottom
+                        if adj_rect.right > corners[3]:
+                            corners[3] = adj_rect.right
+                        adjacent_rectangles.append(adj_rect)
+                        self.__remove_rectangle(adj_rect)
 
-        if rect1.bottom == rect2.top:
-            if (rect1.left <= rect2.left and rect1.right > rect2.left) or\
-                (rect1.left < rect2.right and rect1.right >= rect2.right):
-                return 2
-            elif (rect2.left <= rect1.left and rect2.right > rect1.left) or \
-                (rect2.left < rect1.right and rect2.right >= rect1.right):
-                return 2
-        elif rect1.top == rect2.bottom:
-            if (rect1.left <= rect2.left and rect1.right > rect2.left) or\
-                (rect1.left < rect2.right and rect1.right >= rect2.right):
-                return 0
-            elif (rect2.left <= rect1.left and rect2.right > rect1.left) or \
-                (rect2.left < rect1.right and rect2.right >= rect1.right):
-                return 0
-        elif rect1.right == rect2.left:
-            if (rect1.top <= rect2.top and rect1.bottom > rect2.top) or \
-                (rect1.top < rect2.bottom and rect1.bottom >= rect2.bottom):
-                return 1
-            elif (rect2.top <= rect1.top and rect2.bottom > rect1.top) or \
-                (rect2.top < rect1.bottom and rect2.bottom >= rect1.bottom):
-                return 1
-        elif rect1.left == rect2.right:
-            if (rect1.top <= rect2.top and rect1.bottom > rect2.top) or \
-                (rect1.top < rect2.bottom and rect1.bottom >= rect2.bottom):
-                return 3
-            elif (rect2.top <= rect1.top and rect2.bottom > rect1.top) or \
-                (rect2.top < rect1.bottom and rect2.bottom >= rect1.bottom):
-                return 3
-        else:
-            return None
+        #get the sub matrix and all coordinates that are transaparant but do not need recalculation
+        all_rectangles = self.removed_rects + adjacent_rectangles
+        return self.__sub_matrix_from_corners(corners, all_rectangles)
 
+    def __sub_matrix_from_corners(self, corners, all_rectangles):
+        start_column, start_row = (int((corners[0] % CHUNK_SIZE.width) / BLOCK_SIZE.width), int((corners[1] % CHUNK_SIZE.height) / BLOCK_SIZE.height))
+        row_lenght = p_to_r(corners[3] - corners[0])
+        column_lenght = p_to_c(corners[2] - corners[1])
+        sub_matrix = []
+        covered_coordinates = [[] for _ in range(column_lenght)]
+        for row_index in range(column_lenght):
+            row = self.matrix[start_row + row_index][start_column:start_column + row_lenght + 1]
+            sub_matrix.append(row)
+            for col_index, block in enumerate(row):
+                #if transparant block in sub matrix but not adjacent pre ignore it.
+                if block.transparant_group != 0 and block.rect.collidelist(all_rectangles) == -1:
+                    covered_coordinates[row_index].append(col_index)
+        return sub_matrix, covered_coordinates
 
-    def get_air_rectangles(self, blocks):
-        """
-        Get all air spaces in the given matrix of blocks as a collection of
-        rectangles
+    def __add_rectangle(self, rect):
+        for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
+            if direction_size in self.rectangles[index]:
+                self.rectangles[index][direction_size].add(rect)
+            else:
+                self.rectangles[index][direction_size] = set([rect])
+            # add connections
+            if direction_size in self.rectangles[index - 2]:
+                for adj_rect in self.rectangles[index - 2][direction_size]:
+                    if side_by_side(rect, adj_rect) != None:
+                        rect.connecting_rects[index].add(adj_rect)
+                        adj_rect.connecting_rects[index - 2].add(rect)
 
-        :param blocks: a matrix of blocks
-        :return: a list of rectangles
-        """
+    def __remove_rectangle(self, rect):
+        rect.delete()
+        direction_sizes = (rect.top, rect.right, rect.bottom, rect.left)
+        for i in range(4):
+            self.rectangles[i][direction_sizes[i]].remove(rect)
+
+    def get_air_rectangles(self, blocks, covered_coordinates):
+        #covered coordinates is a matrix with the same amount of rows and column coords for all checked coords.
         air_rectangles = []
 
-        #save covered coordinates in a same lenght matrix for faster checking
-        covered_coordinates = [[] for row in blocks]
-
-        #find all rectangles in the block matrix
+        # find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
                 if block.transparant_group == 0 or n_col in covered_coordinates[n_row]:
                     continue
 
-                #calculate the maximum lenght of a rectangle based on already
-                #established ones
+                # calculate the maximum lenght of a rectangle based on already
+                # established ones
                 end_n_col = n_col
                 for n in range(n_col, len(row)):
                     end_n_col = n
                     if end_n_col in covered_coordinates[n_row]:
                         break
 
-                #find all air rectangles in a sub matrix
+                # find all air rectangles in a sub matrix
+                if n_col == end_n_col:
+                    continue
                 sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
                 lm_coord = self.__find_air_rectangle(sub_matrix)
 
                 # add newly covered coordinates
-                for x in range(lm_coord[0]+ 1):
+                for x in range(lm_coord[0] + 1):
                     for y in range(lm_coord[1] + 1):
                         covered_coordinates[n_row + y].append(n_col + x)
 
                 # add the air rectangle to the list of rectangles
-                air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in blocks[n_row:n_row + lm_coord[1] + 1]]
+                air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in
+                              blocks[n_row:n_row + lm_coord[1] + 1]]
                 rect = AirRectangle(rect_from_block_matrix(air_matrix))
-                air_rectangles.append(rect)
-        return air_rectangles
+                self.__add_rectangle(rect)
 
     def __find_air_rectangle(self, blocks):
         """
@@ -404,7 +459,7 @@ class PathfindingTree(threading.Thread):
         :return: the matrix coordinate of the local blocks matrix in form
         (column, row) that is the bottom right of the air rectangle
         """
-        #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
+        # first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         group = blocks[0][0].transparant_group
         for block in blocks[0][1:]:
@@ -413,7 +468,7 @@ class PathfindingTree(threading.Thread):
             x_size += 1
         matrix_coordinate = [x_size, 0]
 
-        #skip the first row since this was checked already
+        # skip the first row since this was checked already
         block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
@@ -423,6 +478,7 @@ class PathfindingTree(threading.Thread):
                 break
             matrix_coordinate[1] += 1
         return matrix_coordinate
+
 
 class AirRectangle:
     """
@@ -436,86 +492,16 @@ class AirRectangle:
         """
         self.rect = rect
         # a list of lists representing N, E, S, W connections
-        self.connecting_rects = [[] for _ in range(4)]
+        self.connecting_rects = [set() for _ in range(4)]
 
-    def remove_connection(self, index, rect):
-        """
-        Remove a connection from a certain direction
-
-        :param index: the direction_index
-        :param rect: an Air rectangle
-        :return:
-        """
-        for pos, c_rect in enumerate(self.connecting_rects[index]):
-            if c_rect == rect:
-                del self.connecting_rects[index][pos]
-                break
+    def delete(self):
+        #delete any reference from connectiing rectangles
+        for direction_index in range(len(self.connecting_rects)):
+            for connection in self.connecting_rects[direction_index]:
+                connection.connecting_rects[direction_index - 2].remove(self)
 
     def __getattr__(self, item):
         return getattr(self.rect, item)
 
     def __str__(self):
         return str(self.rect)
-
-
-##Failed idea for later mb. This is an idea for non lazy loading approach
-
-   # def update_tree(self, blocks):
-   #      new_rect = rect_from_block_matrix(blocks)
-   #      print(len(self.rectangles))
-   #
-   #
-   #      #find an adjacent rectangle if any to the new matrix and remove them
-   #      #from the list of rectangles
-   #      adjacent_rectangles = []
-   #      for index in range(len(self.rectangles)):
-   #          direction = self.__side_by_side(new_rect, self.rectangles[index])
-   #          if direction != None:
-   #              adjacent_rectangles.append(self.rectangles[index])
-   #
-   #      #get rectangle that covers the blocks and all adjacent rectangles
-   #      all_rect = new_rect.unionall(adjacent_rectangles)
-   #      # print(all_rect)
-   #      # print("ASJACENT")
-   #      # for r in adjacent_rectangles:
-   #      #     print(r)
-   #
-   #      colliding_indexes = all_rect.collidelistall(self.rectangles)
-   #      colliding_indexes.sort(reverse  = True)
-   #
-   #      all_affected_rectangles = []
-   #      for index in colliding_indexes:
-   #          all_affected_rectangles.append(self.rectangles[index])
-   #          del self.rectangles[index]
-   #
-   #      #dereference the all_affected_rectangles in all theire neighbours
-   #      adjacent_neighbours = {}
-   #      for rect in all_affected_rectangles:
-   #          for index, c_rects in enumerate(rect.connecting_rects):
-   #              for c_rect in c_rects:
-   #                  c_rect.remove_connection(index - 2, rect)
-   #                  if c_rect not in adjacent_rectangles:
-   #                      adjacent_neighbours[str(c_rect)] = c_rect
-   #
-   #      #get a new matrix that covers all blocka and get air rectangles and build a tree
-   #      new_matrix = self.board.overlapping_blocks(all_rect)
-   #      # for row in new_matrix:
-   #      #     print(row)
-   #      new_air_rectangles = self.get_air_rectangles(new_matrix)
-   #
-   #      # print("NEW RECT")
-   #      unique_rectangles= []
-   #      for n_rect in new_air_rectangles:
-   #          # print(n_rect)
-   #          if n_rect not in self.rectangles:
-   #              self.rectangles.append(n_rect)
-   #              unique_rectangles.append(n_rect)
-   #      self.build_tree([*unique_rectangles, *adjacent_neighbours.values()])
-   #
-   #      #finally append the new rectangles
-   #
-   #
-   #      # print("ALL FO THEM")
-   #      # for r in self.rectangles:
-   #      #     print(r)
-   #
