@@ -2,7 +2,7 @@ import threading
 
 from python_code.utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE
 from python_code.utility.utilities import rect_from_block_matrix, manhattan_distance, side_by_side
-from python_code.interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction
+from python_code.interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction, p_to_cp
 
 class PathFinder:
     """
@@ -335,6 +335,9 @@ class PathfindingChunk:
                 else:
                     continue
                 for adj_rect in adjacent_rects:
+                    #rectangles in different chunks do not take the matrix
+                    if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
+                        continue
                     if adj_rect.colliderect(rect):
                         adjacent_rectangles.append(adj_rect)
                         self.__remove_rectangle(adj_rect)
@@ -365,7 +368,9 @@ class PathfindingChunk:
                 if direction_size not in self.rectangles[index - 2]:
                     continue
                 for adj_rect in self.rectangles[index - 2][direction_size].copy():
-
+                    #rectangles in different chunks do not take the matrix
+                    if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
+                        continue
                     if side_by_side(rect, adj_rect) is not None:
                         if adj_rect.left < corners[0]:
                             corners[0] = adj_rect.left
@@ -428,15 +433,12 @@ class PathfindingChunk:
 
                 # calculate the maximum lenght of a rectangle based on already
                 # established ones
-                end_n_col = n_col
-                for n in range(n_col, len(row)):
-                    end_n_col = n
+                end_n_col = n_col + 1
+                for n in range(n_col, len(row) - 1):
+                    end_n_col = n + 1
                     if end_n_col in covered_coordinates[n_row]:
                         break
 
-                # find all air rectangles in a sub matrix
-                if n_col == end_n_col:
-                    continue
                 sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
                 lm_coord = self.__find_air_rectangle(sub_matrix)
 
