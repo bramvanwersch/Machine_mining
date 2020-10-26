@@ -506,7 +506,6 @@ class Board(BoardEventHandler):
         start_chunk = self.get_start_chunk()
         appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
                                               + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + + start_chunk.rect.top)
-        print(appropriate_location)
         t = Terminal(appropriate_location + (60, -10), self.main_sprite_group)
         c = Factory(appropriate_location + (40, -10), self.main_sprite_group)
         f = Furnace(appropriate_location + (20, -10), self.main_sprite_group)
