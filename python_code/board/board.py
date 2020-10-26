@@ -97,6 +97,15 @@ class Board(BoardEventHandler):
             top += height
         return affected_chunks
 
+    def __get_blocks_from_rect(self, rect):
+        blocks = []
+        for chunk, rect in self.__get_chunks_from_rect(rect):
+            for y_coord in range(rect.top, rect.bottom, BLOCK_SIZE.height):
+                for x_coord in range(rect.left, rect.right, BLOCK_SIZE.width):
+                    point = (x_coord, y_coord)
+                    blocks.append(chunk.get_block(point))
+        return blocks
+
     def set_task_control(self, task_control):
         self.task_control = task_control
         self.pipe_network.task_control = task_control
@@ -143,9 +152,9 @@ class Board(BoardEventHandler):
         building_instance = self.__buildings.pop(block.id, None)
         if building_instance == None:
             return
-        rect = building_instance.rect
         if isinstance(block, NetworkBlock):
             self.pipe_network.remove_node(building_instance)
+        blocks = building_instance.blocks
         for row in blocks:
             for block in row:
                 self.task_control.cancel_tasks(block, remove=True)
@@ -262,6 +271,13 @@ class Board(BoardEventHandler):
         self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
                                                       self.main_sprite_group,zoom=zoom)
 
+    def add_building_rectangle(self, pos, size=(10, 10)):
+        # bit retarded
+        zoom = self.chunk_matrix[0][0].selection_image._zoom
+        mouse_pos = screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
+        self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
+                                                  self.main_sprite_group, zoom=zoom, color=INVISIBLE_COLOR)
+
     def remove_selection(self):
         """
         Safely remove the selection rectangle
@@ -310,7 +326,7 @@ class Board(BoardEventHandler):
                     return
                 material = get_selected_item().material
                 building_block_i = block_i_from_material(material)
-                self.selection_image.add_building_rectangle(self.get_key(1).event.pos,size=building_block_i.SIZE)
+                self.add_building_rectangle(self.get_key(1).event.pos, size=building_block_i.SIZE)
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
                 # bit retarded
@@ -475,9 +491,7 @@ class Board(BoardEventHandler):
                 finish_block = building_block_i(block.rect.topleft, material=material)
             if isinstance(finish_block, Building):
                 overlap_rect = pygame.Rect((*finish_block.rect.topleft, finish_block.rect.width - 1, finish_block.rect.height - 1))
-                overlap_blocks = self.overlapping_blocks(overlap_rect)
-                #flatten the matrix
-                overlap_blocks = [item for sub_list in overlap_blocks for item in sub_list]
+                overlap_blocks = self.__get_blocks_from_rect(overlap_rect)
             else:
                 overlap_blocks = [block]
             self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group, removed_blocks=overlap_blocks)
@@ -490,7 +504,9 @@ class Board(BoardEventHandler):
         Add all starter building that should be placed before the game starts
         """
         start_chunk = self.get_start_chunk()
-        appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left, start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height)
+        appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
+                                              + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + + start_chunk.rect.top)
+        print(appropriate_location)
         t = Terminal(appropriate_location + (60, -10), self.main_sprite_group)
         c = Factory(appropriate_location + (40, -10), self.main_sprite_group)
         f = Furnace(appropriate_location + (20, -10), self.main_sprite_group)

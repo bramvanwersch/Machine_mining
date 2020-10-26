@@ -15,7 +15,7 @@ SCREEN_SIZE = Size(800, 800)
 CHUNK_SIZE = Size(250, 250)
 CHUNK_GRID_SIZE = Size(4, 4)
 BOARD_SIZE = Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
-START_CHUNK_POS = (1, 0)
+START_CHUNK_POS = (2, 2)
 
 #constant to tell when to recalculate the full chunk
 PF_UPDATE_TIME = 1000

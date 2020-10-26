@@ -53,7 +53,7 @@ class Chunk:
             # add the block
             self.foreground_image.add_image(local_block_rect, block.surface)
 
-            column, row = self.__local_adusted_block_coordinate(local_block_rect.topleft)
+            column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
             self.__matrix[row][column] = block
             self.pathfinding_chunk.added_rects.append(block.rect)
 
