@@ -12,10 +12,13 @@ IMAGE_DIR = "D:\python projects\Machine mining\images"
 
 #location parameters
 SCREEN_SIZE = Size(800, 800)
-CHUNK_SIZE = Size(510, 510)
-CHUNK_GRID_SIZE = Size(2, 2)
+CHUNK_SIZE = Size(250, 250)
+CHUNK_GRID_SIZE = Size(4, 4)
 BOARD_SIZE = Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
 START_CHUNK_POS = (1, 0)
+
+#constant to tell when to recalculate the full chunk
+PF_UPDATE_TIME = 1000
 
 INTERFACE_WINDOW_SIZE = Size(700, 700)
 INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
@@ -85,7 +88,7 @@ INTERFACE_KEYS = [CRAFTING, K_ESCAPE, BUILDING]
 #visual control
 SHOW_BLOCK_BORDER = False
 FPS = True
-AIR_RECTANGLES = True
+AIR_RECTANGLES = False
 
 #warning control for debugging purposes
 WARNINGS = True

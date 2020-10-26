@@ -69,13 +69,13 @@ class Main:
         pygame.quit()
 
     def draw_air_rectangles(self):
-        for key in self.board.pf.pathfinding_tree.rectangles[0]:
-            for rect in self.board.pf.pathfinding_tree.rectangles[0][key]:
+        for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
+            for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
                 self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
 
     def remove_air_rectangles(self):
-        for key in self.board.pf.pathfinding_tree.rectangles[0]:
-            for rect in self.board.pf.pathfinding_tree.rectangles[0][key]:
+        for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
+            for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
                 self.board.add_rectangle(rect, INVISIBLE_COLOR, layer=1, border=2)
 
 
@@ -119,8 +119,8 @@ class User:
         # allow to assign values to the _layer attribute instead of calling change_layer
         for sprite in self.main_sprite_group.sprites():
             self.main_sprite_group.change_layer(sprite, sprite._layer)
-        self.board.pipe_network.update()
         self.board.pf.update()
+        self.board.pipe_network.update()
 
     def __handle_events(self):
         events = pygame.event.get()

@@ -1,6 +1,6 @@
-import threading
+import random
 
-from python_code.utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE
+from python_code.utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE, GAME_TIME, PF_UPDATE_TIME
 from python_code.utility.utilities import rect_from_block_matrix, manhattan_distance, side_by_side
 from python_code.interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction, p_to_cp
 
@@ -29,10 +29,10 @@ class PathFinder:
         #find start rectangle
         direction_index = relative_closest_direction(start.center)
         found = False
-        for key in self.pathfinding_tree.rectangles[direction_index]:
+        for key in self.pathfinding_tree.rectangle_network[direction_index]:
             if (direction_index == 0 and key < start.centery) or (direction_index == 1 and key > start.centerx) or\
                 (direction_index == 2 and key > start.centery) or (direction_index == 3 and key < start.centerx):
-                adjacent_rects = self.pathfinding_tree.rectangles[direction_index][key]
+                adjacent_rects = self.pathfinding_tree.rectangle_network[direction_index][key]
             else:
                 continue
             for rect in adjacent_rects:
@@ -48,8 +48,8 @@ class PathFinder:
         #check if there is a rectangle next to the end rectangle
         can_find = False
         for index, direction_size in enumerate((end_rect.top, end_rect.right, end_rect.bottom, end_rect.left)):
-            if direction_size in self.pathfinding_tree.rectangles[index - 2]:
-                for rect in self.pathfinding_tree.rectangles[index - 2][direction_size]:
+            if direction_size in self.pathfinding_tree.rectangle_network[index - 2]:
+                for rect in self.pathfinding_tree.rectangle_network[index - 2][direction_size]:
                     if side_by_side(end_rect, rect) != None:
                         can_find = True
                         break
@@ -288,103 +288,120 @@ class PathfindingTree:
         :param matrix: a matrix over which changes are made.
         """
         #shared dictionary that acts as the tree of connections between rectangles in the chunks
-        self.rectangles = [{}, {}, {}, {}]
+        self.rectangle_network = [{}, {}, {}, {}]
         self.pathfinding_chunks = []
 
     def add_chunk(self, pf_chunk):
         self.pathfinding_chunks.append(pf_chunk)
-        pf_chunk.configure(self.rectangles)
+        pf_chunk.configure(self.rectangle_network)
 
 
 class PathfindingChunk:
     def __init__(self, matrix):
         self.matrix = matrix
-        self.rectangles = None
+        self.rectangle_network = None
+
+        #rectangles only present in this chunk
+        self.__local_rectangles = set()
         self.added_rects = []
         self.removed_rects = []
+        self.__times_passed = [random.randint(0, PF_UPDATE_TIME), PF_UPDATE_TIME]
 
     def configure(self, rectangles):
-        self.rectangles = rectangles
-        covered_coordinates = [[] for _ in range(len(self.matrix))]
+        self.rectangle_network = rectangles
+        covered_coordinates = [[False for _ in range(len(self.matrix[0]))] for _ in range(len(self.matrix))]
 
         #innitial configuration
         self.get_air_rectangles(self.matrix, covered_coordinates)
 
     def update(self):
-        if len(self.removed_rects) > 0:
-            sub_matrix, covered_coordinates = self.__find_removal_sub_matrix()
-            self.get_air_rectangles(sub_matrix, covered_coordinates)
-            self.removed_rects = []
-        if len(self.added_rects) > 0:
-            sub_matrix, covered_coordinates = self.__find_add_sub_matrix()
-            self.get_air_rectangles(sub_matrix, covered_coordinates)
-            self.added_rects = []
+        self.__times_passed[0] += GAME_TIME.get_time()
+        if self.__times_passed[0] > self.__times_passed[1] and (len(self.removed_rects) > 0 or len(self.added_rects) > 0):
+            #TODO make this a less temporary fix, is kind of crude right now --> works pretty good
+            self.__times_passed[0] == 0
+            for rect in self.__local_rectangles.copy():
+                self.__remove_rectangle(rect)
+            covered_coordinates = [[False for _ in range(len(self.matrix[0]))] for _ in range(len(self.matrix))]
 
-    def __find_add_sub_matrix(self):
+            # innitial configuration
+            self.get_air_rectangles(self.matrix, covered_coordinates)
+            self.added_rects = []
+            self.removed_rects = []
+        else:
+            if len(self.removed_rects) > 0:
+                for rect in self.removed_rects:
+                    sub_matrix, covered_coordinates = self.__find_removal_sub_matrix(rect)
+                    self.get_air_rectangles(sub_matrix, covered_coordinates)
+                    self.removed_rects.remove(rect)
+            if len(self.added_rects) > 0:
+                for rect in self.added_rects:
+                    sub_matrix, covered_coordinates = self.__find_add_sub_matrix(rect)
+                    self.get_air_rectangles(sub_matrix, covered_coordinates)
+                    self.added_rects.remove(rect)
+
+    def __find_add_sub_matrix(self, rect):
         adjacent_rectangles = []
 
-        corners = [self.added_rects[0].left, self.added_rects[0].top,
-                   self.added_rects[0].bottom, self.added_rects[0].right]
-        for rect in self.added_rects:
-            direction_index = relative_closest_direction(rect.center)
-            all_found = False
-            for key in self.rectangles[direction_index]:
-                if (direction_index == 0 and key < rect.centery) or (direction_index == 1 and key > rect.centerx) or\
-                    (direction_index == 2 and key > rect.centery) or (direction_index == 3 and key < rect.centerx):
-                    adjacent_rects = self.rectangles[direction_index][key]
-                else:
+        corners = [rect.left, rect.top,
+                   rect.bottom, rect.right]
+        direction_index = relative_closest_direction(rect.center)
+        all_found = False
+        for key in self.rectangle_network[direction_index]:
+            if (direction_index == 0 and key < rect.centery) or (direction_index == 1 and key > rect.centerx) or\
+                (direction_index == 2 and key > rect.centery) or (direction_index == 3 and key < rect.centerx):
+                adjacent_rects = self.rectangle_network[direction_index][key]
+            else:
+                continue
+            for adj_rect in adjacent_rects:
+                #rectangles in different chunks do not take the matrix
+                if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
                     continue
-                for adj_rect in adjacent_rects:
-                    #rectangles in different chunks do not take the matrix
-                    if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
-                        continue
-                    if adj_rect.colliderect(rect):
-                        adjacent_rectangles.append(adj_rect)
-                        self.__remove_rectangle(adj_rect)
-                        if adj_rect.left < corners[0]:
-                            corners[0] = adj_rect.left
-                        if adj_rect.top < corners[1]:
-                            corners[1] = adj_rect.top
-                        if adj_rect.bottom > corners[2]:
-                            corners[2] = adj_rect.bottom
-                        if adj_rect.right > corners[3]:
-                            corners[3] = adj_rect.right
-                        if adj_rect.contains(rect):
-                            all_found = True
-                            break
-                if all_found:
-                    break
-        all_rectangles = self.added_rects + adjacent_rectangles
+                if adj_rect.colliderect(rect):
+                    adjacent_rectangles.append(adj_rect)
+                    self.__remove_rectangle(adj_rect)
+                    if adj_rect.left < corners[0]:
+                        corners[0] = adj_rect.left
+                    if adj_rect.top < corners[1]:
+                        corners[1] = adj_rect.top
+                    if adj_rect.bottom > corners[2]:
+                        corners[2] = adj_rect.bottom
+                    if adj_rect.right > corners[3]:
+                        corners[3] = adj_rect.right
+                    if adj_rect.contains(rect):
+                        all_found = True
+                        break
+            if all_found:
+                break
+        all_rectangles = [rect] + adjacent_rectangles
         return self.__sub_matrix_from_corners(corners, all_rectangles)
 
-    def __find_removal_sub_matrix(self):
+    def __find_removal_sub_matrix(self, rect):
         adjacent_rectangles = []
 
         #find all adacent rectangles and the box that ontains them all
-        corners = [self.removed_rects[0].left, self.removed_rects[0].top,
-                   self.removed_rects[0].bottom, self.removed_rects[0].right]
-        for rect in self.removed_rects:
-            for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
-                if direction_size not in self.rectangles[index - 2]:
+        corners = [rect.left, rect.top,
+                   rect.bottom, rect.right]
+        for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
+            if direction_size not in self.rectangle_network[index - 2]:
+                continue
+            for adj_rect in self.rectangle_network[index - 2][direction_size].copy():
+                #rectangles in different chunks do not take the matrix
+                if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
                     continue
-                for adj_rect in self.rectangles[index - 2][direction_size].copy():
-                    #rectangles in different chunks do not take the matrix
-                    if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
-                        continue
-                    if side_by_side(rect, adj_rect) is not None:
-                        if adj_rect.left < corners[0]:
-                            corners[0] = adj_rect.left
-                        if adj_rect.top < corners[1]:
-                            corners[1] = adj_rect.top
-                        if adj_rect.bottom > corners[2]:
-                            corners[2] = adj_rect.bottom
-                        if adj_rect.right > corners[3]:
-                            corners[3] = adj_rect.right
-                        adjacent_rectangles.append(adj_rect)
-                        self.__remove_rectangle(adj_rect)
+                if side_by_side(rect, adj_rect) is not None:
+                    if adj_rect.left < corners[0]:
+                        corners[0] = adj_rect.left
+                    if adj_rect.top < corners[1]:
+                        corners[1] = adj_rect.top
+                    if adj_rect.bottom > corners[2]:
+                        corners[2] = adj_rect.bottom
+                    if adj_rect.right > corners[3]:
+                        corners[3] = adj_rect.right
+                    adjacent_rectangles.append(adj_rect)
+                    self.__remove_rectangle(adj_rect)
 
         #get the sub matrix and all coordinates that are transaparant but do not need recalculation
-        all_rectangles = self.removed_rects + adjacent_rectangles
+        all_rectangles = [rect] + adjacent_rectangles
         return self.__sub_matrix_from_corners(corners, all_rectangles)
 
     def __sub_matrix_from_corners(self, corners, all_rectangles):
@@ -392,60 +409,63 @@ class PathfindingChunk:
         row_lenght = p_to_r(corners[3] - corners[0])
         column_lenght = p_to_c(corners[2] - corners[1])
         sub_matrix = []
-        covered_coordinates = [[] for _ in range(column_lenght)]
+        covered_coordinates = [[False for _ in range(row_lenght)] for _ in range(column_lenght)]
         for row_index in range(column_lenght):
-            row = self.matrix[start_row + row_index][start_column:start_column + row_lenght + 1]
+            row = self.matrix[start_row + row_index][start_column:start_column + row_lenght]
             sub_matrix.append(row)
             for col_index, block in enumerate(row):
                 #if transparant block in sub matrix but not adjacent pre ignore it.
                 if block.transparant_group != 0 and block.rect.collidelist(all_rectangles) == -1:
-                    covered_coordinates[row_index].append(col_index)
+                    covered_coordinates[row_index][col_index] = True
         return sub_matrix, covered_coordinates
 
     def __add_rectangle(self, rect):
+        self.__local_rectangles.add(rect)
         for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
-            if direction_size in self.rectangles[index]:
-                self.rectangles[index][direction_size].add(rect)
+            if direction_size in self.rectangle_network[index]:
+                self.rectangle_network[index][direction_size].add(rect)
             else:
-                self.rectangles[index][direction_size] = set([rect])
+                self.rectangle_network[index][direction_size] = set([rect])
             # add connections
-            if direction_size in self.rectangles[index - 2]:
-                for adj_rect in self.rectangles[index - 2][direction_size]:
+            if direction_size in self.rectangle_network[index - 2]:
+                for adj_rect in self.rectangle_network[index - 2][direction_size]:
                     if side_by_side(rect, adj_rect) != None:
                         rect.connecting_rects[index].add(adj_rect)
                         adj_rect.connecting_rects[index - 2].add(rect)
 
     def __remove_rectangle(self, rect):
+        self.__local_rectangles.remove(rect)
         rect.delete()
         direction_sizes = (rect.top, rect.right, rect.bottom, rect.left)
         for i in range(4):
-            self.rectangles[i][direction_sizes[i]].remove(rect)
+            self.rectangle_network[i][direction_sizes[i]].remove(rect)
 
     def get_air_rectangles(self, blocks, covered_coordinates):
         #covered coordinates is a matrix with the same amount of rows and column coords for all checked coords.
-        air_rectangles = []
 
         # find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if block.transparant_group == 0 or n_col in covered_coordinates[n_row]:
+                if block.transparant_group == 0 or covered_coordinates[n_row][n_col]:
                     continue
 
                 # calculate the maximum lenght of a rectangle based on already
                 # established ones
-                end_n_col = n_col + 1
-                for n in range(n_col, len(row) - 1):
-                    end_n_col = n + 1
-                    if end_n_col in covered_coordinates[n_row]:
+                end_n_col = n_col
+                for index, r_block in enumerate(row[n_col:]):
+                    if covered_coordinates[n_row][n_col + index]:
                         break
+                    end_n_col = n_col + index
 
-                sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
-                lm_coord = self.__find_air_rectangle(sub_matrix)
+
+                sub_matrix = [sub_row[n_col:end_n_col + 1] for sub_row in blocks[n_row:]]
+                sub_covered_matrix = [sub_row[n_col:end_n_col + 1] for sub_row in covered_coordinates[n_row:]]
+                lm_coord = self.__find_air_rectangle(sub_matrix, sub_covered_matrix)
 
                 # add newly covered coordinates
                 for x in range(lm_coord[0] + 1):
                     for y in range(lm_coord[1] + 1):
-                        covered_coordinates[n_row + y].append(n_col + x)
+                        covered_coordinates[n_row + y][n_col + x] = True
 
                 # add the air rectangle to the list of rectangles
                 air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in
@@ -453,7 +473,7 @@ class PathfindingChunk:
                 rect = AirRectangle(rect_from_block_matrix(air_matrix))
                 self.__add_rectangle(rect)
 
-    def __find_air_rectangle(self, blocks):
+    def __find_air_rectangle(self, blocks, covered_coordinates):
         """
         Find starting from an air block all the air blocks in a rectangle
 
@@ -464,8 +484,8 @@ class PathfindingChunk:
         # first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         group = blocks[0][0].transparant_group
-        for block in blocks[0][1:]:
-            if block.transparant_group != group:
+        for n_col, block in enumerate(blocks[0][1:]):
+            if block.transparant_group != group or covered_coordinates[0][n_col + 1]:
                 break
             x_size += 1
         matrix_coordinate = [x_size, 0]
@@ -474,9 +494,9 @@ class PathfindingChunk:
         block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
-                if block.transparant_group != group:
+                if block.transparant_group != group or covered_coordinates[n_row][n_col]:
                     break
-            if block.transparant_group != group:
+            if block.transparant_group != group or covered_coordinates[n_row][n_col]:
                 break
             matrix_coordinate[1] += 1
         return matrix_coordinate
