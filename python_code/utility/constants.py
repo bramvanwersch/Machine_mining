@@ -13,7 +13,7 @@ IMAGE_DIR = "D:\python projects\Machine mining\images"
 #location parameters
 SCREEN_SIZE = Size(800, 800)
 CHUNK_SIZE = Size(250, 250)
-CHUNK_GRID_SIZE = Size(4, 4)
+CHUNK_GRID_SIZE = Size(4, 8)
 BOARD_SIZE = Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
 START_CHUNK_POS = (2, 2)
 
@@ -33,8 +33,8 @@ HIGHLIGHT_LAYER = BOARD_LAYER + 1
 INTERFACE_LAYER = HIGHLIGHT_LAYER + 1
 
 ORE_LIST = ["Iron", "Gold", "Copper", "Zinc", "Coal", "Titanium"]
-MAX_DEPTH = 200
 BLOCK_SIZE = Size(10, 10)
+MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
 
 GAME_TIME = pygame.time.Clock()
 INVISIBLE_COLOR = (0, 0, 0, 0)
@@ -86,7 +86,7 @@ CRAFTING = K_c
 INTERFACE_KEYS = [CRAFTING, K_ESCAPE, BUILDING]
 
 #visual control
-SHOW_BLOCK_BORDER = False
+SHOW_BLOCK_BORDER = True
 FPS = True
 ENTITY_NMBR = True
 AIR_RECTANGLES = False

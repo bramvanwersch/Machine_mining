@@ -142,7 +142,7 @@ class User:
         else:
             x = 1
         if c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height > 0:
-            y = 1 + (c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.height / 2)
+            y = 1 + (c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height) / (SCREEN_SIZE.height / 2)
         elif SCREEN_SIZE.height / 2 - c[1] > 0:
             y = 1 + (SCREEN_SIZE.height / 2 - c[1]) / (SCREEN_SIZE.height / 2)
         else:

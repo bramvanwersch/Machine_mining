@@ -13,6 +13,11 @@ from python_code.interfaces.interface_utility import *
 from python_code.board.chunks import *
 
 class Board(BoardEventHandler):
+    #the amount of normal blocks per cluster
+    CLUSTER_LIKELYHOOD = 200
+    #the max size of a ore cluster around the center
+    MAX_CLUSTER_SIZE = 3
+
     """
     Class that holds a matrix of blocks that is a playing field and an image
     representing set matrix
@@ -51,15 +56,21 @@ class Board(BoardEventHandler):
         #variables needed when playing
 
     def __generate_chunk_matrix(self, main_sprite_group):
+        foreground_matrix = self.__generate_foreground_string_matrix()
+        background_matrix = self.__generate_background_string_matrix()
         chunk_matrix = []
         for col_c in range(CHUNK_GRID_SIZE.height):
             chunk_row = []
             for row_c in range(CHUNK_GRID_SIZE.width):
                 point_pos = (row_c * CHUNK_SIZE.width, col_c * CHUNK_SIZE.height)
+                for_string_matrix = [row[p_to_c(row_c * CHUNK_SIZE.height):p_to_r((row_c + 1) * CHUNK_SIZE.height)] for\
+                    row in foreground_matrix[p_to_r(col_c * CHUNK_SIZE.width):p_to_r((col_c + 1) * CHUNK_SIZE.width)]]
+                back_string_matrix = [row[p_to_c(row_c * CHUNK_SIZE.height):p_to_r((row_c + 1) * CHUNK_SIZE.height)] for\
+                    row in background_matrix[p_to_r(col_c * CHUNK_SIZE.width):p_to_r((col_c + 1) * CHUNK_SIZE.width)]]
                 if (row_c, col_c) == START_CHUNK_POS:
-                    chunk = StartChunk(point_pos, main_sprite_group)
+                    chunk = StartChunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
                 else:
-                    chunk = Chunk(point_pos, main_sprite_group)
+                    chunk = Chunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
                 chunk_row.append(chunk)
                 self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
             chunk_matrix.append(chunk_row)
@@ -498,6 +509,89 @@ class Board(BoardEventHandler):
 
 
 #### MAP GENERATION FUNCTIONS ###
+
+    def __generate_foreground_string_matrix(self):
+        """
+        Fill a matrix with names of the materials of the respective blocks
+
+        :return: a matrix containing strings corresponding to names of __material
+        classes.
+        """
+
+        matrix = []
+        # first make everything stone
+        for _ in range(p_to_c(BOARD_SIZE.height)):
+            row = ["Stone"] * p_to_r(BOARD_SIZE.width)
+            matrix.append(row)
+
+        # generate some ores inbetween the start and end locations
+        for row_i, row in enumerate(matrix):
+            for column_i, value in enumerate(row):
+                if randint(1, self.CLUSTER_LIKELYHOOD) == 1:
+                    # decide the ore
+                    ore = self.__get_ore_at_depth(row_i)
+                    # create a list of locations around the current location
+                    # where an ore is going to be located
+                    ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
+                    for loc in ore_locations:
+                        try:
+                            matrix[loc[1]][loc[0]] = ore
+                        except IndexError:
+                            # if outside board skip
+                            continue
+        return matrix
+
+    def __get_ore_at_depth(self, depth):
+        """
+        Figure out the likelyood of all ores and return a wheighted randomly
+        chosen ore
+
+        :param depth: the depth for the ore to be at
+        :return: a string that is an ore
+        """
+        likelyhoods = []
+        for name in ORE_LIST:
+            norm_depth = depth / MAX_DEPTH * 100
+            mean = getattr(materials, name).MEAN_DEPTH
+            sd = getattr(materials, name).SD
+            lh = Gaussian(mean, sd).probability_density(norm_depth)
+            likelyhoods.append(round(lh, 10))
+        norm_likelyhoods = normalize(likelyhoods)
+
+        return choices(ORE_LIST, norm_likelyhoods, k=1)[0]
+
+    def __create_ore_cluster(self, ore, center):
+        """
+        Generate a list of index offsets for a certain ore
+
+        :param ore: string name of an ore
+        :param center: a coordinate around which the ore cluster needs to be
+        generated
+        :return: a list of offset indexes around 0,0
+        """
+        size = randint(*getattr(materials, ore).CLUSTER_SIZE)
+        ore_locations = []
+        while len(ore_locations) <= size:
+            location = [0, 0]
+            for index in range(2):
+                pos = choice([-1, 1])
+                # assert index is bigger then 0
+                location[index] = max(0, pos * randint(0, self.MAX_CLUSTER_SIZE) + center[index])
+            if location not in ore_locations:
+                ore_locations.append(location)
+        return ore_locations
+
+    def __generate_background_string_matrix(self):
+        """
+        Generate the backdrop matrix.
+
+        :return: a matrix of the given size
+        """
+        matrix = []
+        for _ in range(p_to_r(BOARD_SIZE.height)):
+            row = ["Dirt"] * p_to_c(BOARD_SIZE.width)
+            matrix.append(row)
+        return matrix
 
     def __add_starter_buildings(self):
         """

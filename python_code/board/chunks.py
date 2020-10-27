@@ -11,18 +11,13 @@ from python_code.board.pathfinding import PathfindingChunk
 
 
 class Chunk:
-    BLOCK_PER_CLUSTER = 500
-    #the max size of a ore cluster around the center
-    MAX_CLUSTER_SIZE = 3
 
-    def __init__(self, pos, main_sprite_group):
+    def __init__(self, pos, foreground, background, main_sprite_group):
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
-        string_matrix = self._generate_foreground_string_matrix()
-        self.__matrix = self.__create_blocks_from_string(string_matrix)
 
-        back_string_matrix = self._generate_background_string_matrix()
-        self.__back_matrix = self.__create_blocks_from_string(back_string_matrix)
+        self.__matrix = self.__create_blocks_from_string(foreground)
+        self.__back_matrix = self.__create_blocks_from_string(background)
 
         offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
         self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
@@ -82,18 +77,6 @@ class Chunk:
                 overlapping_blocks.append(add_row)
         return overlapping_blocks
 
-    def _generate_background_string_matrix(self):
-        """
-        Generate the backdrop matrix.
-
-        :return: a matrix of the given size
-        """
-        matrix = []
-        for _ in range(p_to_r(BOARD_SIZE.height)):
-            row = ["Dirt"] * p_to_c(BOARD_SIZE.width)
-            matrix.append(row)
-        return matrix
-
     def __local_adusted_block_coordinate(self, point):
         #get the coordinate of a block in the local self.matrix grid
         row = p_to_r(point[1]) - p_to_r(self.rect.y)
@@ -106,77 +89,6 @@ class Chunk:
 
 
 ##GENERATE CHUNK FUNCTIONS
-
-    def _generate_foreground_string_matrix(self):
-        """
-        Fill a matrix with names of the materials of the respective blocks
-
-        :return: a matrix containing strings corresponding to names of __material
-        classes.
-        """
-
-        matrix = []
-        #first make everything stone
-        for _ in range(p_to_c(self.rect.height)):
-            row = ["Stone"] * p_to_r(self.rect.width)
-            matrix.append(row)
-
-        #generate some ores inbetween the start and end locations
-        for row_i, row in enumerate(matrix):
-            for column_i, value in enumerate(row):
-                if randint(1, self.BLOCK_PER_CLUSTER) == 1:
-                    #decide the ore
-                    ore = self.__get_ore_at_depth(row_i)
-                    #create a list of locations around the current location
-                    #where an ore is going to be located
-                    ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
-                    for loc in ore_locations:
-                        try:
-                            matrix[loc[1]][loc[0]] = ore
-                        except IndexError:
-                            #if outside board skip
-                            continue
-        return matrix
-
-    def __get_ore_at_depth(self, depth):
-        """
-        Figure out the likelyood of all ores and return a wheighted randomly
-        chosen ore
-
-        :param depth: the depth for the ore to be at
-        :return: a string that is an ore
-        """
-        likelyhoods = []
-        for name in ORE_LIST:
-            norm_depth = depth / MAX_DEPTH * 100
-            mean = getattr(materials, name).MEAN_DEPTH
-            sd = getattr(materials, name).SD
-            lh = Gaussian(mean, sd).probability_density(norm_depth)
-            likelyhoods.append(round(lh, 10))
-        norm_likelyhoods = normalize(likelyhoods)
-
-        return choices(ORE_LIST, norm_likelyhoods, k = 1)[0]
-
-    def __create_ore_cluster(self, ore, center):
-        """
-        Generate a list of index offsets for a certain ore
-
-        :param ore: string name of an ore
-        :param center: a coordinate around which the ore cluster needs to be
-        generated
-        :return: a list of offset indexes around 0,0
-        """
-        size = randint(*getattr(materials, ore).CLUSTER_SIZE)
-        ore_locations = []
-        while len(ore_locations) <= size:
-            location = [0,0]
-            for index in range(2):
-                pos = choice([-1, 1])
-                #assert index is bigger then 0
-                location[index] = max(0, pos * randint(0, self.MAX_CLUSTER_SIZE) + center[index])
-            if location not in ore_locations:
-                ore_locations.append(location)
-        return ore_locations
 
     def __create_blocks_from_string(self, s_matrix):
         """
@@ -207,8 +119,11 @@ class Chunk:
 class StartChunk(Chunk):
     START_RECTANGLE = pygame.Rect((CHUNK_SIZE.width / 2 - 125, 0, 250, 50))
 
-    def _generate_foreground_string_matrix(self):
-        matrix = super()._generate_foreground_string_matrix()
+    def __init__(self, pos, foreground, background, main_sprite_group):
+        foreground = self.__adjust_foreground_string_matrix(foreground)
+        super().__init__(pos, foreground, background, main_sprite_group)
+
+    def __adjust_foreground_string_matrix(self, matrix):
         #generate the air space at the start position
         for row_i in range(p_to_r(self.START_RECTANGLE.bottom)):
             for column_i in range(p_to_c(self.START_RECTANGLE.left), p_to_r(self.START_RECTANGLE.right)):
@@ -224,10 +139,6 @@ class BoardImage(ZoomableEntity):
     """
     def __init__(self, pos, main_sprite_group, **kwargs):
         ZoomableEntity.__init__(self, pos, CHUNK_SIZE, main_sprite_group, **kwargs)
-        self.visible = True
-
-    def update(self, *args):
-        pass
 
     def _create_image(self, size, color, **kwargs):
         """
