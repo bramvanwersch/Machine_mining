@@ -152,9 +152,10 @@ class User:
 
         self._visible_entities = 0
         for sprite in self.main_sprite_group.sprites():
-            if sprite.rect.colliderect(visible_rect):
+            if not sprite.static or sprite.rect.colliderect(visible_rect):
                 sprite.show(True)
-                self._visible_entities += 1
+                if sprite.is_showing:
+                    self._visible_entities += 1
             else:
                 sprite.show(False)
 
