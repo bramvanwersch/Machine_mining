@@ -1,5 +1,6 @@
 import pygame, os
 from pygame.locals import *
+
 from python_code.utility.utilities import Size
 
 #innitialize fonts to pre load a font
@@ -7,15 +8,15 @@ pygame.font.init()
 FONTS = {i : pygame.font.SysFont("roboto", i) for i in range(12,35)}
 
 GAME_TIME = pygame.time.Clock()
-MAIN_DIR = os.path.split(os.path.abspath(__file__))[0]
-IMAGE_DIR = "D:\python projects\Machine mining\images"
+MAIN_DIR = os.path.split(os.path.abspath(__file__))[0].rsplit(os.sep, 2)[0]
+IMAGE_DIR = "{}{}images".format(MAIN_DIR, os.sep)
 
 #location parameters
 SCREEN_SIZE = Size(800, 800)
-CHUNK_SIZE = Size(250, 250)
-CHUNK_GRID_SIZE = Size(4, 8)
+CHUNK_SIZE = Size(510, 510)
+CHUNK_GRID_SIZE = Size(2, 4)
 BOARD_SIZE = Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
-START_CHUNK_POS = (2, 2)
+START_CHUNK_POS = (1, 1)
 
 #constant to tell when to recalculate the full chunk
 PF_UPDATE_TIME = 1000
