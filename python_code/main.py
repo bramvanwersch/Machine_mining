@@ -9,7 +9,7 @@ from python_code.utility.image_handling import load_images
 from python_code.recipes.base_recipes import create_recipe_book
 from python_code.interfaces.building_interface import BuildingWindow
 from python_code.interfaces.managers import create_window_manager
-from python_code.board.materials import set_fuel_materials
+from python_code.board.materials import configure_material_collections
 import python_code.interfaces.managers as window_managers
 
 
@@ -33,7 +33,7 @@ class Main:
         create_recipe_book()
 
         #load fuel materials
-        set_fuel_materials()
+        configure_material_collections()
 
         self.rect = self.screen.get_rect()
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))

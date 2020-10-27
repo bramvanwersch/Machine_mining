@@ -5,7 +5,7 @@ from python_code.utility.constants import INTERFACE_LAYER
 from python_code.utility.image_handling import image_sheets
 from python_code.inventories import Item
 from python_code.utility.utilities import Size
-from python_code.board.materials import fuel_values
+from python_code.board.materials import fuel_materials
 
 
 class CraftingWindow(Window):
@@ -149,7 +149,7 @@ class FurnaceWindow(CraftingWindow):
         super().update()
         #configure fuel based on inventory fuel items.
         total_fuel = 0
-        for mat_name in fuel_values:
+        for mat_name in [f.name() for f in fuel_materials]:
             fuel_pointer = self._craft_building.inventory.item_pointer(mat_name)
             if fuel_pointer != None and fuel_pointer.quantity > 0:
                 total_fuel += fuel_pointer.FUEL_VALUE * fuel_pointer.quantity

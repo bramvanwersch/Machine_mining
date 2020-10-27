@@ -1,6 +1,6 @@
 import pygame, sys, inspect
 from abc import ABC, abstractmethod
-from random import randint
+from random import randint, choices
 
 from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
 from python_code.utility.image_handling import image_sheets
@@ -8,13 +8,20 @@ from python_code.utility.utilities import Gaussian
 from python_code.board.blocks import *
 
 
-fuel_values = []
+fuel_materials = []
+ore_materials = []
+filler_materials = []
 
-def set_fuel_materials():
-    global fuel_values
+def configure_material_collections():
+    global fuel_materials, ore_materials, filler_materials
     for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
         if issubclass(obj, FuelMaterial) and obj != FuelMaterial:
-            fuel_values.append(obj.name())
+            fuel_materials.append(obj)
+        elif issubclass(obj, Ore) and obj != Ore:
+            ore_materials.append(obj)
+        elif issubclass(obj, FillerMaterial) and obj != FillerMaterial:
+            filler_materials.append(obj)
+            print(obj.name())
 
 
 class BaseMaterial(ABC):
@@ -65,6 +72,20 @@ class BaseMaterial(ABC):
         :return: the task time that the task will take in total
         """
         return self.TASK_TIME + randint(0, int(0.1 * self.TASK_TIME))
+
+
+class MaterialCollection(ABC):
+    # class that holds a collection of items that can be selected with a certain wheight
+
+    @property
+    @abstractmethod
+    def MATERIAL_PROBABILITIES(self):
+        return None
+
+    @classmethod
+    def name(self):
+        return choices([k.name() for k in self.MATERIAL_PROBABILITIES.keys()],
+                self.MATERIAL_PROBABILITIES.values(), k=1)[0]
 
 
 class Air(BaseMaterial):
@@ -153,7 +174,20 @@ class ColorMaterial(BaseMaterial, ABC):
 
 
 #filler materials
-class TopDirt(ColorMaterial):
+class FillerMaterial(ABC):
+
+    @property
+    @abstractmethod
+    def MEAN_DEPTH(self):
+        return
+
+    @property
+    @abstractmethod
+    def SD(self):
+        return
+
+
+class TopDirt(ColorMaterial, FillerMaterial):
 
     MEAN_DEPTH = 0
     SD = 2
@@ -162,8 +196,6 @@ class TopDirt(ColorMaterial):
 
 class Stone(ColorMaterial):
 
-    MEAN_DEPTH = 30
-    SD = 10
     BASE_COLOR = (155, 155, 155)
 
 
@@ -183,14 +215,21 @@ class YellowStone(ColorMaterial):
     BASE_COLOR = (155, 155, 106)
 
 
-class Granite(ColorMaterial):
+class StoneCollection(MaterialCollection, FillerMaterial):
+
+    MEAN_DEPTH = 30
+    SD = 10
+    MATERIAL_PROBABILITIES = {Stone:0.95, GreenStone:0.01, RedStone:0.01, BlueStone:0.01, YellowStone:0.01}
+
+
+class Granite(ColorMaterial, FillerMaterial):
 
     MEAN_DEPTH = 70
     SD = 7
     BASE_COLOR = (105, 89, 76)
 
 
-class FinalStone(ColorMaterial):
+class FinalStone(ColorMaterial, FillerMaterial):
 
     MEAN_DEPTH = 100
     SD = 2
@@ -198,6 +237,7 @@ class FinalStone(ColorMaterial):
 
 
 class Dirt(ColorMaterial):
+
     BASE_COLOR = (107, 49, 13)
 
 

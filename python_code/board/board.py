@@ -522,11 +522,11 @@ class Board(BoardEventHandler):
 
         # generate some ores inbetween the start and end locations
         for row_i, row in enumerate(matrix):
-            ore_likelyhoods = self.__get_material_lh_at_depth(ORE_LIST, row_i)
+            ore_likelyhoods = self.__get_material_lh_at_depth(materials.ore_materials, row_i)
             for column_i, value in enumerate(row):
                 if randint(1, self.CLUSTER_LIKELYHOOD) == 1:
                     # decide the ore
-                    ore = choices(ORE_LIST, ore_likelyhoods, k=1)[0]
+                    ore = choices([f.name() for f in materials.ore_materials], ore_likelyhoods, k=1)[0]
                     # create a list of locations around the current location
                     # where an ore is going to be located
                     ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
@@ -541,10 +541,10 @@ class Board(BoardEventHandler):
     def __generate_stone_background(self):
         matrix = []
         for row_i in range(p_to_r(BOARD_SIZE.height)):
-            filler_likelyhoods = self.__get_material_lh_at_depth(FILLER_LIST, row_i)
+            filler_likelyhoods = self.__get_material_lh_at_depth(materials.filler_materials, row_i)
             row = []
             for _ in range(p_to_c(BOARD_SIZE.width)):
-                filler = choices(FILLER_LIST, filler_likelyhoods, k=1)[0]
+                filler = choices([f.name() for f in materials.filler_materials], filler_likelyhoods, k=1)[0]
                 row.append(filler)
             matrix.append(row)
         return matrix
@@ -558,11 +558,9 @@ class Board(BoardEventHandler):
         :return: a string that is an ore
         """
         likelyhoods = []
-        for name in material_list:
+        for material in material_list:
             norm_depth = depth / MAX_DEPTH * 100
-            mean = getattr(materials, name).MEAN_DEPTH
-            sd = getattr(materials, name).SD
-            lh = Gaussian(mean, sd).probability_density(norm_depth)
+            lh = Gaussian(material.MEAN_DEPTH, material.SD).probability_density(norm_depth)
             likelyhoods.append(round(lh, 10))
         norm_likelyhoods = normalize(likelyhoods)
 

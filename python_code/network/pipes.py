@@ -53,7 +53,7 @@ class Network:
         for a_node in self.nodes:
             if not hasattr(a_node, "inventory"):
                 continue
-            for name in materials.fuel_values:
+            for name in [f.name() for f in materials.fuel_materials]:
                 item_pointer = a_node.inventory.item_pointer(name)
                 if item_pointer == None:
                     continue
