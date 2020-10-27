@@ -4,6 +4,7 @@ from random import randint
 
 from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
 from python_code.utility.image_handling import image_sheets
+from python_code.utility.utilities import Gaussian
 from python_code.board.blocks import *
 
 
@@ -152,8 +153,48 @@ class ColorMaterial(BaseMaterial, ABC):
 
 
 #filler materials
+class TopDirt(ColorMaterial):
+
+    MEAN_DEPTH = 0
+    SD = 2
+    BASE_COLOR = (137, 79, 33)
+
+
 class Stone(ColorMaterial):
+
+    MEAN_DEPTH = 30
+    SD = 10
     BASE_COLOR = (155, 155, 155)
+
+
+class GreenStone(ColorMaterial):
+    BASE_COLOR = (106, 155, 106)
+
+
+class RedStone(ColorMaterial):
+    BASE_COLOR = (155, 106, 106)
+
+
+class BlueStone(ColorMaterial):
+    BASE_COLOR = (106, 106, 155)
+
+
+class YellowStone(ColorMaterial):
+    BASE_COLOR = (155, 155, 106)
+
+
+class Granite(ColorMaterial):
+
+    MEAN_DEPTH = 70
+    SD = 7
+    BASE_COLOR = (105, 89, 76)
+
+
+class FinalStone(ColorMaterial):
+
+    MEAN_DEPTH = 100
+    SD = 2
+    BASE_COLOR = (199, 127, 195)
 
 
 class Dirt(ColorMaterial):
@@ -175,6 +216,10 @@ class Ore(ColorMaterial, ABC):
         :return: the base color
         """
         return self.BASE_COLOR
+
+    @classmethod
+    def distribution(self):
+        return Gaussian(self.SD, self.MEAN_DEPTH)
 
     @property
     @abstractmethod

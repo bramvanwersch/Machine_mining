@@ -34,6 +34,7 @@ HIGHLIGHT_LAYER = BOARD_LAYER + 1
 INTERFACE_LAYER = HIGHLIGHT_LAYER + 1
 
 ORE_LIST = ["Iron", "Gold", "Copper", "Zinc", "Coal", "Titanium"]
+FILLER_LIST = ["TopDirt", "Stone", "Granite", "FinalStone"]
 BLOCK_SIZE = Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
 

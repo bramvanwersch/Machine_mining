@@ -518,18 +518,15 @@ class Board(BoardEventHandler):
         classes.
         """
 
-        matrix = []
-        # first make everything stone
-        for _ in range(p_to_c(BOARD_SIZE.height)):
-            row = ["Stone"] * p_to_r(BOARD_SIZE.width)
-            matrix.append(row)
+        matrix = self.__generate_stone_background()
 
         # generate some ores inbetween the start and end locations
         for row_i, row in enumerate(matrix):
+            ore_likelyhoods = self.__get_material_lh_at_depth(ORE_LIST, row_i)
             for column_i, value in enumerate(row):
                 if randint(1, self.CLUSTER_LIKELYHOOD) == 1:
                     # decide the ore
-                    ore = self.__get_ore_at_depth(row_i)
+                    ore = choices(ORE_LIST, ore_likelyhoods, k=1)[0]
                     # create a list of locations around the current location
                     # where an ore is going to be located
                     ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
@@ -541,7 +538,18 @@ class Board(BoardEventHandler):
                             continue
         return matrix
 
-    def __get_ore_at_depth(self, depth):
+    def __generate_stone_background(self):
+        matrix = []
+        for row_i in range(p_to_r(BOARD_SIZE.height)):
+            filler_likelyhoods = self.__get_material_lh_at_depth(FILLER_LIST, row_i)
+            row = []
+            for _ in range(p_to_c(BOARD_SIZE.width)):
+                filler = choices(FILLER_LIST, filler_likelyhoods, k=1)[0]
+                row.append(filler)
+            matrix.append(row)
+        return matrix
+
+    def __get_material_lh_at_depth(self, material_list, depth):
         """
         Figure out the likelyood of all ores and return a wheighted randomly
         chosen ore
@@ -550,7 +558,7 @@ class Board(BoardEventHandler):
         :return: a string that is an ore
         """
         likelyhoods = []
-        for name in ORE_LIST:
+        for name in material_list:
             norm_depth = depth / MAX_DEPTH * 100
             mean = getattr(materials, name).MEAN_DEPTH
             sd = getattr(materials, name).SD
@@ -558,7 +566,7 @@ class Board(BoardEventHandler):
             likelyhoods.append(round(lh, 10))
         norm_likelyhoods = normalize(likelyhoods)
 
-        return choices(ORE_LIST, norm_likelyhoods, k=1)[0]
+        return norm_likelyhoods
 
     def __create_ore_cluster(self, ore, center):
         """
