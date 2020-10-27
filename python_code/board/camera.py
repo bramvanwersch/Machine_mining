@@ -29,7 +29,7 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
         dirty_append = dirty.append
         init_rect = self._init_rect
         for spr in self.sprites():
-            if not spr.visible:
+            if not spr.is_showing():
                 continue
             rec = spritedict[spr]
             if spr.static:

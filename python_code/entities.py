@@ -17,10 +17,16 @@ class Entity(pygame.sprite.Sprite, ABC):
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image
         self.orig_rect = self.image.get_rect(topleft=pos)
-        self.visible = True
+        self._visible = True
         self.zoomable = False
         # should the entity move with the camera or not
         self.static = True
+
+    def show(self, value:bool):
+        self._visible = value
+
+    def is_showing(self):
+        return self._visible
 
     def _create_image(self, size, color, **kwargs):
         """

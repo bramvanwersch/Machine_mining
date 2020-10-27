@@ -34,7 +34,7 @@ class WindowManager:
         else:
             window._layer = self.window_order[-1]._layer + 1
         self.window_order.append(window)
-        window.show(True)
+        window.show_window(True)
 
     def remove(self, window):
         del self.windows[window.id]
@@ -45,7 +45,7 @@ class WindowManager:
             self.window_order.pop(rem_index)
             for w in self.window_order:
                 w._layer -= 1
-        window.show(False)
+        window.show_window(False)
 
     def __set_top_window(self, window):
         #set as top window if not already top

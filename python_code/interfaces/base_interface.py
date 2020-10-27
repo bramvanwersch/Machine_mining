@@ -30,7 +30,7 @@ class Window(Frame, EventHandler):
         self.__moving_window = False
         self.__previous_board_pos = None
 
-        self.visible = False
+        self._show_window = False
         self.__focussed = False
         self.id = "window {}".format(self.ID)
         Window.ID += 1
@@ -43,6 +43,9 @@ class Window(Frame, EventHandler):
         super().update(*args)
         if self.__moving_window:
             self.__move_window()
+
+    def is_showing(self):
+        return self._visible and self._show_window
 
     def __add_top_border(self, size, title):
         top_label = Label((0,0), Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height), color=self.TOP_BAR_COLOR)
@@ -101,14 +104,13 @@ class Window(Frame, EventHandler):
         if value == False:
             self.__moving_window = False
 
-    def show(self, value: bool):
+    def show_window(self, value: bool):
         """
-        Toggle showing the crafting window or not. This also makes sure that no
-        real updates are pushed while the window is invisible
+        Show the window when in the fov of the user
 
-        :param value: a boolean
+        :param value: boolean toggle to show or not
         """
-        self.visible = value
+        self._show_window = value
         if value == False:
             self.__moving_window = False
 
@@ -123,7 +125,7 @@ class Window(Frame, EventHandler):
 
         :param events: a list of events
         """
-        if self.visible:
+        if self.is_showing():
             leftovers = super().handle_events(events)
             #check for events that are not normally triggered twice
             for event in events:

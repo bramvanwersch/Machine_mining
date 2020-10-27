@@ -60,13 +60,21 @@ class Main:
             self.main_sprite_group.update()
             self.main_sprite_group.draw(self.screen)
 
-            if FPS:
-                fps = FONTS[22].render(str(int(GAME_TIME.get_fps())), True,
-                                    pygame.Color('black'))
-                self.screen.blit(fps, (10, 10))
+            self.draw_debug_info()
             pygame.display.update()
 
         pygame.quit()
+
+    def draw_debug_info(self):
+        if FPS:
+            fps = FONTS[18].render("fps: {}".format(int(GAME_TIME.get_fps())), True,
+                                   pygame.Color('black'))
+            self.screen.blit(fps, (10, 10))
+        if ENTITY_NMBR:
+            fps = FONTS[18].render("e: {}/{}".format(self.user._visible_entities, len(self.main_sprite_group.sprites())),
+                                   True, pygame.Color('black'))
+            self.screen.blit(fps, (10, 20))
+
 
     def draw_air_rectangles(self):
         for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
@@ -91,6 +99,8 @@ class User:
         #varaible that controls the game loop
         self.going = True
 
+        self._visible_entities = 0
+
         #zoom variables
         self._zoom = 1
 
@@ -109,7 +119,7 @@ class User:
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + + start_chunk.rect.top)
         for _ in range(10):
-            #TODO find the start chink and spawn them there
+            #TODO find the start chunk and spawn them there
             self.workers.append(Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
@@ -119,8 +129,34 @@ class User:
         # allow to assign values to the _layer attribute instead of calling change_layer
         for sprite in self.main_sprite_group.sprites():
             self.main_sprite_group.change_layer(sprite, sprite._layer)
+        self.load_unload_sprites()
         self.board.pf.update()
         self.board.pipe_network.update()
+
+    def load_unload_sprites(self):
+        c = self.main_sprite_group.target.rect.center
+        if c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width > 0:
+            x = 1 + (c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.width / 2)
+        elif SCREEN_SIZE.width / 2 - c[0] > 0:
+            x = 1 + (SCREEN_SIZE.width / 2 - c[0]) / (SCREEN_SIZE.width / 2)
+        else:
+            x = 1
+        if c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height > 0:
+            y = 1 + (c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.height / 2)
+        elif SCREEN_SIZE.height / 2 - c[1] > 0:
+            y = 1 + (SCREEN_SIZE.height / 2 - c[1]) / (SCREEN_SIZE.height / 2)
+        else:
+            y = 1
+        visible_rect = pygame.Rect(0, 0, int(SCREEN_SIZE.width * x ), int(SCREEN_SIZE.height * y ))
+        visible_rect.center = c
+
+        self._visible_entities = 0
+        for sprite in self.main_sprite_group.sprites():
+            if sprite.rect.colliderect(visible_rect):
+                sprite.show(True)
+                self._visible_entities += 1
+            else:
+                sprite.show(False)
 
     def __handle_events(self):
         events = pygame.event.get()
