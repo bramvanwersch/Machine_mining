@@ -41,6 +41,11 @@ def rect_from_block_matrix(block_matrix):
     size = (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1])
     return Rect((*start_pos, *size))
 
+def line_from_points(point1, point2):
+    a = (point2[1] - point1[1]) / (point2[0] - point1[0])
+    b = point1[1] - a * point1[0]
+    return a, b
+
 def side_by_side(rect1, rect2):
     """
     Check if two rectangles are side by side and are touching.

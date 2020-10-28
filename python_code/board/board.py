@@ -1,4 +1,5 @@
-from random import choices, choice
+from random import choices, choice, randint, uniform
+from math import sin, cos, pi
 
 from python_code.entities import SelectionRectangle
 from python_code.utility.utilities import *
@@ -13,10 +14,16 @@ from python_code.interfaces.interface_utility import *
 from python_code.board.chunks import *
 
 class Board(BoardEventHandler):
+
+    #ORE cluster values
     #the amount of normal blocks per cluster
     CLUSTER_LIKELYHOOD = 200
     #the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
+
+    #CAVE values
+    #the fraction of the distance between points based on the shortest side of the board
+    POINT_FRACTION_DISTANCE = 0.25
 
     """
     Class that holds a matrix of blocks that is a playing field and an image
@@ -511,14 +518,102 @@ class Board(BoardEventHandler):
 #### MAP GENERATION FUNCTIONS ###
 
     def __generate_foreground_string_matrix(self):
+        matrix = self.__generate_stone_background()
+        matrix = self.__add_ores(matrix)
+        matrix = self.__add_caves(matrix)
+        return matrix
+
+    def __generate_stone_background(self):
+        matrix = []
+        for row_i in range(p_to_r(BOARD_SIZE.height)):
+            filler_likelyhoods = self.__get_material_lh_at_depth(materials.filler_materials, row_i)
+            row = []
+            for _ in range(p_to_c(BOARD_SIZE.width)):
+                filler = choices([f.name() for f in materials.filler_materials], filler_likelyhoods, k=1)[0]
+                row.append(filler)
+            matrix.append(row)
+        return matrix
+
+    def __add_caves(self, matrix):
+        max_caves = int((CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) / 4)
+        nr_caves = randint(max_caves - int(max(max_caves / 2, 1)), max_caves)
+        max_cave_lenght = (CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height)
+        max_radius = int(min(*BOARD_SIZE) * self.POINT_FRACTION_DISTANCE)
+        for _ in range(nr_caves):
+            #random point on the board within 10% of the boundaries
+            first_point = [randint(int(BOARD_SIZE.width * 0.1), int(BOARD_SIZE.width - BOARD_SIZE.width * 0.1)),
+                           randint(int(BOARD_SIZE.height * 0.1), int(BOARD_SIZE.height - BOARD_SIZE.height * 0.1))]
+            cave_points = [first_point]
+            prev_direction = uniform(0, 2 * pi)
+            amnt_points = randint(max_cave_lenght - int(max(max_cave_lenght / 2, 1)), max_cave_lenght)
+            while len(cave_points) < amnt_points:
+                radius = randint(max(1, int(max_radius / 2)), max_radius)
+                prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
+                new_x = min(max(int(cave_points[-1][0] + cos(prev_direction) * radius), 0), BOARD_SIZE.width)
+                new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), 0), BOARD_SIZE.height)
+                if not [new_x, new_y] in cave_points:
+                    cave_points.append([new_x, new_y])
+            cave_points = [[int(x / BLOCK_SIZE.width), int(y / BLOCK_SIZE.height)] for x, y in cave_points]
+
+            for index in range(1, len(cave_points)):
+                point1 = cave_points[index - 1]
+                point2 = cave_points[index]
+
+                #ensure the a does not become 0 or infinite
+                if point1[0] == point2[0]:
+                    if point1[0] > 0:
+                        point1[0] -= 1
+                    else:
+                        point1[0] += 1
+                if point1[1] == point2[1]:
+                    if point1[1] > 0:
+                        point1[1] -= 1
+                    else:
+                        point1[1] += 1
+                a, b = line_from_points(point1, point2)
+                if abs(a) < 1:
+                    number_of_breaks = int(abs(point1[0] - point2[0]) * abs(1 / a))
+                else:
+                    number_of_breaks = int(abs(point1[0] - point2[0]) * abs(a))
+                break_size = (point2[0] - point1[0]) / number_of_breaks
+                x_values = [point1[0] + index * break_size for index in range(0, number_of_breaks)]
+                y_values = [a * x + b for x in x_values]
+                for index in range(len(x_values)):
+                    x = int(x_values[index])
+                    y = int(y_values[index])
+                    matrix[min(y, int(BOARD_SIZE.height / BLOCK_SIZE.height) -1)][min(x, int(BOARD_SIZE.width / BLOCK_SIZE.width) - 1)] = "Air"
+                    surrounding_coords = self.__get_surrounding_block_coords(x, y)
+                    remove_chance = 0.01
+                    while len(surrounding_coords) > 0:
+                        if uniform(0, 1) < remove_chance:
+                            break
+                        remove_block = choice(surrounding_coords)
+                        surrounding_coords.remove(remove_block)
+                        matrix[remove_block[1]][remove_block[0]] = "Air"
+                        new_sur_coords = surrounding_coords.extend(self.__get_surrounding_block_coords(*remove_block))
+                        # remove_chance += 0.01
+        return matrix
+
+    def __get_surrounding_block_coords(self, x, y):
+        surrounding_coords = []
+        for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
+            surrounding_coord = [x - new_position[0], y - new_position[1]]
+            # Make sure within range
+            if surrounding_coord[0] >= BOARD_SIZE.width / BLOCK_SIZE.width or \
+                    surrounding_coord[0] < 0 or \
+                    surrounding_coord[1] >= BOARD_SIZE.height / BLOCK_SIZE.height or \
+                    surrounding_coord[1] < 0:
+                continue
+            surrounding_coords.append(surrounding_coord)
+        return surrounding_coords
+
+    def __add_ores(self, matrix):
         """
         Fill a matrix with names of the materials of the respective blocks
 
         :return: a matrix containing strings corresponding to names of __material
         classes.
         """
-
-        matrix = self.__generate_stone_background()
 
         # generate some ores inbetween the start and end locations
         for row_i, row in enumerate(matrix):
@@ -536,17 +631,6 @@ class Board(BoardEventHandler):
                         except IndexError:
                             # if outside board skip
                             continue
-        return matrix
-
-    def __generate_stone_background(self):
-        matrix = []
-        for row_i in range(p_to_r(BOARD_SIZE.height)):
-            filler_likelyhoods = self.__get_material_lh_at_depth(materials.filler_materials, row_i)
-            row = []
-            for _ in range(p_to_c(BOARD_SIZE.width)):
-                filler = choices([f.name() for f in materials.filler_materials], filler_likelyhoods, k=1)[0]
-                row.append(filler)
-            matrix.append(row)
         return matrix
 
     def __get_material_lh_at_depth(self, material_list, depth):
