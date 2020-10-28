@@ -240,10 +240,10 @@ class Task(ABC):
         self.started_task = True
         #in case of canceled tasks
         self.__canceled = False
-        self._set_task_progress()
+        self._set_task_progress(entity)
 
-    def _set_task_progress(self):
-        self.task_progress = [0, self.block.material.task_time()]
+    def _set_task_progress(self, entity):
+        self.task_progress = [0, self.block.material.mining_speed()]
 
     def cancel(self):
         self.started_task = False
@@ -301,7 +301,6 @@ class MultiTask(Task, ABC):
             entity.task_queue.next()
             self.cancel()
 
-
     def start_subtask(self, task, entity):
         entity.task_queue.add(task)
         task.selected = True
@@ -331,7 +330,8 @@ class MiningTask(Task):
 
 
 class BuildTask(MultiTask):
-    #amount of times this task can retry the subtasks until it is
+    BUILDING_SPEED = 100
+
     def __init__(self, block, finish_block, original_group, removed_blocks, **kwargs):
         super().__init__(block, **kwargs)
         self.finish_block = finish_block
@@ -346,8 +346,9 @@ class BuildTask(MultiTask):
             self.finished_subtasks = True
         super().start(entity, **kwargs)
 
-    def _set_task_progress(self):
-        self.task_progress = [0, self.finish_block.material.task_time() + sum(b.material.task_time() for b in self.removed_blocks)]
+    def _set_task_progress(self, entity):
+        #TODO add mining tasks instead of remving and building at the same time. Low prio
+        self.task_progress = [0, self.BUILDING_SPEED + sum(b.material.mining_speed() for b in self.removed_blocks)]
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
@@ -357,6 +358,8 @@ class BuildTask(MultiTask):
 
 
 class FetchTask(Task):
+    FETCH_SPEED = 50
+
     def __init__(self, entity, req_block_name, inventory_block = None, quantity=1, ignore_filter=False, **kwargs):
         self.req_block_name = req_block_name
         self.quantity = quantity
@@ -376,6 +379,9 @@ class FetchTask(Task):
             self.started_task = True
             self.task_progress = [0, -1]
 
+    def _set_task_progress(self, entity):
+        self.task_progress = [0, self.quantity * self.FETCH_SPEED]
+
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
         if self.block:
@@ -388,6 +394,8 @@ class FetchTask(Task):
 
 
 class EmptyInventoryTask(Task):
+    EMPTY_SPEED = 50
+
     def __init__(self, entity, **kwargs):
         block = entity.board.closest_inventory(entity.orig_rect, *entity.inventory.item_names, deposit=True)
         super().__init__(block, **kwargs)
@@ -400,6 +408,9 @@ class EmptyInventoryTask(Task):
             super().hand_in(None)
             self.started_task = True
             self.task_progress = [0, -1]
+
+    def _set_task_progress(self, entity):
+        self.task_progress = [0, entity.inventory.number_of_items * self.EMPTY_SPEED]
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
@@ -434,6 +445,10 @@ class RequestTask(MultiTask):
         else:
             self.finished_subtasks = True
         super().start(entity, **kwargs)
+
+    def _set_task_progress(self, entity):
+        #no task to perform
+        self.task_progress = [0, 1]
 
     def __push_new_request(self, entity):
         self.finished_subtasks = True
@@ -480,6 +495,10 @@ class DeliverTask(MultiTask):
         else:
             self.finished_subtasks = True
         super().start(entity, **kwargs)
+
+    def _set_task_progress(self, entity):
+        #no task to perform
+        self.task_progress = [0, 1]
 
     def __str__(self):
         return "{}Deliver item: {}\n".format(super().__str__(), self.pushed_item)

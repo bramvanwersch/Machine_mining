@@ -21,21 +21,20 @@ def configure_material_collections():
             ore_materials.append(obj)
         elif issubclass(obj, FillerMaterial) and obj != FillerMaterial:
             filler_materials.append(obj)
-            print(obj.name())
 
 
 class BaseMaterial(ABC):
     """
     Basic functions that are shared by all materials
     """
-    #time to perform a task on this __material in ms
-    TASK_TIME = 250
     WHEIGHT = 1
     #all task types that are allowed to a block with this __material
     ALLOWED_TASKS = MULTI_TASKS
     TEXT_COLOR = (0,0,0)
     #group 0 are not transparant
     TRANSPARANT_GROUP = 0
+    MINING_SPEED_PER_HARDNESS = 100 #ms
+    HARDNESS = 1
 
     BLOCK_TYPE = Block
     def __init__(self, image = None, **kwargs):
@@ -64,14 +63,14 @@ class BaseMaterial(ABC):
         """
         pass
 
-    def task_time(self):
+    def mining_speed(self):
         """
         Return the task time plus a small random factor. To stagger the
         calculation times up to 10% of the task_time
 
         :return: the task time that the task will take in total
         """
-        return self.TASK_TIME + randint(0, int(0.1 * self.TASK_TIME))
+        return self.HARDNESS * self.MINING_SPEED_PER_HARDNESS
 
 
 class MaterialCollection(ABC):
@@ -90,22 +89,12 @@ class MaterialCollection(ABC):
 
 class Air(BaseMaterial):
     ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Mining"]]
-    TASK_TIME = 0
+    HARDNESS = 0
     TRANSPARANT_GROUP = 1
 
     def _configure_surface(self, image):
         """
         Air has no surface
-        """
-        return None
-
-
-class BuildMaterial(BaseMaterial):
-    ALLOWED_TASKS = ["Cancel", "Building", "Mining"]
-
-    def _configure_surface(self, image):
-        """
-        No surface
         """
         return None
 
@@ -196,23 +185,32 @@ class TopDirt(ColorMaterial, FillerMaterial):
 
 class Stone(ColorMaterial):
 
+    HARDNESS = 3
     BASE_COLOR = (155, 155, 155)
 
 
 class GreenStone(ColorMaterial):
-    BASE_COLOR = (106, 155, 106)
+
+    HARDNESS = 3
+    BASE_COLOR = (126, 155, 126)
 
 
 class RedStone(ColorMaterial):
-    BASE_COLOR = (155, 106, 106)
+
+    HARDNESS = 3
+    BASE_COLOR = (155, 126, 126)
 
 
 class BlueStone(ColorMaterial):
-    BASE_COLOR = (106, 106, 155)
+
+    HARDNESS = 3
+    BASE_COLOR = (126, 126, 155)
 
 
 class YellowStone(ColorMaterial):
-    BASE_COLOR = (155, 155, 106)
+
+    HARDNESS = 3
+    BASE_COLOR = (155, 155, 126)
 
 
 class StoneCollection(MaterialCollection, FillerMaterial):
@@ -224,6 +222,7 @@ class StoneCollection(MaterialCollection, FillerMaterial):
 
 class Granite(ColorMaterial, FillerMaterial):
 
+    HARDNESS = 10
     MEAN_DEPTH = 70
     SD = 7
     BASE_COLOR = (105, 89, 76)
@@ -231,6 +230,7 @@ class Granite(ColorMaterial, FillerMaterial):
 
 class FinalStone(ColorMaterial, FillerMaterial):
 
+    HARDNESS = 20
     MEAN_DEPTH = 100
     SD = 2
     BASE_COLOR = (199, 127, 195)
@@ -248,6 +248,7 @@ class Ore(ColorMaterial, ABC):
     likelyhood of a ore to be at certain percent depth
     """
     WHEIGHT = 2
+    HARDNESS = 5
 
     def _configure_color(self):
         """
@@ -256,10 +257,6 @@ class Ore(ColorMaterial, ABC):
         :return: the base color
         """
         return self.BASE_COLOR
-
-    @classmethod
-    def distribution(self):
-        return Gaussian(self.SD, self.MEAN_DEPTH)
 
     @property
     @abstractmethod
@@ -296,6 +293,7 @@ class Iron(Ore):
 
 class Gold(Ore):
 
+    HARDNESS = 3
     MEAN_DEPTH = 70
     SD = 3
     CLUSTER_SIZE = (2, 6)
@@ -305,6 +303,7 @@ class Gold(Ore):
 
 class Zinc(Ore):
 
+    HARDNESS = 3
     MEAN_DEPTH = 20
     SD = 5
     CLUSTER_SIZE = (2, 15)
@@ -313,6 +312,7 @@ class Zinc(Ore):
 
 class Copper(Ore):
 
+    HARDNESS = 4
     MEAN_DEPTH = 30
     SD = 5
     CLUSTER_SIZE = (5, 8)
@@ -331,6 +331,7 @@ class Coal(Ore, FuelMaterial):
 
 class Titanium(Ore):
 
+    HARDNESS = 50
     MEAN_DEPTH = 100
     SD = 2
     CLUSTER_SIZE = (1, 2)
@@ -369,6 +370,7 @@ class CancelMaterial(ImageMaterial):
 #craftables
 class StoneBrickMaterial(ImageMaterial):
 
+    HARDNESS = 4
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((0,0))
         return image
@@ -427,24 +429,20 @@ class BuildingMaterial(ImageMaterial, ABC):
 class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
     ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
-    TASK_TIME = 200
     TRANSPARANT_GROUP = 2
 
 
 class FurnaceMaterial(BuildingMaterial):
-    TASK_TIME = 1000
     TEXT_COLOR = (255,255,255)
     TRANSPARANT_GROUP = 3
 
 
 class FactoryMaterial(BuildingMaterial):
-    TASK_TIME = 1000
     TEXT_COLOR = (255, 255, 255)
     TRANSPARANT_GROUP = 4
 
 
 class StonePipeMaterial(ImageMaterial):
-    TASK_TIME = 1000
     TRANSPARANT_GROUP = 5
     BLOCK_TYPE = NetworkBlock
 
