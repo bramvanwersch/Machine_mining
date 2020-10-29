@@ -680,7 +680,7 @@ class Board(BoardEventHandler):
 
     def __add_border(self, matrix):
         #north border
-        rows = matrix[0:self.MAX_SPREAD_DISTANCE + 1]
+        rows = matrix[0:self.MAX_SPREAD_DISTANCE]
         for row_i in range(len(rows)):
             border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(row_i)
             for col_i in range(len(matrix[row_i])):
@@ -695,7 +695,7 @@ class Board(BoardEventHandler):
                     matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
         #east border
         for row_i in range(len(matrix)):
-            for col_i in range(len(matrix[row_i][0:self.MAX_SPREAD_DISTANCE + 1])):
+            for col_i in range(len(matrix[row_i][0:self.MAX_SPREAD_DISTANCE])):
                 border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(col_i)
                 if uniform(0, 1) < border_block_chance:
                     matrix[row_i][col_i] = "BorderMaterial"
