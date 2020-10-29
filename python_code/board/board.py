@@ -22,8 +22,15 @@ class Board(BoardEventHandler):
     MAX_CLUSTER_SIZE = 3
 
     #CAVE values
+    MAX_CAVES = int((CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) / 4)
     #the fraction of the distance between points based on the shortest side of the board
     POINT_FRACTION_DISTANCE = 0.25
+    #distance the center of the cave should at least be away from the border
+    CAVE_X_BORDER_DISTANCE = int(0.1 * BOARD_SIZE.width)
+    CAVE_Y_BORDER_DISTANCE = int(0.1 * BOARD_SIZE.height)
+    NUMBER_OF_CAVE_POINTS = int(CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) * 2
+    #the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
+    CAVE_STOP_SPREAD_CHANCE = 0.05
 
     """
     Class that holds a matrix of blocks that is a playing field and an image
@@ -535,41 +542,13 @@ class Board(BoardEventHandler):
         return matrix
 
     def __add_caves(self, matrix):
-        max_caves = int((CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) / 4)
-        nr_caves = randint(max_caves - int(max(max_caves / 2, 1)), max_caves)
-        max_cave_lenght = (CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height)
-        max_radius = int(min(*BOARD_SIZE) * self.POINT_FRACTION_DISTANCE)
+        nr_caves = randint(self.MAX_CAVES - int(max(self.MAX_CAVES / 2, 1)), self.MAX_CAVES)
         for _ in range(nr_caves):
-            #random point on the board within 10% of the boundaries
-            first_point = [randint(int(BOARD_SIZE.width * 0.1), int(BOARD_SIZE.width - BOARD_SIZE.width * 0.1)),
-                           randint(int(BOARD_SIZE.height * 0.1), int(BOARD_SIZE.height - BOARD_SIZE.height * 0.1))]
-            cave_points = [first_point]
-            prev_direction = uniform(0, 2 * pi)
-            amnt_points = randint(max_cave_lenght - int(max(max_cave_lenght / 2, 1)), max_cave_lenght)
-            while len(cave_points) < amnt_points:
-                radius = randint(max(1, int(max_radius / 2)), max_radius)
-                prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
-                new_x = min(max(int(cave_points[-1][0] + cos(prev_direction) * radius), 0), BOARD_SIZE.width)
-                new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), 0), BOARD_SIZE.height)
-                if not [new_x, new_y] in cave_points:
-                    cave_points.append([new_x, new_y])
-            cave_points = [[int(x / BLOCK_SIZE.width), int(y / BLOCK_SIZE.height)] for x, y in cave_points]
-
+            cave_points = self.__get_cave_points()
+            #get the line between the points
             for index in range(1, len(cave_points)):
                 point1 = cave_points[index - 1]
                 point2 = cave_points[index]
-
-                #ensure the a does not become 0 or infinite
-                if point1[0] == point2[0]:
-                    if point1[0] > 0:
-                        point1[0] -= 1
-                    else:
-                        point1[0] += 1
-                if point1[1] == point2[1]:
-                    if point1[1] > 0:
-                        point1[1] -= 1
-                    else:
-                        point1[1] += 1
                 a, b = line_from_points(point1, point2)
                 if abs(a) < 1:
                     number_of_breaks = int(abs(point1[0] - point2[0]) * abs(1 / a))
@@ -578,21 +557,45 @@ class Board(BoardEventHandler):
                 break_size = (point2[0] - point1[0]) / number_of_breaks
                 x_values = [point1[0] + index * break_size for index in range(0, number_of_breaks)]
                 y_values = [a * x + b for x in x_values]
+                #make all blocks air on the direct line
                 for index in range(len(x_values)):
                     x = int(x_values[index])
                     y = int(y_values[index])
                     matrix[min(y, int(BOARD_SIZE.height / BLOCK_SIZE.height) -1)][min(x, int(BOARD_SIZE.width / BLOCK_SIZE.width) - 1)] = "Air"
-                    surrounding_coords = self.__get_surrounding_block_coords(x, y)
-                    remove_chance = 0.01
+                    surrounding_coords = [coord for coord in self.__get_surrounding_block_coords(x, y) if matrix[coord[1]][coord[0]] != "Air"]
+                    #extend the cave around the direct line.
                     while len(surrounding_coords) > 0:
-                        if uniform(0, 1) < remove_chance:
+                        if uniform(0, 1) < self.CAVE_STOP_SPREAD_CHANCE:
                             break
                         remove_block = choice(surrounding_coords)
                         surrounding_coords.remove(remove_block)
                         matrix[remove_block[1]][remove_block[0]] = "Air"
-                        new_sur_coords = surrounding_coords.extend(self.__get_surrounding_block_coords(*remove_block))
-                        # remove_chance += 0.01
+                        new_sur_coords = surrounding_coords.extend([coord for coord in self.__get_surrounding_block_coords(*remove_block) if matrix[coord[1]][coord[0]] != "Air"])
         return matrix
+
+    def __get_cave_points(self):
+        max_radius = int(min(*BOARD_SIZE) * self.POINT_FRACTION_DISTANCE)
+
+        # random point on the board within 10% of the boundaries
+        first_point = [randint(self.CAVE_X_BORDER_DISTANCE, BOARD_SIZE.width - self.CAVE_X_BORDER_DISTANCE),
+                       randint(self.CAVE_Y_BORDER_DISTANCE, BOARD_SIZE.height - self.CAVE_Y_BORDER_DISTANCE)]
+        cave_points = [first_point]
+        prev_direction = uniform(0, 2 * pi)
+        amnt_points = randint(self.NUMBER_OF_CAVE_POINTS - int(max(self.NUMBER_OF_CAVE_POINTS / 2, 1)), self.NUMBER_OF_CAVE_POINTS)
+        while len(cave_points) < amnt_points:
+            radius = randint(max(1, int(max_radius / 2)), max_radius)
+            prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
+            new_x = min(max(int(cave_points[-1][0] + cos(prev_direction) * radius), self.CAVE_X_BORDER_DISTANCE),
+                        BOARD_SIZE.width - self.CAVE_X_BORDER_DISTANCE)
+            new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), self.CAVE_Y_BORDER_DISTANCE),
+                        BOARD_SIZE.height - self.CAVE_Y_BORDER_DISTANCE)
+            #make sure no double points and no straight lines
+            if [new_x, new_y] in cave_points or \
+                    int(new_x / BLOCK_SIZE.width) == int(cave_points[-1][0] / BLOCK_SIZE.width) or\
+                    int(new_y / BLOCK_SIZE.height) == int(cave_points[-1][1] / BLOCK_SIZE.height):
+                continue
+            cave_points.append([new_x, new_y])
+        return [[int(x / BLOCK_SIZE.width), int(y / BLOCK_SIZE.height)] for x, y in cave_points]
 
     def __get_surrounding_block_coords(self, x, y):
         surrounding_coords = []
