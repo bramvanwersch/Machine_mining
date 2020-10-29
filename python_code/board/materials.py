@@ -105,8 +105,7 @@ class ColorMaterial(BaseMaterial, ABC):
     """
     MIN_COLOR = (20, 20, 20)
 
-    def __init__(self, depth = 0, **kwargs):
-        self._depth = 0
+    def __init__(self, **kwargs):
         #TODO see waht to do with the depth stat
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
@@ -145,7 +144,7 @@ class ColorMaterial(BaseMaterial, ABC):
         #dont change the alpha channel if present
         for index, color_component in enumerate(self.BASE_COLOR):
             #make the color darker with depth and add a random component to it
-            color_component = max(self.MIN_COLOR[index], color_component - int(self._depth / 2) + random_change)
+            color_component = max(self.MIN_COLOR[index], color_component + random_change)
             new_color[index] = color_component
         return new_color
 
@@ -157,10 +156,15 @@ class ColorMaterial(BaseMaterial, ABC):
         """
         new_color = list(self.BASE_COLOR)
         for index, color_component in enumerate(self.BASE_COLOR):
-            color_component = max(0, color_component - int(self._depth / 2) - 30)
+            color_component = max(0, color_component - 30)
             new_color[index] = color_component
         return new_color
 
+
+class BorderMaterial(ColorMaterial):
+    ALLOWED_TASKS = []
+    BASE_COLOR = (0,0,0)
+    MIN_COLOR = (0,0,0)
 
 #filler materials
 class FillerMaterial(ABC):

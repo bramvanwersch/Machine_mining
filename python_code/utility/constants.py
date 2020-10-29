@@ -12,10 +12,11 @@ MAIN_DIR = os.path.split(os.path.abspath(__file__))[0].rsplit(os.sep, 2)[0]
 IMAGE_DIR = "{}{}images".format(MAIN_DIR, os.sep)
 
 #location parameters
-SCREEN_SIZE = Size(800, 800)
+SCREEN_SIZE = Size(820, 820)
 CHUNK_SIZE = Size(510, 510)
-CHUNK_GRID_SIZE = Size(2, 4)
+CHUNK_GRID_SIZE = Size(4, 4)
 BOARD_SIZE = Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
+#y should not be lower then 1
 START_CHUNK_POS = (1, 1)
 
 #constant to tell when to recalculate the full chunk

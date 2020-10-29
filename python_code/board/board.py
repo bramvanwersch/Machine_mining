@@ -17,21 +17,24 @@ class Board(BoardEventHandler):
 
     #ORE cluster values
     #the amount of normal blocks per cluster
-    CLUSTER_LIKELYHOOD = 200
+    CLUSTER_LIKELYHOOD = 120
     #the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
 
     #CAVE values
-    MAX_CAVES = int((CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) / 4)
+    MAX_CAVES = int((CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) / 6)
     #the fraction of the distance between points based on the shortest side of the board
-    POINT_FRACTION_DISTANCE = 0.25
+    POINT_FRACTION_DISTANCE = 0.35
     #distance the center of the cave should at least be away from the border
     CAVE_X_BORDER_DISTANCE = int(0.1 * BOARD_SIZE.width)
     CAVE_Y_BORDER_DISTANCE = int(0.1 * BOARD_SIZE.height)
-    NUMBER_OF_CAVE_POINTS = int(CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) * 2
+    NUMBER_OF_CAVE_POINTS = int(CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height * 1.3)
     #the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
     CAVE_STOP_SPREAD_CHANCE = 0.05
 
+    #BORDER values
+    SPREAD_LIKELYHOOD = Gaussian(0, 2)
+    MAX_SPREAD_DISTANCE = 4
     """
     Class that holds a matrix of blocks that is a playing field and an image
     representing set matrix
@@ -526,8 +529,9 @@ class Board(BoardEventHandler):
 
     def __generate_foreground_string_matrix(self):
         matrix = self.__generate_stone_background()
-        matrix = self.__add_ores(matrix)
-        matrix = self.__add_caves(matrix)
+        self.__add_ores(matrix)
+        self.__add_caves(matrix)
+        self.__add_border(matrix)
         return matrix
 
     def __generate_stone_background(self):
@@ -647,7 +651,7 @@ class Board(BoardEventHandler):
         likelyhoods = []
         for material in material_list:
             norm_depth = depth / MAX_DEPTH * 100
-            lh = Gaussian(material.MEAN_DEPTH, material.SD).probability_density(norm_depth)
+            lh = Gaussian(material.MEAN_DEPTH, material.SD).probability(norm_depth)
             likelyhoods.append(round(lh, 10))
         norm_likelyhoods = normalize(likelyhoods)
 
@@ -673,6 +677,36 @@ class Board(BoardEventHandler):
             if location not in ore_locations:
                 ore_locations.append(location)
         return ore_locations
+
+    def __add_border(self, matrix):
+        #north border
+        rows = matrix[0:self.MAX_SPREAD_DISTANCE + 1]
+        for row_i in range(len(rows)):
+            border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(row_i)
+            for col_i in range(len(matrix[row_i])):
+                if uniform(0, 1) < border_block_chance:
+                    matrix[row_i][col_i] = "BorderMaterial"
+        #south border
+        rows = matrix[- (self.MAX_SPREAD_DISTANCE + 1):-1]
+        for row_i in range(len(rows)):
+            border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(row_i)
+            for col_i in range(len(matrix[row_i])):
+                if uniform(0, 1) < border_block_chance:
+                    matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
+        #east border
+        for row_i in range(len(matrix)):
+            for col_i in range(len(matrix[row_i][0:self.MAX_SPREAD_DISTANCE + 1])):
+                border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(col_i)
+                if uniform(0, 1) < border_block_chance:
+                    matrix[row_i][col_i] = "BorderMaterial"
+        #west border
+        for row_i in range(len(matrix)):
+            for col_i in range(len(matrix[row_i][- (self.MAX_SPREAD_DISTANCE + 1):-1])):
+                border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(col_i)
+                if uniform(0, 1) < border_block_chance:
+                    matrix[- (row_i + 1)][ - (col_i + 1)] = "BorderMaterial"
+
+        return matrix
 
     def __generate_background_string_matrix(self):
         """

@@ -10,7 +10,7 @@ BUGS:
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Better terrain generation
 - A nice starting area
-- some form of light that blocks the view
+- some form of light that blocks the view --> use the highlight layer for this.
 - Allot more recipes --> make a tree of progress using the recipes
 - An end goal.
 - Some narrative that gives some background to the story

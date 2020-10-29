@@ -1,5 +1,5 @@
 import pygame
-from random import choices, choice, randint
+from random import choices, choice, randint, uniform
 
 from python_code.utility.constants import *
 from python_code.utility.utilities import normalize, Gaussian

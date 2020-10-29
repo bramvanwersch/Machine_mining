@@ -1,5 +1,5 @@
 from pygame import Rect, image
-from math import pi, e, sqrt
+from math import pi, e, sqrt, erfc
 
 GROUP = 0
 
@@ -185,7 +185,7 @@ class Gaussian:
         self.mean = mean
         self.sd = sd
 
-    def probability_density(self, x):
+    def probability(self, x):
         """
         Calculate the probability of encountering x given self.mean and
         self.sd
@@ -196,3 +196,7 @@ class Gaussian:
         #The probability density for a Gaussian distribution
         probability = (1 / sqrt(2 * pi * self.sd ** 2)) * (e ** (- 0.5 * (x - self.mean) ** 2 / self.sd ** 2))
         return probability
+
+    def cumulative_probability(self, x):
+        two_sided = erfc((x - self.mean) / (self.sd * sqrt(2)))
+        return two_sided
