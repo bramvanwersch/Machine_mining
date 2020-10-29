@@ -37,7 +37,7 @@ class Board(BoardEventHandler):
     MAX_SPREAD_DISTANCE = 4
 
     #PLANT values
-    PLANT_CHANCE = 0.1
+    FLORA_CHANCE = 0.1
 
     """
     Class that holds a matrix of blocks that is a playing field and an image
@@ -710,15 +710,22 @@ class Board(BoardEventHandler):
 
     def __add_flora(self, matrix):
         for row_i in range(len(matrix)):
-            flora_likelyhoods = self.__get_material_lh_at_depth(materials.flora_materials, row_i)
+            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 0], row_i),
+                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 1], row_i),
+                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 2], row_i),
+                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 3], row_i)]
             for col_i, string in enumerate(matrix[row_i]):
                 if string != "Air":
                     continue
-                south_coord = self.__get_surrounding_block_coords(col_i, row_i)[2]
-                if matrix[south_coord[1]][south_coord[0]] in [m.name() for m in materials.filler_materials] and\
-                        uniform(0, 1) < self.PLANT_CHANCE:
-                    flora = choices(materials.flora_materials, flora_likelyhoods, k=1)[0]
-                    matrix[row_i][col_i] = flora.name()
+                s_coords = self.__get_surrounding_block_coords(col_i, row_i)
+                elligable_indexes = [coord for coord in s_coords if matrix[coord[1]][coord[0]] in [m.name() for m in materials.filler_materials]]
+                if len(elligable_indexes) == 0 or uniform(0, 1) >= self.FLORA_CHANCE:
+                    continue
+                chosen_index = s_coords.index(choice(elligable_indexes))
+                if len(flora_likelyhoods[chosen_index]) == 0:
+                    continue
+                flora = choices([m for m in materials.flora_materials if m.DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
+                matrix[row_i][col_i] = flora[0].name()
 
     def __generate_background_string_matrix(self):
         """

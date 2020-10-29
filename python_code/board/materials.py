@@ -380,11 +380,19 @@ class FloraMaterial(ImageMaterial, ABC):
     def SD(self):
         return 0
 
+    @property
+    @abstractmethod
+    def DIRECTION(self):
+        #direction of connection 0-3 N, E, S, W
+        return -1
+
 
 class Fern(FloraMaterial):
 
     MEAN_DEPTH = 30
     SD = 10
+    DIRECTION = 2
+
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((30,20), color_key=(255, 255, 255))
         return image
@@ -394,6 +402,8 @@ class Reed(FloraMaterial):
 
     MEAN_DEPTH = 30
     SD = 10
+    DIRECTION = 2
+
     def _configure_surface(self, image):
         image = image_sheets["materials"].image_at((40,20), color_key=(255, 255, 255))
         return image
@@ -431,6 +441,7 @@ class ShroomCollection(MaterialCollection, FloraMaterial):
 
     MEAN_DEPTH= 80
     SD = 10
+    DIRECTION = 2
     MATERIAL_PROBABILITIES = {BrownShroom:0.4, BrownShroomers:0.1, RedShroom:0.4, RedShroomers:0.1}
 
 
