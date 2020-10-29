@@ -117,7 +117,9 @@ class Chunk:
 
 
 class StartChunk(Chunk):
-    START_RECTANGLE = pygame.Rect((CHUNK_SIZE.width / 2 - 125, 0, 250, 50))
+    START_RECTANGLE = pygame.Rect((CHUNK_SIZE.width / 2 - (CHUNK_SIZE.width / 2) / 2,
+                                   CHUNK_SIZE.height / 2 - (CHUNK_SIZE.height / 10) / 2,
+                                   CHUNK_SIZE.width / 2,  CHUNK_SIZE.height / 10))
 
     def __init__(self, pos, foreground, background, main_sprite_group):
         foreground = self.__adjust_foreground_string_matrix(foreground)
@@ -125,8 +127,8 @@ class StartChunk(Chunk):
 
     def __adjust_foreground_string_matrix(self, matrix):
         #generate the air space at the start position
-        for row_i in range(p_to_r(self.START_RECTANGLE.bottom)):
-            for column_i in range(p_to_c(self.START_RECTANGLE.left), p_to_r(self.START_RECTANGLE.right)):
+        for row_i in range(p_to_r(self.START_RECTANGLE.top), p_to_r(self.START_RECTANGLE.bottom)):
+            for column_i in range(p_to_c(self.START_RECTANGLE.left), p_to_c(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"
         return matrix
 
