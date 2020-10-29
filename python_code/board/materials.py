@@ -11,16 +11,19 @@ from python_code.board.blocks import *
 fuel_materials = []
 ore_materials = []
 filler_materials = []
+flora_materials = []
 
 def configure_material_collections():
-    global fuel_materials, ore_materials, filler_materials
+    global fuel_materials, ore_materials, filler_materials, flora_materials
     for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
         if issubclass(obj, FuelMaterial) and obj != FuelMaterial:
             fuel_materials.append(obj)
-        elif issubclass(obj, Ore) and obj != Ore:
+        elif issubclass(obj, OreMaterial) and obj != OreMaterial:
             ore_materials.append(obj)
         elif issubclass(obj, FillerMaterial) and obj != FillerMaterial:
             filler_materials.append(obj)
+        elif issubclass(obj, FloraMaterial) and obj != FloraMaterial:
+            flora_materials.append(obj)
 
 
 class BaseMaterial(ABC):
@@ -246,7 +249,7 @@ class Dirt(ColorMaterial):
 
 
 #ore materials
-class Ore(ColorMaterial, ABC):
+class OreMaterial(ColorMaterial, ABC):
     """
     Abstract class for all ores. Contains a gaussian distribution for the
     likelyhood of a ore to be at certain percent depth
@@ -286,7 +289,7 @@ class FuelMaterial(ABC):
         return 0
 
 
-class Iron(Ore):
+class Iron(OreMaterial):
 
     MEAN_DEPTH = 50
     SD = 30
@@ -295,7 +298,7 @@ class Iron(Ore):
     WHEIGHT = 3
 
 
-class Gold(Ore):
+class Gold(OreMaterial):
 
     HARDNESS = 3
     MEAN_DEPTH = 70
@@ -305,7 +308,7 @@ class Gold(Ore):
     WHEIGHT = 5
 
 
-class Zinc(Ore):
+class Zinc(OreMaterial):
 
     HARDNESS = 3
     MEAN_DEPTH = 20
@@ -314,7 +317,7 @@ class Zinc(Ore):
     BASE_COLOR = (58, 90, 120)
 
 
-class Copper(Ore):
+class Copper(OreMaterial):
 
     HARDNESS = 4
     MEAN_DEPTH = 30
@@ -323,7 +326,7 @@ class Copper(Ore):
     BASE_COLOR = (189, 99, 20)
 
 
-class Coal(Ore, FuelMaterial):
+class Coal(OreMaterial, FuelMaterial):
 
     MEAN_DEPTH = 10
     SD = 50
@@ -333,7 +336,7 @@ class Coal(Ore, FuelMaterial):
     FUEL_VALUE = 5
 
 
-class Titanium(Ore):
+class Titanium(OreMaterial):
 
     HARDNESS = 50
     MEAN_DEPTH = 100
@@ -353,7 +356,7 @@ class ImageMaterial(BaseMaterial, ABC):
         """
         Show an image as a surface instead of a single color
 
-        :param image: obtional pre defines pygame Surface object
+        :param image: optional pre defines pygame Surface object
         :return: a python Surface object
         """
         if image != None:
@@ -363,6 +366,72 @@ class ImageMaterial(BaseMaterial, ABC):
             surface = pygame.Surface(BLOCK_SIZE)
             surface.fill((0, 255, 13))
             return surface
+
+
+class FloraMaterial(ImageMaterial, ABC):
+
+    @property
+    @abstractmethod
+    def MEAN_DEPTH(self):
+        return 0
+
+    @property
+    @abstractmethod
+    def SD(self):
+        return 0
+
+
+class Fern(FloraMaterial):
+
+    MEAN_DEPTH = 30
+    SD = 10
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((30,20), color_key=(255, 255, 255))
+        return image
+
+
+class Reed(FloraMaterial):
+
+    MEAN_DEPTH = 30
+    SD = 10
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((40,20), color_key=(255, 255, 255))
+        return image
+
+
+class BrownShroom(ImageMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((50,20), color_key=(255, 255, 255))
+        return image
+
+
+class BrownShroomers(ImageMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((70,20), color_key=(255, 255, 255))
+        return image
+
+
+class RedShroom(ImageMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((80,20), color_key=(255, 255, 255))
+        return image
+
+
+class RedShroomers(ImageMaterial):
+
+    def _configure_surface(self, image):
+        image = image_sheets["materials"].image_at((60,20), color_key=(255, 255, 255))
+        return image
+
+
+class ShroomCollection(MaterialCollection, FloraMaterial):
+
+    MEAN_DEPTH= 80
+    SD = 10
+    MATERIAL_PROBABILITIES = {BrownShroom:0.4, BrownShroomers:0.1, RedShroom:0.4, RedShroomers:0.1}
 
 
 class CancelMaterial(ImageMaterial):

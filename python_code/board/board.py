@@ -35,6 +35,10 @@ class Board(BoardEventHandler):
     #BORDER values
     SPREAD_LIKELYHOOD = Gaussian(0, 2)
     MAX_SPREAD_DISTANCE = 4
+
+    #PLANT values
+    PLANT_CHANCE = 0.1
+
     """
     Class that holds a matrix of blocks that is a playing field and an image
     representing set matrix
@@ -49,13 +53,8 @@ class Board(BoardEventHandler):
         self.main_sprite_group = main_sprite_group
 
         #setup the board
-        # self.matrix = self.__generate_foreground_matrix()
         self.pf = PathFinder()
         self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
-        # self.back_matrix = self.__generate_background_matrix()
-        # self.foreground_image = BoardImage(main_sprite_group, block_matrix = self.matrix, layer = BOARD_LAYER)
-        # self.background_image = BoardImage(main_sprite_group, block_matrix = self.back_matrix, layer = BACKGROUND_LAYER)
-        # self.selection_image = TransparantBoardImage(main_sprite_group, layer = HIGHLIGHT_LAYER)
 
         self.task_control = None
 
@@ -532,6 +531,7 @@ class Board(BoardEventHandler):
         self.__add_ores(matrix)
         self.__add_caves(matrix)
         self.__add_border(matrix)
+        self.__add_flora(matrix)
         return matrix
 
     def __generate_stone_background(self):
@@ -566,7 +566,7 @@ class Board(BoardEventHandler):
                     x = int(x_values[index])
                     y = int(y_values[index])
                     matrix[min(y, int(BOARD_SIZE.height / BLOCK_SIZE.height) -1)][min(x, int(BOARD_SIZE.width / BLOCK_SIZE.width) - 1)] = "Air"
-                    surrounding_coords = [coord for coord in self.__get_surrounding_block_coords(x, y) if matrix[coord[1]][coord[0]] != "Air"]
+                    surrounding_coords = [coord for coord in self.__get_surrounding_block_coords(x, y) if matrix[coord[1]][coord[0]] not in ["Air", None]]
                     #extend the cave around the direct line.
                     while len(surrounding_coords) > 0:
                         if uniform(0, 1) < self.CAVE_STOP_SPREAD_CHANCE:
@@ -574,7 +574,7 @@ class Board(BoardEventHandler):
                         remove_block = choice(surrounding_coords)
                         surrounding_coords.remove(remove_block)
                         matrix[remove_block[1]][remove_block[0]] = "Air"
-                        new_sur_coords = surrounding_coords.extend([coord for coord in self.__get_surrounding_block_coords(*remove_block) if matrix[coord[1]][coord[0]] != "Air"])
+                        new_sur_coords = surrounding_coords.extend([coord for coord in self.__get_surrounding_block_coords(*remove_block) if matrix[coord[1]][coord[0]] not in ["Air", None]])
         return matrix
 
     def __get_cave_points(self):
@@ -602,16 +602,16 @@ class Board(BoardEventHandler):
         return [[int(x / BLOCK_SIZE.width), int(y / BLOCK_SIZE.height)] for x, y in cave_points]
 
     def __get_surrounding_block_coords(self, x, y):
-        surrounding_coords = []
+        surrounding_coords = [None for _ in range(4)]
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
-            surrounding_coord = [x - new_position[0], y - new_position[1]]
+            surrounding_coord = [x + new_position[0], y + new_position[1]]
             # Make sure within range
             if surrounding_coord[0] >= BOARD_SIZE.width / BLOCK_SIZE.width or \
                     surrounding_coord[0] < 0 or \
                     surrounding_coord[1] >= BOARD_SIZE.height / BLOCK_SIZE.height or \
                     surrounding_coord[1] < 0:
                 continue
-            surrounding_coords.append(surrounding_coord)
+            surrounding_coords[index] = surrounding_coord
         return surrounding_coords
 
     def __add_ores(self, matrix):
@@ -707,6 +707,18 @@ class Board(BoardEventHandler):
                     matrix[- (row_i + 1)][ - (col_i + 1)] = "BorderMaterial"
 
         return matrix
+
+    def __add_flora(self, matrix):
+        for row_i in range(len(matrix)):
+            flora_likelyhoods = self.__get_material_lh_at_depth(materials.flora_materials, row_i)
+            for col_i, string in enumerate(matrix[row_i]):
+                if string != "Air":
+                    continue
+                south_coord = self.__get_surrounding_block_coords(col_i, row_i)[2]
+                if matrix[south_coord[1]][south_coord[0]] in [m.name() for m in materials.filler_materials] and\
+                        uniform(0, 1) < self.PLANT_CHANCE:
+                    flora = choices(materials.flora_materials, flora_likelyhoods, k=1)[0]
+                    matrix[row_i][col_i] = flora.name()
 
     def __generate_background_string_matrix(self):
         """
