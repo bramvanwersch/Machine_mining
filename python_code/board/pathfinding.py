@@ -1,8 +1,8 @@
 import random
 
-from python_code.utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE, GAME_TIME, PF_UPDATE_TIME
-from python_code.utility.utilities import rect_from_block_matrix, manhattan_distance, side_by_side
-from python_code.interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction, p_to_cp
+from utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE, GAME_TIME, PF_UPDATE_TIME
+from utility.utilities import rect_from_block_matrix, manhattan_distance, side_by_side
+from interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction, p_to_cp
 
 class PathFinder:
     """

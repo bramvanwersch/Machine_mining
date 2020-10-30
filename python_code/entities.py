@@ -1,9 +1,9 @@
 from abc import ABC
 
-from python_code.utility.constants import *
-from python_code.inventories import Inventory
-from python_code.tasks import TaskQueue, Task, FetchTask, EmptyInventoryTask
-from python_code.utility.event_handling import EventHandler
+from utility.constants import *
+from inventories import Inventory
+from tasks import TaskQueue, Task, FetchTask, EmptyInventoryTask
+from utility.event_handling import EventHandler
 
 
 class Entity(pygame.sprite.Sprite, ABC):

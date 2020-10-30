@@ -1,17 +1,17 @@
 from random import choices, choice, randint, uniform
 from math import sin, cos, pi
 
-from python_code.entities import SelectionRectangle
-from python_code.utility.utilities import *
-from python_code.board import materials
-from python_code.utility.constants import *
-from python_code.board.pathfinding import PathFinder
-from python_code.board.buildings import *
-from python_code.utility.event_handling import BoardEventHandler
-from python_code.interfaces.building_interface import get_selected_item
-from python_code.network.pipes import Network
-from python_code.interfaces.interface_utility import *
-from python_code.board.chunks import *
+from entities import SelectionRectangle
+from utility.utilities import *
+from board import materials
+from utility.constants import *
+from board.pathfinding import PathFinder
+from board.buildings import *
+from utility.event_handling import BoardEventHandler
+from interfaces.building_interface import get_selected_item
+from network.pipes import Network
+from interfaces.interface_utility import *
+from board.chunks import *
 
 class Board(BoardEventHandler):
 
@@ -54,6 +54,7 @@ class Board(BoardEventHandler):
 
         #setup the board
         self.pf = PathFinder()
+
         self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
 
         self.task_control = None
@@ -710,10 +711,10 @@ class Board(BoardEventHandler):
 
     def __add_flora(self, matrix):
         for row_i in range(len(matrix)):
-            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 0], row_i),
-                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 1], row_i),
-                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 2], row_i),
-                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.DIRECTION == 3], row_i)]
+            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 0], row_i),
+                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 1], row_i),
+                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 2], row_i),
+                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 3], row_i)]
             for col_i, string in enumerate(matrix[row_i]):
                 if string != "Air":
                     continue
@@ -724,7 +725,7 @@ class Board(BoardEventHandler):
                 chosen_index = s_coords.index(choice(elligable_indexes))
                 if len(flora_likelyhoods[chosen_index]) == 0:
                     continue
-                flora = choices([m for m in materials.flora_materials if m.DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
+                flora = choices([m for m in materials.flora_materials if m.START_DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
                 matrix[row_i][col_i] = flora[0].name()
 
     def __generate_background_string_matrix(self):

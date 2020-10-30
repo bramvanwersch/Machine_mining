@@ -1,11 +1,11 @@
 from math import ceil
 
-from python_code.utility.image_handling import image_sheets
-from python_code.board.blocks import ContainerBlock, NetworkBlock
-from python_code.utility.constants import BLOCK_SIZE
-from python_code.utility.utilities import manhattan_distance
-from python_code.board import materials
-from python_code.network.network_tasks import EdgeTaskQueue
+from utility.image_handling import image_sheets
+from board.blocks import ContainerBlock, NetworkBlock
+from utility.constants import BLOCK_SIZE
+from utility.utilities import manhattan_distance
+from board import materials
+from network.network_tasks import EdgeTaskQueue
 
 
 class Network:

@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 import pygame
 
-from python_code.entities import ZoomableEntity
-from python_code.utility.constants import *
-from python_code.utility.event_handling import EventHandler
-from python_code.interfaces.interface_utility import screen_to_board_coordinate
-from python_code.board.materials import BuildingMaterial
-import python_code.board.buildings
+from entities import ZoomableEntity
+from utility.constants import *
+from utility.event_handling import EventHandler
+from interfaces.interface_utility import screen_to_board_coordinate
+from board.materials import BuildingMaterial
+import board.buildings
 
 
 class KeyActionFunctions:
@@ -655,7 +655,7 @@ class ItemLabel(Label):
         if self.item != None:
             # get the item image and place it in the center
             if isinstance(self.item.material, BuildingMaterial):
-                item_image = python_code.board.buildings.building_type_from_material(self.item.material).full_image()
+                item_image = board.buildings.building_type_from_material(self.item.material).full_image()
             else:
                 item_image = self.item.material.surface
             self.item_image = pygame.transform.scale(item_image, item_size)

@@ -1,7 +1,7 @@
 import pygame, os
 from pygame.locals import *
 
-from python_code.utility.utilities import Size
+from utility.utilities import Size
 
 #innitialize fonts to pre load a font
 pygame.font.init()

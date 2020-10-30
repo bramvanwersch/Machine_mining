@@ -1,13 +1,13 @@
 import pygame
 from pygame.locals import *
 
-import python_code.interfaces.managers as window_managers
-from python_code.utility.event_handling import EventHandler
-from python_code.interfaces.interface_utility import screen_to_board_coordinate
-from python_code.utility.utilities import Size
-from python_code.utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
-from python_code.interfaces.widgets import Frame, Label, Button
-from python_code.utility.image_handling import image_sheets
+import interfaces.managers as window_managers
+from utility.event_handling import EventHandler
+from interfaces.interface_utility import screen_to_board_coordinate
+from utility.utilities import Size
+from utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
+from interfaces.widgets import Frame, Label, Button
+from utility.image_handling import image_sheets
 
 class Window(Frame, EventHandler):
     TOP_SIZE = Size(0, 25)

@@ -1,7 +1,7 @@
 from abc import ABC
 
-from python_code.utility.constants import *
-from python_code.utility.utilities import rect_from_block_matrix
+from utility.constants import *
+from utility.utilities import rect_from_block_matrix
 
 class EventHandler(ABC):
     """

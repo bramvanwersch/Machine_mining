@@ -1,4 +1,4 @@
-from python_code.utility.constants import BOARD_SIZE, SCREEN_SIZE, CHUNK_SIZE, BLOCK_SIZE
+from utility.constants import BOARD_SIZE, SCREEN_SIZE, CHUNK_SIZE, BLOCK_SIZE
 
 
 

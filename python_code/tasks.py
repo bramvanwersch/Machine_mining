@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-from python_code.utility.utilities import manhattan_distance
-from python_code.board.blocks import AirBlock
-from python_code.board.materials import Air
-from python_code.utility.constants import MULTI_TASKS
+from utility.utilities import manhattan_distance
+from board.blocks import AirBlock
+from board.materials import Air
+from utility.constants import MULTI_TASKS
 
 class TaskControl:
     """

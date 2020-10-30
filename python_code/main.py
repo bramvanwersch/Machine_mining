@@ -1,16 +1,16 @@
 
 #own classes
-from python_code.entities import Worker, CameraCentre
-from python_code.board.camera import CameraAwareLayeredUpdates
-from python_code.board.board import Board
-from python_code.utility.constants import *
-from python_code.tasks import TaskControl
-from python_code.utility.image_handling import load_images
-from python_code.recipes.base_recipes import create_recipe_book
-from python_code.interfaces.building_interface import BuildingWindow
-from python_code.interfaces.managers import create_window_manager
-from python_code.board.materials import configure_material_collections
-import python_code.interfaces.managers as window_managers
+from entities import Worker, CameraCentre
+from board.camera import CameraAwareLayeredUpdates
+from board.board import Board
+from utility.constants import *
+from tasks import TaskControl
+from utility.image_handling import load_images
+from recipes.base_recipes import create_recipe_book
+from interfaces.building_interface import BuildingWindow
+from interfaces.managers import create_window_manager
+from board.materials import configure_material_collections
+import interfaces.managers as window_managers
 
 
 class Main:

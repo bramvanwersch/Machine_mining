@@ -1,13 +1,13 @@
 import pygame
 from random import choices, choice, randint, uniform
 
-from python_code.utility.constants import *
-from python_code.utility.utilities import normalize, Gaussian
-from python_code.board.blocks import *
-from python_code.board import materials
-from python_code.entities import ZoomableEntity, SelectionRectangle
-from python_code.interfaces.interface_utility import p_to_c, p_to_r
-from python_code.board.pathfinding import PathfindingChunk
+from utility.constants import *
+from utility.utilities import normalize, Gaussian
+from board.blocks import *
+from board import materials
+from entities import ZoomableEntity, SelectionRectangle
+from interfaces.interface_utility import p_to_c, p_to_r
+from board.pathfinding import PathfindingChunk
 
 
 class Chunk:
@@ -16,6 +16,7 @@ class Chunk:
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
 
+        self._flora_blocks = []
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
 
@@ -112,6 +113,8 @@ class Chunk:
                     block = AirBlock(pos, material_instance)
                 else:
                     block = Block(pos, material_instance)
+                    if isinstance(material_instance, materials.FloraMaterial):
+                        self._flora_blocks.append(block)
                 s_matrix[row_i][column_i] = block
         return s_matrix
 

@@ -1,6 +1,6 @@
-from python_code.interfaces.widgets import *
-from python_code.interfaces.base_interface import Window
-from python_code.utility.utilities import Size
+from interfaces.widgets import *
+from interfaces.base_interface import Window
+from utility.utilities import Size
 
 
 class TerminalWindow(Window):

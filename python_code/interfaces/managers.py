@@ -1,7 +1,7 @@
 import pygame
 
-from python_code.utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
-from python_code.interfaces.interface_utility import screen_to_board_coordinate
+from utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
+from interfaces.interface_utility import screen_to_board_coordinate
 
 window_manager = None
 

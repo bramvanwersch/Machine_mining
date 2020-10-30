@@ -21,7 +21,10 @@ def normalize(values, scale=1):
     """
     total = sum(values)
     for index, val in enumerate(values):
-        values[index] = val / total * scale
+        try:
+            values[index] = val / total * scale
+        except ZeroDivisionError:
+            values[index] = 0
     return values
 
 def manhattan_distance(p1, p2):

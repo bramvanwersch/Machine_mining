@@ -1,12 +1,12 @@
-from python_code.board.materials import *
-from python_code.utility.image_handling import image_sheets
-from python_code.board.blocks import *
-from python_code.inventories import Inventory, Filter
-from python_code.utility.utilities import Size
-from python_code.interfaces.small_interfaces import TerminalWindow
-from python_code.interfaces.crafting_interfaces import FactoryWindow, FurnaceWindow
-import python_code.recipes.base_recipes
-from python_code.network.pipes import NetworkNode
+from board.materials import *
+from utility.image_handling import image_sheets
+from board.blocks import *
+from inventories import Inventory, Filter
+from utility.utilities import Size
+from interfaces.small_interfaces import TerminalWindow
+from interfaces.crafting_interfaces import FactoryWindow, FurnaceWindow
+import recipes.base_recipes
+from network.pipes import NetworkNode
 
 
 def block_i_from_material(material):
@@ -106,7 +106,7 @@ class Building(BaseBlock, ABC):
 class InterafaceBuilding(Building, ABC):
     def __init__(self, pos, *groups, **kwargs):
         Building.__init__(self, pos, **kwargs)
-        from python_code.interfaces.managers import window_manager
+        from interfaces.managers import window_manager
         self.window_manager = window_manager
         self.sprite_groups = groups
 
@@ -120,7 +120,7 @@ class InterafaceBuilding(Building, ABC):
     def _action_function(self, *args):
         #make sure to update the window manager when needed
         if self.window_manager == None:
-            from python_code.interfaces.managers import window_manager
+            from interfaces.managers import window_manager
             self.window_manager = window_manager
         self.window_manager.add(self.interface)
 
@@ -158,7 +158,7 @@ class Furnace(InterafaceBuilding, NetworkNode):
         self.inventory = Inventory(200, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
         NetworkNode.__init__(self)
-        self._interface = FurnaceWindow(self, python_code.recipes.base_recipes.recipe_books["furnace"], self.sprite_groups)
+        self._interface = FurnaceWindow(self, recipes.base_recipes.recipe_books["furnace"], self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
@@ -177,7 +177,7 @@ class Factory(InterafaceBuilding, NetworkNode):
         self.inventory = Inventory(300, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
         NetworkNode.__init__(self)
-        self._interface = FactoryWindow(self, python_code.recipes.base_recipes.recipe_books["factory"], self.sprite_groups)
+        self._interface = FactoryWindow(self, recipes.base_recipes.recipe_books["factory"], self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)

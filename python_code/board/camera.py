@@ -1,6 +1,6 @@
 import pygame
 
-from python_code.utility.constants import SCREEN_SIZE
+from utility.constants import SCREEN_SIZE
 
 # thanks to https://stackoverflow.com/questions/14354171/add-scrolling-to-a-platformer-in-pygame
 class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):

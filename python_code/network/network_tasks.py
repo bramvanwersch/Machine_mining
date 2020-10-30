@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from python_code.utility.constants import GAME_TIME
-from python_code.inventories import Item
+from utility.constants import GAME_TIME
+from inventories import Item
 
 
 class EdgeTaskQueue:

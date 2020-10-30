@@ -1,18 +1,18 @@
 import sys, inspect
 from abc import abstractmethod, ABC
 
-from python_code.board import materials
-from python_code.utility.utilities import Size
-from python_code.board import buildings
-from python_code.inventories import Item
+from board import materials
+from utility.utilities import Size
+from board import buildings
+from inventories import Item
 
 recipe_books = {}
 
 def create_recipe_book():
-    import python_code.recipes.factory_recipes
-    import python_code.recipes.furnace_recipes
+    import recipes.factory_recipes
+    import recipes.furnace_recipes
     global recipe_books
-    recipe_books = {"factory": RecipeBook("python_code.recipes.factory_recipes"), "furnace": RecipeBook("python_code.recipes.furnace_recipes")}
+    recipe_books = {"factory": RecipeBook("recipes.factory_recipes"), "furnace": RecipeBook("recipes.furnace_recipes")}
 
 class RecipeBook:
 

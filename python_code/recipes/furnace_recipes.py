@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-import python_code.recipes.base_recipes as br
-from python_code.board import materials
-from python_code.utility.utilities import Size
+import recipes.base_recipes as br
+from board import materials
+from utility.utilities import Size
 
 
 class FurnaceRecipesInterface(ABC):

@@ -1,7 +1,7 @@
 import pygame
 from abc import ABC
 
-from python_code.utility.constants import BLOCK_SIZE, MULTI_TASKS
+from utility.constants import BLOCK_SIZE, MULTI_TASKS
 
 
 class BaseBlock(ABC):

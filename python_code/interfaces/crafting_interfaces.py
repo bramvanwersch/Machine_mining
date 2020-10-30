@@ -1,11 +1,11 @@
-from python_code.interfaces.widgets import *
-from python_code.interfaces.base_interface import Window
-from python_code.interfaces.widgets import Label
-from python_code.utility.constants import INTERFACE_LAYER
-from python_code.utility.image_handling import image_sheets
-from python_code.inventories import Item
-from python_code.utility.utilities import Size
-from python_code.board.materials import fuel_materials
+from interfaces.widgets import *
+from interfaces.base_interface import Window
+from interfaces.widgets import Label
+from utility.constants import INTERFACE_LAYER
+from utility.image_handling import image_sheets
+from inventories import Item
+from utility.utilities import Size
+from board.materials import fuel_materials
 
 
 class CraftingWindow(Window):

@@ -1,5 +1,5 @@
-from python_code.interfaces.widgets import *
-from python_code.interfaces.base_interface import Window
+from interfaces.widgets import *
+from interfaces.base_interface import Window
 
 #globals
 SELECTED_WIDGET = None

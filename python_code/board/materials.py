@@ -2,10 +2,10 @@ import pygame, sys, inspect
 from abc import ABC, abstractmethod
 from random import randint, choices, choice
 
-from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
-from python_code.utility.image_handling import image_sheets
-from python_code.utility.utilities import Gaussian
-from python_code.board.blocks import *
+from utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
+from utility.image_handling import image_sheets
+from utility.utilities import Gaussian
+from board.blocks import *
 
 
 fuel_materials = set()
@@ -23,7 +23,7 @@ def configure_material_collections():
             selected_set = ore_materials
         elif issubclass(obj, FillerMaterial) and obj != FillerMaterial:
             selected_set = filler_materials
-        elif issubclass(obj, FloraMaterial) and obj != FloraMaterial:
+        elif issubclass(obj, FloraMaterial) or issubclass(obj, MultiFloraMaterial) and obj not in (FloraMaterial, MultiFloraMaterial):
             selected_set = flora_materials
         if selected_set != None:
             selected_set.add(obj)
@@ -133,7 +133,6 @@ class ColorMaterial(BaseMaterial, ABC):
     MIN_COLOR = (20, 20, 20)
 
     def __init__(self, **kwargs):
-        #TODO see waht to do with the depth stat
         self.__color = self._configure_color()
         self.__border_color = self._configure_border_color()
         super().__init__(**kwargs)
@@ -404,11 +403,12 @@ class FloraMaterial(ImageMaterial, ABC):
 
     @property
     @abstractmethod
-    def LOCATION(self):
+    def LOCATION_INFORMATION(self):
+        #information about location of images on the image sheets
         return tuple
 
     def _configure_surface(self, image):
-        image1 = image_sheets["materials"].image_at(self.LOCATION, color_key=(255, 255, 255))
+        image1 = image_sheets["materials"].image_at(self.LOCATION_INFORMATION, color_key=(255, 255, 255))
         image2 = pygame.transform.flip(image1, True, False)
         return [image1, image2]
 
@@ -429,7 +429,7 @@ class FloraMaterial(ImageMaterial, ABC):
 
     @property
     @abstractmethod
-    def DIRECTION(self):
+    def START_DIRECTION(self):
         #direction of connection 0-3 N, E, S, W
         return -1
 
@@ -438,61 +438,96 @@ class Fern(FloraMaterial):
 
     MEAN_DEPTH = 30
     SD = 10
-    DIRECTION = 2
-    LOCATION = (30, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (30, 20)
 
 
 class Reed(FloraMaterial):
 
     MEAN_DEPTH = 30
     SD = 10
-    DIRECTION = 2
-    LOCATION = (40, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (40, 20)
 
 
 class Moss(FloraMaterial):
 
     MEAN_DEPTH = 40
     SD = 10
-    DIRECTION = 2
-    LOCATION = (90, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (90, 20)
 
 
 class BrownShroom(FloraMaterial):
 
     MEAN_DEPTH= 80
     SD = 10
-    DIRECTION = 2
-    LOCATION = (50, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (50, 20)
 
 
 class BrownShroomers(FloraMaterial):
 
     MEAN_DEPTH= 80
     SD = 10
-    DIRECTION = 2
-    LOCATION = (70, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (70, 20)
 
 
 class RedShroom(FloraMaterial):
 
     MEAN_DEPTH= 80
     SD = 10
-    DIRECTION = 2
-    LOCATION = (80, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (80, 20)
 
 
 class RedShroomers(FloraMaterial):
 
-    MEAN_DEPTH= 80
+    MEAN_DEPTH = 80
     SD = 10
-    DIRECTION = 2
-    LOCATION = (60, 20)
+    START_DIRECTION = 2
+    LOCATION_INFORMATION = (60, 20)
 
 
 class ShroomCollection(MaterialCollection):
 
     MATERIAL_PROBABILITIES = {BrownShroom:0.4, BrownShroomers:0.1, RedShroom:0.4, RedShroomers:0.1}
+
+
+class MultiFloraMaterial(FloraMaterial, ABC):
+
+    def __init__(self, image_number = -1, **kwargs):
+        super().__init__(**kwargs)
+        self._image_key = image_number
+
+    @property
+    @abstractmethod
+    def CONTINUATION_DIRECTION(self):
+        #all directions with the probability of continuation to that side
+        return {}
+
+    def _configure_surface(self, image):
+        images= {}
+        for direction, loc in self.LOCATION_INFORMATION.items():
+            image = image_sheets["materials"].image_at(loc, color_key=(255, 255, 255))
+            images[direction] = [image]
+            images[direction].append(pygame.transform.flip(image, True, False))
+        return images
+
+    @property
+    def surface(self):
+        #this requires the self._surface to be an itterable
+        return choice(self._surface[self._image_key])
+
+
+class Vine(MultiFloraMaterial):
+    MEAN_DEPTH = 30
+    SD = 10
+    START_DIRECTION = 0
+    CONTINUATION_DIRECTION = {0:0, 1:0, 2:1, 3:0}
+    #-1 key is reserved for the starting image, 0-3 for the direction of addition
+    LOCATION_INFORMATION = {-1:(0, 30), 2:(10, 30)}
 
 
 class CancelMaterial(ImageMaterial):
