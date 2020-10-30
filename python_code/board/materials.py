@@ -1,6 +1,6 @@
 import pygame, sys, inspect
 from abc import ABC, abstractmethod
-from random import randint, choices
+from random import randint, choices, choice
 
 from python_code.utility.constants import MODES, BLOCK_SIZE, SHOW_BLOCK_BORDER, MULTI_TASKS
 from python_code.utility.image_handling import image_sheets
@@ -8,22 +8,34 @@ from python_code.utility.utilities import Gaussian
 from python_code.board.blocks import *
 
 
-fuel_materials = []
-ore_materials = []
-filler_materials = []
-flora_materials = []
+fuel_materials = set()
+ore_materials = set()
+filler_materials = set()
+flora_materials = set()
 
 def configure_material_collections():
     global fuel_materials, ore_materials, filler_materials, flora_materials
     for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
+        selected_set = None
         if issubclass(obj, FuelMaterial) and obj != FuelMaterial:
-            fuel_materials.append(obj)
+            selected_set = fuel_materials
         elif issubclass(obj, OreMaterial) and obj != OreMaterial:
-            ore_materials.append(obj)
+            selected_set = ore_materials
         elif issubclass(obj, FillerMaterial) and obj != FillerMaterial:
-            filler_materials.append(obj)
+            selected_set = filler_materials
         elif issubclass(obj, FloraMaterial) and obj != FloraMaterial:
-            flora_materials.append(obj)
+            selected_set = flora_materials
+        if selected_set != None:
+            selected_set.add(obj)
+    add_collection(flora_materials, ShroomCollection())
+    add_collection(filler_materials, StoneCollection())
+
+def add_collection(set_, *collections):
+    for collection in collections:
+        set_.add(collection)
+        for elem in set_.copy():
+            if elem in collection:
+                set_.remove(elem)
 
 
 class BaseMaterial(ABC):
@@ -48,13 +60,18 @@ class BaseMaterial(ABC):
         when treating the materials as more abstract units instead of actual
         surface defining objects.
         """
-        self.surface = self._configure_surface(image)
+        self._surface = self._configure_surface(image)
         self.transparant_group = self.TRANSPARANT_GROUP
         self.unbuildable = False
 
     @classmethod
     def name(self):
         return self.__name__
+
+    @property
+    def surface(self):
+        #allow inheriting classes to push muliple surfaces or a choice
+        return self._surface
 
     @abstractmethod
     def _configure_surface(self, image):
@@ -77,7 +94,8 @@ class BaseMaterial(ABC):
 
 
 class MaterialCollection(ABC):
-    # class that holds a collection of items that can be selected with a certain wheight
+    # class that holds a collection of items that are randomly returned based on wheights
+    # this is mainly meant for board generation purposes
 
     @property
     @abstractmethod
@@ -88,6 +106,12 @@ class MaterialCollection(ABC):
     def name(self):
         return choices([k.name() for k in self.MATERIAL_PROBABILITIES.keys()],
                 self.MATERIAL_PROBABILITIES.values(), k=1)[0]
+
+    def __getattr__(self, item):
+        return getattr(list(self.MATERIAL_PROBABILITIES.keys())[0], item)
+
+    def __contains__(self, item):
+        return item in self.MATERIAL_PROBABILITIES
 
 
 class Air(BaseMaterial):
@@ -170,7 +194,7 @@ class BorderMaterial(ColorMaterial):
     MIN_COLOR = (0,0,0)
 
 #filler materials
-class FillerMaterial(ABC):
+class FillerMaterial(ColorMaterial, ABC):
 
     @property
     @abstractmethod
@@ -183,51 +207,59 @@ class FillerMaterial(ABC):
         return
 
 
-class TopDirt(ColorMaterial, FillerMaterial):
+class TopDirt(FillerMaterial):
 
     MEAN_DEPTH = 0
     SD = 2
     BASE_COLOR = (137, 79, 33)
 
 
-class Stone(ColorMaterial):
+class Stone(FillerMaterial):
 
+    MEAN_DEPTH = 30
+    SD = 10
     HARDNESS = 3
     BASE_COLOR = (155, 155, 155)
 
 
-class GreenStone(ColorMaterial):
+class GreenStone(FillerMaterial):
 
+    MEAN_DEPTH = 30
+    SD = 10
     HARDNESS = 3
     BASE_COLOR = (126, 155, 126)
 
 
-class RedStone(ColorMaterial):
+class RedStone(FillerMaterial):
 
+    MEAN_DEPTH = 30
+    SD = 10
     HARDNESS = 3
     BASE_COLOR = (155, 126, 126)
 
 
-class BlueStone(ColorMaterial):
+class BlueStone(FillerMaterial):
 
+    MEAN_DEPTH = 30
+    SD = 10
     HARDNESS = 3
     BASE_COLOR = (126, 126, 155)
 
 
-class YellowStone(ColorMaterial):
+class YellowStone(FillerMaterial):
 
+    MEAN_DEPTH = 30
+    SD = 10
     HARDNESS = 3
     BASE_COLOR = (155, 155, 126)
 
 
-class StoneCollection(MaterialCollection, FillerMaterial):
+class StoneCollection(MaterialCollection):
 
-    MEAN_DEPTH = 30
-    SD = 10
     MATERIAL_PROBABILITIES = {Stone:0.95, GreenStone:0.01, RedStone:0.01, BlueStone:0.01, YellowStone:0.01}
 
 
-class Granite(ColorMaterial, FillerMaterial):
+class Granite(FillerMaterial):
 
     HARDNESS = 10
     MEAN_DEPTH = 70
@@ -235,7 +267,7 @@ class Granite(ColorMaterial, FillerMaterial):
     BASE_COLOR = (105, 89, 76)
 
 
-class FinalStone(ColorMaterial, FillerMaterial):
+class FinalStone(FillerMaterial):
 
     HARDNESS = 20
     MEAN_DEPTH = 100
@@ -372,6 +404,21 @@ class FloraMaterial(ImageMaterial, ABC):
 
     @property
     @abstractmethod
+    def LOCATION(self):
+        return tuple
+
+    def _configure_surface(self, image):
+        image1 = image_sheets["materials"].image_at(self.LOCATION, color_key=(255, 255, 255))
+        image2 = pygame.transform.flip(image1, True, False)
+        return [image1, image2]
+
+    @property
+    def surface(self):
+        #this requires the self._surface to be an itterable
+        return choice(self._surface)
+
+    @property
+    @abstractmethod
     def MEAN_DEPTH(self):
         return 0
 
@@ -392,10 +439,7 @@ class Fern(FloraMaterial):
     MEAN_DEPTH = 30
     SD = 10
     DIRECTION = 2
-
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((30,20), color_key=(255, 255, 255))
-        return image
+    LOCATION = (30, 20)
 
 
 class Reed(FloraMaterial):
@@ -403,45 +447,51 @@ class Reed(FloraMaterial):
     MEAN_DEPTH = 30
     SD = 10
     DIRECTION = 2
-
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((40,20), color_key=(255, 255, 255))
-        return image
+    LOCATION = (40, 20)
 
 
-class BrownShroom(ImageMaterial):
+class Moss(FloraMaterial):
 
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((50,20), color_key=(255, 255, 255))
-        return image
-
-
-class BrownShroomers(ImageMaterial):
-
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((70,20), color_key=(255, 255, 255))
-        return image
+    MEAN_DEPTH = 40
+    SD = 10
+    DIRECTION = 2
+    LOCATION = (90, 20)
 
 
-class RedShroom(ImageMaterial):
-
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((80,20), color_key=(255, 255, 255))
-        return image
-
-
-class RedShroomers(ImageMaterial):
-
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((60,20), color_key=(255, 255, 255))
-        return image
-
-
-class ShroomCollection(MaterialCollection, FloraMaterial):
+class BrownShroom(FloraMaterial):
 
     MEAN_DEPTH= 80
     SD = 10
     DIRECTION = 2
+    LOCATION = (50, 20)
+
+
+class BrownShroomers(FloraMaterial):
+
+    MEAN_DEPTH= 80
+    SD = 10
+    DIRECTION = 2
+    LOCATION = (70, 20)
+
+
+class RedShroom(FloraMaterial):
+
+    MEAN_DEPTH= 80
+    SD = 10
+    DIRECTION = 2
+    LOCATION = (80, 20)
+
+
+class RedShroomers(FloraMaterial):
+
+    MEAN_DEPTH= 80
+    SD = 10
+    DIRECTION = 2
+    LOCATION = (60, 20)
+
+
+class ShroomCollection(MaterialCollection):
+
     MATERIAL_PROBABILITIES = {BrownShroom:0.4, BrownShroomers:0.1, RedShroom:0.4, RedShroomers:0.1}
 
 
