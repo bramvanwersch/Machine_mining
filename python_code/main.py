@@ -132,6 +132,7 @@ class User:
         self.load_unload_sprites()
         self.board.pf.update()
         self.board.pipe_network.update()
+        self.board.update_grow_cycle()
 
     def load_unload_sprites(self):
         c = self.main_sprite_group.target.rect.center

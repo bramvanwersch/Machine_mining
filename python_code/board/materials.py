@@ -401,6 +401,9 @@ class ImageMaterial(BaseMaterial, ABC):
 
 class FloraMaterial(ImageMaterial, ABC):
 
+    #default no growth
+    GROW_CHANCE = 0
+
     @property
     @abstractmethod
     def LOCATION_INFORMATION(self):
@@ -411,6 +414,9 @@ class FloraMaterial(ImageMaterial, ABC):
         image1 = image_sheets["materials"].image_at(self.LOCATION_INFORMATION, color_key=(255, 255, 255))
         image2 = pygame.transform.flip(image1, True, False)
         return [image1, image2]
+
+    def can_grow(self):
+        return self.GROW_CHANCE > 0
 
     @property
     def surface(self):
@@ -496,6 +502,7 @@ class ShroomCollection(MaterialCollection):
 
 
 class MultiFloraMaterial(FloraMaterial, ABC):
+    MAX_SIZE = 6
 
     def __init__(self, image_number = -1, **kwargs):
         super().__init__(**kwargs)
@@ -504,8 +511,8 @@ class MultiFloraMaterial(FloraMaterial, ABC):
     @property
     @abstractmethod
     def CONTINUATION_DIRECTION(self):
-        #all directions with the probability of continuation to that side
-        return {}
+        #all directions with the probability of continuation to that side N, E, S, W order
+        return []
 
     def _configure_surface(self, image):
         images= {}
@@ -525,9 +532,17 @@ class Vine(MultiFloraMaterial):
     MEAN_DEPTH = 30
     SD = 10
     START_DIRECTION = 0
-    CONTINUATION_DIRECTION = {0:0, 1:0, 2:1, 3:0}
+    CONTINUATION_DIRECTION = [0,0,1,0]
     #-1 key is reserved for the starting image, 0-3 for the direction of addition
     LOCATION_INFORMATION = {-1:(0, 30), 2:(10, 30)}
+    GROW_CHANCE = 0.1
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.current_size = 1
+
+    def can_grow(self):
+        return super().can_grow() and self.current_size < self.MAX_SIZE
 
 
 class CancelMaterial(ImageMaterial):

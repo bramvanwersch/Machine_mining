@@ -69,8 +69,32 @@ class Board(BoardEventHandler):
 
         self.__buildings = {}
         self.__add_starter_buildings()
+        self.__grow_update_time = 0
+        for _ in range(10):
+            self.__grow_flora()
 
-        #variables needed when playing
+
+    def update_grow_cycle(self):
+        self.__grow_update_time += GAME_TIME.get_time()
+        if self.__grow_update_time > GROW_CYCLE_UPDATE_TIME:
+            self.__grow_flora()
+            self.__grow_update_time = 0
+
+    def __grow_flora(self):
+        for row in self.chunk_matrix:
+            for chunk in row:
+                for flora_block in chunk._flora_blocks:
+                    if flora_block.material.can_grow() and uniform(0,1) < flora_block.material.GROW_CHANCE:
+                        direction_chance = normalize(flora_block.material.CONTINUATION_DIRECTION)
+                        dir = choices(range(4), direction_chance, k=1)[0]
+                        material_obj = getattr(materials, flora_block.name())
+                        extension_block = Block(flora_block.coord, material_obj(image_number=dir))
+
+                        direction_size = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+                        flora_block.rect.topleft = (flora_block.rect.left + BLOCK_SIZE.width * direction_size[dir][0],
+                                                    flora_block.rect.top + BLOCK_SIZE.height * direction_size[dir][1])
+                        flora_block.material.current_size += 1
+                        self.add_blocks(extension_block, flora_block)
 
     def __generate_chunk_matrix(self, main_sprite_group):
         foreground_matrix = self.__generate_foreground_string_matrix()
