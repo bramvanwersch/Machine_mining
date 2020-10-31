@@ -73,7 +73,6 @@ class Board(BoardEventHandler):
         for _ in range(10):
             self.__grow_flora()
 
-
     def update_grow_cycle(self):
         self.__grow_update_time += GAME_TIME.get_time()
         if self.__grow_update_time > GROW_CYCLE_UPDATE_TIME:
@@ -83,7 +82,7 @@ class Board(BoardEventHandler):
     def __grow_flora(self):
         for row in self.chunk_matrix:
             for chunk in row:
-                for plant in chunk.plants:
+                for plant in chunk.plants.values():
                     if plant.can_grow() and uniform(0,1) < plant.material.GROW_CHANCE:
                         new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
                         if new_blocks != None:
@@ -182,7 +181,7 @@ class Board(BoardEventHandler):
         removed_items = []
         for block in blocks:
             if block.id in self.__buildings:
-                self.remove_building(block)
+                removed_items.append(self.remove_building(block))
             else:
                 chunk = self.__chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
@@ -207,6 +206,7 @@ class Board(BoardEventHandler):
                 self.task_control.cancel_tasks(block, remove=True)
                 chunk = self.__chunk_from_point(block.rect.topleft)
                 chunk.remove_blocks(block)
+        return Item(block.material, 1)
 
     def add_blocks(self, *blocks, update=False):
         """
@@ -385,10 +385,7 @@ class Board(BoardEventHandler):
             self.remove_selection()
 
     def __process_selection(self):
-        """
-        Process selection by adding tasks, and direct the board to highlight
-        the tasks
-        """
+
         if self.selection_rectangle == None:
             return
         chunks_rectangles = self.__get_chunks_from_rect(self.selection_rectangle.orig_rect)
@@ -482,6 +479,15 @@ class Board(BoardEventHandler):
             matrix_coordinate[1] += 1
         return matrix_coordinate
 
+    def __can_add_flora(self, block, flora):
+        sur_blocks = self.surrounding_blocks(block)
+
+        for index in range(len(sur_blocks)):
+            if sur_blocks[index] != None and sur_blocks[index].transparant_group == 0 and\
+                    flora.CONTINUATION_DIRECTION[index - 2] != 0:
+                return True
+        return False
+
     def _assign_tasks(self, blocks):
         rect = rect_from_block_matrix(blocks)
 
@@ -499,6 +505,10 @@ class Board(BoardEventHandler):
             no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, [no_highlight_block])
             #if not the full image was selected dont add tasks
             if len(no_task_rectangles) > 0:
+                self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
+                return
+            #make sure the plant is allowed to grow at the given place
+            if isinstance(get_selected_item().material, materials.MultiFloraMaterial) and not self.__can_add_flora(block, get_selected_item().material):
                 self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
                 return
             #the first block of the selection is the start block of the material

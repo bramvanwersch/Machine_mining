@@ -17,7 +17,7 @@ class Chunk:
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
 
-        self.plants = []
+        self.plants = {}
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
 
@@ -46,7 +46,13 @@ class Chunk:
             local_block_rect = self.__local_adjusted_rect(block.rect)
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
+            block.material._sfsagimage_key = -1
 
+            #check if a new plant, if so make sure the start is unique
+            if isinstance(block.material, materials.MultiFloraMaterial) and block.id not in self.plants:
+                plant = Plant(block)
+                self.plants[plant.id] = plant
+                block.material.image_key = -1
             # add the block
             self.foreground_image.add_image(local_block_rect, block.surface)
 
@@ -121,7 +127,8 @@ class Chunk:
                 else:
                     block = Block(pos, material_instance)
                     if isinstance(material_instance, materials.MultiFloraMaterial):
-                        self.plants.append(Plant(block))
+                        plant = Plant(block)
+                        self.plants[plant.id] = plant
                 s_matrix[row_i][column_i] = block
         return s_matrix
 

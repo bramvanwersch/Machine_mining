@@ -9,10 +9,14 @@ from board.blocks import Block
 class Plant:
 
     DIRECTION_ADDITON = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+    ID = 0
     def __init__(self, start_block):
+        self.id = "Plant{}".format(self.ID)
+        Plant.ID += 1
         self.material = start_block.material
         self.__matrix = [[start_block]]
         self.grow_block = start_block
+        self.grow_block.id = self.id
         self.__grow_block_coord = [0, 0]
 
     def grow(self, surrounding_blocks):
@@ -27,7 +31,7 @@ class Plant:
         direction_chance = normalize(continuation_chance)
         dir = choices(range(4), direction_chance, k=1)[0]
         material_obj = getattr(materials, self.grow_block.name())
-        extension_block = Block(self.grow_block.coord, material_obj(image_number=dir))
+        extension_block = Block(self.grow_block.coord, material_obj(image_number=dir), id=self.id)
 
         #move the tip of the plant forward
         self.grow_block.rect.topleft = (self.grow_block.rect.left + BLOCK_SIZE.width * self.DIRECTION_ADDITON[dir][0],
@@ -48,9 +52,9 @@ class Plant:
         self.__matrix[self.__grow_block_coord[1]][self.__grow_block_coord[0]] = self.grow_block
 
     def can_grow(self):
-        return self.material.GROW_CHANCE > 0 and self.__size() < self.material.MAX_SIZE
+        return self.material.GROW_CHANCE > 0 and self._size() < self.material.MAX_SIZE
 
-    def __size(self):
+    def _size(self):
         size = 0
         for row in self.__matrix:
             for b in row:

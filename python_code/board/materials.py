@@ -404,6 +404,8 @@ class FloraMaterial(ImageMaterial, ABC):
     #default no growth
     GROW_CHANCE = 0
     MAX_SIZE = 1
+    #TODO make unique per plants
+    TRANSPARANT_GROUP = 100
 
     @property
     @abstractmethod
@@ -504,7 +506,7 @@ class MultiFloraMaterial(FloraMaterial, ABC):
 
     def __init__(self, image_number = -1, **kwargs):
         super().__init__(**kwargs)
-        self._image_key = image_number
+        self.image_key = image_number
 
     @property
     @abstractmethod
@@ -513,7 +515,7 @@ class MultiFloraMaterial(FloraMaterial, ABC):
         return []
 
     def _configure_surface(self, image):
-        images= {}
+        images = {}
         for direction, loc in self.LOCATION_INFORMATION.items():
             image = image_sheets["materials"].image_at(loc, color_key=(255, 255, 255))
             images[direction] = [image]
@@ -523,7 +525,7 @@ class MultiFloraMaterial(FloraMaterial, ABC):
     @property
     def surface(self):
         #this requires the self._surface to be an itterable
-        return choice(self._surface[self._image_key])
+        return choice(self._surface[self.image_key])
 
 
 class Vine(MultiFloraMaterial):
@@ -534,10 +536,6 @@ class Vine(MultiFloraMaterial):
     #-1 key is reserved for the starting image, 0-3 for the direction of addition
     LOCATION_INFORMATION = {-1:(0, 30), 2:(10, 30)}
     GROW_CHANCE = 0.1
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.current_size = 1
 
 
 class CancelMaterial(ImageMaterial):
