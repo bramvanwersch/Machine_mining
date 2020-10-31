@@ -16,17 +16,17 @@ flora_materials = set()
 def configure_material_collections():
     global fuel_materials, ore_materials, filler_materials, flora_materials
     for name, obj in inspect.getmembers(sys.modules[__name__], inspect.isclass):
-        selected_set = None
+        selected_sets = []
         if issubclass(obj, FuelMaterial) and obj != FuelMaterial:
-            selected_set = fuel_materials
-        elif issubclass(obj, OreMaterial) and obj != OreMaterial:
-            selected_set = ore_materials
-        elif issubclass(obj, FillerMaterial) and obj != FillerMaterial:
-            selected_set = filler_materials
-        elif issubclass(obj, FloraMaterial) or issubclass(obj, MultiFloraMaterial) and obj not in (FloraMaterial, MultiFloraMaterial):
-            selected_set = flora_materials
-        if selected_set != None:
-            selected_set.add(obj)
+            selected_sets.append(fuel_materials)
+        if issubclass(obj, OreMaterial) and obj != OreMaterial:
+            selected_sets.append(ore_materials)
+        if issubclass(obj, FillerMaterial) and obj != FillerMaterial:
+            selected_sets.append(filler_materials)
+        if issubclass(obj, FloraMaterial) or issubclass(obj, MultiFloraMaterial) and obj not in (FloraMaterial, MultiFloraMaterial):
+            selected_sets = flora_materials
+        if len(selected_sets) > 0:
+           [set_.add(obj) for set_ in selected_sets]
     add_collection(flora_materials, ShroomCollection())
     add_collection(filler_materials, StoneCollection())
 

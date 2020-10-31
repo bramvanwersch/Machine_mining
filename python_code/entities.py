@@ -214,31 +214,6 @@ class MovingEntity(ZoomableEntity):
         return new_centerx, new_centery
 
 
-# class InputSaver:
-#     """
-#     Save input into a dictionary. This is an abstract class that cannot be
-#     instantiated on its own
-#     """
-#
-#     def __init__(self):
-#         if type(self) == InputSaver:
-#             raise Exception("Cannot instaniate abstract class {}".format(type(self)))
-#         self._pressed_keys = {key: False for key in KEYBOARD_KEYS}
-#         self.selected = False
-#
-#     def handle_events(self, events):
-#         """
-#         Record what buttons are pressed in self.__pressed_keys dictionary
-#
-#         :param events: a list of pygame events
-#         """
-#         for event in events:
-#             if event.type == KEYDOWN:
-#                 self._pressed_keys[event.key] = True
-#             elif event.type == KEYUP:
-#                 self._pressed_keys[event.key] = False
-
-
 class CameraCentre(MovingEntity, EventHandler):
     """
     The camera center where the camera centers on
