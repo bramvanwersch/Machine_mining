@@ -8,6 +8,7 @@ from board import materials
 from entities import ZoomableEntity, SelectionRectangle
 from interfaces.interface_utility import p_to_c, p_to_r
 from board.pathfinding import PathfindingChunk
+from board.flora import Plant
 
 
 class Chunk:
@@ -16,7 +17,7 @@ class Chunk:
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
 
-        self._flora_blocks = []
+        self.plants = []
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
 
@@ -113,8 +114,8 @@ class Chunk:
                     block = AirBlock(pos, material_instance)
                 else:
                     block = Block(pos, material_instance)
-                    if isinstance(material_instance, materials.FloraMaterial):
-                        self._flora_blocks.append(block)
+                    if isinstance(material_instance, materials.MultiFloraMaterial):
+                        self.plants.append(Plant(block))
                 s_matrix[row_i][column_i] = block
         return s_matrix
 

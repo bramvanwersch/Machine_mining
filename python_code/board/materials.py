@@ -403,6 +403,7 @@ class FloraMaterial(ImageMaterial, ABC):
 
     #default no growth
     GROW_CHANCE = 0
+    MAX_SIZE = 1
 
     @property
     @abstractmethod
@@ -414,9 +415,6 @@ class FloraMaterial(ImageMaterial, ABC):
         image1 = image_sheets["materials"].image_at(self.LOCATION_INFORMATION, color_key=(255, 255, 255))
         image2 = pygame.transform.flip(image1, True, False)
         return [image1, image2]
-
-    def can_grow(self):
-        return self.GROW_CHANCE > 0
 
     @property
     def surface(self):
@@ -540,9 +538,6 @@ class Vine(MultiFloraMaterial):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.current_size = 1
-
-    def can_grow(self):
-        return super().can_grow() and self.current_size < self.MAX_SIZE
 
 
 class CancelMaterial(ImageMaterial):
