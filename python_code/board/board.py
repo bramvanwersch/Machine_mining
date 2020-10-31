@@ -179,12 +179,13 @@ class Board(BoardEventHandler):
         return blocks
 
     def remove_blocks(self, *blocks):
+        removed_items = []
         for block in blocks:
             if block.id in self.__buildings:
                 self.remove_building(block)
             else:
                 chunk = self.__chunk_from_point(block.rect.topleft)
-                chunk.remove_blocks(block)
+                removed_items.extend(chunk.remove_blocks(block))
             if isinstance(block, NetworkBlock):
                 surrounding_blocks = self.surrounding_blocks(block)
                 self.pipe_network.remove_pipe(block)
@@ -192,6 +193,7 @@ class Board(BoardEventHandler):
                     if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
                         self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
                         self.add_blocks(block)
+        return removed_items
 
     def remove_building(self, block):
         building_instance = self.__buildings.pop(block.id, None)

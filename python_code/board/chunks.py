@@ -9,7 +9,7 @@ from entities import ZoomableEntity, SelectionRectangle
 from interfaces.interface_utility import p_to_c, p_to_r
 from board.pathfinding import PathfindingChunk
 from board.flora import Plant
-
+from inventories import Item
 
 class Chunk:
 
@@ -55,7 +55,12 @@ class Chunk:
             self.pathfinding_chunk.added_rects.append(block.rect)
 
     def remove_blocks(self, *blocks):
+        removed_items = []
         for block in blocks:
+            removed_items.append(Item(block.material))
+            if hasattr(block, "inventory"):
+                items = block.inventory.get_all_items(ignore_filter=True)
+                removed_items.extend(items)
             local_block_rect = self.__local_adjusted_rect(block.rect)
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
             # remove the highlight
@@ -63,6 +68,7 @@ class Chunk:
             column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
             self.__matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
             self.pathfinding_chunk.removed_rects.append(block.rect)
+        return removed_items
 
     def get_block(self, point):
         column, row = self.__local_adusted_block_coordinate(point)

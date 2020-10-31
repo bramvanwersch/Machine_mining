@@ -322,11 +322,8 @@ class MiningTask(Task):
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
-        if hasattr(self.block, "inventory"):
-            items = self.block.inventory.get_all_items(ignore_filter=True)
-            entity.inventory.add_items(*items)
-        entity.board.remove_blocks(self.block)
-        entity.inventory.add_blocks(self.block)
+        removed_items = entity.board.remove_blocks(self.block)
+        entity.inventory.add_items(*removed_items)
 
 
 class BuildTask(MultiTask):
