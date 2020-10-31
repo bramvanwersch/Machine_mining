@@ -18,7 +18,7 @@ class Plant:
     def grow(self, surrounding_blocks):
         allowed_factor = [1 for _ in range(4)]
         for i, block in enumerate(surrounding_blocks):
-            if block.name() != "Air":
+            if block != "Air":
                 allowed_factor[i] = 0
         continuation_chance = [self.material.CONTINUATION_DIRECTION[i] * allowed_factor[i] for i in range(4)]
         #no place to grow

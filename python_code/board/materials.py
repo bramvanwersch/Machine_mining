@@ -24,7 +24,7 @@ def configure_material_collections():
         if issubclass(obj, FillerMaterial) and obj != FillerMaterial:
             selected_sets.append(filler_materials)
         if issubclass(obj, FloraMaterial) or issubclass(obj, MultiFloraMaterial) and obj not in (FloraMaterial, MultiFloraMaterial):
-            selected_sets = flora_materials
+            selected_sets.append(flora_materials)
         if len(selected_sets) > 0:
            [set_.add(obj) for set_ in selected_sets]
     add_collection(flora_materials, ShroomCollection())
