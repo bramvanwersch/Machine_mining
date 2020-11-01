@@ -48,5 +48,10 @@ class Plant:
     def grow_block(self):
         return self.__blocks[-1]
 
+    @property
+    def base_block(self):
+        #the block that connects the plant to the ground
+        return self.__blocks[0]
+
     def _size(self):
         return len(self.__blocks)

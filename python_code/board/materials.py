@@ -403,6 +403,8 @@ class FloraMaterial(ImageMaterial, ABC):
 
     #default no growth
     GROW_CHANCE = 0
+    # the index that the plant grows that side N, E, S, W order, default is north (up)
+    CONTINUATION_DIRECTION = 0
     MAX_SIZE = 1
     #TODO make unique per plants
     TRANSPARANT_GROUP = 100
@@ -507,12 +509,6 @@ class MultiFloraMaterial(FloraMaterial, ABC):
     def __init__(self, image_number = -1, **kwargs):
         super().__init__(**kwargs)
         self.image_key = image_number
-
-    @property
-    @abstractmethod
-    def CONTINUATION_DIRECTION(self):
-        #the index that the plant grows that side N, E, S, W order
-        return -1
 
     def _configure_surface(self, image):
         images = {}

@@ -187,13 +187,18 @@ class Board(BoardEventHandler):
             else:
                 chunk = self.__chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
+
             if isinstance(block, NetworkBlock):
-                surrounding_blocks = self.surrounding_blocks(block)
                 self.pipe_network.remove_pipe(block)
-                for block in surrounding_blocks:
-                    if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
-                        self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
-                        self.add_blocks(block)
+            surrounding_blocks = self.surrounding_blocks(block)
+            for index, s_block in enumerate(surrounding_blocks):
+                if isinstance(s_block, NetworkBlock) and not isinstance(s_block, ContainerBlock):
+                    self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
+                    self.add_blocks(s_block)
+                # check if the block a surrounding plant is attached to is still solid
+                elif isinstance(s_block.material, materials.FloraMaterial) and \
+                        index == s_block.material.CONTINUATION_DIRECTION:
+                    removed_items.extend(self.remove_blocks(s_block))
         return removed_items
 
     def remove_plant(self, block):
