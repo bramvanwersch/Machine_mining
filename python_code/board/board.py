@@ -559,6 +559,8 @@ class Board(BoardEventHandler):
             group = block.transparant_group
             if group != 0:
                 block.transparant_group = unique_group()
+                chunk = self.__chunk_from_point(block.coord)
+                chunk.update_blocks(block)
             if issubclass(building_block_i, InterafaceBuilding):
                 finish_block = building_block_i(block.rect.topleft, self.main_sprite_group, material=material)
             else:

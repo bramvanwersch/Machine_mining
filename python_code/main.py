@@ -119,7 +119,6 @@ class User:
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + + start_chunk.rect.top)
         for _ in range(10):
-            #TODO find the start chunk and spawn them there
             self.workers.append(Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)

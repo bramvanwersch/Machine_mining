@@ -75,6 +75,10 @@ class Chunk:
             self.pathfinding_chunk.removed_rects.append(block.rect)
         return removed_items
 
+    def update_blocks(self, *blocks):
+        for block in blocks:
+            self.pathfinding_chunk.added_rects.append(block.rect)
+
     def get_block(self, point):
         column, row = self.__local_adusted_block_coordinate(point)
         return self.__matrix[row][column]
