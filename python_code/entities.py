@@ -177,7 +177,7 @@ class MovingEntity(ZoomableEntity):
     """
     Base class for moving entities
     """
-    MAX_SPEED = 10
+    MAX_SPEED = 10 #pixels/s
     def __init__(self, pos, size, *groups, max_speed = MAX_SPEED, **kwargs):
         ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.max_speed = max_speed
@@ -259,8 +259,7 @@ class Worker(MovingEntity):
     INVENTORY_SIZE = 2
     NUMBER = 0
     def __init__(self, pos, board, tasks, *groups, **kwargs):
-        MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR,
-                              max_speed=5, **kwargs)
+        MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
         self.number = Worker.NUMBER
         Worker.NUMBER += 1
         self.board = board

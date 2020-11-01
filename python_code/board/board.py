@@ -163,7 +163,7 @@ class Board(BoardEventHandler):
         :param matrix: the matrix that contains the surrounding blocks
         :return: 4 Block or None objects
         """
-        blocks = [None, None, None, None]
+        blocks = [None for _ in range(4)]
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
             surrounding_pos = (block.rect.x + new_position[0] * BLOCK_SIZE.width, block.rect.y + new_position[1] * BLOCK_SIZE.height)
             # Make sure within range
@@ -173,9 +173,23 @@ class Board(BoardEventHandler):
                 surrounding_pos[1] < 0:
                 continue
             chunk = self.__chunk_from_point(surrounding_pos)
-            surrouding_block = chunk.get_block(surrounding_pos)
-            blocks[index] = surrouding_block
+            surrounding_block = chunk.get_block(surrounding_pos)
+            blocks[index] = surrounding_block
         return blocks
+
+    def surrounding_chunks(self, chunk):
+        chunks = [None for _ in range(4)]
+        for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
+            surrounding_pos = (chunk.rect.x + new_position[0] * CHUNK_SIZE.width, chunk.rect.y + new_position[1] * CHUNK_SIZE.height)
+            # Make sure within range
+            if surrounding_pos[0] > BOARD_SIZE.width or \
+                surrounding_pos[0] < 0 or \
+                surrounding_pos[1] > BOARD_SIZE.height or \
+                surrounding_pos[1] < 0:
+                continue
+            surrounding_chunk = self.__chunk_from_point(surrounding_pos)
+            chunks[index] = surrounding_chunk
+        return chunks
 
     def remove_blocks(self, *blocks):
         removed_items = []
@@ -204,7 +218,13 @@ class Board(BoardEventHandler):
     def remove_plant(self, block):
         removed_items = []
         chunk = self.__chunk_from_point(block.rect.topleft)
-        plant = chunk.plants[block.id]
+        possible_chunks = self.surrounding_chunks(chunk) + [chunk]
+        plant = None
+        for chunk in possible_chunks:
+            if chunk != None and block.id in chunk.plants:
+                plant = chunk.plants[block.id]
+        if plant == None:
+            return []
         removed_blocks = plant.remove_block(block)
 
         for block in removed_blocks:
