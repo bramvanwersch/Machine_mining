@@ -46,7 +46,6 @@ class Chunk:
             local_block_rect = self.__local_adjusted_rect(block.rect)
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
-            block.material._sfsagimage_key = -1
 
             #check if a new plant, if so make sure the start is unique
             if isinstance(block.material, materials.MultiFloraMaterial) and block.id not in self.plants:

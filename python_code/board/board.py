@@ -182,6 +182,8 @@ class Board(BoardEventHandler):
         for block in blocks:
             if block.id in self.__buildings:
                 removed_items.append(self.remove_building(block))
+            elif isinstance(block.material, MultiFloraMaterial):
+                removed_items.extend(self.remove_plant(block))
             else:
                 chunk = self.__chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
@@ -192,6 +194,22 @@ class Board(BoardEventHandler):
                     if isinstance(block, NetworkBlock) and not isinstance(block, ContainerBlock):
                         self.pipe_network.configure_block(block, self.surrounding_blocks(block), remove=True)
                         self.add_blocks(block)
+        return removed_items
+
+    def remove_plant(self, block):
+        removed_items = []
+        chunk = self.__chunk_from_point(block.rect.topleft)
+        plant = chunk.plants[block.id]
+        removed_blocks = plant.remove_block(block)
+
+        for block in removed_blocks:
+            chunk = self.__chunk_from_point(block.rect.topleft)
+            removed_items.extend(chunk.remove_blocks(block))
+        if plant._size() == 0:
+            chunk.plants.pop(block.id)
+        else:
+            plant.grow_block.material.image_key = -1
+            self.add_blocks(plant.grow_block)
         return removed_items
 
     def remove_building(self, block):
@@ -482,10 +500,9 @@ class Board(BoardEventHandler):
     def __can_add_flora(self, block, flora):
         sur_blocks = self.surrounding_blocks(block)
 
-        for index in range(len(sur_blocks)):
-            if sur_blocks[index] != None and sur_blocks[index].transparant_group == 0 and\
-                    flora.CONTINUATION_DIRECTION[index - 2] != 0:
-                return True
+        if sur_blocks[flora.CONTINUATION_DIRECTION  - 2] != None and\
+                sur_blocks[flora.CONTINUATION_DIRECTION  - 2].transparant_group == 0:
+            return True
         return False
 
     def _assign_tasks(self, blocks):

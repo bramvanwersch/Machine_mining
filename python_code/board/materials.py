@@ -511,8 +511,8 @@ class MultiFloraMaterial(FloraMaterial, ABC):
     @property
     @abstractmethod
     def CONTINUATION_DIRECTION(self):
-        #all directions with the probability of continuation to that side N, E, S, W order
-        return []
+        #the index that the plant grows that side N, E, S, W order
+        return -1
 
     def _configure_surface(self, image):
         images = {}
@@ -532,7 +532,7 @@ class Vine(MultiFloraMaterial):
     MEAN_DEPTH = 30
     SD = 10
     START_DIRECTION = 0
-    CONTINUATION_DIRECTION = [0,0,1,0]
+    CONTINUATION_DIRECTION = 2
     #-1 key is reserved for the starting image, 0-3 for the direction of addition
     LOCATION_INFORMATION = {-1:(0, 30), 2:(10, 30)}
     GROW_CHANCE = 0.1
@@ -622,7 +622,22 @@ class FactoryMaterial(BuildingMaterial):
 class StonePipeMaterial(ImageMaterial):
     TRANSPARANT_GROUP = 5
     BLOCK_TYPE = NetworkBlock
+    # made as follows:
+    # first number for the amount of connections (0, 1, 2, 3, 4)
+    # then 2 to 4 letters for n = 0, e = 1, s = 2, w = 3, with that order
+    __IMAGE_NAMES = ["2_13", "2_02", "2_23", "2_03", "2_12", "2_01", "3_013", "3_012", "3_023", "3_123", "4_0123",
+                   "1_3", "1_0", "1_1", "1_2", "0_"]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.image_key = "0_"
 
     def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((10,0), color_key=(255,255,255))
-        return image
+        #TODO at some point in the future make these class varaibles to avoid triggerign on class instantiation
+        images = image_sheets["materials"].images_at_rectangle((10, 0, 90, 10), color_key=(255,255,255))[0]
+        images.extend(image_sheets["materials"].images_at_rectangle((0, 10, 70, 10), color_key=(255,255,255))[0])
+        return {self.__IMAGE_NAMES[i] : images[i] for i in range(len(images))}
+
+    @property
+    def surface(self):
+        return self._surface[self.image_key]

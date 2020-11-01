@@ -95,8 +95,11 @@ class Block(BaseBlock):
     def __init__(self, pos, material, **kwargs):
         super().__init__(pos, **kwargs)
         self.material = material
-        self.surface = self.material.surface
         self.rect = self.surface.get_rect(topleft=pos)
+
+    @property
+    def surface(self):
+        return self.material.surface
 
 
 class NetworkBlock(Block):
