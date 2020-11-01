@@ -310,9 +310,10 @@ class Board(BoardEventHandler):
                 pass
             else:
                 continue
-            path = self.pf.get_path(start, block.rect)
-            if path != None and path.path_lenght < shortest_distance:
-                shortest_distance = path.path_lenght
+
+            distance = manhattan_distance(start.center, block.rect.center)
+            if distance < shortest_distance:
+                shortest_distance = distance
                 closest_block = block
         return closest_block
 
