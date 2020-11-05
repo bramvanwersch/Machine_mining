@@ -54,7 +54,7 @@ class Main:
             if AIR_RECTANGLES:
                 self.remove_air_rectangles()
             self.user.update()
-            self.screen.fill((255,255,255))
+            # self.screen.fill((255,255,255))
             if AIR_RECTANGLES:
                 self.draw_air_rectangles()
             self.main_sprite_group.update()

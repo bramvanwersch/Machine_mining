@@ -1,6 +1,7 @@
 from abc import ABC
 
 from utility.constants import *
+from utility.utilities import Size
 from inventories import Inventory
 from tasks import TaskQueue, Task, FetchTask, EmptyInventoryTask
 from utility.event_handling import EventHandler
@@ -21,6 +22,7 @@ class Entity(pygame.sprite.Sprite, ABC):
         self.zoomable = False
         # should the entity move with the camera or not
         self.static = True
+        self.changed = True
 
     def show(self, value:bool):
         self._visible = value
@@ -87,6 +89,7 @@ class ZoomableEntity(Entity):
         :param increase: a small integer that tells how much bigger the zoom
         should be
         """
+        self.changed = True
         self._zoom = zoom
         orig_rect = self.orig_rect
         new_width = orig_rect.width * zoom
@@ -151,6 +154,7 @@ class SelectionRectangle(ZoomableEntity):
         Remake the rectangle that is being highlighted every update
         """
         super().update(*args)
+        self.changed = True
         self.__remake_rectangle()
 
     def __remake_rectangle(self):
@@ -194,6 +198,7 @@ class MovingEntity(ZoomableEntity):
         """
         Method for moving something based on an x and y speed
         """
+        self.changed = True
         x, y = self._collision_adjusted_values()
         self.orig_rect.centerx = x
 
@@ -222,6 +227,11 @@ class CameraCentre(MovingEntity, EventHandler):
         MovingEntity.__init__(self, pos, size, *groups, max_speed = 20, **kwargs)
         EventHandler.__init__(self, [RIGHT, LEFT, UP, DOWN])
         self.orig_rect = pygame.Rect(*pos, *size)
+        self.moved = True
+
+    def move(self):
+        super().move()
+        self.moved = True
 
     def handle_events(self, events):
         """
@@ -258,6 +268,7 @@ class Worker(MovingEntity):
     #in wheight
     INVENTORY_SIZE = 2
     NUMBER = 0
+    VISON_SIZE = Size(10 * BLOCK_SIZE.width, 10 * BLOCK_SIZE.height)
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
         self.number = Worker.NUMBER
@@ -279,6 +290,13 @@ class Worker(MovingEntity):
         """
         MovingEntity.update(self, *args)
         self.__perform_commands()
+
+    def move(self):
+        topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
+        self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), (0, 0, 0, 200), layer=1)
+        super().move()
+        topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
+        self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), INVISIBLE_COLOR, layer=1)
 
     def __perform_commands(self):
         """
