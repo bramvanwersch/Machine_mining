@@ -206,7 +206,9 @@ class Board(BoardEventHandler):
                 self.pipe_network.remove_pipe(block)
             surrounding_blocks = self.surrounding_blocks(block)
             for index, s_block in enumerate(surrounding_blocks):
-                if isinstance(s_block, NetworkBlock) and not isinstance(s_block, ContainerBlock):
+                if s_block == None:
+                    continue
+                elif isinstance(s_block, NetworkBlock) and not isinstance(s_block, ContainerBlock):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
                     self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is still solid
