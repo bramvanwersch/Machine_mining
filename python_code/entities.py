@@ -291,12 +291,12 @@ class Worker(MovingEntity):
         MovingEntity.update(self, *args)
         self.__perform_commands()
 
-    def move(self):
-        topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
-        self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), (0, 0, 0, 200), layer=1)
-        super().move()
-        topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
-        self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), INVISIBLE_COLOR, layer=1)
+    # def move(self):
+    #     topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
+    #     self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), (0, 0, 0, 200), layer=0)
+    #     super().move()
+    #     topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
+    #     self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), INVISIBLE_COLOR, layer=0)
 
     def __perform_commands(self):
         """
