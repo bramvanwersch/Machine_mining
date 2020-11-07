@@ -24,7 +24,8 @@ class Chunk:
         offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
         self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
         self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
-        self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER)
+        self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER, color=INVISIBLE_COLOR)
+        self.light_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 0))
         self.pathfinding_chunk = PathfindingChunk(self.__matrix)
 
     @property
@@ -32,10 +33,11 @@ class Chunk:
         return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
 
     def add_rectangle(self, rect, color, layer=2, border=0):
-        self.foreground_image.changed = True
-        self.background_image.changed = True
-        self.selection_image.changed = True
+        self.__set_images_changed()
+
         local_rect = self.__local_adjusted_rect(rect)
+        if layer == 0:
+            image = self.light_image
         if layer == 1:
             image = self.selection_image
         elif layer == 2:
@@ -45,9 +47,8 @@ class Chunk:
         image.add_rect(local_rect, color, border)
 
     def add_blocks(self, *blocks):
-        self.foreground_image.changed = True
-        self.background_image.changed = True
-        self.selection_image.changed = True
+        self.__set_images_changed()
+
         for block in blocks:
             local_block_rect = self.__local_adjusted_rect(block.rect)
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
@@ -66,9 +67,8 @@ class Chunk:
             self.pathfinding_chunk.added_rects.append(block.rect)
 
     def remove_blocks(self, *blocks):
-        self.foreground_image.changed = True
-        self.background_image.changed = True
-        self.selection_image.changed = True
+        self.__set_images_changed()
+
         removed_items = []
         for block in blocks:
             removed_items.append(Item(block.material))
@@ -85,9 +85,7 @@ class Chunk:
         return removed_items
 
     def update_blocks(self, *blocks):
-        self.foreground_image.changed = True
-        self.background_image.changed = True
-        self.selection_image.changed = True
+        self.__set_images_changed()
         for block in blocks:
             self.pathfinding_chunk.added_rects.append(block.rect)
 
@@ -115,6 +113,12 @@ class Chunk:
     def __local_adjusted_rect(self, rect):
         topleft = (rect.left % CHUNK_SIZE.width, rect.top % CHUNK_SIZE.height)
         return pygame.Rect((*topleft, *rect.size))
+
+    def __set_images_changed(self):
+        self.foreground_image.changed = True
+        self.background_image.changed = True
+        self.selection_image.changed = True
+        self.light_image.changed = True
 
 
 ##GENERATE CHUNK FUNCTIONS
@@ -229,13 +233,9 @@ class TransparantBoardImage(BoardImage):
         image = pygame.Surface(size)
         image.set_colorkey((0,0,0), RLEACCEL)
         image = image.convert_alpha()
-        image.fill((0,0,0,255))
+        image.fill(color)
         return image
 
-    def add_building_rectangle(self, pos, size=(10, 10)):
-        mouse_pos = screen_to_board_coordinate(pos, self.groups()[0].target, self._zoom)
-        self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
-                                        self.groups()[0],zoom=self._zoom, color=INVISIBLE_COLOR)
 
 
 
