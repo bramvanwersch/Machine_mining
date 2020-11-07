@@ -176,9 +176,9 @@ class User:
                 cam_events.append(event)
             elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
                 if event.button == 4:
-                    self.__zoom_entities(0.1)
+                    self.__zoom_entities(0.2)
                 elif event.button == 5:
-                    self.__zoom_entities(-0.1)
+                    self.__zoom_entities(-0.2)
                 else:
                     leftover_events.append(event)
             else:
@@ -202,10 +202,7 @@ class User:
         :param increase: a small number signifying the increase
         """
         prev_zoom_level = self._zoom
-        if increase < 0:
-            self._zoom = max(0.4, self._zoom + increase)
-        elif increase > 0:
-            self._zoom = min(2, self._zoom + increase)
+        self._zoom = min(max(0.4, self._zoom + increase), 2)
         #prevent unnecesairy recalculations
         if prev_zoom_level != self._zoom:
             for sprite in self.main_sprite_group.sprites():

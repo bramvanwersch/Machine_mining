@@ -92,8 +92,8 @@ class ZoomableEntity(Entity):
         self.changed = True
         self._zoom = zoom
         orig_rect = self.orig_rect
-        new_width = orig_rect.width * zoom
-        new_height = orig_rect.height * zoom
+        new_width = round(orig_rect.width * zoom)
+        new_height = round(orig_rect.height * zoom)
         self.image = pygame.transform.scale(self.orig_image, (int(new_width),
                                                               int(new_height)))
 
@@ -108,8 +108,8 @@ class ZoomableEntity(Entity):
         if self._zoom == 1:
             return self.orig_rect
         orig_pos = list(self.orig_rect.center)
-        orig_pos[0] *= self._zoom
-        orig_pos[1] *= self._zoom
+        orig_pos[0] = round(orig_pos[0] * self._zoom)
+        orig_pos[1] = round(orig_pos[1] * self._zoom)
         rect = self.image.get_rect(center = orig_pos)
         return rect
 
