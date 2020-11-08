@@ -2,7 +2,7 @@ import pygame
 from random import choices, choice, randint, uniform
 
 from utility.constants import *
-from utility.utilities import normalize, Gaussian
+from utility.utilities import normalize, Gaussian, GameExceprion
 from board.blocks import *
 from board import materials
 from entities import ZoomableEntity, SelectionRectangle
@@ -25,7 +25,7 @@ class Chunk:
         self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
         self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
         self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER, color=INVISIBLE_COLOR)
-        self.light_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 0))
+        self.light_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 255))
         self.pathfinding_chunk = PathfindingChunk(self.__matrix)
 
     @property
@@ -91,7 +91,10 @@ class Chunk:
 
     def get_block(self, point):
         column, row = self.__local_adusted_block_coordinate(point)
-        return self.__matrix[row][column]
+        try:
+            return self.__matrix[row][column]
+        except IndexError:
+            raise GameExceprion("Point: {} is not within chunk at {}".format(point, self.rect))
 
     def overlapping_blocks(self, rect):
         column_start, row_start = self.__local_adusted_block_coordinate(rect.topleft)
@@ -231,11 +234,19 @@ class TransparantBoardImage(BoardImage):
         Overwrites the image creation process in the basic Entity class
         """
         image = pygame.Surface(size)
-        image.set_colorkey((0,0,0), RLEACCEL)
         image = image.convert_alpha()
         image.fill(color)
         return image
 
-
-
-
+# class LightImage(BoardImage):
+#     def __init__(self, pos, main_sprite_group, **kwargs):
+#         BoardImage.__init__(self, pos, main_sprite_group, **kwargs)
+#
+#     def _create_image(self, size, color, **kwargs):
+#         """
+#         Overwrites the image creation process in the basic Entity class
+#         """
+#         image = pygame.Surface(size)
+#         image = image.convert_alpha()
+#         image.fill(color)
+#         return image

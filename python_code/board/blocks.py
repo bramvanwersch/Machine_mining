@@ -19,6 +19,7 @@ class BaseBlock(ABC):
             BaseBlock.ID += 1
         else:
             self.id = id
+        self.light_level = 0
 
     def action(self):
         """

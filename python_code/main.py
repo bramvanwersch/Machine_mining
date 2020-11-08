@@ -66,14 +66,17 @@ class Main:
         pygame.quit()
 
     def draw_debug_info(self):
+        surf = pygame.Surface((70, 30)).convert()
+        surf.fill((255,255,255))
         if FPS:
             fps = FONTS[18].render("fps: {}".format(int(GAME_TIME.get_fps())), True,
                                    pygame.Color('black'))
-            self.screen.blit(fps, (10, 10))
+            surf.blit(fps, (5, 5))
         if ENTITY_NMBR:
-            fps = FONTS[18].render("e: {}/{}".format(self.user._visible_entities, len(self.main_sprite_group.sprites())),
+            en = FONTS[18].render("e: {}/{}".format(self.user._visible_entities, len(self.main_sprite_group.sprites())),
                                    True, pygame.Color('black'))
-            self.screen.blit(fps, (10, 20))
+            surf.blit(en, (5, 15))
+        self.screen.blit(surf, (10, 10))
 
 
     def draw_air_rectangles(self):
@@ -131,7 +134,7 @@ class User:
         self.load_unload_sprites()
         self.board.pf.update()
         self.board.pipe_network.update()
-        self.board.update_grow_cycle()
+        self.board.update_board()
 
     def load_unload_sprites(self):
         c = self.main_sprite_group.target.rect.center

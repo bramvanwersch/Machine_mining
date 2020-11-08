@@ -10,6 +10,9 @@ def unique_group():
     return group_id
 
 
+class GameExceprion(Exception):
+    pass
+
 def normalize(values, scale=1):
     """
     Normalize a list of values by deviding by total and scaling it inbetween 0

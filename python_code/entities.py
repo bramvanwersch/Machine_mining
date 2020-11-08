@@ -271,7 +271,7 @@ class Worker(MovingEntity):
     #in wheight
     INVENTORY_SIZE = 2
     NUMBER = 0
-    VISON_SIZE = Size(10 * BLOCK_SIZE.width, 10 * BLOCK_SIZE.height)
+    VISON_RADIUS = 100
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
         self.number = Worker.NUMBER
@@ -286,6 +286,7 @@ class Worker(MovingEntity):
 
         #inventory
         self.inventory = Inventory(self.INVENTORY_SIZE)
+        self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
 
     def update(self, *args):
         """
@@ -294,12 +295,11 @@ class Worker(MovingEntity):
         MovingEntity.update(self, *args)
         self.__perform_commands()
 
-    # def move(self):
-    #     topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
-    #     self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), (0, 0, 0, 200), layer=0)
-    #     super().move()
-    #     topleft = (self.orig_rect.centerx - self.VISON_SIZE.width * 0.5, self.orig_rect.centery - self.VISON_SIZE.height * 0.5)
-    #     self.board.add_rectangle(pygame.Rect((*topleft, *self.VISON_SIZE)), INVISIBLE_COLOR, layer=0)
+    def move(self):
+        pre_move_loc = self.orig_rect.center
+        super().move()
+        if pre_move_loc != self.orig_rect.center:
+            self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
 
     def __perform_commands(self):
         """

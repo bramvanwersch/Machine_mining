@@ -73,7 +73,15 @@ class Board(BoardEventHandler):
         for _ in range(10):
             self.__grow_flora()
 
-    def update_grow_cycle(self):
+        self.changed_light_blocks = set()
+
+    def update_board(self):
+
+        #update lighting
+        self.change_light_levels()
+        self.changed_light_blocks = set()
+
+        #grow cycle updates
         self.__grow_update_time += GAME_TIME.get_time()
         if self.__grow_update_time > GROW_CYCLE_UPDATE_TIME:
             self.__grow_flora()
@@ -299,6 +307,53 @@ class Board(BoardEventHandler):
             update_blocks = [block for block in update_blocks if not isinstance(block, ContainerBlock)]
             self.add_blocks(*update_blocks)
 
+    def adjust_lighting(self, point, radius, point_light):
+        #extend in a circle around a center point and assign new light values based on the light point
+
+        adjusted_blocks = []
+        start_block = self.__block_from_point(point)
+        if start_block.light_level < point_light:
+            start_block.light_level = point_light
+            self.changed_light_blocks.add(start_block)
+        col_blocks = int(radius / BLOCK_SIZE.width)
+        row_blocks = int(radius / BLOCK_SIZE.height)
+
+        row_end_extend = [False, False]
+        for row_i in range(row_blocks):
+            for row_s_i, sign in enumerate((-1, 1)):
+                if row_end_extend[row_s_i]:
+                    continue
+                if all(row_end_extend):
+                    break
+                new_block_y = point[1] + sign * row_i * BLOCK_SIZE.height
+                next_block = self.__block_from_point((point[0], new_block_y))
+                if next_block.light_level < point_light - row_i:
+                    next_block.light_level = point_light - row_i
+                    self.changed_light_blocks.add(next_block)
+                if next_block.transparant_group == 0:
+                    row_end_extend[row_s_i] = True
+                col_end_extend = [False, False]
+                for col_i in range(1, col_blocks + 1 - (row_i)):
+                    for col_s_i, sign in enumerate((-1, 1)):
+                        #positive x direction
+                        if col_end_extend[col_s_i]:
+                            continue
+                        if all(col_end_extend):
+                            break
+                        new_block_x = point[0] + sign * col_i * BLOCK_SIZE.width
+                        next_block = self.__block_from_point((new_block_x, new_block_y))
+                        if next_block.light_level < point_light - col_i - row_i:
+                            next_block.light_level = point_light- col_i - row_i
+                            self.changed_light_blocks.add(next_block)
+                        if next_block.transparant_group == 0:
+                            col_end_extend[col_s_i] = True
+
+    def change_light_levels(self):
+        for block in self.changed_light_blocks:
+            chunk = self.__chunk_from_point(block.rect.topleft)
+            alpha = 255 - block.light_level * int(255 / MAX_LIGHT)
+            chunk.add_rectangle(block.rect, (0,0,0, alpha), layer=0)
+
     def closest_inventory(self, start, *item_names, deposit=True):
         """
         """
@@ -347,6 +402,10 @@ class Board(BoardEventHandler):
     def __chunk_from_point(self, point):
         column, row = p_to_cp(point)
         return self.chunk_matrix[row][column]
+
+    def __block_from_point(self, point):
+        chunk = self.__chunk_from_point(point)
+        return chunk.get_block(point)
 
     def add_selection_rectangle(self, pos, keep = False):
         """
