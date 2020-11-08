@@ -309,6 +309,7 @@ class Board(BoardEventHandler):
 
     def adjust_lighting(self, point, radius, point_light):
         #extend in a circle around a center point and assign new light values based on the light point
+        point_light = min(point_light, MAX_LIGHT)
 
         adjusted_blocks = []
         start_block = self.__block_from_point(point)
@@ -327,11 +328,9 @@ class Board(BoardEventHandler):
                     break
                 new_block_y = point[1] + sign * row_i * BLOCK_SIZE.height
                 next_block = self.__block_from_point((point[0], new_block_y))
-                if next_block.light_level < point_light - row_i:
-                    next_block.light_level = point_light - row_i
+                if next_block.light_level < int(point_light - row_i * DECREASE_SPEED):
+                    next_block.light_level = int(point_light - row_i * DECREASE_SPEED)
                     self.changed_light_blocks.add(next_block)
-                if next_block.transparant_group == 0:
-                    row_end_extend[row_s_i] = True
                 col_end_extend = [False, False]
                 for col_i in range(1, col_blocks + 1 - (row_i)):
                     for col_s_i, sign in enumerate((-1, 1)):
@@ -342,11 +341,9 @@ class Board(BoardEventHandler):
                             break
                         new_block_x = point[0] + sign * col_i * BLOCK_SIZE.width
                         next_block = self.__block_from_point((new_block_x, new_block_y))
-                        if next_block.light_level < point_light - col_i - row_i:
-                            next_block.light_level = point_light- col_i - row_i
+                        if next_block.light_level < int(point_light - col_i * DECREASE_SPEED - row_i * DECREASE_SPEED):
+                            next_block.light_level = int(point_light - col_i * DECREASE_SPEED - row_i * DECREASE_SPEED)
                             self.changed_light_blocks.add(next_block)
-                        if next_block.transparant_group == 0:
-                            col_end_extend[col_s_i] = True
 
     def change_light_levels(self):
         for block in self.changed_light_blocks:

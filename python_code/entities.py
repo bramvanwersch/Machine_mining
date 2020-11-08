@@ -271,7 +271,7 @@ class Worker(MovingEntity):
     #in wheight
     INVENTORY_SIZE = 2
     NUMBER = 0
-    VISON_RADIUS = 100
+    VISON_RADIUS = 80
     def __init__(self, pos, board, tasks, *groups, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
         self.number = Worker.NUMBER

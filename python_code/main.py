@@ -54,7 +54,6 @@ class Main:
             if AIR_RECTANGLES:
                 self.remove_air_rectangles()
             self.user.update()
-            # self.screen.fill((255,255,255))
             if AIR_RECTANGLES:
                 self.draw_air_rectangles()
             self.main_sprite_group.update()
@@ -121,7 +120,7 @@ class User:
         start_chunk = self.board.get_start_chunk()
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + + start_chunk.rect.top)
-        for _ in range(10):
+        for _ in range(5):
             self.workers.append(Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)

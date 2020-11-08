@@ -188,7 +188,7 @@ class BoardImage(ZoomableEntity):
         block_matrix = kwargs["block_matrix"]
         offset = kwargs["offset"]
         image = pygame.Surface(size)
-        image.set_colorkey((0,0,0), RLEACCEL)
+        image.set_colorkey(INVISIBLE_COLOR, RLEACCEL)
         image = image.convert_alpha()
         for row in block_matrix:
             for block in row:
@@ -238,15 +238,3 @@ class TransparantBoardImage(BoardImage):
         image.fill(color)
         return image
 
-# class LightImage(BoardImage):
-#     def __init__(self, pos, main_sprite_group, **kwargs):
-#         BoardImage.__init__(self, pos, main_sprite_group, **kwargs)
-#
-#     def _create_image(self, size, color, **kwargs):
-#         """
-#         Overwrites the image creation process in the basic Entity class
-#         """
-#         image = pygame.Surface(size)
-#         image = image.convert_alpha()
-#         image.fill(color)
-#         return image
