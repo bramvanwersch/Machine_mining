@@ -526,7 +526,7 @@ class Board(BoardEventHandler):
         #find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types) or n_col in covered_coordinates[n_row]:
+                if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types and block.light_level > 0) or n_col in covered_coordinates[n_row]:
                     if n_col not in covered_coordinates[n_row]:
                         approved_blocks.append(block)
                     continue
@@ -565,7 +565,7 @@ class Board(BoardEventHandler):
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         for block in blocks[0][1:]:
-            if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types):
+            if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types and block.light_level > 0):
                 break
             x_size += 1
         matrix_coordinate = [x_size, 0]
