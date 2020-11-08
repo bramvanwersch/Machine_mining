@@ -412,7 +412,7 @@ class Board(BoardEventHandler):
         :param keep: if the previous highlight should be kept
         """
         #bit retarded
-        zoom = self.chunk_matrix[0][0].selection_image._zoom
+        zoom = self.chunk_matrix[0][0].layers[0]._zoom
         mouse_pos = screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
@@ -422,7 +422,7 @@ class Board(BoardEventHandler):
 
     def add_building_rectangle(self, pos, size=(10, 10)):
         # bit retarded
-        zoom = self.chunk_matrix[0][0].selection_image._zoom
+        zoom = self.chunk_matrix[0][0].layers[0]._zoom
         mouse_pos = screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         self.selection_rectangle = ZoomableEntity(mouse_pos, size - BLOCK_SIZE,
                                                   self.main_sprite_group, zoom=zoom, color=INVISIBLE_COLOR)
@@ -479,7 +479,7 @@ class Board(BoardEventHandler):
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
                 # bit retarded
-                zoom = self.chunk_matrix[0][0].selection_image._zoom
+                zoom = self.chunk_matrix[0][0].layers[0]._zoom
                 board_coord = screen_to_board_coordinate(self.get_key(1).event.pos, self.main_sprite_group.target, zoom)
                 chunk = self.__chunk_from_point(board_coord)
                 chunk.get_block(board_coord).action()

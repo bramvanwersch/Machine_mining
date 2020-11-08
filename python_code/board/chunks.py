@@ -22,10 +22,12 @@ class Chunk:
         self.__back_matrix = self.__create_blocks_from_string(background)
 
         offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
-        self.foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
-        self.background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
-        self.selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER, color=INVISIBLE_COLOR)
-        self.light_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 255))
+        foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
+        background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
+        light_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 255))
+        selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER, color=INVISIBLE_COLOR)
+
+        self.layers = [light_image, selection_image, foreground_image, background_image]
         self.pathfinding_chunk = PathfindingChunk(self.__matrix)
 
     @property
@@ -36,14 +38,7 @@ class Chunk:
         self.__set_images_changed()
 
         local_rect = self.__local_adjusted_rect(rect)
-        if layer == 0:
-            image = self.light_image
-        if layer == 1:
-            image = self.selection_image
-        elif layer == 2:
-            image = self.foreground_image
-        elif layer == 3:
-            image = self.background_image
+        image = self.layers[layer]
         image.add_rect(local_rect, color, border)
 
     def add_blocks(self, *blocks):
@@ -60,7 +55,7 @@ class Chunk:
                 self.plants[plant.id] = plant
                 block.material.image_key = -1
             # add the block
-            self.foreground_image.add_image(local_block_rect, block.surface)
+            self.layers[2].add_image(local_block_rect, block.surface)
 
             column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
             self.__matrix[row][column] = block
@@ -118,14 +113,12 @@ class Chunk:
         return pygame.Rect((*topleft, *rect.size))
 
     def __set_images_changed(self):
-        self.foreground_image.changed = True
-        self.background_image.changed = True
-        self.selection_image.changed = True
-        self.light_image.changed = True
-
+        self.layers[0].changed = True
+        self.layers[1].changed = True
+        self.layers[2].changed = True
+        self.layers[3].changed = True
 
 ##GENERATE CHUNK FUNCTIONS
-
     def __create_blocks_from_string(self, s_matrix):
         """
         Change strings into blocks
@@ -226,8 +219,6 @@ class TransparantBoardImage(BoardImage):
     Slight variation on the basic Board image that creates a transparant
     surface on which selections can be drawn
     """
-    def __init__(self, pos, main_sprite_group, **kwargs):
-        BoardImage.__init__(self, pos, main_sprite_group, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -237,4 +228,3 @@ class TransparantBoardImage(BoardImage):
         image = image.convert_alpha()
         image.fill(color)
         return image
-
