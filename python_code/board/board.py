@@ -1,10 +1,7 @@
-from random import choices, choice, randint, uniform
-from math import sin, cos, pi
 
-from entities import SelectionRectangle
+from math import sin, cos
+
 from utility.utilities import *
-from board import materials
-from utility.constants import *
 from board.pathfinding import PathFinder
 from board.buildings import *
 from utility.event_handling import BoardEventHandler
@@ -13,58 +10,53 @@ from network.pipes import Network
 from interfaces.interface_utility import *
 from board.chunks import *
 
+
 class Board(BoardEventHandler):
 
-    #ORE cluster values
-    #the amount of normal blocks per cluster
+    # ORE cluster values
+    # the amount of normal blocks per cluster
     CLUSTER_LIKELYHOOD = 120
-    #the max size of a ore cluster around the center
+    # the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
 
-    #CAVE values
+    # CAVE values
     MAX_CAVES = int((CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height) / 6)
-    #the fraction of the distance between points based on the shortest side of the board
+    # the fraction of the distance between points based on the shortest side of the board
     POINT_FRACTION_DISTANCE = 0.35
-    #distance the center of the cave should at least be away from the border
+    # distance the center of the cave should at least be away from the border
     CAVE_X_BORDER_DISTANCE = int(0.1 * BOARD_SIZE.width)
     CAVE_Y_BORDER_DISTANCE = int(0.1 * BOARD_SIZE.height)
     NUMBER_OF_CAVE_POINTS = int(CHUNK_GRID_SIZE.width * CHUNK_GRID_SIZE.height * 1.3)
-    #the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
+    # the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
     CAVE_STOP_SPREAD_CHANCE = 0.05
 
-    #BORDER values
+    # BORDER values
     SPREAD_LIKELYHOOD = Gaussian(0, 2)
     MAX_SPREAD_DISTANCE = 4
 
-    #PLANT values
+    # PLANT values
     FLORA_CHANCE = 0.1
-
-    """
-    Class that holds a matrix of blocks that is a playing field and an image
-    representing set matrix
-    """
     START_RECTANGLE = pygame.Rect((BOARD_SIZE.width / 2 - 125, 0, 250, 50))
     BLOCK_PER_CLUSRTER = 500
-    #the max size of a ore cluster around the center
-    MAX_CLUSTER_SIZE = 3
+
     def __init__(self, main_sprite_group):
         BoardEventHandler.__init__(self, [1, 2, 3, 4, MINING, CANCEL, BUILDING, SELECTING])
         self.inventorie_blocks = []
         self.main_sprite_group = main_sprite_group
 
-        #setup the board
+        # setup the board
         self.pf = PathFinder()
 
         self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
 
         self.task_control = None
 
-        #the current SelectionRectangle object that shows
+        # the current SelectionRectangle object that shows
         self.selection_rectangle = None
-        #last placed highlighted rectangle
+        # last placed highlighted rectangle
         self.__highlight_rectangle = None
 
-        #pipe network
+        # pipe network
         self.pipe_network = Network(self.task_control)
 
         self.__buildings = {}
@@ -416,7 +408,7 @@ class Board(BoardEventHandler):
         mouse_pos = screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
-            self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
+            self.add_rectangle(self.__highlight_rectangle.rect, INVISIBLE_COLOR, layer=1)
         self.selection_rectangle = SelectionRectangle(mouse_pos, (0, 0), pos,
                                                       self.main_sprite_group,zoom=zoom)
 

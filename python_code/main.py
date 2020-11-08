@@ -125,6 +125,8 @@ class User:
         #add one of the imventories of the terminal
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
 
+        self.camera_center.rect.center = start_chunk.rect.center
+
     def update(self):
         self.__handle_events()
         # allow to assign values to the _layer attribute instead of calling change_layer
