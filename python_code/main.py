@@ -133,8 +133,7 @@ class User:
         for sprite in self.main_sprite_group.sprites():
             self.main_sprite_group.change_layer(sprite, sprite._layer)
         self.load_unload_sprites()
-        self.board.pf.update()
-        self.board.pipe_network.update()
+
         self.board.update_board()
 
     def load_unload_sprites(self):

@@ -4,23 +4,18 @@ BUGS:
 - Windows dont close when buildings are destroyed
 - Windows dont appear when opening in zoomed in mode.
 - Fix blocks getting left behind while mining because of delayed pathfinding calculations  --> probably fixed no delayed calculations anymore
-- Fix zooming showing the tiles somethiems because the distances are not exact enough
-- Fix zooming causing pathfinding to mess up.
-- RETRIEVING OF BUILDING MATERIALS GOES WEIRD OR WRONG, ITEMS ARE REPEADATLY RETRIEVED AND DEPOSITED AGAIN.
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
-- Better terrain generation
 - A nice starting area
-- some form of light that blocks the view --> use the highlight layer for this.
 - Allot more recipes --> make a tree of progress using the recipes
 - An end goal.
 - Some narrative that gives some background to the story
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
+- fix weird movements trough rectangles while pathfinding
+- fix not always taking the shortest route whit pathfinding
 
 SPECIFIC FEATURES:
-- add an item that allows to select nothing for a certain recipe
 - add tooltips
-- make finding the closest inventory more efficient
 - Draw air rectangles non-biased towards the y direction.
 
 EXTRA FEATURES (features that can be in the game at some point):

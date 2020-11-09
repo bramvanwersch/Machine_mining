@@ -316,6 +316,7 @@ class PathfindingChunk:
 
     def update(self):
         self.__times_passed[0] += GAME_TIME.get_time()
+        #fix mistakes in the fast updating
         if self.__times_passed[0] > self.__times_passed[1] and (len(self.removed_rects) > 0 or len(self.added_rects) > 0):
             #TODO make this a less temporary fix, is kind of crude right now --> works pretty good
             self.__times_passed[0] == 0

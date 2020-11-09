@@ -73,6 +73,12 @@ class Board(BoardEventHandler):
         self.change_light_levels()
         self.changed_light_blocks = set()
 
+        #update network
+        self.pipe_network.update()
+
+        #update pathfinding
+        self.pf.update()
+
         #grow cycle updates
         self.__grow_update_time += GAME_TIME.get_time()
         if self.__grow_update_time > GROW_CYCLE_UPDATE_TIME:
