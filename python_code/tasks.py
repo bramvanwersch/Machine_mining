@@ -1,13 +1,11 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 
 from utility.utilities import manhattan_distance
-from board.blocks import AirBlock
-from board.materials import Air
 from utility.constants import MULTI_TASKS
 
 class TaskControl:
     """
-    Holds a list of blocks that contain tasks that the workers can accept
+    Holds a list of block_classes that contain tasks that the workers can accept
     """
     def __init__(self, board):
         #variable to track tasks by name and allow for fast search and destroy
@@ -71,7 +69,7 @@ class TaskControl:
         """
         Remove a task from a block and consider other things if needed
 
-        :param blocks: a list of blocks for which tasks need to be removed
+        :param blocks: a list of block_classes for which tasks need to be removed
         """
         for block in blocks:
             removed_tasks = self.reachable_block_tasks.pop(block, None)

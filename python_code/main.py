@@ -6,10 +6,10 @@ from board.board import Board
 from utility.constants import *
 from tasks import TaskControl
 from utility.image_handling import load_images
-from recipes.base_recipes import create_recipe_book
+from recipes.recipe_constants import create_recipe_book
 from interfaces.building_interface import BuildingWindow
 from interfaces.managers import create_window_manager
-from board.materials import configure_material_collections
+from block_classes.block_constants import configure_material_collections
 import interfaces.managers as window_managers
 
 
@@ -29,11 +29,11 @@ class Main:
         #load all the images before running the game
         load_images()
 
-        #load all recipes
-        create_recipe_book()
-
         #load fuel materials
         configure_material_collections()
+
+        #load all recipes
+        create_recipe_book()
 
         self.rect = self.screen.get_rect()
         self.camera_center = CameraCentre(self.START_POSITION, (5,5))
@@ -50,7 +50,6 @@ class Main:
     def run(self):
         # Main Loop
         while self.user.going:
-            GAME_TIME.tick(200)
             if AIR_RECTANGLES:
                 self.remove_air_rectangles()
             self.user.update()
@@ -61,6 +60,7 @@ class Main:
 
             self.draw_debug_info()
             pygame.display.update()
+            GAME_TIME.tick(200)
 
         pygame.quit()
 

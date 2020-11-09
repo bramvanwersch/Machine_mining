@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-import pygame
 
 from entities import ZoomableEntity
 from utility.constants import *
 from utility.event_handling import EventHandler
 from interfaces.interface_utility import screen_to_board_coordinate
-from board.materials import BuildingMaterial
+from block_classes.building_materials import BuildingMaterial
 import board.buildings
 
 

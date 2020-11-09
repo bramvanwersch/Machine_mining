@@ -5,7 +5,7 @@ from utility.constants import INTERFACE_LAYER
 from utility.image_handling import image_sheets
 from inventories import Item
 from utility.utilities import Size
-from board.materials import fuel_materials
+from block_classes.block_constants import fuel_materials
 
 
 class CraftingWindow(Window):

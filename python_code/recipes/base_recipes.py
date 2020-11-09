@@ -1,40 +1,12 @@
-import sys, inspect
 from abc import abstractmethod, ABC
 
-from board import materials
+import block_classes.building_materials
+from block_classes import materials
+from block_classes import flora_materials
+from block_classes import ground_materials
 from utility.utilities import Size
 from board import buildings
 from inventories import Item
-
-recipe_books = {}
-
-def create_recipe_book():
-    import recipes.factory_recipes
-    import recipes.furnace_recipes
-    global recipe_books
-    recipe_books = {"factory": RecipeBook("recipes.factory_recipes"), "furnace": RecipeBook("recipes.furnace_recipes")}
-
-class RecipeBook:
-
-    def __init__(self, recipe_module_name):
-        self.recipes = self.__initiate_recipes(recipe_module_name)
-
-    def __initiate_recipes(self, recipe_module_name):
-        """
-        Innitiate all the recipes defined in this file based on subclassing
-        from BaseRecipe
-        :return: a list of all recipes
-        """
-        #filter out all the recipes.
-        recipes = [CancelRecipe()]
-        for name, obj in inspect.getmembers(sys.modules[recipe_module_name], inspect.isclass):
-            if issubclass(obj, BaseRecipe):
-                recipes.append(obj())
-
-        return recipes
-
-    def __iter__(self):
-        return iter(self.recipes)
 
 
 class RecipeGrid:
@@ -135,13 +107,13 @@ class BaseRecipe(ABC):
     def __count_grid(self):
         counts = {}
         for row in self.__recipe_grid:
-            for value in row:
-                if value.name() != "Air":
-                    if value.name() not in counts:
-                        counts[value.name()] = 1
+            for obj in row:
+                if obj != materials.Air:
+                    if obj not in counts:
+                        counts[obj] = 1
                     else:
-                        counts[value.name()] += 1
-        items = [Item(getattr(materials, name)(), value) for name, value in counts.items()]
+                        counts[obj] += 1
+        items = [Item(obj(), value) for name, value in counts.items()]
         return items
 
     @abstractmethod
@@ -159,7 +131,7 @@ class BaseRecipe(ABC):
         return None
 
     def get_image(self):
-        if issubclass(self._material, materials.BuildingMaterial):
+        if issubclass(self._material, block_classes.building_materials.BuildingMaterial):
             return buildings.building_type_from_material(self._material).full_image()
         return self._material().surface
 
@@ -168,7 +140,7 @@ class BaseRecipe(ABC):
         for row in self.__recipe_grid:
             image_row = []
             for material_type in row:
-                if issubclass(material_type, materials.BuildingMaterial):
+                if issubclass(material_type, block_classes.building_materials.BuildingMaterial):
                     mat_type = buildings.building_type_from_material(material_type)
                     image_row.append([mat_type.name(), mat_type.full_image()])
                 else:

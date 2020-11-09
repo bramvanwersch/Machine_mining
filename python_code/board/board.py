@@ -1,4 +1,4 @@
-
+from random import choice, uniform
 from math import sin, cos
 
 from utility.utilities import *
@@ -9,12 +9,13 @@ from interfaces.building_interface import get_selected_item
 from network.pipes import Network
 from interfaces.interface_utility import *
 from board.chunks import *
+from entities import SelectionRectangle
 
 
 class Board(BoardEventHandler):
 
     # ORE cluster values
-    # the amount of normal blocks per cluster
+    # the amount of normal block_classes per cluster
     CLUSTER_LIKELYHOOD = 120
     # the max size of a ore cluster around the center
     MAX_CLUSTER_SIZE = 3
@@ -162,11 +163,11 @@ class Board(BoardEventHandler):
 
     def surrounding_blocks(self, block):
         """
-        Calculate the surrounding blocks of a certain block in the order
+        Calculate the surrounding block_classes of a certain block in the order
         NESW and None if there is no block (edge of the playing field).
 
-        :param block: the center Block Object for the surrounding blocks
-        :param matrix: the matrix that contains the surrounding blocks
+        :param block: the center Block Object for the surrounding block_classes
+        :param matrix: the matrix that contains the surrounding block_classes
         :return: 4 Block or None objects
         """
         blocks = [None for _ in range(4)]
@@ -202,7 +203,7 @@ class Board(BoardEventHandler):
         for block in blocks:
             if block.id in self.__buildings:
                 removed_items.append(self.remove_building(block))
-            elif isinstance(block.material, MultiFloraMaterial):
+            elif isinstance(block.material, block_classes.flora_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             else:
                 chunk = self.__chunk_from_point(block.rect.topleft)
@@ -218,7 +219,7 @@ class Board(BoardEventHandler):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
                     self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is still solid
-                elif isinstance(s_block.material, materials.FloraMaterial) and \
+                elif isinstance(s_block.material, block_classes.flora_materials.FloraMaterial) and \
                         index == s_block.material.CONTINUATION_DIRECTION:
                     removed_items.extend(self.remove_blocks(s_block))
         return removed_items
@@ -504,7 +505,7 @@ class Board(BoardEventHandler):
                     selection_matrix.append(row)
         for index in range(len(selection_matrix[1:])):
             assert len(selection_matrix[index]) == len(selection_matrix[index - 1])
-        # the user is selecting blocks
+        # the user is selecting block_classes
         if len(selection_matrix) > 0:
             self._assign_tasks(selection_matrix)
 
@@ -512,7 +513,7 @@ class Board(BoardEventHandler):
         """
         Get all spaces of a certain block type, task or both
 
-        :param blocks: a matrix of blocks
+        :param blocks: a matrix of block_classes
         :return: a list of rectangles
         """
         rectangles = []
@@ -554,9 +555,9 @@ class Board(BoardEventHandler):
 
     def __find_task_rectangle(self, blocks, task_type, dissallowed_block_types):
         """
-        Find in a matrix of blocks all blocks of a certain task type
+        Find in a matrix of block_classes all block_classes of a certain task type
 
-        :param blocks: a matrix of blocks
+        :param blocks: a matrix of block_classes
         :param task_type: the string name of a certain type of task
         :return:
         """
@@ -598,7 +599,7 @@ class Board(BoardEventHandler):
         #select the full area
         self.add_highlight_rectangle(rect, self._mode.color)
 
-        #assign tasks to all blocks elligable
+        #assign tasks to all block_classes elligable
         if self._mode.name == "Building":
             no_highlight_block = get_selected_item().name()
             no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, [no_highlight_block])
@@ -607,7 +608,7 @@ class Board(BoardEventHandler):
                 self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
                 return
             #make sure the plant is allowed to grow at the given place
-            if isinstance(get_selected_item().material, materials.MultiFloraMaterial) and not self.__can_add_flora(block, get_selected_item().material):
+            if isinstance(get_selected_item().material, block_classes.flora_materials.MultiFloraMaterial) and not self.__can_add_flora(block, get_selected_item().material):
                 self.add_rectangle(rect, INVISIBLE_COLOR, layer=1)
                 return
             #the first block of the selection is the start block of the material
@@ -629,7 +630,7 @@ class Board(BoardEventHandler):
         Add tasks of the _mode.name type, tasks are added to the task control
         when they need to be assigned to workers or directly resolved otherwise
 
-        :param blocks: a list of blocks
+        :param blocks: a list of block_classes
         """
         if self._mode.name == "Mining":
             self.task_control.add(self._mode.name, *blocks)
@@ -668,10 +669,10 @@ class Board(BoardEventHandler):
     def __generate_stone_background(self):
         matrix = []
         for row_i in range(p_to_r(BOARD_SIZE.height)):
-            filler_likelyhoods = self.__get_material_lh_at_depth(materials.filler_materials, row_i)
+            filler_likelyhoods = self.__get_material_lh_at_depth(block_classes.block_constants.filler_materials, row_i)
             row = []
             for _ in range(p_to_c(BOARD_SIZE.width)):
-                filler = choices([f.name() for f in materials.filler_materials], filler_likelyhoods, k=1)[0]
+                filler = choices([f.name() for f in block_classes.block_constants.filler_materials], filler_likelyhoods, k=1)[0]
                 row.append(filler)
             matrix.append(row)
         return matrix
@@ -692,7 +693,7 @@ class Board(BoardEventHandler):
                 break_size = (point2[0] - point1[0]) / number_of_breaks
                 x_values = [point1[0] + index * break_size for index in range(0, number_of_breaks)]
                 y_values = [a * x + b for x in x_values]
-                #make all blocks air on the direct line
+                #make all block_classes air on the direct line
                 for index in range(len(x_values)):
                     x = int(x_values[index])
                     y = int(y_values[index])
@@ -747,7 +748,7 @@ class Board(BoardEventHandler):
 
     def __add_ores(self, matrix):
         """
-        Fill a matrix with names of the materials of the respective blocks
+        Fill a matrix with names of the materials of the respective block_classes
 
         :return: a matrix containing strings corresponding to names of __material
         classes.
@@ -755,11 +756,11 @@ class Board(BoardEventHandler):
 
         # generate some ores inbetween the start and end locations
         for row_i, row in enumerate(matrix):
-            ore_likelyhoods = self.__get_material_lh_at_depth(materials.ore_materials, row_i)
+            ore_likelyhoods = self.__get_material_lh_at_depth(block_classes.block_constants.ore_materials, row_i)
             for column_i, value in enumerate(row):
                 if randint(1, self.CLUSTER_LIKELYHOOD) == 1:
                     # decide the ore
-                    ore = choices([f.name() for f in materials.ore_materials], ore_likelyhoods, k=1)[0]
+                    ore = choices([f.name() for f in block_classes.block_constants.ore_materials], ore_likelyhoods, k=1)[0]
                     # create a list of locations around the current location
                     # where an ore is going to be located
                     ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
@@ -797,7 +798,7 @@ class Board(BoardEventHandler):
         generated
         :return: a list of offset indexes around 0,0
         """
-        size = randint(*getattr(materials, ore).CLUSTER_SIZE)
+        size = randint(*getattr(block_classes.ground_materials, ore).CLUSTER_SIZE)
         ore_locations = []
         while len(ore_locations) <= size:
             location = [0, 0]
@@ -841,21 +842,21 @@ class Board(BoardEventHandler):
 
     def __add_flora(self, matrix):
         for row_i in range(len(matrix)):
-            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 0], row_i),
-                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 1], row_i),
-                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 2], row_i),
-                                 self.__get_material_lh_at_depth([m for m in materials.flora_materials if m.START_DIRECTION == 3], row_i)]
+            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 0], row_i),
+                                 self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 1], row_i),
+                                 self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 2], row_i),
+                                 self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 3], row_i)]
             for col_i, string in enumerate(matrix[row_i]):
                 if string != "Air":
                     continue
                 s_coords = self.__get_surrounding_block_coords(col_i, row_i)
-                elligable_indexes = [coord for coord in s_coords if matrix[coord[1]][coord[0]] in [m.name() for m in materials.filler_materials]]
+                elligable_indexes = [coord for coord in s_coords if matrix[coord[1]][coord[0]] in [m.name() for m in block_classes.block_constants.filler_materials]]
                 if len(elligable_indexes) == 0 or uniform(0, 1) >= self.FLORA_CHANCE:
                     continue
                 chosen_index = s_coords.index(choice(elligable_indexes))
                 if len(flora_likelyhoods[chosen_index]) == 0:
                     continue
-                flora = choices([m for m in materials.flora_materials if m.START_DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
+                flora = choices([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
                 matrix[row_i][col_i] = flora[0].name()
 
     def __generate_background_string_matrix(self):

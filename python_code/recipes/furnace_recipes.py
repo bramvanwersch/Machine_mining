@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
+import block_classes.ground_materials
 import recipes.base_recipes as br
-from board import materials
+from block_classes import materials
 from utility.utilities import Size
 
 
@@ -18,13 +19,13 @@ class IronBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = materials.IronIngot
+        mat = block_classes.ground_materials.IronIngot
         br.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = br.RecipeGrid(Size(2, 2))
 
-        row1 = [materials.Iron, materials.Iron]
+        row1 = [block_classes.ground_materials.Iron, block_classes.ground_materials.Iron]
         row2 = [materials.Air, materials.Air]
 
         grid.add_all_rows(row1, row2)
@@ -35,13 +36,13 @@ class ZincBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = materials.ZincIngot
+        mat = block_classes.ground_materials.ZincIngot
         br.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = br.RecipeGrid(Size(2, 2))
 
-        row1 = [materials.Zinc, materials.Zinc]
+        row1 = [block_classes.ground_materials.Zinc, block_classes.ground_materials.Zinc]
         row2 = [materials.Air, materials.Air]
 
         grid.add_all_rows(row1, row2)
@@ -52,13 +53,13 @@ class GoldBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = materials.GoldIngot
+        mat = block_classes.ground_materials.GoldIngot
         br.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = br.RecipeGrid(Size(2, 2))
 
-        row1 = [materials.Gold, materials.Gold]
+        row1 = [block_classes.ground_materials.Gold, block_classes.ground_materials.Gold]
         row2 = [materials.Air, materials.Air]
 
         grid.add_all_rows(row1, row2)
@@ -69,13 +70,13 @@ class CopperBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = materials.CopperIngot
+        mat = block_classes.ground_materials.CopperIngot
         br.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = br.RecipeGrid(Size(2, 2))
 
-        row1 = [materials.Copper, materials.Copper]
+        row1 = [block_classes.ground_materials.Copper, block_classes.ground_materials.Copper]
         row2 = [materials.Air, materials.Air]
 
         grid.add_all_rows(row1, row2)
@@ -86,13 +87,13 @@ class TitaniumBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = materials.TitaniumIngot
+        mat = block_classes.ground_materials.TitaniumIngot
         br.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
         grid = br.RecipeGrid(Size(2, 2))
 
-        row1 = [materials.Titanium, materials.Titanium]
+        row1 = [block_classes.ground_materials.Titanium, block_classes.ground_materials.Titanium]
         row2 = [materials.Air, materials.Air]
 
         grid.add_all_rows(row1, row2)

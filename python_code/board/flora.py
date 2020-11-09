@@ -1,10 +1,6 @@
-import pygame
-from random import choices, uniform
-
 from utility.constants import BLOCK_SIZE
-from utility.utilities import normalize
-from board import materials
-from board.blocks import Block
+from block_classes import flora_materials
+from block_classes.blocks import Block
 
 class Plant:
 
@@ -21,7 +17,7 @@ class Plant:
         dir = self.material.CONTINUATION_DIRECTION
         if surrounding_blocks[dir] != "Air":
             return None
-        material_obj = getattr(materials, self.grow_block.name())
+        material_obj = getattr(flora_materials, self.grow_block.name())
         extension_block = Block(self.grow_block.coord, material_obj(image_number=dir), id=self.id)
 
         #move the tip of the plant forward

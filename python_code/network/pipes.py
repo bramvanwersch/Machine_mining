@@ -1,10 +1,9 @@
 from math import ceil
 
-from utility.image_handling import image_sheets
-from board.blocks import ContainerBlock, NetworkBlock
+from block_classes.blocks import ContainerBlock, NetworkBlock
 from utility.constants import BLOCK_SIZE
 from utility.utilities import manhattan_distance
-from board import materials
+from block_classes import block_constants
 from network.network_tasks import EdgeTaskQueue
 
 
@@ -48,7 +47,7 @@ class Network:
         for a_node in self.nodes:
             if not hasattr(a_node, "inventory"):
                 continue
-            for name in [f.name() for f in materials.fuel_materials]:
+            for name in [f.name() for f in block_constants.fuel_materials]:
                 item_pointer = a_node.inventory.item_pointer(name)
                 if item_pointer == None:
                     continue
@@ -137,8 +136,8 @@ class Network:
         need to be reevaluated if update is True
 
         :param block: a Block instance
-        :param surrounding_blocks: a list of len 4 of surrounding blocks of the current block
-        :param update: A boolean that signifies if a list of surrounding blocks need to be retuened to
+        :param surrounding_blocks: a list of len 4 of surrounding block_classes of the current block
+        :param update: A boolean that signifies if a list of surrounding block_classes need to be retuened to
         update
         :param remove: if the block is removed or not.
         :return: a list Blocks that need an update to theire surface
@@ -247,7 +246,7 @@ class NetworkEdge:
     #TODO make this cinfigure based on worst pipe. this is temporary
     MAX_REQUESTS = 10
     MAX_REQUEST_SIZE = 4
-    #the innitial blocks are assumed to be the same group and connected.
+    #the innitial block_classes are assumed to be the same group and connected.
     def __init__(self, group):
         self.segments = set()
         self.network_group = group

@@ -1,11 +1,9 @@
-import pygame
-from random import choices, choice, randint, uniform
-
+import block_classes.flora_materials
 from utility.constants import *
-from utility.utilities import normalize, Gaussian, GameExceprion
-from board.blocks import *
-from board import materials
-from entities import ZoomableEntity, SelectionRectangle
+from utility.utilities import GameExceprion
+from block_classes.blocks import *
+from block_classes import materials
+from entities import ZoomableEntity
 from interfaces.interface_utility import p_to_c, p_to_r
 from board.pathfinding import PathfindingChunk
 from board.flora import Plant
@@ -50,7 +48,7 @@ class Chunk:
             self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
 
             #check if a new plant, if so make sure the start is unique
-            if isinstance(block.material, materials.MultiFloraMaterial) and block.id not in self.plants:
+            if isinstance(block.material, block_classes.flora_materials.MultiFloraMaterial) and block.id not in self.plants:
                 plant = Plant(block)
                 self.plants[plant.id] = plant
                 block.material.image_key = -1
@@ -121,7 +119,7 @@ class Chunk:
 ##GENERATE CHUNK FUNCTIONS
     def __create_blocks_from_string(self, s_matrix):
         """
-        Change strings into blocks
+        Change strings into block_classes
 
         :param s_matrix: a string matrix that contains strings corresponding to
         material classes
@@ -132,7 +130,16 @@ class Chunk:
                 #create position
                 pos = (self.rect.left + column_i * BLOCK_SIZE.width,
                        self.rect.top + row_i * BLOCK_SIZE.height,)
-                material = getattr(materials, s_matrix[row_i][column_i])
+                if s_matrix[row_i][column_i] in dir(block_classes.ground_materials):
+                    material = getattr(block_classes.ground_materials, s_matrix[row_i][column_i])
+                elif s_matrix[row_i][column_i] in dir(block_classes.flora_materials):
+                    material = getattr(block_classes.flora_materials, s_matrix[row_i][column_i])
+                elif s_matrix[row_i][column_i] in dir(block_classes.building_materials):
+                    material = getattr(block_classes.building_materials, s_matrix[row_i][column_i])
+                # elif s_matrix[row_i][column_i] in dir(block_classes.machine_materials):
+                #     material = getattr(block_classes.machine_materials, s_matrix[row_i][column_i])
+                else:
+                    material = getattr(materials, s_matrix[row_i][column_i])
                 if issubclass(material, materials.ColorMaterial):
                     material_instance = material(depth=row_i)
                 else:
@@ -141,7 +148,7 @@ class Chunk:
                     block = AirBlock(pos, material_instance)
                 else:
                     block = Block(pos, material_instance)
-                    if isinstance(material_instance, materials.MultiFloraMaterial):
+                    if isinstance(material_instance, block_classes.flora_materials.MultiFloraMaterial):
                         plant = Plant(block)
                         self.plants[plant.id] = plant
                 s_matrix[row_i][column_i] = block
@@ -167,7 +174,7 @@ class StartChunk(Chunk):
 
 class BoardImage(ZoomableEntity):
     """
-    Convert a matrix of blocks into a surface that persists as an entity. This
+    Convert a matrix of block_classes into a surface that persists as an entity. This
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """

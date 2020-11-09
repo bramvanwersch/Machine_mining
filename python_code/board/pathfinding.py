@@ -476,10 +476,10 @@ class PathfindingChunk:
 
     def __find_air_rectangle(self, blocks, covered_coordinates):
         """
-        Find starting from an air block all the air blocks in a rectangle
+        Find starting from an air block all the air block_classes in a rectangle
 
-        :param blocks: a selection of blocks in a matrix
-        :return: the matrix coordinate of the local blocks matrix in form
+        :param blocks: a selection of block_classes in a matrix
+        :return: the matrix coordinate of the local block_classes matrix in form
         (column, row) that is the bottom right of the air rectangle
         """
         # first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block

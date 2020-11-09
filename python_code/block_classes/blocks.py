@@ -6,7 +6,7 @@ from utility.constants import BLOCK_SIZE, MULTI_TASKS
 
 class BaseBlock(ABC):
     """
-    Base class for the blocks in image matrices
+    Base class for the block_classes in image matrices
     """
     #all tasks types are allowed
     SIZE = BLOCK_SIZE

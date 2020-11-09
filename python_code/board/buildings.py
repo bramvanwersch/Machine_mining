@@ -1,6 +1,7 @@
-from board.materials import *
+from block_classes.building_materials import BuildingMaterial, TerminalMaterial, FurnaceMaterial, FactoryMaterial
+from block_classes.materials import *
 from utility.image_handling import image_sheets
-from board.blocks import *
+from block_classes.blocks import *
 from inventories import Inventory, Filter
 from utility.utilities import Size
 from interfaces.small_interfaces import TerminalWindow
@@ -41,7 +42,7 @@ class Building(BaseBlock, ABC):
 
     def _action_function(self, *args):
         """
-        Can be overwritten to trigger an action on all blocks of the building
+        Can be overwritten to trigger an action on all block_classes of the building
         when requested.
 
         :param args: optional arguments.
@@ -85,12 +86,12 @@ class Building(BaseBlock, ABC):
 
     def _get_blocks(self, block_class, material_class):
         """
-        Create blocks of a given class and type for each block that the image
+        Create block_classes of a given class and type for each block that the image
         of the block occupies
 
         :param depth: an integer signifying how deep the material is
         :param block_class: an instance of a class inheriting from Block
-        :return: a matrix of blocks in the shape of the image
+        :return: a matrix of block_classes in the shape of the image
         """
         blocks = []
         for row_i, row in enumerate(self._images()):
@@ -158,7 +159,7 @@ class Furnace(InterafaceBuilding, NetworkNode):
         self.inventory = Inventory(200, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
         NetworkNode.__init__(self)
-        self._interface = FurnaceWindow(self, recipes.base_recipes.recipe_books["furnace"], self.sprite_groups)
+        self._interface = FurnaceWindow(self, recipes.recipe_constants.recipe_books["furnace"], self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
@@ -177,7 +178,7 @@ class Factory(InterafaceBuilding, NetworkNode):
         self.inventory = Inventory(300, in_filter=Filter(whitelist=[None]), out_filter=Filter(whitelist=[None]))
         InterafaceBuilding.__init__(self, pos, *groups, **kwargs)
         NetworkNode.__init__(self)
-        self._interface = FactoryWindow(self, recipes.base_recipes.recipe_books["factory"], self.sprite_groups)
+        self._interface = FactoryWindow(self, recipes.recipe_constants.recipe_books["factory"], self.sprite_groups)
 
     def _get_blocks(self, block_class, material_class):
         blocks = super()._get_blocks(block_class, material_class)
