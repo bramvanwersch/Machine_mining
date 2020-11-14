@@ -22,7 +22,6 @@ class Entity(pygame.sprite.Sprite, ABC):
         self.zoomable = False
         # should the entity move with the camera or not
         self.static = True
-        self.changed = True
 
     def show(self, value:bool):
         self._visible = value
@@ -89,7 +88,6 @@ class ZoomableEntity(Entity):
         :param increase: a small integer that tells how much bigger the zoom
         should be
         """
-        self.changed = True
         self._zoom = zoom
         if self._zoom == 1:
             self.image = self.orig_image.copy()
@@ -157,7 +155,6 @@ class SelectionRectangle(ZoomableEntity):
         Remake the rectangle that is being highlighted every update
         """
         super().update(*args)
-        self.changed = True
         self.__remake_rectangle()
 
     def __remake_rectangle(self):
@@ -201,7 +198,6 @@ class MovingEntity(ZoomableEntity):
         """
         Method for moving something based on an x and y speed
         """
-        self.changed = True
         x, y = self._collision_adjusted_values()
         self.orig_rect.centerx = x
 
@@ -233,8 +229,12 @@ class CameraCentre(MovingEntity, EventHandler):
         self.moved = True
 
     def move(self):
+        topleft = self.orig_rect.topleft
         super().move()
-        self.moved = True
+        if self.orig_rect.topleft != topleft:
+            self.moved = True
+        else:
+            self.moved = False
 
     def handle_events(self, events):
         """
