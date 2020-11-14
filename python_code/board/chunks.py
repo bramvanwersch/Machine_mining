@@ -22,7 +22,7 @@ class Chunk:
         offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
         foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
         background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
-        light_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 255))
+        light_image = LightImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 255))
         selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER, color=INVISIBLE_COLOR)
 
         self.layers = [light_image, selection_image, foreground_image, background_image]
@@ -235,3 +235,33 @@ class TransparantBoardImage(BoardImage):
         image = image.convert_alpha()
         image.fill(color)
         return image
+
+
+class LightImage(TransparantBoardImage):
+    def __init__(self, pos, main_sprite_group, **kwargs):
+        super().__init__(pos, main_sprite_group, **kwargs)
+        # first values can be determined when the first rectangle is added
+        self.__left = BOARD_SIZE.width
+        self.__top = BOARD_SIZE.height
+        self.__right = 0
+        self.__bottom = 0
+        self.__updated = False
+
+    def get_update_rect(self):
+        if self.__left < self.__right:
+            return pygame.Rect((self.__left, self.__top, self.__right - self.__left, self.__bottom - self.__top))
+        return None
+
+    def add_rect(self, rect, color, border):
+        super().add_rect(rect, color, border)
+        rect.top += self.orig_rect.top
+        rect.left += self.orig_rect.left
+
+        if rect.left < self.__left:
+            self.__left = rect.left
+        if rect.top < self.__top:
+            self.__top = rect.top
+        if rect.right > self.__right:
+            self.__right = rect.right
+        if rect.bottom > self.__bottom:
+            self.__bottom = rect.bottom

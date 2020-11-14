@@ -11,6 +11,7 @@ from interfaces.building_interface import BuildingWindow
 from interfaces.managers import create_window_manager
 from block_classes.block_constants import configure_material_collections
 import interfaces.managers as window_managers
+from interfaces.interface_utility import screen_to_board_coordinate
 
 
 class Main:
@@ -59,10 +60,29 @@ class Main:
             self.main_sprite_group.draw(self.screen)
 
             self.draw_debug_info()
-            pygame.display.update()
+            rects = self.get_update_rectangles()
+            pygame.display.update(rects)
             GAME_TIME.tick(200)
 
         pygame.quit()
+
+    def get_update_rectangles(self):
+        u_rects = [(5,5,75,35)]
+        relative_board_start = screen_to_board_coordinate((0,0), self.main_sprite_group.target, self.user._zoom)
+        for row in self.board.chunk_matrix:
+            for chunk in row:
+                rect = chunk.layers[0].get_update_rect()
+                if rect == None:
+                    continue
+                zoom = self.user._zoom
+                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
+                                             round((rect[1] - relative_board_start[1]) * zoom),
+                                             round(rect.width * zoom),round(rect.height * zoom)))
+
+                clipped_rect = adjusted_rect.clip(self.rect)
+                if clipped_rect.width > 0 and clipped_rect.height > 0:
+                    u_rects.append(clipped_rect)
+        return u_rects
 
     def draw_debug_info(self):
         surf = pygame.Surface((70, 30)).convert()
