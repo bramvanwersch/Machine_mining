@@ -173,9 +173,26 @@ class User:
         self.board.update_board()
 
     def load_unload_sprites(self):
+        c = self.main_sprite_group.target.rect.center
+        if c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width > 0:
+            x = 1 + (c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.width / 2)
+        elif SCREEN_SIZE.width / 2 - c[0] > 0:
+            x = 1 + (SCREEN_SIZE.width / 2 - c[0]) / (SCREEN_SIZE.width / 2)
+        else:
+            x = 1
+        if c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height > 0:
+            y = 1 + (c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height) / (SCREEN_SIZE.height / 2)
+        elif SCREEN_SIZE.height / 2 - c[1] > 0:
+            y = 1 + (SCREEN_SIZE.height / 2 - c[1]) / (SCREEN_SIZE.height / 2)
+        else:
+            y = 1
+        visible_rect = pygame.Rect(0, 0, int(SCREEN_SIZE.width * x ), int(SCREEN_SIZE.height * y ))
+        visible_rect.center = c
+
         self._visible_entities = 0
         for sprite in self.main_sprite_group.sprites():
-            if not sprite.static or sprite.orig_rect.collidelist(self.updated_rectangles) != -1:
+            if not sprite.static or (sprite.rect.colliderect(visible_rect) and
+                                     sprite.orig_rect.collidelist(self.updated_rectangles ) != -1):
                 sprite.show(True)
                 if sprite.is_showing:
                     self._visible_entities += 1
