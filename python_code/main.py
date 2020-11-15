@@ -43,6 +43,8 @@ class Main:
 
         #load a window manager to manage window events
         create_window_manager(self.camera_center)
+        from interfaces.managers import window_manager
+        self.__windows = window_manager.windows
 
         self.user = User(self.camera_center, self.board, self.main_sprite_group)
 
@@ -55,6 +57,8 @@ class Main:
         while self.user.going:
             if AIR_RECTANGLES:
                 self.remove_air_rectangles()
+            self.screen.fill((0, 0, 0))
+
             self.set_update_rectangles()
             self.user.update()
             if AIR_RECTANGLES:
@@ -81,19 +85,34 @@ class Main:
             return
         board_u_rects = [(5,5,75,35)]
         user_u_rects = []
+        # add rectangles of visible chunks that
         for row in self.board.chunk_matrix:
             for chunk in row:
                 rect = chunk.layers[0].get_update_rect()
                 if rect == None:
                     continue
+                user_u_rects.append(rect)
+
                 zoom = self.user._zoom
                 adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
                                              round((rect[1] - relative_board_start[1]) * zoom),
                                              round(rect.width * zoom), round(rect.height * zoom)))
-                user_u_rects.append(rect)
                 clipped_rect = adjusted_rect.clip(self.rect)
                 if clipped_rect.width > 0 and clipped_rect.height > 0:
                     board_u_rects.append(clipped_rect)
+        for window in self.__windows.values():
+            rect = window.orig_rect
+            if not window.static:
+                board_u_rects.append(window.rect)
+            else:
+                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
+                                                 round((rect[1] - relative_board_start[1]) * zoom),
+                                                 round(rect.width), round(rect.height)))
+                clipped_rect = adjusted_rect.clip(self.rect)
+                if clipped_rect.width > 0 and clipped_rect.height > 0:
+                    board_u_rects.append(clipped_rect)
+            user_u_rects.append(window.orig_rect)
+
         self.updated_rectangles = board_u_rects
         self.user.updated_rectangles = user_u_rects
 
