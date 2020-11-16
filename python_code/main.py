@@ -49,6 +49,7 @@ class Main:
         self.user = User(self.camera_center, self.board, self.main_sprite_group)
 
         self.updated_rectangles = []
+        self.__debug_rectangle = (0,0,0,0)
 
         self.run()
 
@@ -77,7 +78,7 @@ class Main:
 
         relative_board_start = screen_to_board_coordinate((0,0), self.main_sprite_group.target, self.user._zoom)
 
-        board_u_rects = [(5,5,75,35)]
+        board_u_rects = [self.__debug_rectangle]
         user_u_rects = []
 
         zoom = self.user._zoom
@@ -114,17 +115,27 @@ class Main:
         self.user.updated_rectangles = user_u_rects
 
     def draw_debug_info(self):
-        surf = pygame.Surface((70, 30)).convert()
-        surf.fill((255,255,255))
+        x_coord = 5
+        line_distance = 12
+        #is big enough
+        width = 70
+
+        y_coord = 5
+        debug_topleft = (x_coord, y_coord)
         if FPS:
-            fps = FONTS[18].render("fps: {}".format(int(GAME_TIME.get_fps())), True,
-                                   pygame.Color('black'))
-            surf.blit(fps, (5, 5))
+            fps = FONTS[18].render("fps: {}".format(int(GAME_TIME.get_fps())), True, pygame.Color('white'))
+            self.screen.blit(fps, (x_coord, y_coord))
+            y_coord += line_distance
         if ENTITY_NMBR:
             en = FONTS[18].render("e: {}/{}".format(self.user._visible_entities, len(self.main_sprite_group.sprites())),
-                                   True, pygame.Color('black'))
-            surf.blit(en, (5, 15))
-        self.screen.blit(surf, (10, 10))
+                                   True, pygame.Color('white'))
+            self.screen.blit(en, (x_coord, y_coord))
+            y_coord += line_distance
+        if ZOOM:
+            z = FONTS[18].render("zoom: {}x".format(self.user._zoom), True, pygame.Color('white'))
+            self.screen.blit(z, (x_coord, y_coord))
+            y_coord += line_distance
+        self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])
 
 
     def draw_air_rectangles(self):
@@ -155,7 +166,7 @@ class User:
         self._visible_entities = 0
 
         #zoom variables
-        self._zoom = 1
+        self._zoom = 1.0
 
         #tasks
         self.tasks = TaskControl(self.board)

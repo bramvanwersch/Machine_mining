@@ -100,3 +100,4 @@ FPS = True
 ENTITY_NMBR = True
 AIR_RECTANGLES = False
 WARNINGS = True
+ZOOM = True
