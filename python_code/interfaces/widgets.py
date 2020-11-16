@@ -508,7 +508,6 @@ class Frame(ZoomableEntity, Pane):
         unpressed = self.get_all_unpressed()
         keys = [*zip(pressed, ["pressed"]* len(pressed)),
                 *zip(unpressed, ["unpressed"]* len(unpressed))]
-
         #handle all events from the most front widget to the most back one.
         while selected != None and len(selected) > 0:
             widget = selected.pop()
@@ -530,10 +529,9 @@ class ScrollPane(Pane, FreeConstraints):
     BORDER_SPACE = 3
     def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
-        self.next_widget_topleft = [self.BORDER_SPACE,self.BORDER_SPACE]
+        self.next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
         #the total rectangle
         self.total_rect = self.rect.copy()
-        #make the total rect slightly larger
 
         self.__total_offset_y = 0
 

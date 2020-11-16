@@ -151,8 +151,7 @@ class Main:
 
 class User:
     def __init__(self, camera_center, board, main_sprite_group):
-        #import needs to happen here since the main first has to create the object
-        self.window_manager= window_managers.window_manager
+        self.window_manager = window_managers.window_manager
 
         self.camera_center = camera_center
         self.board = board
@@ -240,19 +239,18 @@ class User:
             elif (event.type == KEYDOWN or event.type == KEYUP) and \
                     event.key in CAMERA_KEYS:
                 cam_events.append(event)
-            elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
-                if event.button == 4:
-                    self.__zoom_entities(0.1)
-                elif event.button == 5:
-                    self.__zoom_entities(-0.1)
-                else:
-                    leftover_events.append(event)
             else:
                 leftover_events.append(event)
         if cam_events:
             self.camera_center.handle_events(cam_events)
         if leftover_events:
             leftover_events = self.window_manager.handle_events(leftover_events)
+            for event in leftover_events:
+                if event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
+                    if event.button == 4:
+                        self.__zoom_entities(0.1)
+                    elif event.button == 5:
+                        self.__zoom_entities(-0.1)
             self.board.handle_events(leftover_events)
 
 #handeling of events

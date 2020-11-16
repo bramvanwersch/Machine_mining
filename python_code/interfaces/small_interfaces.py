@@ -14,7 +14,7 @@ class TerminalWindow(Window):
         location = fr.bottomleft
         Window.__init__(self, location, self.SIZE,
                         *groups, layer=INTERFACE_LAYER, title="TERMINAL",
-                        allowed_events=[1, K_ESCAPE], static=True)
+                        allowed_events=[1, 4, 5, K_ESCAPE], static=True)
         self.__add_widgets()
         self.__prev_no_items = self.__terminal_inv.number_of_items
     
