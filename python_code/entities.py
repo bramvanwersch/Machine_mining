@@ -226,15 +226,6 @@ class CameraCentre(MovingEntity, EventHandler):
         MovingEntity.__init__(self, pos, size, *groups, max_speed = 20, **kwargs)
         EventHandler.__init__(self, [RIGHT, LEFT, UP, DOWN])
         self.orig_rect = pygame.Rect(*pos, *size)
-        self.moved = True
-
-    def move(self):
-        topleft = self.orig_rect.topleft
-        super().move()
-        if self.orig_rect.topleft != topleft:
-            self.moved = True
-        else:
-            self.moved = False
 
     def handle_events(self, events):
         """

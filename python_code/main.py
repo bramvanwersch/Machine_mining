@@ -18,7 +18,7 @@ class Main:
     START_POSITION = (BOARD_SIZE.centerx, 50)
     def __init__(self):
         pygame.init()
-        os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 40)
+        os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
 
         self.screen = pygame.display.set_mode(SCREEN_SIZE, DOUBLEBUF)  # | FULLSCREEN)
         self.screen.set_alpha(None)
@@ -57,13 +57,13 @@ class Main:
         while self.user.going:
             if AIR_RECTANGLES:
                 self.remove_air_rectangles()
-            self.screen.fill((0, 0, 0))
 
             self.set_update_rectangles()
             self.user.update()
             if AIR_RECTANGLES:
                 self.draw_air_rectangles()
             self.main_sprite_group.update()
+            self.screen.fill((0,0,0))
             self.main_sprite_group.draw(self.screen)
 
             self.draw_debug_info()
@@ -77,14 +77,10 @@ class Main:
 
         relative_board_start = screen_to_board_coordinate((0,0), self.main_sprite_group.target, self.user._zoom)
 
-        #if moving or zooming update whole board
-        if self.user.zoomed or self.main_sprite_group.target.moved:
-            self.updated_rectangles = [self.rect]
-            self.user.updated_rectangles = [pygame.Rect((self.rect.left + relative_board_start[0],
-                                                        self.rect.top + relative_board_start[1], *self.rect.size))]
-            return
         board_u_rects = [(5,5,75,35)]
         user_u_rects = []
+
+        zoom = self.user._zoom
         # add rectangles of visible chunks that
         for row in self.board.chunk_matrix:
             for chunk in row:
@@ -93,7 +89,6 @@ class Main:
                     continue
                 user_u_rects.append(rect)
 
-                zoom = self.user._zoom
                 adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
                                              round((rect[1] - relative_board_start[1]) * zoom),
                                              round(rect.width * zoom), round(rect.height * zoom)))
@@ -103,11 +98,13 @@ class Main:
         for window in self.__windows.values():
             rect = window.orig_rect
             if not window.static:
-                board_u_rects.append(window.rect)
+                board_u_rects.append(window.orig_rect)
             else:
-                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
-                                                 round((rect[1] - relative_board_start[1]) * zoom),
-                                                 round(rect.width), round(rect.height)))
+                #TODO fix this kind of cheaty fix, right now the rectangle is made bigger to cover the full area, but
+                # this is a halfed as solution
+                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom) - 5,
+                                             round((rect[1] - relative_board_start[1]) * zoom) - 5,
+                                             rect.width + 10, rect.height + 10))
                 clipped_rect = adjusted_rect.clip(self.rect)
                 if clipped_rect.width > 0 and clipped_rect.height > 0:
                     board_u_rects.append(clipped_rect)
@@ -159,7 +156,6 @@ class User:
 
         #zoom variables
         self._zoom = 1
-        self.zoomed = False
 
         #tasks
         self.tasks = TaskControl(self.board)
@@ -174,7 +170,7 @@ class User:
     def __setup_start(self):
         start_chunk = self.board.get_start_chunk()
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
-            + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + + start_chunk.rect.top)
+            + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
             self.workers.append(Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group))
         #add one of the imventories of the terminal
@@ -222,7 +218,6 @@ class User:
         events = pygame.event.get()
         cam_events = []
         leftover_events = []
-        zoomed = False
         for event in events:
             if event.type == QUIT:
                 self.going = False
@@ -236,24 +231,20 @@ class User:
                 cam_events.append(event)
             elif event.type == MOUSEBUTTONDOWN or event.type == MOUSEBUTTONUP:
                 if event.button == 4:
-                    self.__zoom_entities(0.2)
-                    zoomed = True
+                    self.__zoom_entities(0.1)
                 elif event.button == 5:
-                    self.__zoom_entities(-0.2)
-                    zoomed = True
+                    self.__zoom_entities(-0.1)
                 else:
                     leftover_events.append(event)
             else:
                 leftover_events.append(event)
         if cam_events:
             self.camera_center.handle_events(cam_events)
-        self.zoomed = zoomed
         if leftover_events:
             leftover_events = self.window_manager.handle_events(leftover_events)
             self.board.handle_events(leftover_events)
 
 #handeling of events
-
     def __handle_interface_selection_events(self, event):
         if event.key == BUILDING:
             self.window_manager.add(self.building_interface)
@@ -265,7 +256,7 @@ class User:
         :param increase: a small number signifying the increase
         """
         prev_zoom_level = self._zoom
-        self._zoom = min(max(0.4, self._zoom + increase), 2)
+        self._zoom = round(min(max(0.4, self._zoom + increase), 2), 1)
         #prevent unnecesairy recalculations
         if prev_zoom_level != self._zoom:
             for sprite in self.main_sprite_group.sprites():

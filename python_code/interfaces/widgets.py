@@ -478,8 +478,8 @@ class Frame(ZoomableEntity, Pane):
             return self.orig_rect
         width, height = self.orig_rect.size
         orig_pos = list(self.orig_rect.center)
-        orig_pos[0] = orig_pos[0] * self._zoom + 0.5 * (width - width * self._zoom)
-        orig_pos[1] = orig_pos[1] * self._zoom + 0.5 * (height - height * self._zoom)
+        orig_pos[0] = round(orig_pos[0] * self._zoom + 0.5 * (width - width * self._zoom))
+        orig_pos[1] = round(orig_pos[1] * self._zoom + 0.5 * (height - height * self._zoom))
         rect = self.image.get_rect(center = orig_pos)
         return rect
 

@@ -30,7 +30,7 @@ def screen_to_board_coordinate(coord, target, zoom):
         y = coord[1] + (c[1] - SCREEN_SIZE.height / 2)
     else:
         y = coord[1]
-    return [round(x / zoom), round(y / zoom)]
+    return [x / zoom, y / zoom]
 
 def p_to_r(value):
     """
