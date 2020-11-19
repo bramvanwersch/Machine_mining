@@ -574,17 +574,10 @@ class ScrollPane(Pane, FreeConstraints):
             return
 
         #to make sure not to scroll when it is not needed
-        self.__total_offset_y += offset_y
-
         width, height = self.orig_image.get_size()
-        copy_surf = self.orig_image.copy()
-        self.orig_image.blit(copy_surf, (0, offset_y))
-        if offset_y < 0:
-            self.orig_image.blit(copy_surf, (0, height + offset_y),
-                            (0, 0, width, -offset_y))
-        else:
-            self.orig_image.blit(copy_surf, (0, 0),
-                            (0, height - offset_y, width, offset_y))
+        self.__total_offset_y += offset_y
+        self.orig_image.fill(self.color)
+        self.orig_image.scroll(0, offset_y)
 
         #make sure the location of the widgets contained is moved accordingly
         for widget in self.widgets:
@@ -598,8 +591,6 @@ class ScrollPane(Pane, FreeConstraints):
         :param amnt: the amount of pixels to extend the image by in the y
         direction
 
-        Note: There is a bug with calling this at the start. I do not know why,
-        it makes it so the image is being displayed over the full lenght
         """
         self.total_rect.height += amnt
         orig_copy = self.orig_image.copy()
