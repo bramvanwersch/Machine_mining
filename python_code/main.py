@@ -94,8 +94,8 @@ class Scene(ABC):
         pass
 
     def scene_updates(self):
-        for sprite in self.sprites.sprites():
-            self.sprites.change_layer(sprite, sprite._layer)
+        for sprite in self.sprite_group.sprites():
+            self.sprite_group.change_layer(sprite, sprite._layer)
 
     def draw(self):
         self.sprite_group.draw(self.screen)
@@ -149,6 +149,7 @@ class Game(Scene):
         self.camera_center.rect.center = start_chunk.rect.center
 
     def scene_updates(self):
+        super().scene_updates()
         self.set_update_rectangles()
         self.load_unload_sprites()
 

@@ -44,7 +44,7 @@ class WindowManager:
         else:
             self.window_order.pop(rem_index)
             for w in self.window_order:
-                w._layer -= 1
+                w._layer = max(w._layer - 1, INTERFACE_LAYER)
         window.show_window(False)
 
     def __set_top_window(self, window):
