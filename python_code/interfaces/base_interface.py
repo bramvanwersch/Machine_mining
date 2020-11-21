@@ -23,7 +23,7 @@ class Window(Frame, EventHandler):
     def __init__(self, pos, size, *groups, color=COLOR, title=None, static=False, **kwargs):
         EventHandler.__init__(self, [])
         Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
-        self.window_manager = window_managers.window_manager
+        self.window_manager = window_managers.game_window_manager
         self.static = static
 
         #values for moving static windows
@@ -95,7 +95,7 @@ class Window(Frame, EventHandler):
         Press the escape key to close the window
         """
         if self.window_manager == None:
-            self.window_manager = window_managers.window_manager
+            self.window_manager = window_managers.game_window_manager
         self.window_manager.remove(self)
 
     def set_focus(self, value:bool):

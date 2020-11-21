@@ -6,6 +6,7 @@ BUGS:
 - Fix blocks getting left behind while mining because of delaye d pathfinding calculations  --> probably fixed no delayed calculations anymore
 - There is a rare case where the game crashes when created that has someting to do with pathfinding rectangles not exisitng but still being present in the dictionary.
 - The scroll pane does not scroll properly down anymore
+- There is a bug with lighting not updating when building or growing etc.
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - A nice starting area

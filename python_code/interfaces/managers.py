@@ -3,11 +3,11 @@ import pygame
 from utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 from interfaces.interface_utility import screen_to_board_coordinate
 
-window_manager = None
+game_window_manager = None
 
-def create_window_manager(camera_target):
-    global window_manager
-    window_manager = WindowManager(camera_target)
+def create_window_managers(camera_target):
+    global game_window_manager
+    game_window_manager = WindowManager(camera_target)
 
 
 class WindowManager:

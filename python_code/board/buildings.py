@@ -107,8 +107,8 @@ class Building(BaseBlock, ABC):
 class InterafaceBuilding(Building, ABC):
     def __init__(self, pos, *groups, **kwargs):
         Building.__init__(self, pos, **kwargs)
-        from interfaces.managers import window_manager
-        self.window_manager = window_manager
+        from interfaces.managers import game_window_manager
+        self.window_manager = game_window_manager
         self.sprite_groups = groups
 
         #make sure that this is reaised when not defined in a subclass when calling the interface
@@ -121,8 +121,8 @@ class InterafaceBuilding(Building, ABC):
     def _action_function(self, *args):
         #make sure to update the window manager when needed
         if self.window_manager == None:
-            from interfaces.managers import window_manager
-            self.window_manager = window_manager
+            from interfaces.managers import game_window_manager
+            self.window_manager = game_window_manager
         self.window_manager.add(self.interface)
 
 

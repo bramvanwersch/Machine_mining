@@ -1,4 +1,7 @@
 
+from abc import ABC, abstractmethod
+
+
 #own classes
 from entities import Worker, CameraCentre
 from board.camera import CameraAwareLayeredUpdates
@@ -8,26 +11,26 @@ from tasks import TaskControl
 from utility.image_handling import load_images
 from recipes.recipe_constants import create_recipe_book
 from interfaces.building_interface import BuildingWindow
-from interfaces.managers import create_window_manager
+from interfaces.managers import create_window_managers
 from block_classes.block_constants import configure_material_collections
 import interfaces.managers as window_managers
 from interfaces.interface_utility import screen_to_board_coordinate
 
 
 class Main:
-    START_POSITION = (BOARD_SIZE.centerx, 50)
+
     def __init__(self):
         pygame.init()
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (0, 30)
 
         self.screen = pygame.display.set_mode(SCREEN_SIZE, DOUBLEBUF)  # | FULLSCREEN)
         self.screen.set_alpha(None)
-        self.screen.fill([0,0,0])
 
         pygame.display.set_caption("MINING!!")
         pygame.mouse.set_visible(True)
 
-        #load all the images before running the game
+        # setup general information when loading a game
+        # load all the images before running the game
         load_images()
 
         #load fuel materials
@@ -36,131 +39,90 @@ class Main:
         #load all recipes
         create_recipe_book()
 
-        self.rect = self.screen.get_rect()
-        self.camera_center = CameraCentre(self.START_POSITION, (5,5))
-        self.main_sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
-        self.board = Board(self.main_sprite_group)
-
-        #load a window manager to manage window events
-        create_window_manager(self.camera_center)
-        from interfaces.managers import window_manager
-        self.__windows = window_manager.windows
-
-        self.user = User(self.camera_center, self.board, self.main_sprite_group)
-
-        self.updated_rectangles = []
-        self.__debug_rectangle = (0,0,0,0)
+        # pre loaded scenes
+        # TODO: remove the game as default, add it when selected from the menu
+        self.scenes = {"game": Game(self.screen)}
+        self.active_scene = "game"
 
         self.run()
 
     def run(self):
         # Main Loop
-        while self.user.going:
-            if AIR_RECTANGLES:
-                self.remove_air_rectangles()
-
-            self.set_update_rectangles()
-            self.user.update()
-            if AIR_RECTANGLES:
-                self.draw_air_rectangles()
-            self.main_sprite_group.update()
+        while self.going:
+            # make sure to reset the screen in a cheap way
             self.screen.fill((0,0,0))
-            self.main_sprite_group.draw(self.screen)
-
-            self.draw_debug_info()
-            pygame.display.update(self.updated_rectangles)
+            active_scene = self.scenes[self.active_scene]
+            active_scene.update()
+            pygame.display.update(active_scene.board_update_rectangles)
             GAME_TIME.tick(200)
 
         pygame.quit()
 
-    def set_update_rectangles(self):
-        #get a number of rectangles that encompass the changed board state
-
-        relative_board_start = screen_to_board_coordinate((0,0), self.main_sprite_group.target, self.user._zoom)
-
-        board_u_rects = [self.__debug_rectangle]
-        user_u_rects = []
-
-        zoom = self.user._zoom
-        # add rectangles of visible chunks that
-        for row in self.board.chunk_matrix:
-            for chunk in row:
-                rect = chunk.layers[0].get_update_rect()
-                if rect == None:
-                    continue
-                user_u_rects.append(rect)
-
-                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
-                                             round((rect[1] - relative_board_start[1]) * zoom),
-                                             round(rect.width * zoom), round(rect.height * zoom)))
-                clipped_rect = adjusted_rect.clip(self.rect)
-                if clipped_rect.width > 0 and clipped_rect.height > 0:
-                    board_u_rects.append(clipped_rect)
-        for window in self.__windows.values():
-            rect = window.orig_rect
-            if not window.static:
-                board_u_rects.append(window.orig_rect)
-            else:
-                #TODO fix this kind of cheaty fix, right now the rectangle is made bigger to cover the full area, but
-                # this is a halfed as solution
-                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom) - 5,
-                                             round((rect[1] - relative_board_start[1]) * zoom) - 5,
-                                             rect.width + 10, rect.height + 10))
-                clipped_rect = adjusted_rect.clip(self.rect)
-                if clipped_rect.width > 0 and clipped_rect.height > 0:
-                    board_u_rects.append(clipped_rect)
-            user_u_rects.append(window.orig_rect)
-
-        self.updated_rectangles = board_u_rects
-        self.user.updated_rectangles = user_u_rects
-
-    def draw_debug_info(self):
-        x_coord = 5
-        line_distance = 12
-        #is big enough
-        width = 70
-
-        y_coord = 5
-        debug_topleft = (x_coord, y_coord)
-        if FPS:
-            fps = FONTS[18].render("fps: {}".format(int(GAME_TIME.get_fps())), True, pygame.Color('white'))
-            self.screen.blit(fps, (x_coord, y_coord))
-            y_coord += line_distance
-        if ENTITY_NMBR:
-            en = FONTS[18].render("e: {}/{}".format(self.user._visible_entities, len(self.main_sprite_group.sprites())),
-                                   True, pygame.Color('white'))
-            self.screen.blit(en, (x_coord, y_coord))
-            y_coord += line_distance
-        if ZOOM:
-            z = FONTS[18].render("zoom: {}x".format(self.user._zoom), True, pygame.Color('white'))
-            self.screen.blit(z, (x_coord, y_coord))
-            y_coord += line_distance
-        self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])
+    @property
+    def going(self):
+        return any(s.going for s in self.scenes.values())
 
 
-    def draw_air_rectangles(self):
-        for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
-            for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
-                self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
+    # def draw_air_rectangles(self):
+    #     for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
+    #         for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
+    #             self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
+    #
+    # def remove_air_rectangles(self):
+    #     for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
+    #         for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
+    #             self.board.add_rectangle(rect, INVISIBLE_COLOR, layer=1, border=2)
 
-    def remove_air_rectangles(self):
-        for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
-            for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
-                self.board.add_rectangle(rect, INVISIBLE_COLOR, layer=1, border=2)
 
+class Scene(ABC):
+    def __init__(self, screen, sprite_group):
+        self.screen = screen
+        self.board_update_rectangles = []
+        self.sprite_group = sprite_group
 
-class User:
-    def __init__(self, camera_center, board, main_sprite_group):
-        self.window_manager = window_managers.window_manager
-
-        self.camera_center = camera_center
-        self.board = board
-        self.main_sprite_group = main_sprite_group
-
-        self.updated_rectangles = []
-
-        #varaible that controls the game loop
+        # signifies if the scene is still alive
         self.going = True
+
+    def update(self):
+        self.scene_updates()
+        self.handle_events()
+        self.sprite_group.update()
+        self.draw()
+
+    @abstractmethod
+    def handle_events(self):
+        pass
+
+    def scene_updates(self):
+        for sprite in self.sprites.sprites():
+            self.sprites.change_layer(sprite, sprite._layer)
+
+    def draw(self):
+        self.sprite_group.draw(self.screen)
+
+    def exit(self):
+        pass
+
+class Game(Scene):
+    def __init__(self, screen):
+        self.screen = screen
+        self.rect = self.screen.get_rect()
+        # camera center position is chnaged before starting the game
+        self.camera_center = CameraCentre((0,0), (5,5))
+        self.main_sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
+        super().__init__(self.screen, self.main_sprite_group)
+
+        #load a window manager to manage window events
+        create_window_managers(self.camera_center)
+        from interfaces.managers import game_window_manager
+
+        self.window_manager = game_window_manager
+        self.board = Board(self.main_sprite_group)
+
+        # update rectangles
+        self.__vision_rectangles = []
+        self.board_update_rectangles = []
+        self.__debug_rectangle = (0,0,0,0)
 
         self._visible_entities = 0
 
@@ -169,11 +131,9 @@ class User:
 
         #tasks
         self.tasks = TaskControl(self.board)
-        board.set_task_control(self.tasks)
+        self.board.set_task_control(self.tasks)
 
         #for some more elaborate setting up of variables
-        self.workers = []
-        self.crafting_interface = None
         self.building_interface = None
         self.__setup_start()
 
@@ -182,49 +142,23 @@ class User:
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
-            self.workers.append(Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group))
+            Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group)
         #add one of the imventories of the terminal
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
 
         self.camera_center.rect.center = start_chunk.rect.center
 
-    def update(self):
-        self.__handle_events()
-        # allow to assign values to the _layer attribute instead of calling change_layer
-        for sprite in self.main_sprite_group.sprites():
-            self.main_sprite_group.change_layer(sprite, sprite._layer)
+    def scene_updates(self):
+        self.set_update_rectangles()
         self.load_unload_sprites()
 
         self.board.update_board()
 
-    def load_unload_sprites(self):
-        c = self.main_sprite_group.target.rect.center
-        if c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width > 0:
-            x = 1 + (c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.width / 2)
-        elif SCREEN_SIZE.width / 2 - c[0] > 0:
-            x = 1 + (SCREEN_SIZE.width / 2 - c[0]) / (SCREEN_SIZE.width / 2)
-        else:
-            x = 1
-        if c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height > 0:
-            y = 1 + (c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height) / (SCREEN_SIZE.height / 2)
-        elif SCREEN_SIZE.height / 2 - c[1] > 0:
-            y = 1 + (SCREEN_SIZE.height / 2 - c[1]) / (SCREEN_SIZE.height / 2)
-        else:
-            y = 1
-        visible_rect = pygame.Rect(0, 0, int(SCREEN_SIZE.width * x ), int(SCREEN_SIZE.height * y ))
-        visible_rect.center = c
+    def draw(self):
+        super().draw()
+        self.draw_debug_info()
 
-        self._visible_entities = 0
-        for sprite in self.main_sprite_group.sprites():
-            if not sprite.static or (sprite.rect.colliderect(visible_rect) and
-                                     sprite.orig_rect.collidelist(self.updated_rectangles ) != -1):
-                sprite.show(True)
-                if sprite.is_showing:
-                    self._visible_entities += 1
-            else:
-                sprite.show(False)
-
-    def __handle_events(self):
+    def handle_events(self):
         events = pygame.event.get()
         cam_events = []
         leftover_events = []
@@ -252,6 +186,100 @@ class User:
                     elif event.button == 5:
                         self.__zoom_entities(-0.1)
             self.board.handle_events(leftover_events)
+
+    def set_update_rectangles(self):
+        # get a number of rectangles that encompass the changed board state
+
+        zoom = self._zoom
+
+        relative_board_start = screen_to_board_coordinate((0, 0), self.main_sprite_group.target, zoom)
+
+        # rectangles directly on the screen that need to be visually updated
+        board_u_rects = [self.__debug_rectangle]
+
+        # rectangles containing part or whole chunks that are visible due to vision
+        vision_u_rects = []
+
+        for row in self.board.chunk_matrix:
+            for chunk in row:
+                rect = chunk.layers[0].get_update_rect()
+                if rect == None:
+                    continue
+                vision_u_rects.append(rect)
+
+                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
+                                             round((rect[1] - relative_board_start[1]) * zoom),
+                                             round(rect.width * zoom), round(rect.height * zoom)))
+                clipped_rect = adjusted_rect.clip(self.rect)
+                if clipped_rect.width > 0 and clipped_rect.height > 0:
+                    board_u_rects.append(clipped_rect)
+        for window in self.window_manager.windows.values():
+            rect = window.orig_rect
+            if not window.static:
+                board_u_rects.append(window.orig_rect)
+            else:
+                # TODO fix this kind of cheaty fix, right now the rectangle is made bigger to cover the full area, but
+                #  this is a halfed as solution
+                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom) - 5,
+                                             round((rect[1] - relative_board_start[1]) * zoom) - 5,
+                                             rect.width + 10, rect.height + 10))
+                clipped_rect = adjusted_rect.clip(self.rect)
+                if clipped_rect.width > 0 and clipped_rect.height > 0:
+                    board_u_rects.append(clipped_rect)
+            vision_u_rects.append(window.orig_rect)
+
+        self.board_update_rectangles = board_u_rects
+        self.__vision_rectangles = vision_u_rects
+
+    def load_unload_sprites(self):
+        c = self.main_sprite_group.target.rect.center
+        if c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width > 0:
+            x = 1 + (c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.width / 2)
+        elif SCREEN_SIZE.width / 2 - c[0] > 0:
+            x = 1 + (SCREEN_SIZE.width / 2 - c[0]) / (SCREEN_SIZE.width / 2)
+        else:
+            x = 1
+        if c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height > 0:
+            y = 1 + (c[1] + SCREEN_SIZE.height / 2 - BOARD_SIZE.height) / (SCREEN_SIZE.height / 2)
+        elif SCREEN_SIZE.height / 2 - c[1] > 0:
+            y = 1 + (SCREEN_SIZE.height / 2 - c[1]) / (SCREEN_SIZE.height / 2)
+        else:
+            y = 1
+        visible_rect = pygame.Rect(0, 0, int(SCREEN_SIZE.width * x ), int(SCREEN_SIZE.height * y ))
+        visible_rect.center = c
+
+        self._visible_entities = 0
+        for sprite in self.main_sprite_group.sprites():
+            if not sprite.static or (sprite.rect.colliderect(visible_rect) and
+                                     sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):
+                sprite.show(True)
+                if sprite.is_showing:
+                    self._visible_entities += 1
+            else:
+                sprite.show(False)
+
+    def draw_debug_info(self):
+        x_coord = 5
+        line_distance = 12
+        #is big enough
+        width = 70
+
+        y_coord = 5
+        debug_topleft = (x_coord, y_coord)
+        if FPS:
+            fps = FONTS[18].render("fps: {}".format(int(GAME_TIME.get_fps())), True, pygame.Color('white'))
+            self.screen.blit(fps, (x_coord, y_coord))
+            y_coord += line_distance
+        if ENTITY_NMBR:
+            en = FONTS[18].render("e: {}/{}".format(self._visible_entities, len(self.main_sprite_group.sprites())),
+                                   True, pygame.Color('white'))
+            self.screen.blit(en, (x_coord, y_coord))
+            y_coord += line_distance
+        if ZOOM:
+            z = FONTS[18].render("zoom: {}x".format(self._zoom), True, pygame.Color('white'))
+            self.screen.blit(z, (x_coord, y_coord))
+            y_coord += line_distance
+        self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])
 
 #handeling of events
     def __handle_interface_selection_events(self, event):
