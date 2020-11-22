@@ -153,7 +153,8 @@ class Label(Widget):
         self.changed_image = True
         self.text_image = None
 
-    def _create_image(self, size, color, **kwargs):
+    def _create_image(self, size, color, image=None, border=None, border_color=(0,0,0),
+                      text=None, font_size=15, text_color=(0,0,0), text_pos="center"):
         """
         Create an image using a size and color
 
@@ -162,14 +163,23 @@ class Label(Widget):
         :param kwargs: additional named arguments
         :return: a pygame Surface object
         """
-        if "image" in kwargs:
-            return kwargs["image"]
-        elif len(color) == 3:
+        if image:
+            return image
+        if len(color) == 3:
             image = pygame.Surface(size).convert()
         # included alpha channel
         elif len(color) == 4:
             image = pygame.Surface(size).convert_alpha()
         image.fill(color)
+        if border:
+            pygame.draw.rect(image, border_color, (0,0,*self.rect.size), 4)
+        #add text when defined
+        if text:
+            text = FONTS[font_size].render(text, True, text_color)
+            text_rect = text.get_rect()
+            if text_pos == "center":
+                text_pos = (self.rect.width / 2 - text_rect.width / 2, self.rect.height / 2 - text_rect.height / 2)
+            image.blit(text, text_pos)
         return image
 
     def set_selected(self, selected, color=None):
@@ -252,40 +262,24 @@ class Label(Widget):
 class Button(Label):
     COLOR_CHANGE = 75
     def __init__(self, pos, size, **kwargs):
-        self._hover_image = None
         super().__init__(pos, size, **kwargs)
+        self._hover_image = self._create_hover_image(**kwargs)
         self._hover = HoverAction()
         self._hover.set_hover_action(self.set_image, values=[self._hover_image])
         self._hover.set_unhover_action(self.set_image, values=[None])
 
-    def _create_image(self, size, color, **kwargs):
-        image = super()._create_image(size, color, **kwargs)
-        if "hover_image" in kwargs:
-            self._hover_image = kwargs["hover_image"]
-        else:
-            self._hover_image = self._create_hover_image(size, color, image, **kwargs)
-        return image
-
-    def _create_hover_image(self, size, color, image, **kwargs):
-        hover_image = image.copy()
-        hover_image.fill(self.__hover_color(color))
-        #add a potential border
-        if "border" in kwargs and kwargs["border"]:
-            pygame.draw.rect(image, (0,0,0), (0,0,*self.rect.size), 4)
-            pygame.draw.rect(hover_image, (0, 0, 0), (0, 0, *self.rect.size), 4)
-
-        #add text when defined
-        if "text" in kwargs:
-            text = FONTS[22].render(kwargs["text"], True, (0,0,0))
-            text_rect = text.get_rect()
-            center_pos = (self.rect.width / 2 - text_rect.width / 2, self.rect.height / 2 - text_rect.height / 2)
-            image.blit(text, center_pos)
-            hover_image.blit(text, center_pos)
+    def _create_hover_image(self, color, hover_image=None, **kwargs):
+        if hover_image:
+            return hover_image
+        hover_image = pygame.Surface(self.rect.size)
+        hover_image.fill(self.__hover_color())
+        # add threshold to make resolution better
+        pygame.transform.threshold(hover_image, self.image, self.color, threshold=(20, 20 ,20))
         return hover_image
 
-    def __hover_color(self, color):
+    def __hover_color(self):
         new_color = []
-        for channel in color:
+        for channel in self.color:
             if channel + self.COLOR_CHANGE > 255:
                 new_color.append(channel - self.COLOR_CHANGE)
             else:
@@ -293,78 +287,7 @@ class Button(Label):
         return new_color
 
 
-class BaseConstraints(ABC):
-    """
-    Determines how widgets are placed inside a __container widget. This is the
-    most basic form that allows free placement
-    """
-    def __init__(self):
-        #make sure the constraints are put on a container. This means that certain methods can assume container values
-        if not isinstance(self, Pane):
-            raise AttributeError("Constraints can only be put on a container widget")
-
-    @abstractmethod
-    def add_widget(self, widget):
-        """
-        Each constraints should have a method for defining addition of widgets
-
-        :param widget: a widget to add
-        """
-        pass
-
-
-class FreeConstraints(BaseConstraints):
-    """
-    Allow widgets to be placed anywhere in a container using coordinates
-    relative to the container
-    """
-    def __init__(self):
-        BaseConstraints.__init__(self)
-
-    def add_widget(self, widget):
-        """
-        Add widgets at the provided rectangle of the widget
-        :See: BaseConstraints.add_widget()
-        """
-        self.widgets.append(widget)
-        self.orig_image.blit(widget.image, widget.rect)
-        self.image = self.orig_image.copy()
-
-
-#note this class has not been tested yet
-class GridConstraints(BaseConstraints):
-    """
-    Allow placing of widgets in a material_grid format. Note this class is not done
-    """
-    def __init__(self):
-        BaseConstraints.__init__(self)
-        self.__widget_matrix = []
-
-    def add_widget(self, widget, column, row):
-        self.widgets.append(widget)
-
-        #fit the widget in the matrix
-        if row > len(self.__widget_matrix) or column > len(self.__widget_matrix[row]):
-            raise ValueError("provided row or column for the widget are to big.")
-        if row == len(self.__widget_matrix):
-            self.__widget_matrix.append([])
-        if column == len(self.__widget_matrix[row]):
-            self.__widget_matrix[row].append(widget)
-        else:
-            self.widgets.remove(self.__widget_matrix[row][column])
-            self.__widget_matrix[row][column] = widget
-
-        #configure a location that is next to the widgets beside it
-        blit_loc = [0, 0]
-        if not row - 1 <= 0:
-            blit_loc[1] = self.__widget_matrix[row - 1][column].rect.bottom
-        if not column - 1 <= 0:
-            blit_loc[0] = self.__widget_matrix[row][column - 1].rect.right
-        self.orig_image.blit(widget.image, blit_loc, target=self.rect)
-        self.image = self.orig_image.copy()
-
-
-class Pane(Label, EventHandler, FreeConstraints):
+class Pane(Label, EventHandler):
     """
     Container widget that allows selecting and acts as an image for a number
     of widgets
@@ -373,15 +296,25 @@ class Pane(Label, EventHandler, FreeConstraints):
         Label.__init__(self, pos, size, **kwargs)
         EventHandler.__init__(self, allowed_events)
         self.widgets = []
-        self._set_constraints()
 
-    def _set_constraints(self):
+    def add_widget(self, widget, posx=None, posy=None):
         """
-        Innitiate the appropriate constraints. This makes it so inheriting
-        classes can define different constraints
-        TODO make this a more appropriate method
+        Add widgets at the provided rectangle of the widget
+        :See: BaseConstraints.add_widget()
         """
-        FreeConstraints.__init__(self)
+        rect = widget.rect
+        if posx == "center":
+            posx = self.rect.width / 2 - rect.width / 2
+        elif posx == None:
+            posx = rect.left
+        if posy == "center":
+            posy = self.rect.height / 2 - rect.height / 2
+        elif posy == None:
+            posy = rect.top
+
+        self.widgets.append(widget)
+        self.orig_image.blit(widget.image, (posx, posy))
+        self.image = self.orig_image.copy()
 
     def wupdate(self, *args):
         """
@@ -523,7 +456,7 @@ class Frame(ZoomableEntity, Pane):
         return leftover_events
 
 
-class ScrollPane(Pane, FreeConstraints):
+class ScrollPane(Pane):
     """
     A Pane that can be scrolled
     """
