@@ -154,7 +154,7 @@ class Label(Widget):
         self.text_image = None
 
     def _create_image(self, size, color, image=None, border=None, border_color=(0,0,0),
-                      text=None, font_size=15, text_color=(0,0,0), text_pos="center"):
+                      text=None, font_size=15, text_color=(0,0,0), text_pos="center", **kwargs):
         """
         Create an image using a size and color
 
@@ -268,10 +268,11 @@ class Button(Label):
         self._hover.set_hover_action(self.set_image, values=[self._hover_image])
         self._hover.set_unhover_action(self.set_image, values=[None])
 
-    def _create_hover_image(self, color, hover_image=None, **kwargs):
+    def _create_hover_image(self, hover_image=None, **kwargs):
         if hover_image:
             return hover_image
-        hover_image = self._create_image(self.image.get_size(), self.__hover_color(), **kwargs)
+        kwargs["color"] = self.__hover_color()
+        hover_image = self._create_image(self.image.get_size(), **kwargs)
         return hover_image
 
     def __hover_color(self):

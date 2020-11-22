@@ -1,5 +1,6 @@
 
 from abc import ABC, abstractmethod
+import concurrent.futures
 
 #own classes
 from entities import Worker, CameraCentre
@@ -41,28 +42,25 @@ class Main:
 
         # pre loaded scenes
         # TODO: remove the game as default, add it when selected from the menu
-        self.scenes = {"main_menu": MainMenu(self.screen)}
+        global scenes
+        scenes["main_menu"] =  MainMenu(self.screen)
+        scenes.set_active_scene("main_menu")
         # "game": Game(self.screen)
-        self.active_scene = "main_menu"
 
         self.run()
 
     def run(self):
         # Main Loop
-        while self.going:
-            # make sure to reset the screen in a cheap way
-            self.screen.fill((0,0,0))
-            active_scene = self.scenes[self.active_scene]
+        while scenes.is_scene_alive():
+            self.screen.fill((0, 0, 0))
+            if scenes.switched:
+                pygame.display.flip()
+            active_scene = scenes.active_scene
             active_scene.update()
             pygame.display.update(active_scene.board_update_rectangles)
             GAME_TIME.tick(200)
 
         pygame.quit()
-
-    @property
-    def going(self):
-        return any(s.going for s in self.scenes.values())
-
 
     # def draw_air_rectangles(self):
     #     for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
@@ -73,6 +71,38 @@ class Main:
     #     for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
     #         for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
     #             self.board.add_rectangle(rect, INVISIBLE_COLOR, layer=1, border=2)
+
+
+class SceneManager:
+    def __init__(self):
+        # the drawing destination surface
+        self.scenes = {}
+        self.active_scene = None
+        self.__switched = True
+
+    def set_active_scene(self, name):
+        self.active_scene = self.scenes[name]
+        self.__switched = True
+
+    @property
+    def switched(self):
+        switched = self.__switched
+        self.__switched = False
+        return switched
+
+    def __getitem__(self, item):
+        return self.scenes["item"]
+
+    def __setitem__(self, key, value):
+        self.scenes[key] = value
+
+    def __delitem__(self, key):
+        del self.scenes[key]
+
+    def is_scene_alive(self):
+        return self.active_scene.going
+
+scenes = SceneManager()
 
 
 class Scene(ABC):
@@ -126,9 +156,11 @@ class MainMenu(Scene):
     def __init_widgets(self):
         centerx, centery = self.rect.center
         self.main_menu_frame = Frame((0, 0), Size(*self.rect.size), self.sprite_group,
-                                     color=(173, 94, 29))
-        play_button = Button((centerx, centery), (100, 20), color=(100,100,100))
-        play_button.set_text("START", "center")
+                                     color=(173, 94, 29), static=False)
+        button_size = Size(100, 40)
+        centered_x = centerx - button_size.width / 2
+        play_button = Button((centered_x, centery), button_size, color=(100,100,100), text="START", font_size=30)
+        play_button.set_action(1, self.__start_game, types=["unpressed"])
         self.main_menu_frame.add_widget(play_button)
 
     def scene_updates(self):
@@ -136,8 +168,16 @@ class MainMenu(Scene):
 
     def handle_events(self):
         events = super().handle_events()
-        for event in events:
-            pass
+        self.main_menu_frame.handle_events(events)
+
+    def __start_game(self):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(Game, self.screen)
+            for i in range(100):
+                print(i)
+            game = future.result()
+        scenes["game"] = game
+        scenes.set_active_scene("game")
 
 
 class Game(Scene):
@@ -282,6 +322,7 @@ class Game(Scene):
         visible_rect.center = c
 
         self._visible_entities = 0
+        s = scenes.switched
         for sprite in self.sprite_group.sprites():
             if not sprite.static or (sprite.rect.colliderect(visible_rect) and
                                      sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):

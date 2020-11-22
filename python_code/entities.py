@@ -12,7 +12,7 @@ class Entity(pygame.sprite.Sprite, ABC):
     Basic entity class is a sprite with an image.
     """
     def __init__(self, pos, size, *groups, color = (255,255,255),
-                 layer = HIGHLIGHT_LAYER, **kwargs):
+                 layer = HIGHLIGHT_LAYER, static=True, **kwargs):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
         self.image = self._create_image(size, color, **kwargs)
@@ -21,7 +21,7 @@ class Entity(pygame.sprite.Sprite, ABC):
         self._visible = True
         self.zoomable = False
         # should the entity move with the camera or not
-        self.static = True
+        self.static = static
 
     def show(self, value:bool):
         self._visible = value
