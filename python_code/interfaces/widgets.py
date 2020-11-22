@@ -220,6 +220,9 @@ class Label(Widget):
         if not add:
             self._clean_image()
         s = FONTS[font_size].render(str(text), True, color)
+        rect = s.get_rect()
+        if pos == "center":
+            pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
         self.image.blit(s, pos)
         self.text_image = self.image.copy()
         if self.selected:

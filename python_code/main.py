@@ -1,10 +1,9 @@
 
 from abc import ABC, abstractmethod
 
-
 #own classes
 from entities import Worker, CameraCentre
-from board.camera import CameraAwareLayeredUpdates
+from board.camera import *
 from board.board import Board
 from utility.constants import *
 from tasks import TaskControl
@@ -15,7 +14,8 @@ from interfaces.managers import create_window_managers
 from block_classes.block_constants import configure_material_collections
 import interfaces.managers as window_managers
 from interfaces.interface_utility import screen_to_board_coordinate
-
+from interfaces.widgets import *
+from interfaces.base_interface import Window
 
 class Main:
 
@@ -41,8 +41,9 @@ class Main:
 
         # pre loaded scenes
         # TODO: remove the game as default, add it when selected from the menu
-        self.scenes = {"game": Game(self.screen)}
-        self.active_scene = "game"
+        self.scenes = {"main_menu": MainMenu(self.screen)}
+        # "game": Game(self.screen)
+        self.active_scene = "main_menu"
 
         self.run()
 
@@ -77,6 +78,9 @@ class Main:
 class Scene(ABC):
     def __init__(self, screen, sprite_group):
         self.screen = screen
+        self.rect = self.screen.get_rect()
+
+        #value used for the main regulator to determine what rectangles of the screen to update
         self.board_update_rectangles = []
         self.sprite_group = sprite_group
 
@@ -89,13 +93,21 @@ class Scene(ABC):
         self.sprite_group.update()
         self.draw()
 
-    @abstractmethod
     def handle_events(self):
-        pass
+        if len(pygame.event.get(QUIT)) > 0:
+            self.going = False
+            return []
+        events = pygame.event.get()
+        return events
+
+    def set_update_rectangles(self):
+        # default is the full screen least efficient
+        self.board_update_rectangles = self.rect
 
     def scene_updates(self):
         for sprite in self.sprite_group.sprites():
             self.sprite_group.change_layer(sprite, sprite._layer)
+        self.set_update_rectangles()
 
     def draw(self):
         self.sprite_group.draw(self.screen)
@@ -103,25 +115,48 @@ class Scene(ABC):
     def exit(self):
         pass
 
+
+class MainMenu(Scene):
+    def __init__(self, screen):
+        sprite_group = ShowToggleLayerUpdates()
+        super().__init__(screen, sprite_group)
+        self.main_menu_frame = None
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        centerx, centery = self.rect.center
+        self.main_menu_frame = Frame((0, 0), Size(*self.rect.size), self.sprite_group,
+                                     color=(173, 94, 29))
+        play_button = Button((centerx, centery), (100, 20), color=(100,100,100))
+        play_button.set_text("START", "center")
+        self.main_menu_frame.add_widget(play_button)
+
+    def scene_updates(self):
+        super().scene_updates()
+
+    def handle_events(self):
+        events = super().handle_events()
+        for event in events:
+            pass
+
+
 class Game(Scene):
     def __init__(self, screen):
-        self.screen = screen
-        self.rect = self.screen.get_rect()
         # camera center position is chnaged before starting the game
+        #TODO make the size 0,0
         self.camera_center = CameraCentre((0,0), (5,5))
-        self.main_sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
-        super().__init__(self.screen, self.main_sprite_group)
+        sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
+        super().__init__(screen, sprite_group)
 
         #load a window manager to manage window events
         create_window_managers(self.camera_center)
         from interfaces.managers import game_window_manager
 
         self.window_manager = game_window_manager
-        self.board = Board(self.main_sprite_group)
+        self.board = Board(self.sprite_group)
 
         # update rectangles
         self.__vision_rectangles = []
-        self.board_update_rectangles = []
         self.__debug_rectangle = (0,0,0,0)
 
         self._visible_entities = 0
@@ -142,15 +177,14 @@ class Game(Scene):
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
-            Worker((appropriate_location), self.board, self.tasks, self.main_sprite_group)
+            Worker((appropriate_location), self.board, self.tasks, self.sprite_group)
         #add one of the imventories of the terminal
-        self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.main_sprite_group)
+        self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.sprite_group)
 
         self.camera_center.rect.center = start_chunk.rect.center
 
     def scene_updates(self):
         super().scene_updates()
-        self.set_update_rectangles()
         self.load_unload_sprites()
 
         self.board.update_board()
@@ -160,13 +194,11 @@ class Game(Scene):
         self.draw_debug_info()
 
     def handle_events(self):
-        events = pygame.event.get()
+        events = super().handle_events()
         cam_events = []
         leftover_events = []
         for event in events:
-            if event.type == QUIT:
-                self.going = False
-            elif event.type == KEYDOWN and event.key in INTERFACE_KEYS:
+            if event.type == KEYDOWN and event.key in INTERFACE_KEYS:
                 self.__handle_interface_selection_events(event)
                 #allow these events to trigger after
                 leftover_events.append(event)
@@ -193,7 +225,7 @@ class Game(Scene):
 
         zoom = self._zoom
 
-        relative_board_start = screen_to_board_coordinate((0, 0), self.main_sprite_group.target, zoom)
+        relative_board_start = screen_to_board_coordinate((0, 0), self.sprite_group.target, zoom)
 
         # rectangles directly on the screen that need to be visually updated
         board_u_rects = [self.__debug_rectangle]
@@ -233,7 +265,7 @@ class Game(Scene):
         self.__vision_rectangles = vision_u_rects
 
     def load_unload_sprites(self):
-        c = self.main_sprite_group.target.rect.center
+        c = self.sprite_group.target.rect.center
         if c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width > 0:
             x = 1 + (c[0] + SCREEN_SIZE.width / 2 - BOARD_SIZE.width) / (SCREEN_SIZE.width / 2)
         elif SCREEN_SIZE.width / 2 - c[0] > 0:
@@ -250,7 +282,7 @@ class Game(Scene):
         visible_rect.center = c
 
         self._visible_entities = 0
-        for sprite in self.main_sprite_group.sprites():
+        for sprite in self.sprite_group.sprites():
             if not sprite.static or (sprite.rect.colliderect(visible_rect) and
                                      sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):
                 sprite.show(True)
@@ -272,8 +304,8 @@ class Game(Scene):
             self.screen.blit(fps, (x_coord, y_coord))
             y_coord += line_distance
         if ENTITY_NMBR:
-            en = FONTS[18].render("e: {}/{}".format(self._visible_entities, len(self.main_sprite_group.sprites())),
-                                   True, pygame.Color('white'))
+            en = FONTS[18].render("e: {}/{}".format(self._visible_entities, len(self.sprite_group.sprites())),
+                                  True, pygame.Color('white'))
             self.screen.blit(en, (x_coord, y_coord))
             y_coord += line_distance
         if ZOOM:
@@ -297,7 +329,7 @@ class Game(Scene):
         self._zoom = round(min(max(0.4, self._zoom + increase), 2), 1)
         #prevent unnecesairy recalculations
         if prev_zoom_level != self._zoom:
-            for sprite in self.main_sprite_group.sprites():
+            for sprite in self.sprite_group.sprites():
                 if sprite.zoomable:
                     sprite.zoom(self._zoom)
             BOARD_SIZE.width = self._zoom * ORIGINAL_BOARD_SIZE.width

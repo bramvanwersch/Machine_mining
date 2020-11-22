@@ -13,6 +13,7 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - Allot more recipes --> make a tree of progress using the recipes
 - An end goal.
 - Some narrative that gives some background to the story
+- optimize the scaling of entities, only relevant entities should be scaled. The bigger the board the lagier the scaling will be at the moment
 
 SPECIFIC FEATURES:
 - add tooltips

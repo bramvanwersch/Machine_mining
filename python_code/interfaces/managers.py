@@ -69,7 +69,8 @@ class WindowManager:
 
     def handle_events(self, events):
         """
-        Handle events for the topmost window that the mouse is over
+        Handle keyboard evets for the selected window and mouse events for the hovered window
+
         :param events:
         :return:
         """
