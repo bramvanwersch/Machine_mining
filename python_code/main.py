@@ -145,11 +145,17 @@ class Scene(ABC):
     def exit(self):
         pass
 
+    @classmethod
+    def name(self):
+        return self.__name__
+
 
 class MainMenu(Scene):
     def __init__(self, screen):
         sprite_group = ShowToggleLayerUpdates()
         super().__init__(screen, sprite_group)
+
+        # all the available menu frames
         self.main_menu_frame = None
         self.__init_widgets()
 
@@ -171,13 +177,38 @@ class MainMenu(Scene):
         self.main_menu_frame.handle_events(events)
 
     def __start_game(self):
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(Game, self.screen)
-            for i in range(100):
-                print(i)
-            game = future.result()
-        scenes["game"] = game
-        scenes.set_active_scene("game")
+        game = Game(self.screen)
+        executor = concurrent.futures.ThreadPoolExecutor()
+        future = executor.submit(game.start)
+        scenes["loading"] = LoadingScreen(self.screen, future, game, executor)
+        scenes.set_active_scene("loading")
+
+
+class LoadingScreen(Scene):
+    def __init__(self, screen, future, loading_scene, executor):
+        sprite_group = ShowToggleLayerUpdates()
+        super().__init__(screen, sprite_group)
+        self.loading_scene = loading_scene
+        self.executor = executor
+        self.future = future
+        self.__loading_frame = None
+        self.__progress_label = None
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        self.__loading_frame = Frame((0, 0), Size(*self.rect.size), self.sprite_group,
+                                     color=(173, 94, 29), static=False)
+        self.__progress_label = Label((100, 100), (500, 20), (173, 94, 29))
+        self.__loading_frame.add_widget(self.__progress_label, "center", "center")
+
+    def scene_updates(self):
+        super().scene_updates()
+        if hasattr(self.loading_scene, "progress"):
+            self.__progress_label.set_text(self.loading_scene.progress, "center", font_size=30)
+        if self.future.done():
+            self.executor.shutdown()
+            scenes[self.loading_scene.name()] = self.loading_scene
+            scenes.set_active_scene(self.loading_scene.name())
 
 
 class Game(Scene):
@@ -187,14 +218,6 @@ class Game(Scene):
         self.camera_center = CameraCentre((0,0), (5,5))
         sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
         super().__init__(screen, sprite_group)
-
-        #load a window manager to manage window events
-        create_window_managers(self.camera_center)
-        from interfaces.managers import game_window_manager
-
-        self.window_manager = game_window_manager
-        self.board = Board(self.sprite_group)
-
         # update rectangles
         self.__vision_rectangles = []
         self.__debug_rectangle = (0,0,0,0)
@@ -203,16 +226,28 @@ class Game(Scene):
 
         #zoom variables
         self._zoom = 1.0
+        self.progress = ""
+
+    def start(self):
+        self.progress = "Started loading..."
+        # load a window manager to manage window events
+        self.progress = "Adding windows..."
+        create_window_managers(self.camera_center)
+        from interfaces.managers import game_window_manager
+        self.window_manager = game_window_manager
+
+        self.progress = "Generating board..."
+        self.board = Board(self.sprite_group)
 
         #tasks
+        self.progress = "Making tasks..."
         self.tasks = TaskControl(self.board)
         self.board.set_task_control(self.tasks)
 
         #for some more elaborate setting up of variables
         self.building_interface = None
-        self.__setup_start()
 
-    def __setup_start(self):
+        self.progress = "Populating with miners..."
         start_chunk = self.board.get_start_chunk()
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + start_chunk.rect.top)

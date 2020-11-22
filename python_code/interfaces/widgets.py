@@ -309,7 +309,7 @@ class Pane(Label, EventHandler):
             posy = self.rect.height / 2 - rect.height / 2
         elif posy == None:
             posy = rect.top
-
+        widget.rect = pygame.Rect((posx, posy, *rect.size))
         self.widgets.append(widget)
         self.orig_image.blit(widget.image, (posx, posy))
         self.image = self.orig_image.copy()
