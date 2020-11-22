@@ -271,10 +271,7 @@ class Button(Label):
     def _create_hover_image(self, color, hover_image=None, **kwargs):
         if hover_image:
             return hover_image
-        hover_image = pygame.Surface(self.rect.size)
-        hover_image.fill(self.__hover_color())
-        # add threshold to make resolution better
-        pygame.transform.threshold(hover_image, self.image, self.color, threshold=(20, 20 ,20))
+        hover_image = self._create_image(self.image.get_size(), self.__hover_color(), **kwargs)
         return hover_image
 
     def __hover_color(self):
