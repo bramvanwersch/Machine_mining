@@ -8,8 +8,11 @@ pygame.font.init()
 FONTS = {i : pygame.font.SysFont("roboto", i) for i in range(12,35)}
 
 GAME_TIME = pygame.time.Clock()
+
+# the space in the path is to stay alert
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0].rsplit(os.sep, 2)[0]
 IMAGE_DIR = "{}{}images".format(MAIN_DIR, os.sep)
+SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 
 #location parameters
 #1920, 1080
