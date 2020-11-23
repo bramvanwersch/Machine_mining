@@ -72,8 +72,8 @@ class CraftingWindow(Window):
 
     def _create_recipe_selector(self, loc, size, color):
         # #create scrollable inventory
-        inventory_s  = ScrollPane(loc, size, color=color)
-        self.add_widget(inventory_s)
+        inventory_s  = ScrollPane(size, color=color)
+        self.add_widget(loc, inventory_s)
         self.add_border(inventory_s)
 
         s1 = SelectionGroup()
@@ -84,11 +84,11 @@ class CraftingWindow(Window):
             image = pygame.transform.scale(recipe.get_image(), (26, 26))
             background.blit(image, (2, 2, 26, 26))
 
-            lbl = Label((0, 0), (30, 30), color=color, image=background)
+            lbl = Label((30, 30), color=color, image=background)
 
             lbl.set_action(1, self.recipe_action, values=[recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)
-            inventory_s.add_widget(lbl)
+            inventory_s.add_widget((0, 0), lbl)
 
     def recipe_action(self, recipe, lbl, s1):
         self._crafting = False
@@ -121,19 +121,19 @@ class FactoryWindow(CraftingWindow):
         start
         """
         #create material_grid
-        self.grid_pane = CraftingGrid((10, 10), (125, 125), Size(4, 4), self._craft_building.inventory, color = (50, 50, 50))
-        self.add_widget(self.grid_pane)
+        self.grid_pane = CraftingGrid((125, 125), Size(4, 4), self._craft_building.inventory, color = (50, 50, 50))
+        self.add_widget((10, 10), self.grid_pane)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = ItemLabel((200, 50), (50, 50), None, border=False, color=self.COLOR[:-1])
-        self.add_widget(self._craftable_item_lbl)
+        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=self.COLOR[:-1])
+        self.add_widget((200, 50), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl)
 
         self._create_recipe_selector((10, 150), (280, 90), self.COLOR[:-1])
 
         #add arrow pointing from grid to display
-        a_lbl = ProgressArrow((140, 50), (50, 50), self._crafting_time, color=INVISIBLE_COLOR)
-        self.add_widget(a_lbl)
+        a_lbl = ProgressArrow((50, 50), self._crafting_time, color=INVISIBLE_COLOR)
+        self.add_widget((140, 50), a_lbl)
 
 
 class FurnaceWindow(CraftingWindow):
@@ -182,18 +182,18 @@ class FurnaceWindow(CraftingWindow):
 
     def __init_widgets(self):
         #create material_grid
-        self.grid_pane = CraftingGrid((40, 28), (64, 64), Size(2, 2), self._craft_building.inventory, color = (50, 50, 50))
-        self.add_widget(self.grid_pane)
+        self.grid_pane = CraftingGrid((64, 64), Size(2, 2), self._craft_building.inventory, color = (50, 50, 50))
+        self.add_widget((40, 28), self.grid_pane)
 
-        self.__fuel_meter = FuelMeter((10,10), (25, 100))
-        self.add_widget(self.__fuel_meter)
+        self.__fuel_meter = FuelMeter((25, 100))
+        self.add_widget((10,10), self.__fuel_meter)
 
         # add arrow pointing from grid to displa
-        a_lbl = ProgressArrow((110, 35), (50, 50), self._crafting_time, color=INVISIBLE_COLOR)
-        self.add_widget(a_lbl)
+        a_lbl = ProgressArrow((50, 50), self._crafting_time, color=INVISIBLE_COLOR)
+        self.add_widget((110, 35), a_lbl)
 
-        self._craftable_item_lbl = ItemLabel((170, 32), (50, 50), None, border=False, color=(150, 150, 150))
-        self.add_widget(self._craftable_item_lbl)
+        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=(150, 150, 150))
+        self.add_widget((170, 32), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl, color=(75, 75, 75))
 
         self._create_recipe_selector((10, 120), (220, 90), self.COLOR[:-1])
@@ -206,8 +206,8 @@ class CraftingGrid(Pane):
     """
     COLOR = (173, 94, 29)
     BORDER_DISTANCE = 5
-    def __init__(self, pos, size, grid_size, inventory, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, size, grid_size, inventory, **kwargs):
+        super().__init__(size, **kwargs)
         self._crafting_grid = []
         self.__watching_inventory = inventory
         self.__prev_no_items = -1
@@ -236,8 +236,8 @@ class CraftingGrid(Pane):
             row = []
             for col_i in range(grid_size.width):
                 pos = start_pos + grid_square * (col_i, row_i) + (2, 2)
-                lbl = GridLabel(pos, grid_square - (4, 4), color = self.COLOR)
-                self.add_widget(lbl)
+                lbl = GridLabel(grid_square - (4, 4), color = self.COLOR)
+                self.add_widget(pos, lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
 
@@ -278,8 +278,8 @@ class CraftingGrid(Pane):
 class GridLabel(Label):
     POS_COLOR = (0, 255, 0, 100)
     NEG_COLOR = (255, 0, 0, 100)
-    def __init__(self, pos, size, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, size, **kwargs):
+        super().__init__(size, **kwargs)
         self.__item_present = None
         self.__positive_mark = image_sheets["general"].image_at((80, 0), size=(10, 10), color_key=(255, 255, 255))
 
@@ -309,8 +309,8 @@ class GridLabel(Label):
 
 
 class ProgressArrow(Label):
-    def __init__(self, pos, size, progress_list, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, size, progress_list, **kwargs):
+        super().__init__(size, **kwargs)
         self.__arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
         self.__full_progress_arrow = image_sheets["general"].image_at((0, 20), size=(20, 20), color_key=(255, 255, 255))
         self.__arrow_image = pygame.transform.scale(self.__arrow_image, size)
@@ -337,21 +337,21 @@ class ProgressArrow(Label):
 
 class FuelMeter(Pane):
     MAX_FUEL = 100
-    def __init__(self, pos, size, max_fuel=MAX_FUEL, **kwargs):
-        super().__init__(pos, size, color=INVISIBLE_COLOR, **kwargs)
+    def __init__(self, size, max_fuel=MAX_FUEL, **kwargs):
+        super().__init__(size, color=INVISIBLE_COLOR, **kwargs)
         self._fuel_lvl = 0
         self.__max_fuel = max_fuel
 
         self.__init_widgets()
 
     def __init_widgets(self):
-        text_lbl = Label((0,0), (25, 10), color=INVISIBLE_COLOR)
+        text_lbl = Label((25, 10), color=INVISIBLE_COLOR)
         text_lbl.set_text("Fuel", (0,0), font_size=16)
-        self.add_widget(text_lbl)
+        self.add_widget((0,0), text_lbl)
 
-        self.fuel_indicator = Label((2, 15), (20, self.rect.height - 20), color=INVISIBLE_COLOR)
+        self.fuel_indicator = Label((20, self.rect.height - 20), color=INVISIBLE_COLOR)
         self.add_border(self.fuel_indicator)
-        self.add_widget(self.fuel_indicator)
+        self.add_widget((2, 15), self.fuel_indicator)
 
     def add_fuel(self, value):
         #dont allow above the max or under 0

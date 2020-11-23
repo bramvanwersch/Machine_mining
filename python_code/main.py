@@ -14,7 +14,7 @@ from interfaces.building_interface import BuildingWindow
 from interfaces.managers import create_window_managers
 from block_classes.block_constants import configure_material_collections
 import interfaces.managers as window_managers
-from interfaces.interface_utility import screen_to_board_coordinate
+from interfaces.interface_utility import screen_to_board_coordinate, ThreadPoolExecutorStackTraced
 from interfaces.widgets import *
 from interfaces.base_interface import Window
 
@@ -159,14 +159,12 @@ class MainMenu(Scene):
         self.__init_widgets()
 
     def __init_widgets(self):
-        centerx, centery = self.rect.center
         self.main_menu_frame = Frame((0, 0), Size(*self.rect.size), self.sprite_group,
                                      color=(173, 94, 29), static=False)
         button_size = Size(100, 40)
-        centered_x = centerx - button_size.width / 2
-        play_button = Button((centered_x, centery), button_size, color=(100,100,100), text="START", font_size=30)
+        play_button = Button(button_size, color=(100,100,100), text="START", font_size=30)
         play_button.set_action(1, self.__start_game, types=["unpressed"])
-        self.main_menu_frame.add_widget(play_button)
+        self.main_menu_frame.add_widget(("center", 300), play_button)
 
     def scene_updates(self):
         super().scene_updates()
@@ -177,7 +175,7 @@ class MainMenu(Scene):
 
     def __start_game(self):
         game = Game(self.screen)
-        executor = concurrent.futures.ThreadPoolExecutor()
+        executor = ThreadPoolExecutorStackTraced()
         future = executor.submit(game.start)
         scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
         scenes.set_active_scene(LoadingScreen.name())
@@ -197,14 +195,18 @@ class LoadingScreen(Scene):
     def __init_widgets(self):
         self.__loading_frame = Frame((0, 0), Size(*self.rect.size), self.sprite_group,
                                      color=(173, 94, 29), static=False)
-        self.__progress_label = Label((100, 100), (500, 20), (173, 94, 29))
-        self.__loading_frame.add_widget(self.__progress_label, "center", "center")
+        self.__progress_label = Label((500, 20), (173, 94, 29))
+        self.__loading_frame.add_widget(("center", "center"), self.__progress_label)
 
     def scene_updates(self):
         super().scene_updates()
         if hasattr(self.loading_scene, "progress"):
             self.__progress_label.set_text(self.loading_scene.progress, "center", font_size=30)
         if self.future.done():
+            if self.future.exception():
+                print(self.future.exception())
+                # if an exception was raised make sure to exit
+                exit(-1)
             self.executor.shutdown()
             scenes[self.loading_scene.name()] = self.loading_scene
             scenes.set_active_scene(self.loading_scene.name())

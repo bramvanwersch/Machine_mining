@@ -88,13 +88,13 @@ class Widget(ABC):
     """
     Basic widget class
     """
-    def __init__(self, pos, size, selectable = False, **kwargs):
+    def __init__(self, size, selectable = False, **kwargs):
         self.action_functions = {}
         self.selectable = selectable
         self.selected = False
-        #track if hovering already triggered an event or not
 
-        self.rect = pygame.Rect((*pos, *size))
+        #innitial position is 0, 0
+        self.rect = pygame.Rect((0, 0, *size))
         self.visible = True
 
     def wupdate(self):
@@ -142,8 +142,8 @@ class Label(Widget):
     Bsically a widget that allows image manipulation
     """
     SELECTED_COLOR = (255, 255, 255)
-    def __init__(self, pos, size, color = (255,255,255), **kwargs):
-        Widget.__init__(self,pos, size, **kwargs)
+    def __init__(self, size, color = (255,255,255), **kwargs):
+        Widget.__init__(self, size, **kwargs)
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image.copy()
         self.color = color
@@ -261,8 +261,8 @@ class Label(Widget):
 
 class Button(Label):
     COLOR_CHANGE = 75
-    def __init__(self, pos, size, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, size, **kwargs):
+        super().__init__(size, **kwargs)
         self._hover_image = self._create_hover_image(**kwargs)
         self._hover = HoverAction()
         self._hover.set_hover_action(self.set_image, values=[self._hover_image])
@@ -290,28 +290,27 @@ class Pane(Label, EventHandler):
     Container widget that allows selecting and acts as an image for a number
     of widgets
     """
-    def __init__(self, pos, size, allowed_events = "ALL", **kwargs):
-        Label.__init__(self, pos, size, **kwargs)
+    def __init__(self, size, allowed_events = "ALL", **kwargs):
+        Label.__init__(self, size, **kwargs)
         EventHandler.__init__(self, allowed_events)
         self.widgets = []
 
-    def add_widget(self, widget, posx=None, posy=None):
+    def add_widget(self, pos, widget, add=False):
         """
         Add widgets at the provided rectangle of the widget
         :See: BaseConstraints.add_widget()
         """
         rect = widget.rect
-        if posx == "center":
-            posx = self.rect.width / 2 - rect.width / 2
-        elif posx == None:
-            posx = rect.left
-        if posy == "center":
-            posy = self.rect.height / 2 - rect.height / 2
-        elif posy == None:
-            posy = rect.top
-        widget.rect = pygame.Rect((posx, posy, *rect.size))
+        pos = list(pos)
+        if pos[0] == "center":
+            pos[0] = self.rect.width / 2 - rect.width / 2
+        if pos[1] == "center":
+            pos[1] = self.rect.height / 2 - rect.height / 2
+        if add:
+            pos = (rect.left + pos[0], rect.top + pos[1])
+        widget.rect = pygame.Rect((*pos, *rect.size))
         self.widgets.append(widget)
-        self.orig_image.blit(widget.image, (posx, posy))
+        self.orig_image.blit(widget.image, pos)
         self.image = self.orig_image.copy()
 
     def wupdate(self, *args):
@@ -384,7 +383,7 @@ class Frame(ZoomableEntity, Pane):
     gui should have a frame to be able to display and handle updates
     """
     def __init__(self, pos, size, *groups, **kwargs):
-        Pane.__init__(self, pos, size, **kwargs)
+        Pane.__init__(self, size, **kwargs)
         ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
 
     def update(self, *args):
@@ -461,8 +460,8 @@ class ScrollPane(Pane):
     SCROLL_SPEED = 20
     #space between the outside of the crafting window and the closest label
     BORDER_SPACE = 3
-    def __init__(self, pos, size, **kwargs):
-        super().__init__(pos, size, **kwargs)
+    def __init__(self, size, **kwargs):
+        super().__init__(size, **kwargs)
         self.next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
         #the total rectangle
         self.total_rect = self.rect.copy()
@@ -472,11 +471,13 @@ class ScrollPane(Pane):
         self.set_action(4, self.scroll_y, [self.SCROLL_SPEED])
         self.set_action(5, self.scroll_y, [-self.SCROLL_SPEED])
 
-    def add_widget(self, widget):
+    def add_widget(self, pos, widget):
         """
         Overrides FreeConstriants method and adds widgets automatically so
         they will fit within the pane. Also makes sure that the offset of the
         scrolling is taken into account
+
+        Note: pos does not serve a purpoise at the moment
 
         :See: FreeConstraints.add_widget()
         """
@@ -538,12 +539,12 @@ class ItemLabel(Label):
     Specialized label specifically for displaying items
     """
 
-    def __init__(self, pos, size, item, border = True, **kwargs):
+    def __init__(self, size, item, border = True, **kwargs):
         self.item = item
         #is set when innitailising label, just to make sure
         self.item_image = None
         self.__border = border
-        Label.__init__(self, pos, size, **kwargs)
+        Label.__init__(self, size, **kwargs)
         if self.item != None:
             self.previous_total = self.item.quantity
             # when innitiating make sure the number is displayed

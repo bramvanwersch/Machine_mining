@@ -40,12 +40,12 @@ class TerminalWindow(Window):
         for item in self.__terminal_inv.items:
             if item.name() not in covered_items:
                 #remove the alpha channel
-                lbl = ItemLabel((0, 0), (42, 42), item, color=(173, 94, 29))
+                lbl = ItemLabel((42, 42), item, color=(173, 94, 29))
 
-                self.__inventory_pane.add_widget(lbl)
+                self.__inventory_pane.add_widget((0, 0), lbl)
 
     def __add_widgets(self):
-        self.__inventory_pane = ScrollPane((10, 10), self.SIZE - (20, 20), color=self.COLOR)
-        self.add_widget(self.__inventory_pane)
+        self.__inventory_pane = ScrollPane(self.SIZE - (20, 20), color=self.COLOR)
+        self.add_widget((10, 10), self.__inventory_pane)
         self.add_border(self.__inventory_pane)
 

@@ -55,17 +55,17 @@ class BuildingWindow(Window):
         for item in self.__inventory.items:
             if item.name() not in covered_items and not item.material.unbuildable:
                 #remove the alpha channel
-                lbl = ItemLabel((0, 0), (42, 42), item, color=self.COLOR[:-1])
+                lbl = ItemLabel((42, 42), item, color=self.COLOR[:-1])
                 def set_selected(self, selected):
                     self.set_selected(selected)
                     if selected:
                         select_an_item(self)
 
                 lbl.set_action(1, set_selected, [lbl, True], ["pressed"])
-                self._inventory_sp.add_widget(lbl)
+                self._inventory_sp.add_widget((0, 0), lbl)
 
     def __initiate_widgets(self):
         #create scrollable inventory
-        self._inventory_sp  = ScrollPane((25, 50), (650, 625), color=self.COLOR[:-1])
-        self.add_widget(self._inventory_sp)
+        self._inventory_sp  = ScrollPane((650, 625), color=self.COLOR[:-1])
+        self.add_widget((25, 50), self._inventory_sp)
         self.add_border(self._inventory_sp)
