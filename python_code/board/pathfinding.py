@@ -435,11 +435,13 @@ class PathfindingChunk:
                         adj_rect.connecting_rects[index - 2].add(rect)
 
     def __remove_rectangle(self, rect):
-        self.__local_rectangles.remove(rect)
-        rect.delete()
-        direction_sizes = (rect.top, rect.right, rect.bottom, rect.left)
-        for i in range(4):
-            self.rectangle_network[i][direction_sizes[i]].remove(rect)
+        # TODO this failsafe should not be neccesairy
+        if rect in self.__local_rectangles:
+            self.__local_rectangles.remove(rect)
+            rect.delete()
+            direction_sizes = (rect.top, rect.right, rect.bottom, rect.left)
+            for i in range(4):
+                self.rectangle_network[i][direction_sizes[i]].remove(rect)
 
     def get_air_rectangles(self, blocks, covered_coordinates):
         #covered coordinates is a matrix with the same amount of rows and column coords for all checked coords.

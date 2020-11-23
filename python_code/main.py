@@ -41,10 +41,9 @@ class Main:
         create_recipe_book()
 
         # pre loaded scenes
-        # TODO: remove the game as default, add it when selected from the menu
         global scenes
-        scenes["main_menu"] =  MainMenu(self.screen)
-        scenes.set_active_scene("main_menu")
+        scenes[MainMenu.name()] =  MainMenu(self.screen)
+        scenes.set_active_scene(MainMenu.name())
         # "game": Game(self.screen)
 
         self.run()
@@ -180,8 +179,8 @@ class MainMenu(Scene):
         game = Game(self.screen)
         executor = concurrent.futures.ThreadPoolExecutor()
         future = executor.submit(game.start)
-        scenes["loading"] = LoadingScreen(self.screen, future, game, executor)
-        scenes.set_active_scene("loading")
+        scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
+        scenes.set_active_scene(LoadingScreen.name())
 
 
 class LoadingScreen(Scene):
