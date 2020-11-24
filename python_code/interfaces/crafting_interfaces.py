@@ -310,7 +310,7 @@ class GridLabel(Label):
 
 class ProgressArrow(Label):
     def __init__(self, size, progress_list, **kwargs):
-        super().__init__(size, **kwargs)
+        super().__init__(size, selectable=False, **kwargs)
         self.__arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
         self.__full_progress_arrow = image_sheets["general"].image_at((0, 20), size=(20, 20), color_key=(255, 255, 255))
         self.__arrow_image = pygame.transform.scale(self.__arrow_image, size)
@@ -341,7 +341,7 @@ class ProgressArrow(Label):
 class FuelMeter(Pane):
     MAX_FUEL = 100
     def __init__(self, size, max_fuel=MAX_FUEL, **kwargs):
-        super().__init__(size, color=INVISIBLE_COLOR, **kwargs)
+        super().__init__(size, selectable=False, color=INVISIBLE_COLOR, **kwargs)
         self._fuel_lvl = 0
         self.__max_fuel = max_fuel
 

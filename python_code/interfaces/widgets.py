@@ -88,7 +88,7 @@ class Widget(ABC):
     """
     Basic widget class
     """
-    def __init__(self, size, selectable = False, **kwargs):
+    def __init__(self, size, selectable = True, **kwargs):
         self.action_functions = {}
         self.selectable = selectable
         self.selected = False
@@ -134,7 +134,9 @@ class Widget(ABC):
 
         :param selected: a boolean telling the state of selection
         """
-        self.selected = selected
+        # make sure that you only select when allowed
+        if self.selectable:
+            self.selected = selected
 
 
 class Label(Widget):
@@ -294,6 +296,7 @@ class Pane(Label, EventHandler):
         Label.__init__(self, size, **kwargs)
         EventHandler.__init__(self, allowed_events)
         self.widgets = []
+        self.selectable = False
 
     def add_widget(self, pos, widget, add=False):
         """
@@ -326,7 +329,7 @@ class Pane(Label, EventHandler):
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def _find_selected_widgets(self, pos):
+    def _find_hovered_widget(self, pos):
         """
         Recursively traverse all containers in containers to find the widget
         the user is hovering over. Then activate a potential action function
@@ -345,7 +348,7 @@ class Pane(Label, EventHandler):
             if collide:
                 if isinstance(widget, Pane):
                     selected_widgets.append(widget)
-                    lower_selected = widget._find_selected_widgets(adjusted_pos)
+                    lower_selected = widget._find_hovered_widget(adjusted_pos)
                     if lower_selected:
                         for w in lower_selected:
                             selected_widgets.append(w)
@@ -435,7 +438,7 @@ class Frame(ZoomableEntity, Pane):
 
         if self.static:
             pos = screen_to_board_coordinate(pos, self.groups()[0].target, 1)
-        selected = self._find_selected_widgets(pos)
+        selected = self._find_hovered_widget(pos)
 
         pressed = self.get_all_pressed()
         unpressed = self.get_all_unpressed()
