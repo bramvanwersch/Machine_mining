@@ -327,7 +327,10 @@ class ProgressArrow(Label):
 
     def __set_progress(self):
         full_rect = self.__full_progress_arrow.get_rect()
-        fraction_progress = min(1, self.__progress[0] / self.__progress[1])
+        try:
+            fraction_progress = min(1.0, self.__progress[0] / self.__progress[1])
+        except ZeroDivisionError:
+            fraction_progress = 0.0
         width = int(fraction_progress * full_rect.width)
         actual_rect = (*full_rect.topleft, width, full_rect.height)
         progress_arrow = self.__arrow_image.copy()
