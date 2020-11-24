@@ -18,6 +18,10 @@ class EventHandler(ABC):
             self.__pressed_keys = {key: Key(key) for key in recordable_keys}
         self._dragging = False
 
+    def add_recordable_key(self, key):
+        if key not in self.__pressed_keys:
+            self.__pressed_keys[key] = Key(key)
+
     def __record_pressed_keys(self, events):
         """
         Record what buttons are pressed in self.__pressed_keys dictionary

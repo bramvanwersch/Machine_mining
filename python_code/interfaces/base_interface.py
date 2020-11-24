@@ -9,7 +9,7 @@ from utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
 from interfaces.widgets import Frame, Label, Button
 from utility.image_handling import image_sheets
 
-class Window(Frame, EventHandler):
+class Window(Frame):
     TOP_SIZE = Size(0, 25)
     EXIT_BUTTON_SIZE = Size(25, 25)
     COLOR = (173, 94, 29, 150)
@@ -21,7 +21,6 @@ class Window(Frame, EventHandler):
     CLOSE_LIST = []
 
     def __init__(self, pos, size, *groups, color=COLOR, title=None, static=False, **kwargs):
-        EventHandler.__init__(self, [])
         Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
         self.window_manager = window_managers.game_window_manager
         self.static = static
@@ -127,13 +126,9 @@ class Window(Frame, EventHandler):
         """
         if self.is_showing():
             leftovers = super().handle_events(events)
-            #check for events that are not normally triggered twice
-            for event in events:
-                if event.type == MOUSEBUTTONUP and event.button == 1:
-                    self.__moving_window = False
-                    break
-            return leftovers
-        return events
+        else:
+            leftovers = events
+        return leftovers
 
     @classmethod
     def name(self):

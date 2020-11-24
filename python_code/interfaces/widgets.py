@@ -84,11 +84,12 @@ class SelectionGroup:
             [w.set_selected(True) for w in self.__widgets]
 
 
-class Widget(ABC):
+class Widget(EventHandler, ABC):
     """
     Basic widget class
     """
-    def __init__(self, size, selectable = True, **kwargs):
+    def __init__(self, size, selectable=True, recordable_keys=[], **kwargs):
+        super().__init__(recordable_keys)
         self.action_functions = {}
         self.selectable = selectable
         self.selected = False
@@ -127,6 +128,19 @@ class Widget(ABC):
             self.action_functions[key].add_action(action_function, values, types)
         else:
             self.action_functions[key] = KeyActionFunctions(action_function, values, types)
+            self.add_recordable_key(key)
+
+    def handle_events(self, events):
+        leftover_events = super().handle_events(events)
+
+        pressed = self.get_all_pressed()
+        unpressed = self.get_all_unpressed()
+        keys = [*zip(pressed, ["pressed"] * len(pressed)),
+                *zip(unpressed, ["unpressed"] * len(unpressed))]
+        for key, type in keys:
+            if key.name in self.action_functions:
+                self.action(key.name, type)
+        return leftover_events
 
     def set_selected(self, selected):
         """
@@ -287,14 +301,13 @@ class Button(Label):
         return new_color
 
 
-class Pane(Label, EventHandler):
+class Pane(Label):
     """
     Container widget that allows selecting and acts as an image for a number
     of widgets
     """
-    def __init__(self, size, allowed_events = "ALL", **kwargs):
+    def __init__(self, size, **kwargs):
         Label.__init__(self, size, **kwargs)
-        EventHandler.__init__(self, allowed_events)
         self.widgets = []
         self.selectable = False
 
@@ -329,7 +342,7 @@ class Pane(Label, EventHandler):
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def _find_hovered_widget(self, pos):
+    def _find_hovered_widgets(self, pos):
         """
         Recursively traverse all containers in containers to find the widget
         the user is hovering over. Then activate a potential action function
@@ -338,7 +351,7 @@ class Pane(Label, EventHandler):
         :return: a list of selected widgets with the bottommost one at the end
         of the list
         """
-        selected_widgets = [self]
+        selected_widgets = []
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
         for widget in self.widgets:
             collide = widget.rect.collidepoint(adjusted_pos)
@@ -348,7 +361,7 @@ class Pane(Label, EventHandler):
             if collide:
                 if isinstance(widget, Pane):
                     selected_widgets.append(widget)
-                    lower_selected = widget._find_hovered_widget(adjusted_pos)
+                    lower_selected = widget._find_hovered_widgets(adjusted_pos)
                     if lower_selected:
                         for w in lower_selected:
                             selected_widgets.append(w)
@@ -424,35 +437,17 @@ class Frame(ZoomableEntity, Pane):
         self.orig_rect = rect
 
     def handle_events(self, events):
-        """
-        Handle events that are issued to the frame.
-
-        :param events: a list of pygame Events
-
-        activates events on the last element in the selected list (a list of
-        all widgets that the user hovers over at this moment). It then tries
-        to apply these events to all widgets in this list.
-        """
+        # events that are triggered on this frame widget trigger first
         leftover_events = super().handle_events(events)
         pos = pygame.mouse.get_pos()
-
         if self.static:
             pos = screen_to_board_coordinate(pos, self.groups()[0].target, 1)
-        selected = self._find_hovered_widget(pos)
+        hovered = self._find_hovered_widgets(pos)
 
-        pressed = self.get_all_pressed()
-        unpressed = self.get_all_unpressed()
-        keys = [*zip(pressed, ["pressed"]* len(pressed)),
-                *zip(unpressed, ["unpressed"]* len(unpressed))]
         #handle all events from the most front widget to the most back one.
-        while selected != None and len(selected) > 0:
-            widget = selected.pop()
-            for index in range(len(keys) - 1, -1, -1):
-                key, type = keys[index]
-                if key.name in widget.action_functions:
-                    widget.action(key.name, type)
-                    #remove event as to not trigger it twice
-                    del keys[index]
+        while hovered != None and len(hovered) > 0:
+            widget = hovered.pop()
+            leftover_events = widget.handle_events(leftover_events)
         return leftover_events
 
 

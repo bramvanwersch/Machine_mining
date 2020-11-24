@@ -110,7 +110,7 @@ class FactoryWindow(CraftingWindow):
     SIZE = Size(300, 250)
 
     def __init__(self, craft_building, recipes, *groups):
-        super().__init__(craft_building, recipes, *groups, title = "CRAFTING:", allowed_events=[1, K_ESCAPE])
+        super().__init__(craft_building, recipes, *groups, title = "CRAFTING:")
         self._grid_pane = None
         self._craftable_item_lbl = None
         self.__init_widgets()
@@ -140,8 +140,7 @@ class FurnaceWindow(CraftingWindow):
     SIZE = Size(240, 220)
 
     def __init__(self, furnace_object, recipes, *groups):
-        super().__init__(furnace_object, recipes, *groups,layer=INTERFACE_LAYER, title = "FURNACE",
-                        allowed_events=[1, K_ESCAPE])
+        super().__init__(furnace_object, recipes, *groups,layer=INTERFACE_LAYER, title = "FURNACE")
         self.__init_widgets()
         self.__requested_fuel = False
 
