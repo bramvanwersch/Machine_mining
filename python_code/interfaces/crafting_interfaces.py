@@ -125,7 +125,7 @@ class FactoryWindow(CraftingWindow):
         self.add_widget((10, 10), self.grid_pane)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=self.COLOR[:-1])
+        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=self.COLOR[:-1], selectable=False)
         self.add_widget((200, 50), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl)
 
@@ -191,7 +191,7 @@ class FurnaceWindow(CraftingWindow):
         a_lbl = ProgressArrow((50, 50), self._crafting_time, color=INVISIBLE_COLOR)
         self.add_widget((110, 35), a_lbl)
 
-        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=(150, 150, 150))
+        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=(150, 150, 150), selectable=False)
         self.add_widget((170, 32), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl, color=(75, 75, 75))
 

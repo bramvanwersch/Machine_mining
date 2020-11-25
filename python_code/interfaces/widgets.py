@@ -401,6 +401,12 @@ class Frame(ZoomableEntity, Pane):
     def __init__(self, pos, size, *groups, **kwargs):
         Pane.__init__(self, size, **kwargs)
         ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
+        self.selected_widget = None
+        self.set_action(K_UP, self.__select_next_widget, values=[K_UP], types=["pressed"])
+        self.set_action(K_DOWN, self.__select_next_widget, values=[K_DOWN], types=["pressed"])
+        self.set_action(K_LEFT, self.__select_next_widget, values=[K_LEFT], types=["pressed"])
+        self.set_action(K_RIGHT, self.__select_next_widget, values=[K_RIGHT], types=["pressed"])
+        self.set_action(K_RETURN, self.__activate_selected_widget, types=["pressed"])
 
     def update(self, *args):
         """
@@ -435,6 +441,54 @@ class Frame(ZoomableEntity, Pane):
     @rect.setter
     def rect(self, rect):
         self.orig_rect = rect
+
+    def __select_next_widget(self, direction):
+        selectable_widgets = [w for w in self.widgets if w.selectable]
+        if len(selectable_widgets) == 0:
+            return
+        # if no selected take top most widget
+        if self.selected_widget is None:
+            self.selected_widget = sorted(self.widgets, key=lambda x: (x.rect.centery, x.rect.centerx))[0]
+            self.selected_widget.set_selected(True)
+            return
+        else:
+            s_rect = self.selected_widget.rect
+            self.selected_widget.set_selected(False)
+        if direction == K_UP or direction == K_DOWN:
+            # make sure widgets are partially overlapping in the x-direction
+            elligable_widgets = [w for w in selectable_widgets
+                                if (w.rect.left >= s_rect.left and w.rect.left <= s_rect.right) or
+                                (w.rect.right <= s_rect.right and w.rect.right >= s_rect.left)]
+            if direction == K_UP:
+                elligable_widgets_above = [w for w in elligable_widgets if w.rect.centery < s_rect.centery]
+                if len(elligable_widgets_above) > 0:
+                    # select the closest above the current
+                    self.selected_widget = sorted(elligable_widgets_above, key=lambda x: s_rect.centery - x.rect.centery)[0]
+            else:
+                elligable_widgets_below = [w for w in elligable_widgets if w.rect.centery > s_rect.centery]
+                if len(elligable_widgets_below) > 0:
+                    # select the closest bewow the current
+                    self.selected_widget = sorted(elligable_widgets_below, key=lambda x: x.rect.centery - s_rect.centery)[0]
+        if direction == K_LEFT or direction == K_RIGHT:
+            # make sure widgets are partially overlapping in the x-direction
+            elligable_widgets = [w for w in selectable_widgets
+                                if (w.rect.top >= s_rect.top and w.rect.top <= s_rect.bottom) or
+                                (w.rect.bottom <= s_rect.bottom and w.rect.bottom >= s_rect.top)]
+            if direction == K_LEFT:
+                elligable_widgets_west = [w for w in elligable_widgets if w.rect.centerx < s_rect.centerx]
+                if len(elligable_widgets_west) > 0:
+                    # select the closest above the current
+                    self.selected_widget = sorted(elligable_widgets_west, key=lambda x: s_rect.centerx - x.rect.centerx)[0]
+            else:
+                elligable_widgets_east = [w for w in elligable_widgets if w.rect.centerx > s_rect.centerx]
+                if len(elligable_widgets_east) > 0:
+                    # select the closest bewow the current
+                    self.selected_widget = sorted(elligable_widgets_east, key=lambda x: x.rect.centerx - s_rect.centerx)[0]
+        self.selected_widget.set_selected(True)
+
+    def __activate_selected_widget(self):
+        if self.selected_widget != None:
+            self.selected_widget.action(1, "unpressed")
 
     def handle_events(self, events):
         # events that are triggered on this frame widget trigger first

@@ -47,7 +47,8 @@ class Window(Frame):
         return self._visible and self._show_window
 
     def __add_top_border(self, size, title):
-        top_label = Label(Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height), color=self.TOP_BAR_COLOR)
+        top_label = Label(Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height),
+                          color=self.TOP_BAR_COLOR, selectable=False)
         if self.static:
             top_label.set_action(1, self.__top_label_action, values=[True], types=["pressed"])
             top_label.set_action(1, self.__top_label_action, values=[False], types=["unpressed"])
@@ -56,7 +57,7 @@ class Window(Frame):
             top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25, add=True)
         button_image = image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE, color_key=(255,255,255))
         hover_image = image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE, color_key=(255, 255, 255))
-        exit_button = Button(self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image)
+        exit_button = Button(self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image, selectable=False)
         exit_button.set_action(1, self._close_window, types=["unpressed"])
         self.add_widget((size.width - self.EXIT_BUTTON_SIZE.width, 0), exit_button, adjust=False)
 
