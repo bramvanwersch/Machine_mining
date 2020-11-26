@@ -113,7 +113,7 @@ class BaseRecipe(ABC):
                         counts[obj] = 1
                     else:
                         counts[obj] += 1
-        items = [Item(obj(), value) for name, value in counts.items()]
+        items = [Item(obj(), value) for obj, value in counts.items()]
         return items
 
     @abstractmethod
