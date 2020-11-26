@@ -3,14 +3,12 @@
 BUGS:
 - Windows dont close when buildings are destroyed
 - Windows dont appear when opening in zoomed in mode.
-- Fix blocks getting left behind while mining because of delaye d pathfinding calculations  --> probably fixed no delayed calculations anymore
-- There is a rare case where the game crashes when created that has someting to do with pathfinding rectangles not exisitng but still being present in the dictionary.
 - The scroll pane does not scroll properly down anymore
+- Fix weird prioritisation with tasks
+- Mouse moves from window bar when moving windows in zoomed mode
 - There is a bug with lighting not updating when building or growing etc.
-- There are bugs with the furnace crafting recipes and crafting table recipes. I suspect something to do with fuel materials
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
-- A nice starting area
 - Allot more recipes --> make a tree of progress using the recipes
 - An end goal.
 - Some narrative that gives some background to the story
@@ -23,10 +21,8 @@ SPECIFIC FEATURES:
 - fix weird movements trough rectangles while pathfinding / fix not always taking the shortest route whit pathfinding
 
 INTERFACE FEATURES:
-- add input at th estart of the game for level configuration
+- add input at the start of the game for level configuration
 - add settings
-- add keyboard inputs in the main menu.
-
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
