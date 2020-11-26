@@ -278,7 +278,7 @@ class GridLabel(Label):
     POS_COLOR = (0, 255, 0, 100)
     NEG_COLOR = (255, 0, 0, 100)
     def __init__(self, size, **kwargs):
-        super().__init__(size, **kwargs)
+        super().__init__(size, selectable=False, **kwargs)
         self.__item_present = None
         self.__positive_mark = image_sheets["general"].image_at((80, 0), size=(10, 10), color_key=(255, 255, 255))
 
@@ -340,18 +340,18 @@ class ProgressArrow(Label):
 class FuelMeter(Pane):
     MAX_FUEL = 100
     def __init__(self, size, max_fuel=MAX_FUEL, **kwargs):
-        super().__init__(size, selectable=False, color=INVISIBLE_COLOR, **kwargs)
+        super().__init__(size, color=INVISIBLE_COLOR, **kwargs)
         self._fuel_lvl = 0
         self.__max_fuel = max_fuel
 
         self.__init_widgets()
 
     def __init_widgets(self):
-        text_lbl = Label((25, 10), color=INVISIBLE_COLOR)
+        text_lbl = Label((25, 10), color=INVISIBLE_COLOR, selectable=False)
         text_lbl.set_text("Fuel", (0,0), font_size=16)
         self.add_widget((0,0), text_lbl)
 
-        self.fuel_indicator = Label((20, self.rect.height - 20), color=INVISIBLE_COLOR)
+        self.fuel_indicator = Label((20, self.rect.height - 20), color=INVISIBLE_COLOR, selectable=False)
         self.add_border(self.fuel_indicator)
         self.add_widget((2, 15), self.fuel_indicator)
 

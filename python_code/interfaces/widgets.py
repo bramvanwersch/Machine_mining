@@ -369,6 +369,15 @@ class Pane(Label):
                     selected_widgets.append(widget)
         return selected_widgets
 
+    def _get_selectable_widgets(self):
+        selectable_widgets = []
+        for widget in self.widgets:
+            if widget.selectable:
+                selectable_widgets.append(widget)
+            elif isinstance(widget, Pane):
+                selectable_widgets.extend(widget._get_selectable_widgets())
+        return selectable_widgets
+
     def __redraw_widget(self, widget):
         """
         Method that redraws a widget in a container.
@@ -443,7 +452,8 @@ class Frame(ZoomableEntity, Pane):
         self.orig_rect = rect
 
     def __select_next_widget(self, direction):
-        selectable_widgets = [w for w in self.widgets if w.selectable]
+        selectable_widgets = self._get_selectable_widgets()
+
         if len(selectable_widgets) == 0:
             return
         # if no selected take top most widget
