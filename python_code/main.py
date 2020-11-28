@@ -7,6 +7,7 @@ from entities import Worker, CameraCentre
 from board.camera import *
 from board.board import Board
 from utility.constants import *
+from utility.utilities import Serializer
 from tasks import TaskControl
 from utility.image_handling import load_images
 from recipes.recipe_constants import create_recipe_book
@@ -232,13 +233,13 @@ class LoadingScreen(Scene):
             scenes.set_active_scene(self.loading_scene.name())
 
 
-class Game(Scene):
-    def __init__(self, screen):
+class Game(Scene, Serializer):
+    def __init__(self, screen, camera_center=None, zoom=None):
         # camera center position is chnaged before starting the game
-        #TODO make the size 0,0
+        #TODO make the size 0,0, now this for visibility
         self.camera_center = CameraCentre((0,0), (5,5))
         sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
-        super().__init__(screen, sprite_group)
+        Scene.__init__(self, screen, sprite_group)
         # update rectangles
         self.__vision_rectangles = []
         self.__debug_rectangle = (0,0,0,0)
@@ -274,10 +275,15 @@ class Game(Scene):
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
             Worker((appropriate_location), self.board, self.tasks, self.sprite_group)
-        #add one of the imventories of the terminal
+        #add one of the imventories of the terminal, TODO definitally a temporary solution
         self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.sprite_group)
 
         self.camera_center.rect.center = start_chunk.rect.center
+
+    def to_dict(self):
+        pass
+
+
 
     def scene_updates(self):
         super().scene_updates()

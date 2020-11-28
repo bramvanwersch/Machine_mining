@@ -1,5 +1,7 @@
 from pygame import Rect, image
 from math import pi, e, sqrt, erfc
+from abc import ABC, abstractmethod
+import json
 
 GROUP = 0
 
@@ -12,6 +14,38 @@ def unique_group():
 
 class GameExceprion(Exception):
     pass
+
+
+class Serializer(ABC):
+    """
+    adapted from gamci/cblaster :)
+    """
+
+    @abstractmethod
+    def to_dict(self):
+        pass
+
+    @classmethod
+    def from_dict(cls, **arguments):
+        return cls(**arguments)
+
+    def to_json(self, fp=None, **kwargs):
+        """Serialises class to JSON."""
+        d = self.to_dict()
+        if fp:
+            json.dump(d, fp, **kwargs)
+        else:
+            return json.dumps(d, **kwargs)
+
+    @classmethod
+    def from_json(cls, js):
+        """Instantiates class from JSON handle."""
+        if isinstance(js, str):
+            d = json.loads(js)
+        else:
+            d = json.load(js)
+        return cls.from_dict(**d)
+
 
 def normalize(values, scale=1):
     """
@@ -94,13 +128,19 @@ def side_by_side(rect1, rect2):
         return None
 
 
-class Size:
+class Size(Serializer):
     """
     Class that defines a size, basically a rectangle without coordinates
     """
     def __init__(self, width, height):
         self.height = height
         self.width = width
+
+    def to_dict(self):
+        return {
+            "width": self.width,
+            "height": self.height
+        }
 
     @property
     def size(self):

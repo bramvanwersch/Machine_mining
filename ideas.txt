@@ -19,6 +19,8 @@ SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
 - fix weird movements trough rectangles while pathfinding / fix not always taking the shortest route whit pathfinding
+- saving the game
+- make the camera stop when the screen stops moving instead of the edge of the screen.
 
 INTERFACE FEATURES:
 - add input at the start of the game for level configuration

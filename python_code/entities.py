@@ -1,29 +1,50 @@
 from abc import ABC
+from itertools import count
 
 from utility.constants import *
-from utility.utilities import Size
+from utility.utilities import Size, Serializer
 from inventories import Inventory
 from tasks import TaskQueue, Task, FetchTask, EmptyInventoryTask
 from utility.event_handling import EventHandler
 
 
-class Entity(pygame.sprite.Sprite, ABC):
+class Entity(pygame.sprite.Sprite, Serializer, ABC):
     """
     Basic entity class is a sprite with an image.
     """
-    def __init__(self, pos, size, *groups, color = (255,255,255),
-                 layer = HIGHLIGHT_LAYER, static=True, **kwargs):
+    COLOR = (255, 255, 255)
+
+    def __init__(self, pos, size, *groups, color=COLOR, layer=HIGHLIGHT_LAYER, static=True, zoomable=False,
+                 visible=True, **kwargs):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
         self.image = self._create_image(size, color, **kwargs)
         self.orig_image = self.image
         self.orig_rect = self.image.get_rect(topleft=pos)
-        self._visible = True
-        self.zoomable = False
+        self._visible = visible
+        self.zoomable = zoomable
         # should the entity move with the camera or not
         self.static = static
 
-    def show(self, value:bool):
+    def to_dict(self):
+        return {
+            "pos": self.orig_rect.topleft,
+            "size": self.orig_rect.size,
+            "layer": self._layer,
+            "static": self.static,
+            "zoomable": self.zoomable,
+            "visible": self._visible
+        }
+
+    @classmethod
+    def from_dict(cls, sprite_group=None, **arguments):
+        return super().from_dict(
+            groups=sprite_group,
+            type=cls.__name__,
+            **arguments,
+        )
+
+    def show(self, value: bool):
         self._visible = value
 
     def is_showing(self):
@@ -70,15 +91,19 @@ class ZoomableEntity(Entity):
     """
     Basic zoomable entity class
     """
-    def __init__(self, pos, size, *groups, zoom = 1, **kwargs):
-        Entity.__init__(self, pos, size, *groups, **kwargs)
-        #zoom variables
+    def __init__(self, pos, size, *groups, zoom=1, **kwargs):
+        Entity.__init__(self, pos, size, *groups, zoomable=True, **kwargs)
+        # zoom variables
         self._zoom = zoom
-        self.zoomable = True
-        #if an entity is created after zooming make sure it is zoomed to the
-        #right proportions
+        # if an entity is created after zooming make sure it is zoomed to the
+        # right proportions
         if self._zoom != 1:
             self.zoom(self._zoom)
+
+    def to_dict(self):
+        return super().to_dict().update({
+            "zoom": self._zoom,
+        })
 
     def zoom(self, zoom):
         """
@@ -95,8 +120,7 @@ class ZoomableEntity(Entity):
             orig_rect = self.orig_rect
             new_width = round(orig_rect.width * zoom)
             new_height = round(orig_rect.height * zoom)
-            self.image = pygame.transform.scale(self.orig_image, (int(new_width),
-                                                              int(new_height)))
+            self.image = pygame.transform.scale(self.orig_image, (int(new_width), int(new_height)))
 
     @property
     def rect(self):
@@ -130,6 +154,11 @@ class SelectionRectangle(ZoomableEntity):
         self.__size = Size(*size)
         self.__update_image()
 
+    def to_dict(self):
+        return super().to_dict().update({
+            "mouse_pos": self.__prev_screen_pos,
+        })
+
     def __update_image(self):
         """
         Update the rectangle image that represents a highlighted area.
@@ -147,7 +176,7 @@ class SelectionRectangle(ZoomableEntity):
         self.orig_rect = self.image.get_rect(topleft = pos)
 
         self.orig_image = self.image
-        #make sure to update the zoomed image aswell
+        # make sure to update the zoomed image aswell
         self.zoom(self._zoom)
 
     def update(self, *args):
@@ -181,11 +210,18 @@ class MovingEntity(ZoomableEntity):
     """
     Base class for moving entities
     """
-    MAX_SPEED = 10 #pixels/s
-    def __init__(self, pos, size, *groups, max_speed = MAX_SPEED, **kwargs):
+    MAX_SPEED = 10  # pixels/s
+
+    def __init__(self, pos, size, *groups, max_speed=MAX_SPEED, speed=None, **kwargs):
         ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.max_speed = max_speed
-        self.speed = pygame.Vector2(0, 0)
+        self.speed = pygame.Vector2(*speed) if speed else pygame.Vector2(0, 0)
+
+    def to_dict(self):
+        return super().to_dict().update({
+            "max_speed": self.max_speed,
+            "speed": (self.speed.x, self.speed.y)
+        })
 
     def update(self, *args):
         """
@@ -258,26 +294,36 @@ class Worker(MovingEntity):
     A worker class that can perform tasks
     """
     COLOR = (255, 0, 0, 100)
-    SIZE = (10,10)
-    #in wheight
+    SIZE = (10, 10)
+    # in wheight
     INVENTORY_SIZE = 2
-    NUMBER = 0
+    NUMBER = count(1, 1)
     VISON_RADIUS = 80
-    def __init__(self, pos, board, tasks, *groups, **kwargs):
+
+    def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
         self.number = Worker.NUMBER
         Worker.NUMBER += 1
         self.board = board
-        self.task_control = tasks
+        self.task_control = task_control
 
-        #tasks
+        # tasks
         self.task_queue = TaskQueue()
         self.path = []
         self.dest = None
 
-        #inventory
+        # inventory
         self.inventory = Inventory(self.INVENTORY_SIZE)
-        self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
+
+        # for loading purposes
+        if self.board:
+            self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
+
+    def to_dict(self):
+        return super().to_dict().update({
+            "max_speed": self.max_speed,
+            "speed": (self.speed.x, self.speed.y)
+        })
 
     def update(self, *args):
         """
