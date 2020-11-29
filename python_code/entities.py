@@ -318,12 +318,6 @@ class Worker(MovingEntity):
         if self.board:
             self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
 
-    def to_dict(self):
-        return super().to_dict().update({
-            "max_speed": self.max_speed,
-            "speed": (self.speed.x, self.speed.y)
-        })
-
     def update(self, *args):
         """
         Perform a task when avaialable

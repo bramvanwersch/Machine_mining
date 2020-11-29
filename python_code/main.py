@@ -5,7 +5,7 @@ import warnings
 import board.board
 import utility.utilities as utilities
 from entities import Worker, CameraCentre
-from board.camera import *
+from board.sprite_groups import *
 from tasks import TaskControl
 from utility.image_handling import load_images
 from recipes.recipe_constants import create_recipe_book
@@ -161,6 +161,7 @@ class MainMenu(Scene):
 
     def __load_game(self):
         warnings.warn("Game loading is not avaialable yet", utilities.NotImplementedWarning)
+        Game.from_json("some jason file")
 
     def __open_settings(self):
         warnings.warn("No settings available yet", utilities.NotImplementedWarning)
@@ -210,23 +211,32 @@ class LoadingScreen(Scene):
 
 
 class Game(Scene, Serializer):
-    def __init__(self, screen):
+    def __init__(self, screen, camera_center=None, zoom=None, window_manager=None, board=None, task_control=None):
         # camera center position is chnaged before starting the game
-        #TODO make the size 0,0
-        self.camera_center = CameraCentre((0,0), (5,5))
+        # TODO make the size 0,0
+        self.camera_center = camera_center if camera_center else CameraCentre((0, 0), (5, 5))
         sprite_group = CameraAwareLayeredUpdates(self.camera_center, BOARD_SIZE)
         super().__init__(screen, sprite_group)
         # update rectangles
         self.__vision_rectangles = []
-        self.__debug_rectangle = (0,0,0,0)
+        self.__debug_rectangle = (0, 0, 0, 0)
 
         self._visible_entities = 0
 
-        #zoom variables
-        self._zoom = 1.0
+        # zoom variables
+        self._zoom = zoom if zoom else 1.0
         self.progress = ""
+        self.window_manager = window_manager
+        self.board = board
+        self.task_control = task_control
+
+        # ready made windows
+        self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
+                                                                  self.sprite_group) if self.board else None
+        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
 
     def start(self):
+        # function for setting up a Game
         self.progress = "Started loading..."
         # load a window manager to manage window events
         self.progress = "Adding windows..."
@@ -237,29 +247,35 @@ class Game(Scene, Serializer):
         self.progress = "Generating board..."
         self.board = board.board.Board(self.sprite_group)
 
-        #tasks
+        # tasks
         self.progress = "Making tasks..."
-        self.tasks = TaskControl(self.board)
-        self.board.set_task_control(self.tasks)
+        self.task_control = TaskControl(self.board)
+        self.board.set_task_control(self.task_control)
 
-        #for some more elaborate setting up of variables
-        self.building_interface = None
-
+        # for some more elaborate setting up of variables
         self.progress = "Populating with miners..."
         start_chunk = self.board.get_start_chunk()
         appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / BLOCK_SIZE.width) * BLOCK_SIZE.width + start_chunk.rect.left,
             + start_chunk.START_RECTANGLE.bottom - BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
-            Worker((appropriate_location), self.sprite_group, board=self.board, task_control=self.tasks)
-        #add one of the imventories of the terminal
-        self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory, self.sprite_group)
-
-        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-
+            Worker(appropriate_location, self.sprite_group, board=self.board, task_control=self.task_control)
+        # add one of the imventories of the terminal
+        if self.building_interface is None:
+            self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
+                                                                  self.sprite_group)
         self.camera_center.rect.center = start_chunk.rect.center
 
     def to_dict(self):
-        pass
+        return {
+            "camera_center": self.camera_center.to_dict(),
+            "zoom": self._zoom,
+            "window_manager": self.window_manager.to_dict()
+
+        }
+
+    @classmethod
+    def from_dict(cls, **arguments):
+        warnings.warn("from_dict is not implemented for Game", utilities.NotImplementedWarning)
 
     def save(self):
         warnings.warn("Save is not implemented yet", utilities.NotImplementedWarning)
@@ -281,7 +297,7 @@ class Game(Scene, Serializer):
         for event in events:
             if event.type == KEYDOWN and event.key in INTERFACE_KEYS:
                 self.__handle_interface_selection_events(event)
-                #allow these events to trigger after
+                # allow these events to trigger after
                 leftover_events.append(event)
 
             elif (event.type == KEYDOWN or event.type == KEYUP) and \
