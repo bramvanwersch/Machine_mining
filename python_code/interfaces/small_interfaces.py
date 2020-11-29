@@ -28,7 +28,7 @@ class BuildingWindow(Window):
     CLOSE_LIST = ["CraftingWindow"]
 
     def __init__(self, terminal_inventory, *groups):
-        super().__init__(STATIC_INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
+        super().__init__(DYNAMIC_INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE,
                          *groups, layer=INTERFACE_LAYER, title="PICK AN ITEM TO BUILD:",
                          allowed_events=[1, K_ESCAPE])
         self.__inventory = terminal_inventory
@@ -78,7 +78,7 @@ class BuildingWindow(Window):
 
 class PauseWindow(Window):
     def __init__(self, sprite_group):
-        super().__init__(STATIC_INTERFACE_WINDOW_POS, (400, 700), sprite_group, title="PAUSED")
+        super().__init__(DYNAMIC_INTERFACE_WINDOW_POS, INTERFACE_WINDOW_SIZE, sprite_group, title="PAUSED")
         self.__init_widgets()
 
     def __init_widgets(self):
@@ -87,7 +87,7 @@ class PauseWindow(Window):
         y_coord = 150
 
         continue_button = Button(button_size, color=(100, 100, 100), text="CONTINUE", font_size=30)
-        continue_button.set_action(1, self.show_window, values=[False], types=["unpressed"])
+        continue_button.set_action(1, self._close_window, types=["unpressed"])
         self.add_widget(("center", y_coord), continue_button)
 
         y_coord += 50

@@ -26,9 +26,9 @@ START_CHUNK_POS = (1, 1)
 #constant to tell when to recalculate the full chunk
 PF_UPDATE_TIME = 1000
 
-INTERFACE_WINDOW_SIZE = Size(700, 700)
-STATIC_INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
-                               int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
+INTERFACE_WINDOW_SIZE = Size(500, 700)
+DYNAMIC_INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
+                                int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 
 #layers
