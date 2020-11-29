@@ -27,8 +27,8 @@ START_CHUNK_POS = (1, 1)
 PF_UPDATE_TIME = 1000
 
 INTERFACE_WINDOW_SIZE = Size(700, 700)
-INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
-                        int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
+STATIC_INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
+                               int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 
 #layers

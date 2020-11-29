@@ -1,19 +1,19 @@
 
 import warnings
 
-#own classes
+# own classes
+import board.board
+import utility.utilities as utilities
 from entities import Worker, CameraCentre
 from board.camera import *
-from board.board import Board
 from tasks import TaskControl
 from utility.image_handling import load_images
 from recipes.recipe_constants import create_recipe_book
-from interfaces.building_interface import BuildingWindow
+import interfaces.small_interfaces as small_interfaces
 from interfaces.managers import create_window_managers
 from block_classes.block_constants import configure_material_collections
 from interfaces.interface_utility import ThreadPoolExecutorStackTraced
 from interfaces.widgets import *
-from interfaces.base_interface import Window
 
 
 class Main:
@@ -38,19 +38,20 @@ class Main:
         #load all recipes
         create_recipe_book()
 
+        # load the scenes
+        utilities.create_scene_manager()
+
         # pre loaded scenes
-        global scenes
-        scenes[MainMenu.name()] =  MainMenu(self.screen)
-        scenes[PauseMenu.name()] = PauseMenu(self.screen)
-        scenes.set_active_scene(MainMenu.name())
+        utilities.scenes[MainMenu.name()] = MainMenu(self.screen)
+        utilities.scenes.set_active_scene(MainMenu.name())
 
         self.run()
 
     def run(self):
         # Main Loop
-        while scenes.is_scene_alive():
+        while utilities.scenes.is_scene_alive():
             self.screen.fill((0, 0, 0))
-            active_scene = scenes.active_scene
+            active_scene = utilities.scenes.active_scene
             active_scene.update()
             pygame.display.update(active_scene.board_update_rectangles)
             GAME_TIME.tick(200)
@@ -66,33 +67,6 @@ class Main:
     #     for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
     #         for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
     #             self.board.add_rectangle(rect, INVISIBLE_COLOR, layer=1, border=2)
-
-
-class SceneManager:
-    def __init__(self):
-        # the drawing destination surface
-        self.scenes = {}
-        self.active_scene = None
-
-    def set_active_scene(self, name):
-        if self.active_scene:
-            self.active_scene.exit()
-        self.active_scene = self.scenes[name]
-
-    def __getitem__(self, item):
-        return self.scenes["item"]
-
-    def __setitem__(self, key, value):
-        self.scenes[key] = value
-
-    def __delitem__(self, key):
-        del self.scenes[key]
-
-    def is_scene_alive(self):
-        return self.active_scene.going
-
-
-scenes = SceneManager()
 
 
 class Scene(ABC):
@@ -155,27 +129,24 @@ class MainMenu(Scene):
 
         button_size = Size(100, 40)
         y_coord = 200
-        play_button = Button(button_size, color=(100,100,100), text="START", font_size=30)
+        play_button = Button(button_size, color=(100, 100, 100), text="START", font_size=30)
         play_button.set_action(1, self.__start_game, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), play_button)
 
         y_coord += 50
-        load_button = Button(button_size, color=(100,100,100), text="LOAD", font_size=30)
-        load_button.set_action(1, lambda: 0, types=["unpressed"])
+        load_button = Button(button_size, color=(100, 100, 100), text="LOAD", font_size=30)
+        load_button.set_action(1, self.__load_game, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), load_button)
 
         y_coord += 50
-        settings_button = Button(button_size, color=(100,100,100), text="SETTINGS", font_size=30)
-        settings_button.set_action(1, lambda: 0, types=["unpressed"])
+        settings_button = Button(button_size, color=(100, 100, 100), text="SETTINGS", font_size=30)
+        settings_button.set_action(1, self.__open_settings, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), settings_button)
 
         y_coord += 50
-        quit_button = Button(button_size, color=(100,100,100), text="QUIT", font_size=30)
+        quit_button = Button(button_size, color=(100, 100, 100), text="QUIT", font_size=30)
         quit_button.set_action(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
-
-    def scene_updates(self):
-        super().scene_updates()
 
     def handle_events(self):
         events = super().handle_events()
@@ -185,8 +156,14 @@ class MainMenu(Scene):
         game = Game(self.screen)
         executor = ThreadPoolExecutorStackTraced()
         future = executor.submit(game.start)
-        scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
-        scenes.set_active_scene(LoadingScreen.name())
+        utilities.scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
+        utilities.scenes.set_active_scene(LoadingScreen.name())
+
+    def __load_game(self):
+        warnings.warn("Game loading is not avaialable yet", utilities.NotImplementedWarning)
+
+    def __open_settings(self):
+        warnings.warn("No settings available yet", utilities.NotImplementedWarning)
 
     def __quit(self):
         self.going = False
@@ -220,8 +197,8 @@ class LoadingScreen(Scene):
                 # if an exception was raised make sure to exit
                 exit(-1)
             self.executor.shutdown()
-            scenes[self.loading_scene.name()] = self.loading_scene
-            scenes.set_active_scene(self.loading_scene.name())
+            utilities.scenes[self.loading_scene.name()] = self.loading_scene
+            utilities.scenes.set_active_scene(self.loading_scene.name())
             self.__finished_loading = True
 
     def draw(self):
@@ -230,50 +207,6 @@ class LoadingScreen(Scene):
             pygame.display.flip()
         else:
             super().draw()
-
-
-class PauseMenu(Scene):
-    def __init__(self, screen):
-        sprite_group = ShowToggleLayerUpdates()
-        super().__init__(screen, sprite_group)
-        self.__pause_window = None
-        self.__init_widgets()
-        self.board_update_rectangles = [self.__pause_window.rect]
-
-    def __init_widgets(self):
-
-        self.__pause_window = Window((100, 100), Size(200, 500), self.sprite_group, static=True, title="PAUSED")
-
-        button_size = Size(100, 40)
-        y_coord = 150
-
-        continue_button = Button(button_size, color=(100, 100, 100), text="CONTINUE", font_size=30)
-        continue_button.set_action(1, self.__continue, types=["unpressed"])
-        self.__pause_window.add_widget(("center", y_coord), continue_button)
-
-        save_button = Button(button_size, color=(100, 100, 100), text="SAVE", font_size=30)
-        save_button.set_action(1, self.__save, types=["unpressed"])
-        self.__pause_window.add_widget(("center", y_coord), save_button)
-
-        exit_button = Button(button_size, color=(100, 100, 100), text="EXIT", font_size=30)
-        exit_button.set_action(1, self.__back_to_main_menu, types=["unpressed"])
-        self.__pause_window.add_widget(("center", y_coord), exit_button)
-
-        self.__pause_window.show_window(True)
-
-    def __back_to_main_menu(self):
-        scenes.set_active_scene(MainMenu.name())
-
-    def __save(self):
-        scenes[Game.name()].save()
-
-    def __continue(self):
-        scenes.set_active_scene(Game.name())
-
-    def handle_events(self):
-        leftovers = super().handle_events()
-        leftovers = self.__pause_window.handle_events(leftovers)
-        return leftovers
 
 
 class Game(Scene, Serializer):
@@ -302,7 +235,7 @@ class Game(Scene, Serializer):
         self.window_manager = game_window_manager
 
         self.progress = "Generating board..."
-        self.board = Board(self.sprite_group)
+        self.board = board.board.Board(self.sprite_group)
 
         #tasks
         self.progress = "Making tasks..."
@@ -319,7 +252,9 @@ class Game(Scene, Serializer):
         for _ in range(5):
             Worker((appropriate_location), self.sprite_group, board=self.board, task_control=self.tasks)
         #add one of the imventories of the terminal
-        self.building_interface = BuildingWindow(self.board.inventorie_blocks[0].inventory, self.sprite_group)
+        self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory, self.sprite_group)
+
+        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
 
         self.camera_center.rect.center = start_chunk.rect.center
 
@@ -327,7 +262,7 @@ class Game(Scene, Serializer):
         pass
 
     def save(self):
-        warnings.warn("Save is not implemented yet")
+        warnings.warn("Save is not implemented yet", utilities.NotImplementedWarning)
 
     def scene_updates(self):
         super().scene_updates()
@@ -365,7 +300,7 @@ class Game(Scene, Serializer):
                     elif event.button == 5:
                         self.__zoom_entities(-0.1)
                 if event.type == KEYUP and event.key == K_ESCAPE:
-                    scenes.set_active_scene(PauseMenu.name())
+                    self.window_manager.add(self.pause_window)
             self.board.handle_events(leftover_events)
 
     def set_update_rectangles(self):

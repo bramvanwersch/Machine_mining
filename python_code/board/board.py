@@ -5,7 +5,7 @@ from utility.utilities import *
 from board.pathfinding import PathFinder
 from board.buildings import *
 from utility.event_handling import BoardEventHandler
-from interfaces.building_interface import get_selected_item
+from interfaces.small_interfaces import get_selected_item
 from network.pipes import Network
 from interfaces.interface_utility import *
 from board.chunks import *

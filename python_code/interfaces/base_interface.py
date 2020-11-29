@@ -22,6 +22,9 @@ class Window(Frame):
 
     def __init__(self, pos, size, *groups, color=COLOR, title=None, static=False, **kwargs):
         Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
+
+        if not isinstance(size, Size):
+            size = Size(*size)
         self.window_manager = window_managers.game_window_manager
         self.static = static
 
