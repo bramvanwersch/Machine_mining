@@ -1,9 +1,10 @@
-from pygame import Rect, image
+from pygame import Rect
 from math import pi, e, sqrt, erfc
 from abc import ABC, abstractmethod
 import json
 
 GROUP = 0
+
 
 def unique_group():
     global GROUP

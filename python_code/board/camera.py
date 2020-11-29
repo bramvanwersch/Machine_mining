@@ -64,7 +64,6 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates, Serializer):
                     dirty_append(newrect)
                     dirty_append(rec)
             spritedict[spr] = newrect
-        self.target.moved = False
         return dirty
 
 

@@ -302,8 +302,7 @@ class Worker(MovingEntity):
 
     def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
-        self.number = Worker.NUMBER
-        Worker.NUMBER += 1
+        self.number = next(Worker.NUMBER)
         self.board = board
         self.task_control = task_control
 

@@ -385,9 +385,6 @@ class Board(BoardEventHandler):
         for chunk, rect in chunk_rectangles:
             chunk.add_rectangle(rect, color, layer, border)
 
-    def __getitem__(self, item):
-        return self.matrix[item]
-
     def transparant_collide(self, point):
         chunk = self.__chunk_from_point(point)
         block = chunk.get_block(point)
