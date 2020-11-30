@@ -44,7 +44,7 @@ class SceneManager:
         return self.active_scene.going
 
 
-class GameExceprion(Exception):
+class GameException(Exception):
     pass
 
 

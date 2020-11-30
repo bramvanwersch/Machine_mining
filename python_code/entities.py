@@ -37,9 +37,8 @@ class Entity(pygame.sprite.Sprite, Serializer, ABC):
         }
 
     @classmethod
-    def from_dict(cls, sprite_group=None, **arguments):
+    def from_dict(cls, **arguments):
         return super().from_dict(
-            groups=sprite_group,
             type=cls.__name__,
             **arguments,
         )
@@ -99,11 +98,6 @@ class ZoomableEntity(Entity):
         # right proportions
         if self._zoom != 1:
             self.zoom(self._zoom)
-
-    def to_dict(self):
-        return super().to_dict().update({
-            "zoom": self._zoom,
-        })
 
     def zoom(self, zoom):
         """

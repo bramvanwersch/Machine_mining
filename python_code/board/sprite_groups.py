@@ -2,11 +2,12 @@ import pygame
 
 from utility.constants import SCREEN_SIZE
 from utility.utilities import Serializer, Size
+from interfaces.widgets import Frame
 import entities
 
 
 # thanks to https://stackoverflow.com/questions/14354171/add-scrolling-to-a-platformer-in-pygame
-class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates, Serializer):
+class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
     def __init__(self, target, world_size, cam=None):
         pygame.sprite.LayeredUpdates.__init__(self)
         self.target = target
@@ -28,7 +29,7 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates, Serializer):
         return {
             "cam": (self.cam.x, self.cam.y),
             "world_size": self.world_size.to_dict(),
-            "entities": [sprite.to_dict() for sprite in self.sprites() if sprite is not self.target]
+            "entities": [sprite.to_dict() for sprite in self.sprites() if sprite is not self.target and not isinstance(sprite, Frame)]
         }
 
     @classmethod

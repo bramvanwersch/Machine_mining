@@ -3,6 +3,7 @@ import warnings
 
 # own classes
 import board.board
+from board.chunks import BoardImage
 import utility.utilities as utilities
 from entities import Worker, CameraCentre
 from board.sprite_groups import *
@@ -161,7 +162,9 @@ class MainMenu(Scene):
 
     def __load_game(self):
         warnings.warn("Game loading is not avaialable yet", utilities.NotImplementedWarning)
-        Game.from_json("some jason file")
+        with open(f"{SAVE_DIR}{os.sep}test_save.json", "r") as fp:
+            game = Game.from_json(fp)
+        utilities.scenes[Game.name()] = game
 
     def __open_settings(self):
         warnings.warn("No settings available yet", utilities.NotImplementedWarning)
@@ -211,7 +214,7 @@ class LoadingScreen(Scene):
 
 
 class Game(Scene, Serializer):
-    def __init__(self, screen, camera_center=None, zoom=None, window_manager=None, board=None, task_control=None):
+    def __init__(self, screen, camera_center=None, board=None, task_control=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
         self.camera_center = camera_center if camera_center else CameraCentre((0, 0), (5, 5))
@@ -224,9 +227,8 @@ class Game(Scene, Serializer):
         self._visible_entities = 0
 
         # zoom variables
-        self._zoom = zoom if zoom else 1.0
+        self._zoom = 1.0
         self.progress = ""
-        self.window_manager = window_manager
         self.board = board
         self.task_control = task_control
 
@@ -246,6 +248,7 @@ class Game(Scene, Serializer):
 
         self.progress = "Generating board..."
         self.board = board.board.Board(self.sprite_group)
+        self.board.setup_board()
 
         # tasks
         self.progress = "Making tasks..."
@@ -268,16 +271,24 @@ class Game(Scene, Serializer):
     def to_dict(self):
         return {
             "camera_center": self.camera_center.to_dict(),
-            "zoom": self._zoom,
-            "window_manager": self.window_manager.to_dict()
-
+            "entities": [sprite.to_dict() for sprite in self.sprite_group.sprites() if not isinstance(sprite, Frame) and not isinstance(sprite, BoardImage) and sprite is not self.camera_center],
+            "board": self.board.to_dict()
         }
 
     @classmethod
-    def from_dict(cls, **arguments):
-        warnings.warn("from_dict is not implemented for Game", utilities.NotImplementedWarning)
+    def from_dict(cls, screen=None, **arguments):
+        arguments["camera_center"] = CameraCentre.from_dict(**arguments["camera_center"])
+        board_dct = arguments.pop("board")
+        ents = arguments.pop("entities")
+        inst = super().from_dict(screen=screen, **arguments)
+        entity_objects = [getattr(entities, dct["type"]).from_dict(**dct) for dct in ents]
+        inst.sprite_group.add(entity_objects)
+        inst.board = board.board.Board.from_dict(sprite_group=inst.sprite_group, **board_dct)
+        return inst
 
     def save(self):
+        with open(f"{SAVE_DIR}{os.sep}test_save.json", "w") as fp:
+            self.to_json(fp)
         warnings.warn("Save is not implemented yet", utilities.NotImplementedWarning)
 
     def scene_updates(self):

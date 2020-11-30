@@ -1,6 +1,6 @@
 import block_classes.flora_materials
 from utility.constants import *
-from utility.utilities import GameExceprion
+from utility.utilities import GameException, Serializer
 from block_classes.blocks import *
 from block_classes import materials
 from entities import ZoomableEntity
@@ -9,7 +9,7 @@ from board.pathfinding import PathfindingChunk
 from board.flora import Plant
 from inventories import Item
 
-class Chunk:
+class Chunk(Serializer):
 
     def __init__(self, pos, foreground, background, main_sprite_group):
         #chunk with sizes in pixels lowest value should 0,0
@@ -31,6 +31,17 @@ class Chunk:
     @property
     def coord(self):
         return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
+
+    def to_dict(self):
+        return {
+            "pos": self.rect.topleft,
+            "foreground": [block.name() for row in self.__matrix for block in row],
+            "backgrounc": [block.name() for row in self.__back_matrix for block in row]
+        }
+
+    @classmethod
+    def from_dict(cls, sprite_group=None, **arguments):
+        super().from_dict(main_sprite_group=sprite_group, **arguments)
 
     def add_rectangle(self, rect, color, layer=2, border=0):
         self.__set_images_changed()
@@ -87,7 +98,7 @@ class Chunk:
         try:
             return self.__matrix[row][column]
         except IndexError:
-            raise GameExceprion("Point: {} is not within chunk at {}".format(point, self.rect))
+            raise GameException("Point: {} is not within chunk at {}".format(point, self.rect))
 
     def overlapping_blocks(self, rect):
         column_start, row_start = self.__local_adusted_block_coordinate(rect.topleft)

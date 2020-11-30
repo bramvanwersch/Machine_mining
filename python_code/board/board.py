@@ -3,6 +3,7 @@ from math import sin, cos
 
 from utility.utilities import *
 from board.pathfinding import PathFinder
+import board.buildings as buildings
 from board.buildings import *
 from utility.event_handling import BoardEventHandler
 from interfaces.small_interfaces import get_selected_item
@@ -12,7 +13,7 @@ from board.chunks import *
 from entities import SelectionRectangle
 
 
-class Board(BoardEventHandler):
+class Board(BoardEventHandler, Serializer):
 
     # ORE cluster values
     # the amount of normal block_classes per cluster
@@ -40,7 +41,7 @@ class Board(BoardEventHandler):
     START_RECTANGLE = pygame.Rect((BOARD_SIZE.width / 2 - 125, 0, 250, 50))
     BLOCK_PER_CLUSRTER = 500
 
-    def __init__(self, main_sprite_group):
+    def __init__(self, main_sprite_group, chunk_matrix=None, pipe_network=None, grow_update_time=0):
         BoardEventHandler.__init__(self, [1, 2, 3, 4, MINING, CANCEL, BUILDING, SELECTING])
         self.inventorie_blocks = []
         self.main_sprite_group = main_sprite_group
@@ -48,7 +49,7 @@ class Board(BoardEventHandler):
         # setup the board
         self.pf = PathFinder()
 
-        self.chunk_matrix = self.__generate_chunk_matrix(main_sprite_group)
+        self.chunk_matrix = chunk_matrix if chunk_matrix else self.__generate_chunk_matrix(main_sprite_group)
 
         self.task_control = None
 
@@ -58,11 +59,13 @@ class Board(BoardEventHandler):
         self.__highlight_rectangle = None
 
         # pipe network
-        self.pipe_network = Network(self.task_control)
+        self.pipe_network = pipe_network if pipe_network else Network(self.task_control)
 
         self.__buildings = {}
+        self.__grow_update_time = grow_update_time
+
+    def setup_board(self):
         self.__add_starter_buildings()
-        self.__grow_update_time = 0
         for _ in range(10):
             self.__grow_flora()
 
@@ -85,6 +88,23 @@ class Board(BoardEventHandler):
         if self.__grow_update_time > GROW_CYCLE_UPDATE_TIME:
             self.__grow_flora()
             self.__grow_update_time = 0
+
+    def to_dict(self):
+        return {
+            "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
+            "pipe_netowrk": self.pipe_network.to_dict(),
+            "buildings": [building.to_dict() for building in self.__buildings.values()],
+            "grow_update_time": self.__grow_update_time
+        }
+
+    @classmethod
+    def from_dict(cls, sprite_group=None, **arguments):
+        arguments["chunk_matrix"] = [Chunk.from_dict(sprite_group=sprite_group, **kwargs) for row in arguments["chunk_matrix"] for kwargs in row]
+        arguments["pipe_network"] = Network.from_dict()
+        builds = arguments.pop("buildings")
+        inst = super().from_dict(**arguments)
+        building_objects = [getattr(buildings, dct["type"]).from_dict(**dct) for dct in builds]
+        [inst.add_building(build) for build in building_objects]
 
     def __grow_flora(self):
         for row in self.chunk_matrix:
