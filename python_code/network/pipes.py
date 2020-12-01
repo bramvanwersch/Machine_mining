@@ -218,6 +218,7 @@ class Network:
         for edge in building.connected_edges:
             edge.connected_nodes.remove(building)
 
+
 class NetworkNode:
     def __init__(self):
         self.connected_edges = set()
@@ -246,20 +247,24 @@ class NetworkEdge:
     #TODO make this cinfigure based on worst pipe. this is temporary
     MAX_REQUESTS = 10
     MAX_REQUEST_SIZE = 4
-    #the innitial block_classes are assumed to be the same group and connected.
+    # the innitial block_classes are assumed to be the same group and connected.
+
     def __init__(self, group):
         self.segments = set()
         self.network_group = group
         self.connected_nodes = set()
         self.task_queue = EdgeTaskQueue(self.MAX_REQUESTS, self.MAX_REQUEST_SIZE)
 
+    def get_block_coordinates(self):
+        return [segment.loc for segment in self.segments]
+
     def can_add(self, block):
         if self.network_group != block.network_group:
             return False
-        loc = self.block_to_location_string(block)
-        surrounding_locations = self.__surrounding_locations(loc)
-        for l in surrounding_locations:
-            if l in self.segments:
+        segment = Segment(block.rect.topleft)
+        surrounding_segments = segment.surrounding_segments()
+        for segment in surrounding_segments:
+            if segment in self.segments:
                 return True
         return False
 
@@ -272,33 +277,32 @@ class NetworkEdge:
 
     def add_blocks(self, *blocks):
         for block in blocks:
-            loc = self.block_to_location_string(block)
-            self.segments.add(loc)
+            segment = Segment(block.rect.topleft)
+            self.segments.add(segment)
 
-    def add_string_location(self, *locations):
-        for location in locations:
-            self.segments.add(location)
+    def add_segments(self, *segments):
+        self.segments.update(segments)
 
     def add_edge(self, network_edge):
         for loc in network_edge.segments:
             self.segments.add(loc)
-        #edge removal wiil be done
+        # edge removal wiil be done
         for node in network_edge.connected_nodes:
             node.add_edge(self)
         self.task_queue.add_queue(network_edge.task_queue)
 
     def __contains__(self, block):
-        loc  = self.block_to_location_string(block)
-        return loc in self.segments
+        segment = Segment(block.rect.topleft)
+        return segment in self.segments
 
     def remove_segment(self, block):
-        loc = self.block_to_location_string(block)
-        self.segments.remove(loc)
-        sur_locs = [loc for loc in self.__surrounding_locations(loc) if loc in self.segments]
-        if len(sur_locs) <= 1:
+        segment = Segment(block.rect.topleft)
+        self.segments.remove(segment)
+        surrounding_segments = [seg for seg in segment.surrounding_segments() if seg in self.segments]
+        if len(surrounding_segments) <= 1:
             return []
         else:
-            new_edges = self.check_connected(sur_locs)
+            new_edges = self.check_connected(surrounding_segments)
             if len(new_edges) > 0:
                 self.segments = new_edges.pop().segments
                 return new_edges
@@ -306,53 +310,49 @@ class NetworkEdge:
                 self.segments = set()
                 return []
 
-    def check_connected(self, locations):
-        locations = set(locations)
+    def check_connected(self, segments):
+        segments = set(segments)
         unused_segments = self.segments.copy()
         new_edges = []
-        while len(locations) > 0:
-            check_locations = [locations.pop()]
-            used_segments = set([check_locations[0]])
+        while len(segments) > 0:
+            check_locations = [segments.pop()]
+            used_segments = {check_locations[0]}
             while len(check_locations) > 0:
-                loc = check_locations.pop()
-                sur_locs = self.__surrounding_locations(loc)
-                for sur_loc in sur_locs:
-                    if sur_loc in unused_segments:
-                        used_segments.add(sur_loc)
-                        unused_segments.remove(sur_loc)
-                        check_locations.append(sur_loc)
-                        if sur_loc in locations:
-                            locations.remove(sur_loc)
+                segment = check_locations.pop()
+                surrounding_segments = Segment(segment.loc).surrounding_segments()
+                for segment in surrounding_segments:
+                    if segment in unused_segments:
+                        used_segments.add(segment)
+                        unused_segments.remove(segment)
+                        check_locations.append(segment)
+                        if segment in segments:
+                            segments.remove(segment)
             #create a new edge
             if len(used_segments) > 0:
                 new_edge = NetworkEdge(self.network_group)
-                new_edge.add_string_location(*used_segments)
+                new_edge.add_segments(*used_segments)
                 new_edges.append(new_edge)
         return new_edges
 
-    def __surrounding_locations(self, location):
-        locations = []
-        number_location = self.location_string_to_number_location(location)
-        for offset in [[-1,0],[0,1],[1,0],[0,-1]]:
-            locations.append([number_location[0] - offset[0], number_location[1] - offset[1]])
-        locations = [self.location_number_to_location_string(l) for l in locations]
-        return locations
-
-    def block_to_location_string(self, block):
-        """
-        Transform a location into a hashable string that can be created from
-        a block
-
-        :param block: a Block objects
-        :return: a string
-        """
-        return str("{}_{}".format(int(block.rect.left / BLOCK_SIZE.width), int(block.rect.top / BLOCK_SIZE.height)))
-
-    def location_string_to_number_location(self, location):
-        return list(map(int, location.split("_")))
-
-    def location_number_to_location_string(self, location):
-        return "{}_{}".format(*location)
-
     def __len__(self):
         return len(self.segments)
+
+
+class Segment:
+    def __init__(self, location):
+        self.loc = tuple(location)
+
+    def __hash__(self):
+        return hash(self.loc)
+
+    def __eq__(self, other):
+        return self.loc == other.loc
+
+    def surrounding_segments(self):
+        segments = []
+        for offset in [[-BLOCK_SIZE.width, 0], [0, BLOCK_SIZE.height], [BLOCK_SIZE.width, 0], [0, -BLOCK_SIZE.height]]:
+            segments.append(Segment([self.loc[0] - offset[0], self.loc[1] - offset[1]]))
+        return segments
+
+    def __str__(self):
+        return "{}_{}".format(*self.loc)

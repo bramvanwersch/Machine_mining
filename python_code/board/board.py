@@ -92,7 +92,7 @@ class Board(BoardEventHandler, Serializer):
     def to_dict(self):
         return {
             "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
-            "pipe_netowrk": self.pipe_network.to_dict(),
+            "pipe_coordinates": self.pipe_network.to_dict(),
             "buildings": [building.to_dict() for building in self.__buildings.values()],
             "grow_update_time": self.__grow_update_time
         }
