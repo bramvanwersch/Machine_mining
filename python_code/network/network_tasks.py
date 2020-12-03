@@ -1,17 +1,27 @@
 from abc import ABC, abstractmethod
 
+from utility.utilities import Serializer
 from utility.constants import GAME_TIME
 from inventories import Item
 
 
-class EdgeTaskQueue:
+class EdgeTaskQueue(Serializer):
     #one block of free distance
     FREE_DISTANCE = 10
-    def __init__(self, max_requests, max_request_size):
-        self.active_tasks = []
-        self.queued_tasks = []
+
+    def __init__(self, max_requests, max_request_size, active_tasks=None, queued_tasks=None):
+        self.active_tasks = active_tasks if active_tasks else []
+        self.queued_tasks = queued_tasks if queued_tasks else []
         self.__max_requests = max_requests
         self.__max_request_size = max_request_size
+
+    def to_dict(self):
+        return{
+            "max_requests": self.__max_requests,
+            "max_request_size": self.__max_request_size,
+            "active_tasks": [task.to_dict() for task in self.active_tasks],
+            "queued_tasks": [task.to_dict() for task in self.queued_tasks]
+        }
 
     def add_task(self, type, node, distance, **kwargs):
         time = self.__distance_to_time(distance)
@@ -58,10 +68,24 @@ class EdgeTaskQueue:
                     self.active_tasks.append(self.queued_tasks.pop(0))
 
 
-class NetworkTask(ABC):
-    def __init__(self, node, time):
+class NetworkTask(Serializer, ABC):
+    def __init__(self, node, time, start_time=0):
         self.originating_node = node
-        self.progress = [0, time]
+        self.progress = [start_time, time]
+
+    def to_dict(self):
+        return {
+            "time": self.progress[0],
+            "start_time": self.progress[1],
+            "originating_node_id": self.originating_node.id
+        }
+
+    @classmethod
+    def from_dict(cls, buildings=None, **arguments):
+        # TODO make node
+        id = arguments.pop("originating_node_id")
+        raise NotImplementedError
+        return super().from_dict(**arguments)
 
     def work(self):
         if self.finished:
@@ -79,17 +103,22 @@ class NetworkTask(ABC):
         pass
 
     def cancel(self):
-        #make sure the task is finished
+        # make sure the task is finished
         self.progress[0] = self.progress[1] + 1
 
 
 class NetworkDeliverTask(NetworkTask):
     def __init__(self, node, time, target_node, item):
         super().__init__(node, time)
-        #inventory the item is delivered to
+        # inventory the item is delivered to
         self.__target_node = target_node
-        #make sure to remove the items at the start
+        # make sure to remove the items at the start
         self.deliver_item = item
+
+    def to_dict(self):
+        return super().to_dict().update({
+            "item": self.deliver_item.to_dict()
+        })
 
     def work(self):
         super().work()
@@ -112,6 +141,18 @@ class NetworkRequestTask(NetworkTask):
         super().__init__(node, time)
         self.__target_node = target_node
         self.request_item = item
+
+    def to_dict(self):
+        return super().to_dict().update({
+            "target_node_id": self.__target_node.id,
+            "item": self.request_item.to_dict()
+        })
+
+    @classmethod
+    def from_dict(cls, buildings=None, **arguments):
+        id = arguments["target_node_id"]
+        raise NotImplementedError
+        return super().from_dict(buildings=buildings, **arguments)
 
     def work(self):
         super().work()

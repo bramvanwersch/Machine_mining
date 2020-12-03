@@ -2,19 +2,30 @@ from math import ceil
 
 from block_classes.blocks import ContainerBlock, NetworkBlock
 from utility.constants import BLOCK_SIZE
-from utility.utilities import manhattan_distance
+from utility.utilities import manhattan_distance, Serializer
 from block_classes import block_constants
 from network.network_tasks import EdgeTaskQueue
 
 
-class Network:
+class Network(Serializer):
 
-    def __init__(self, task_control):
+    def __init__(self, edges=None, task_control=None):
         #connections between them
-        self.edges = set()
+        self.edges = [self.__add_edge(e) for e in edges] if edges else set()
         #furnaces chests etc.
-        self.nodes = set()
+        self.nodes = [self.__add]
         self.task_control = task_control
+
+    def to_dict(self):
+        # nodes are added when buildings are readded trough the board
+        return{
+            "edges": [edge.to_dict() for edge in self.edges],
+        }
+
+    @classmethod
+    def from_dict(cls, **arguments):
+        arguments["edges"] = [NetworkEdge.from_dict(**dct) for dct in arguments["edges"]]
+        return super().from_dict(**arguments)
 
     def update(self):
         for node in self.nodes:
@@ -243,17 +254,31 @@ class NetworkNode:
         edge.connected_nodes.remove(self)
 
 
-class NetworkEdge:
+class NetworkEdge(Serializer):
     #TODO make this cinfigure based on worst pipe. this is temporary
     MAX_REQUESTS = 10
     MAX_REQUEST_SIZE = 4
     # the innitial block_classes are assumed to be the same group and connected.
 
-    def __init__(self, group):
-        self.segments = set()
+    def __init__(self, group, segments=None, task_queue=None):
         self.network_group = group
+        self.segments = segments if segments else set()
+        # will be done when adding the buildings back
         self.connected_nodes = set()
-        self.task_queue = EdgeTaskQueue(self.MAX_REQUESTS, self.MAX_REQUEST_SIZE)
+        self.task_queue = task_queue if task_queue else EdgeTaskQueue(self.MAX_REQUESTS, self.MAX_REQUEST_SIZE)
+
+    def to_dict(self):
+        return {
+            "segments": [s.to_dict() for s in self.segments],
+            "group": self.network_group,
+            "task_queue": self.task_queue.to_dict()
+        }
+
+    @classmethod
+    def from_dict(cls, **arguments):
+        arguments["segments"] = [Segment.from_dict(**dct) for dct in arguments["segments"]]
+        arguments["task_queue"] = EdgeTaskQueue.from_dict(**arguments["task_queue"])
+        return super().from_dict(**arguments)
 
     def get_block_coordinates(self):
         return [segment.loc for segment in self.segments]
@@ -338,9 +363,14 @@ class NetworkEdge:
         return len(self.segments)
 
 
-class Segment:
-    def __init__(self, location):
-        self.loc = tuple(location)
+class Segment(Serializer):
+    def __init__(self, loc):
+        self.loc = tuple(loc)
+
+    def to_dict(self):
+        return{
+            "loc": self.loc
+        }
 
     def __hash__(self):
         return hash(self.loc)

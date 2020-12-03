@@ -1,6 +1,7 @@
 from random import choice, uniform
 from math import sin, cos
 
+import block_classes.building_materials
 from utility.utilities import *
 from board.pathfinding import PathFinder
 import board.buildings as buildings
@@ -59,7 +60,7 @@ class Board(BoardEventHandler, Serializer):
         self.__highlight_rectangle = None
 
         # pipe network
-        self.pipe_network = pipe_network if pipe_network else Network(self.task_control)
+        self.pipe_network = Network(self.task_control)
 
         self.__buildings = {}
         self.__grow_update_time = grow_update_time
@@ -92,7 +93,7 @@ class Board(BoardEventHandler, Serializer):
     def to_dict(self):
         return {
             "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
-            "pipe_coordinates": self.pipe_network.to_dict(),
+            "pipe_coordinates": self.pipe_network.pipe_coordinates(),
             "buildings": [building.to_dict() for building in self.__buildings.values()],
             "grow_update_time": self.__grow_update_time
         }
@@ -100,11 +101,13 @@ class Board(BoardEventHandler, Serializer):
     @classmethod
     def from_dict(cls, sprite_group=None, **arguments):
         arguments["chunk_matrix"] = [Chunk.from_dict(sprite_group=sprite_group, **kwargs) for row in arguments["chunk_matrix"] for kwargs in row]
-        arguments["pipe_network"] = Network.from_dict()
+        pipe_coords = arguments["pipe_coordinates"]
         builds = arguments.pop("buildings")
         inst = super().from_dict(**arguments)
         building_objects = [getattr(buildings, dct["type"]).from_dict(**dct) for dct in builds]
         [inst.add_building(build) for build in building_objects]
+        # add the network blocks back
+        inst.add_blocks(*[NetworkBlock(pos, getattr(block_classes.building_materials, type_)) for pos, type in pipe_coords])
 
     def __grow_flora(self):
         for row in self.chunk_matrix:
