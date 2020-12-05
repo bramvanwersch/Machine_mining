@@ -280,9 +280,9 @@ class GridLabel(Label):
     def __init__(self, size, **kwargs):
         super().__init__(size, selectable=False, **kwargs)
         self.__item_present = None
-        self.__positive_mark = image_sheets["general"].image_at((80, 0), size=(10, 10), color_key=(255, 255, 255))
+        self.__positive_mark = image_sheets["general"].image_at((80, 0), size=(10, 10))
 
-        self.__negative_mark = image_sheets["general"].image_at((70, 0), size=(10, 10), color_key=(255, 255, 255))
+        self.__negative_mark = image_sheets["general"].image_at((70, 0), size=(10, 10))
         self.__item_image = None
 
     def set_item(self, item_image):
@@ -310,8 +310,8 @@ class GridLabel(Label):
 class ProgressArrow(Label):
     def __init__(self, size, progress_list, **kwargs):
         super().__init__(size, selectable=False, **kwargs)
-        self.__arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
-        self.__full_progress_arrow = image_sheets["general"].image_at((0, 20), size=(20, 20), color_key=(255, 255, 255))
+        self.__arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20))
+        self.__full_progress_arrow = image_sheets["general"].image_at((0, 20), size=(20, 20))
         self.__arrow_image = pygame.transform.scale(self.__arrow_image, size)
         self.__full_progress_arrow = pygame.transform.scale(self.__full_progress_arrow, size)
         self.__progress = progress_list

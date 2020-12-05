@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from random import randint, choices
-from typing import Set, Tuple, ClassVar, List
+from typing import Set, Tuple, ClassVar, List, Dict
 
 from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR
 from utility.image_handling import image_sheets
@@ -21,14 +21,16 @@ class BaseMaterial(ABC):
     # used by widgets for display TODO see if this can maybe move
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (0, 0, 0)
     # group 0 are not transparant
-    TRANSPARANT_GROUP: ClassVar[int] = 0
+    _BASE_TRANSPARANT_GROUP: ClassVar[int] = 0
 
     _BLOCK_TYPE: ClassVar[BaseBlock] = Block
     BUILDABLE: ClassVar[bool] = True
 
-    def __init__(self, image=None, **kwargs):
+    def __init__(self, image: pygame.Surface = None, **kwargs):
         self._surface = self._configure_surface(image=image)
-        self.transparant_group = self.TRANSPARANT_GROUP
+
+        # allow transparant groups to be changed
+        self.__transparant_group = self._BASE_TRANSPARANT_GROUP
 
     @property
     def hardness(self) -> int:
@@ -43,6 +45,14 @@ class BaseMaterial(ABC):
         return self._ALLOWED_TASKS
 
     @property
+    def transparant_group(self) -> int:
+        return self.__transparant_group
+
+    @transparant_group.setter
+    def transparant_group(self, value: int) -> None:
+        self.__transparant_group = value
+
+    @property
     def buildable(self) -> bool:
         return self.BUILDABLE
 
@@ -55,7 +65,7 @@ class BaseMaterial(ABC):
         # allow inheriting classes to push muliple surfaces or a choice
         return self._surface
 
-    def to_block(self, pos, **kwargs):
+    def to_block(self, pos: Tuple[int, int], **kwargs):
         """Convert a material into the appropriate block
 
         Args:
@@ -78,13 +88,13 @@ class BaseMaterial(ABC):
 
 
 class MaterialCollection(ABC):
-    # class that holds a collection of items that are randomly returned based on wheights
-    # this is mainly meant for board generation purposes
+    """class that holds a collection of items that are randomly returned based on wheights this is mainly meant for
+     board generation purposes"""
 
     @property
     @abstractmethod
-    def MATERIAL_PROBABILITIES(self):
-        return None
+    def MATERIAL_PROBABILITIES(self) -> Dict[str, float]:
+        pass
 
     @classmethod
     def name(cls) -> str:
@@ -153,7 +163,7 @@ class ColorMaterial(BaseMaterial, ABC):
 class Air(ColorMaterial):
     _ALLOWED_TASKS: ClassVar[Set] = {task for task in BaseMaterial._ALLOWED_TASKS if task not in ["Mining"]}
     HARDNESS: ClassVar[int] = 0
-    TRANSPARANT_GROUP: ClassVar[int] = 1
+    _BASE_TRANSPARANT_GROUP: ClassVar[int] = 1
     _BLOCK_TYPE: ClassVar[BaseBlock] = AirBlock
     BASE_COLOR: ClassVar[Tuple[int, int, int]] = INVISIBLE_COLOR[:-1]
 
@@ -165,27 +175,25 @@ class Air(ColorMaterial):
 
 
 class BorderMaterial(ColorMaterial):
-    """Blocks at the borader of the board"""
-    _ALLOWED_TASKS = set()
-    BASE_COLOR = (0, 0, 0)
-    MIN_COLOR = (0, 0, 0)
+    """Blocks at the border of the board"""
+    _ALLOWED_TASKS: ClassVar[Set] = set()
+    BASE_COLOR: ClassVar[Tuple[int, int, int]] = (0, 0, 0)
+    MIN_COLOR: ClassVar[Tuple[int, int, int]] = (0, 0, 0)
 
 
 class ImageMaterial(BaseMaterial, ABC):
-    """
-    Materials can inherit from this when displaying an image
-    """
+    """Materials displaying an image"""
 
-    def _configure_surface(self, image):
+    def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
         """
         Show an image as a surface instead of a single color
 
         :param image: optional pre defines pygame Surface object
         :return: a python Surface object
         """
-        if image != None:
+        if image is not None:
             return image
-        #if an image is provided return that otherwise a color
+        # if an image is provided return that otherwise a color
         else:
             surface = pygame.Surface(BLOCK_SIZE)
             surface.fill((0, 255, 13))
@@ -194,12 +202,12 @@ class ImageMaterial(BaseMaterial, ABC):
 
 class CancelMaterial(ImageMaterial):
 
-    def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((20, 20), color_key=(255, 255, 255))
+    def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
+        image = image_sheets["materials"].image_at((20, 20))
         return image
 
 
 class UnbuildableMaterial(ImageMaterial):
-    _ALLOWED_TASKS = ["Fetch", "Request", "Deliver"]
-    BUILDABLE = False
+    _ALLOWED_TASKS: ClassVar[Set] = {"Fetch", "Request", "Deliver"}
+    BUILDABLE: ClassVar[bool] = False
 

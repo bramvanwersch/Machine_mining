@@ -15,7 +15,7 @@ class FloraMaterial(ImageMaterial, ABC):
     CONTINUATION_DIRECTION = 0
     MAX_SIZE = 1
     #TODO make unique per plants
-    TRANSPARANT_GROUP = 100
+    _BASE_TRANSPARANT_GROUP = 100
 
     @property
     @abstractmethod
@@ -24,7 +24,7 @@ class FloraMaterial(ImageMaterial, ABC):
         return tuple
 
     def _configure_surface(self, image):
-        image1 = image_sheets["materials"].image_at(self.LOCATION_INFORMATION, color_key=(255, 255, 255))
+        image1 = image_sheets["materials"].image_at(self.LOCATION_INFORMATION)
         image2 = pygame.transform.flip(image1, True, False)
         return [image1, image2]
 
@@ -108,20 +108,20 @@ class RedShroomers(FloraMaterial):
 
 class ShroomCollection(MaterialCollection):
 
-    MATERIAL_PROBABILITIES = {BrownShroom:0.4, BrownShroomers:0.1, RedShroom:0.4, RedShroomers:0.1}
+    MATERIAL_PROBABILITIES = {BrownShroom: 0.4, BrownShroomers: 0.1, RedShroom: 0.4, RedShroomers: 0.1}
 
 
 class MultiFloraMaterial(FloraMaterial, ABC):
     MAX_SIZE = 6
 
-    def __init__(self, image_number = -1, **kwargs):
+    def __init__(self, image_number=-1, **kwargs):
         super().__init__(**kwargs)
         self.image_key = image_number
 
     def _configure_surface(self, image):
         images = {}
         for direction, loc in self.LOCATION_INFORMATION.items():
-            image = image_sheets["materials"].image_at(loc, color_key=(255, 255, 255))
+            image = image_sheets["materials"].image_at(loc)
             images[direction] = [image]
             images[direction].append(pygame.transform.flip(image, True, False))
         return images

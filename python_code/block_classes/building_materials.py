@@ -16,21 +16,21 @@ class BuildingMaterial(ImageMaterial, ABC):
 class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
     _ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
-    TRANSPARANT_GROUP = 2
+    _BASE_TRANSPARANT_GROUP = 2
 
 
 class FurnaceMaterial(BuildingMaterial):
     TEXT_COLOR = (255,255,255)
-    TRANSPARANT_GROUP = 3
+    _BASE_TRANSPARANT_GROUP = 3
 
 
 class FactoryMaterial(BuildingMaterial):
     TEXT_COLOR = (255, 255, 255)
-    TRANSPARANT_GROUP = 4
+    _BASE_TRANSPARANT_GROUP = 4
 
 
 class StonePipeMaterial(ImageMaterial):
-    TRANSPARANT_GROUP = 5
+    _BASE_TRANSPARANT_GROUP = 5
     _BLOCK_TYPE = NetworkBlock
     # made as follows:
     # first number for the amount of connections (0, 1, 2, 3, 4)
@@ -44,8 +44,8 @@ class StonePipeMaterial(ImageMaterial):
 
     def _configure_surface(self, image):
         #TODO at some point in the future make these class varaibles to avoid triggerign on class instantiation
-        images = image_sheets["materials"].images_at_rectangle((10, 0, 90, 10), color_key=(255,255,255))[0]
-        images.extend(image_sheets["materials"].images_at_rectangle((0, 10, 70, 10), color_key=(255,255,255))[0])
+        images = image_sheets["materials"].images_at_rectangle((10, 0, 90, 10))[0]
+        images.extend(image_sheets["materials"].images_at_rectangle((0, 10, 70, 10))[0])
         return {self.__IMAGE_NAMES[i] : images[i] for i in range(len(images))}
 
     @property

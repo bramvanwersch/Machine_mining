@@ -1,6 +1,6 @@
 import pygame, os
 
-from utility.constants import IMAGE_DIR
+from utility.constants import IMAGE_DIR, RLEACCEL, INVISIBLE_COLOR
 from utility.utilities import Size
 
 #variable for all image sheets
@@ -36,7 +36,7 @@ class Spritesheet:
         self.sheet = load_image(filename)
         self.image_size = size
 
-    def image_at(self, coord, size = None, color_key = None):
+    def image_at(self, coord, size = None, color_key = INVISIBLE_COLOR[:-1]):
         if size == None:
             size = self.image_size
         rect = pygame.Rect(*coord, *size)

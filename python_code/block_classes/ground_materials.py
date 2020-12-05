@@ -191,33 +191,33 @@ class Titanium(OreMaterial):
 class IronIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((70, 10), color_key=(255, 255, 255))
+        image = image_sheets["materials"].image_at((70, 10))
         return image
 
 
 class GoldIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((80, 10), color_key=(255, 255, 255))
+        image = image_sheets["materials"].image_at((80, 10))
         return image
 
 
 class ZincIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((90, 10), color_key=(255, 255, 255))
+        image = image_sheets["materials"].image_at((90, 10))
         return image
 
 
 class CopperIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((0, 20), color_key=(255, 255, 255))
+        image = image_sheets["materials"].image_at((0, 20))
         return image
 
 class TitaniumIngot(UnbuildableMaterial):
 
     def _configure_surface(self, image):
-        image = image_sheets["materials"].image_at((10, 20), color_key=(255, 255, 255))
+        image = image_sheets["materials"].image_at((10, 20))
         return image
 

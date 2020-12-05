@@ -43,14 +43,6 @@ class BaseBlock(ABC):
     def is_task_allowded(self, task_type: str) -> bool:
         return task_type in self.allowed_tasks
 
-    @property
-    def transparant_group(self):
-        return self.material.transparant_group
-
-    @transparant_group.setter
-    def transparant_group(self, value):
-        self.material.transparant_group = value
-
     def name(self):
         """
         The name of the material of the block

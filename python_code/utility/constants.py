@@ -47,7 +47,7 @@ MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
 GAME_TIME = pygame.time.Clock()
 
 # this is sort of a green screen color, set this as a color key in order to be transparant when blitting
-INVISIBLE_COLOR = (1, 1, 1, 0)
+INVISIBLE_COLOR = (0, 255, 0, 0)
 
 GROW_CYCLE_UPDATE_TIME = 10_000 #every 10 seconds
 MAX_LIGHT = 7

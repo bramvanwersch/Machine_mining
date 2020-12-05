@@ -77,12 +77,12 @@ class Building(BaseBlock, ABC):
         Retrieve an image from a sprite sheet using image specifications
         """
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].images_at_rectangle(
-            self.IMAGE_SPECIFICATIONS[1], **self.IMAGE_SPECIFICATIONS[2])
+            self.IMAGE_SPECIFICATIONS[1])
 
     @classmethod
     def full_image(self):
         return image_sheets[self.IMAGE_SPECIFICATIONS[0]].image_at(self.IMAGE_SPECIFICATIONS[1][0:2],
-                            size = self.IMAGE_SPECIFICATIONS[1][2:4], **self.IMAGE_SPECIFICATIONS[2])
+                            size = self.IMAGE_SPECIFICATIONS[1][2:4])
 
     def _get_blocks(self, block_class, material_class):
         """
@@ -130,7 +130,7 @@ class Terminal(InterafaceBuilding, NetworkNode):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    IMAGE_SPECIFICATIONS = ["buildings", (0, 0, 20, 20), {"color_key" : (255,255,255)}]
+    IMAGE_SPECIFICATIONS = ["buildings", (0, 0, 20, 20)]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = TerminalMaterial
 
@@ -151,7 +151,7 @@ class Furnace(InterafaceBuilding, NetworkNode):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20), {"color_key" : (255,255,255)}]
+    IMAGE_SPECIFICATIONS = ["buildings", (20, 0, 20, 20)]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = FurnaceMaterial
 
@@ -170,7 +170,7 @@ class Furnace(InterafaceBuilding, NetworkNode):
 
 
 class Factory(InterafaceBuilding, NetworkNode):
-    IMAGE_SPECIFICATIONS = ["buildings", (40, 0, 20, 20), {"color_key" : (255,255,255)}]
+    IMAGE_SPECIFICATIONS = ["buildings", (40, 0, 20, 20)]
     BLOCK_TYPE = ContainerBlock
     MATERIAL = FactoryMaterial
 

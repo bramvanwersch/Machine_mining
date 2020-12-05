@@ -187,6 +187,7 @@ class Label(Widget):
         elif len(color) == 4:
             image = pygame.Surface(size).convert_alpha()
         image.fill(color)
+        image.set_colorkey(INVISIBLE_COLOR, RLEACCEL)
         if border:
             pygame.draw.rect(image, border_color, (0,0,*self.rect.size), 4)
         #add text when defined
@@ -666,7 +667,7 @@ class ItemLabel(Label):
 class ProgressArrow(Label):
     def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
-        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20), color_key=(255, 255, 255))
+        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20))
         arrow_image = pygame.transform.scale(arrow_image, (50,50))
         a_lbl = Label((140, 50), (50, 50), color=INVISIBLE_COLOR)
         a_lbl.set_image(arrow_image)
