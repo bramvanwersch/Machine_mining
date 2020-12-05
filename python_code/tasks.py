@@ -241,7 +241,7 @@ class Task(ABC):
         self._set_task_progress(entity)
 
     def _set_task_progress(self, entity):
-        self.task_progress = [0, self.block.material.mining_speed()]
+        self.task_progress = [0, self.block.mining_speed]
 
     def cancel(self):
         self.started_task = False
@@ -343,7 +343,7 @@ class BuildTask(MultiTask):
 
     def _set_task_progress(self, entity):
         #TODO add mining tasks instead of remving and building at the same time. Low prio
-        self.task_progress = [0, self.BUILDING_SPEED + sum(b.material.mining_speed() for b in self.removed_blocks)]
+        self.task_progress = [0, self.BUILDING_SPEED + sum(b.mining_speed for b in self.removed_blocks)]
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)

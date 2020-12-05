@@ -4,7 +4,6 @@ import block_classes.block_utility
 from block_classes.blocks import ContainerBlock, NetworkBlock
 from utility.constants import BLOCK_SIZE
 from utility.utilities import manhattan_distance, Serializer
-from block_classes import block_constants
 from network.network_tasks import EdgeTaskQueue
 
 

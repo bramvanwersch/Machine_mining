@@ -545,7 +545,7 @@ class Board(BoardEventHandler, Serializer):
         #find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
             for n_col, block in enumerate(row):
-                if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types and block.light_level > 0) or n_col in covered_coordinates[n_row]:
+                if block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types and block.light_level > 0) or n_col in covered_coordinates[n_row]:
                     if n_col not in covered_coordinates[n_row]:
                         approved_blocks.append(block)
                     continue
@@ -584,7 +584,7 @@ class Board(BoardEventHandler, Serializer):
         #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         for block in blocks[0][1:]:
-            if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types and block.light_level > 0):
+            if block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types and block.light_level > 0):
                 break
             x_size += 1
         matrix_coordinate = [x_size, 0]
@@ -593,9 +593,9 @@ class Board(BoardEventHandler, Serializer):
         block = None
         for n_row, row in enumerate(blocks[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
-                if (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types):
+                if block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types):
                     break
-            if block == None or (task_type in block.allowed_tasks) and (block.name() not in dissallowed_block_types):
+            if block == None or block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types):
                 break
             matrix_coordinate[1] += 1
         return matrix_coordinate

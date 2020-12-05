@@ -8,11 +8,11 @@ class BaseBlock(ABC):
     """
     Base class for the block_classes in image matrices
     """
-    #all tasks types are allowed
     SIZE = BLOCK_SIZE
     ID = 0
-    def __init__(self, pos, id=None, action=None):
+    def __init__(self, pos, material, id=None, action=None):
         self.rect = pygame.Rect((*pos, *self.SIZE))
+        self.material = material
         self.__action_function = action
         if id == None:
             self.id = self.ID
@@ -20,6 +20,9 @@ class BaseBlock(ABC):
         else:
             self.id = id
         self.light_level = 0
+
+    def __getattr__(self, item):
+        return getattr(self.material, item)
 
     def action(self):
         """
@@ -37,14 +40,8 @@ class BaseBlock(ABC):
         """
         return self.rect.topleft
 
-    @property
-    def allowed_tasks(self):
-        """
-        Convenience method testing what tasks are allowed for a certain block
-
-        :return: a list of strings of allowable tasks
-        """
-        return self.material.ALLOWED_TASKS
+    def is_task_allowded(self, task_type: str) -> bool:
+        return task_type in self.allowed_tasks
 
     @property
     def transparant_group(self):
@@ -85,8 +82,7 @@ class AirBlock(BaseBlock):
     Special case of a block class that is an empty block with no surface
     """
     def __init__(self, pos, material, **kwargs):
-        super().__init__(pos, **kwargs)
-        self.material = material
+        super().__init__(pos, material, **kwargs)
 
 
 class Block(BaseBlock):
@@ -94,8 +90,7 @@ class Block(BaseBlock):
     A normal block containing anythin but air
     """
     def __init__(self, pos, material, **kwargs):
-        super().__init__(pos, **kwargs)
-        self.material = material
+        super().__init__(pos, material, **kwargs)
         self.rect = self.surface.get_rect(topleft=pos)
 
     @property

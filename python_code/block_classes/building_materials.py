@@ -10,12 +10,12 @@ class BuildingMaterial(ImageMaterial, ABC):
     """
     Abstraction level for all building materials, at the moment is useless
     """
-    ALLOWED_TASKS = ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Building"]]
+    _ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Building"]]
 
 
 class TerminalMaterial(BuildingMaterial):
     #make sure it is indestructible
-    ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
+    _ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
     TRANSPARANT_GROUP = 2
 
 
@@ -31,7 +31,7 @@ class FactoryMaterial(BuildingMaterial):
 
 class StonePipeMaterial(ImageMaterial):
     TRANSPARANT_GROUP = 5
-    BLOCK_TYPE = NetworkBlock
+    _BLOCK_TYPE = NetworkBlock
     # made as follows:
     # first number for the amount of connections (0, 1, 2, 3, 4)
     # then 2 to 4 letters for n = 0, e = 1, s = 2, w = 3, with that order

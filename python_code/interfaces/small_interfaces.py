@@ -57,7 +57,7 @@ class BuildingWindow(Window):
         """
         covered_items = [widget.item.name() for widget in self._inventory_sp.widgets]
         for item in self.__inventory.items:
-            if item.name() not in covered_items and not item.material.unbuildable:
+            if item.name() not in covered_items and item.material.buildable:
                 # remove the alpha channel
                 lbl = ItemLabel((42, 42), item, color=self.COLOR[:-1])
 
