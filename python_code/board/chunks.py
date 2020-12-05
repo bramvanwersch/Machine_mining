@@ -2,7 +2,7 @@ import block_classes.flora_materials
 from utility.constants import *
 from utility.utilities import GameException, Serializer
 from block_classes.blocks import *
-from block_classes import materials
+from block_classes import materials, block_utility
 from entities import ZoomableEntity
 from interfaces.interface_utility import p_to_c, p_to_r
 from board.pathfinding import PathfindingChunk
@@ -141,21 +141,12 @@ class Chunk(Serializer):
                 #create position
                 pos = (self.rect.left + column_i * BLOCK_SIZE.width,
                        self.rect.top + row_i * BLOCK_SIZE.height,)
-                if s_matrix[row_i][column_i] in dir(block_classes.ground_materials):
-                    material = getattr(block_classes.ground_materials, s_matrix[row_i][column_i])
-                elif s_matrix[row_i][column_i] in dir(block_classes.flora_materials):
-                    material = getattr(block_classes.flora_materials, s_matrix[row_i][column_i])
-                elif s_matrix[row_i][column_i] in dir(block_classes.building_materials):
-                    material = getattr(block_classes.building_materials, s_matrix[row_i][column_i])
-                # elif s_matrix[row_i][column_i] in dir(block_classes.machine_materials):
-                #     material = getattr(block_classes.machine_materials, s_matrix[row_i][column_i])
+                material_type = block_utility.material_type_from_string(s_matrix[row_i][column_i])
+                if issubclass(material_type, materials.ColorMaterial):
+                    material_instance = material_type(depth=row_i)
                 else:
-                    material = getattr(materials, s_matrix[row_i][column_i])
-                if issubclass(material, materials.ColorMaterial):
-                    material_instance = material(depth=row_i)
-                else:
-                    material_instance = material()
-                if material.name() == "Air":
+                    material_instance = material_type()
+                if material_type.name() == "Air":
                     block = AirBlock(pos, material_instance)
                 else:
                     block = Block(pos, material_instance)

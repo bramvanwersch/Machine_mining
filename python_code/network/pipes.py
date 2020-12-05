@@ -13,7 +13,7 @@ class Network(Serializer):
         #connections between them
         self.edges = [self.__add_edge(e) for e in edges] if edges else set()
         #furnaces chests etc.
-        self.nodes = [self.__add]
+        self.nodes = set()
         self.task_control = task_control
 
     def to_dict(self):
