@@ -1,5 +1,6 @@
 from math import ceil
 
+import block_classes.block_utility
 from block_classes.blocks import ContainerBlock, NetworkBlock
 from utility.constants import BLOCK_SIZE
 from utility.utilities import manhattan_distance, Serializer
@@ -58,7 +59,7 @@ class Network(Serializer):
         for a_node in self.nodes:
             if not hasattr(a_node, "inventory"):
                 continue
-            for name in [f.name() for f in block_constants.fuel_materials]:
+            for name in [f.name() for f in block_classes.block_utility.fuel_materials]:
                 item_pointer = a_node.inventory.item_pointer(name)
                 if item_pointer == None:
                     continue

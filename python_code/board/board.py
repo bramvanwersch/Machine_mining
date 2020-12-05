@@ -689,10 +689,10 @@ class Board(BoardEventHandler, Serializer):
     def __generate_stone_background(self):
         matrix = []
         for row_i in range(p_to_r(BOARD_SIZE.height)):
-            filler_likelyhoods = self.__get_material_lh_at_depth(block_classes.block_constants.filler_materials, row_i)
+            filler_likelyhoods = self.__get_material_lh_at_depth(block_classes.block_utility.filler_materials, row_i)
             row = []
             for _ in range(p_to_c(BOARD_SIZE.width)):
-                filler = choices([f.name() for f in block_classes.block_constants.filler_materials], filler_likelyhoods, k=1)[0]
+                filler = choices([f.name() for f in block_classes.block_utility.filler_materials], filler_likelyhoods, k=1)[0]
                 row.append(filler)
             matrix.append(row)
         return matrix
@@ -776,11 +776,11 @@ class Board(BoardEventHandler, Serializer):
 
         # generate some ores inbetween the start and end locations
         for row_i, row in enumerate(matrix):
-            ore_likelyhoods = self.__get_material_lh_at_depth(block_classes.block_constants.ore_materials, row_i)
+            ore_likelyhoods = self.__get_material_lh_at_depth(block_classes.block_utility.ore_materials, row_i)
             for column_i, value in enumerate(row):
                 if randint(1, self.CLUSTER_LIKELYHOOD) == 1:
                     # decide the ore
-                    ore = choices([f.name() for f in block_classes.block_constants.ore_materials], ore_likelyhoods, k=1)[0]
+                    ore = choices([f.name() for f in block_classes.block_utility.ore_materials], ore_likelyhoods, k=1)[0]
                     # create a list of locations around the current location
                     # where an ore is going to be located
                     ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
@@ -862,21 +862,21 @@ class Board(BoardEventHandler, Serializer):
 
     def __add_flora(self, matrix):
         for row_i in range(len(matrix)):
-            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 0], row_i),
-                                 self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 1], row_i),
-                                 self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 2], row_i),
-                                 self.__get_material_lh_at_depth([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == 3], row_i)]
+            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in block_classes.block_utility.flora_materials if m.START_DIRECTION == 0], row_i),
+                                 self.__get_material_lh_at_depth([m for m in block_classes.block_utility.flora_materials if m.START_DIRECTION == 1], row_i),
+                                 self.__get_material_lh_at_depth([m for m in block_classes.block_utility.flora_materials if m.START_DIRECTION == 2], row_i),
+                                 self.__get_material_lh_at_depth([m for m in block_classes.block_utility.flora_materials if m.START_DIRECTION == 3], row_i)]
             for col_i, string in enumerate(matrix[row_i]):
                 if string != "Air":
                     continue
                 s_coords = self.__get_surrounding_block_coords(col_i, row_i)
-                elligable_indexes = [coord for coord in s_coords if matrix[coord[1]][coord[0]] in [m.name() for m in block_classes.block_constants.filler_materials]]
+                elligable_indexes = [coord for coord in s_coords if matrix[coord[1]][coord[0]] in [m.name() for m in block_classes.block_utility.filler_materials]]
                 if len(elligable_indexes) == 0 or uniform(0, 1) >= self.FLORA_CHANCE:
                     continue
                 chosen_index = s_coords.index(choice(elligable_indexes))
                 if len(flora_likelyhoods[chosen_index]) == 0:
                     continue
-                flora = choices([m for m in block_classes.block_constants.flora_materials if m.START_DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
+                flora = choices([m for m in block_classes.block_utility.flora_materials if m.START_DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
                 matrix[row_i][col_i] = flora[0].name()
 
     def __generate_background_string_matrix(self):

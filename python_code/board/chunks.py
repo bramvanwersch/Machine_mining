@@ -141,18 +141,11 @@ class Chunk(Serializer):
                 #create position
                 pos = (self.rect.left + column_i * BLOCK_SIZE.width,
                        self.rect.top + row_i * BLOCK_SIZE.height,)
-                material_type = block_utility.material_type_from_string(s_matrix[row_i][column_i])
-                if issubclass(material_type, materials.ColorMaterial):
-                    material_instance = material_type(depth=row_i)
-                else:
-                    material_instance = material_type()
-                if material_type.name() == "Air":
-                    block = AirBlock(pos, material_instance)
-                else:
-                    block = Block(pos, material_instance)
-                    if isinstance(material_instance, block_classes.flora_materials.MultiFloraMaterial):
-                        plant = Plant(block)
-                        self.plants[plant.id] = plant
+                material_instance = block_utility.material_instance_from_string(s_matrix[row_i][column_i], depth=row_i)
+                block = material_instance.to_block(pos)
+                if isinstance(material_instance, block_classes.flora_materials.MultiFloraMaterial):
+                    plant = Plant(block)
+                    self.plants[plant.id] = plant
                 s_matrix[row_i][column_i] = block
         return s_matrix
 

@@ -12,7 +12,7 @@ from utility.image_handling import load_images
 from recipes.recipe_constants import create_recipe_book
 import interfaces.small_interfaces as small_interfaces
 from interfaces.managers import create_window_managers
-from block_classes.block_constants import configure_material_collections
+from block_classes.block_utility import configure_material_collections
 from interfaces.interface_utility import ThreadPoolExecutorStackTraced
 from interfaces.widgets import *
 

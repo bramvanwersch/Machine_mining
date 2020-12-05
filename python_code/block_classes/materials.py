@@ -11,15 +11,15 @@ class BaseMaterial(ABC):
     Basic functions that are shared by all materials
     """
     WHEIGHT = 1
-    #all task types that are allowed to a block with this __material
+    # all task types that are allowed to a block with this __material
     ALLOWED_TASKS = MULTI_TASKS
     TEXT_COLOR = (0,0,0)
-    #group 0 are not transparant
+    # group 0 are not transparant
     TRANSPARANT_GROUP = 0
     MINING_SPEED_PER_HARDNESS = 100 #ms
     HARDNESS = 1
-
     BLOCK_TYPE = Block
+
     def __init__(self, image = None, **kwargs):
         """
         :param image: a pygame Surface object that can be an image instead of
@@ -38,8 +38,11 @@ class BaseMaterial(ABC):
 
     @property
     def surface(self):
-        #allow inheriting classes to push muliple surfaces or a choice
+        # allow inheriting classes to push muliple surfaces or a choice
         return self._surface
+
+    def to_block(self, pos, **kwargs):
+        return self.BLOCK_TYPE(pos, self, **kwargs)
 
     @abstractmethod
     def _configure_surface(self, image):
@@ -86,6 +89,7 @@ class Air(BaseMaterial):
     ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Mining"]]
     HARDNESS = 0
     TRANSPARANT_GROUP = 1
+    BLOCK_TYPE = AirBlock
 
     def _configure_surface(self, image):
         """
