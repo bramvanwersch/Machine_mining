@@ -1,7 +1,11 @@
+"""Base material methods that form branches for more specific materials"""
+
+# library imports
 from abc import abstractmethod
 from random import randint, choices
 from typing import Set, Tuple, ClassVar, List, Dict
 
+# own imports
 from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR
 from utility.image_handling import image_sheets
 from block_classes.blocks import *
@@ -208,6 +212,6 @@ class CancelMaterial(ImageMaterial):
 
 
 class UnbuildableMaterial(ImageMaterial):
-    """Materials that are unplacable. Do not have to eb part of a block neccesairily"""
+    """Materials that are unplacable. Do not have to be part of a block neccesairily"""
     _ALLOWED_TASKS: ClassVar[Set] = {"Fetch", "Request", "Deliver"}
     BUILDABLE: ClassVar[bool] = False
