@@ -91,6 +91,7 @@ class MaterialCollection(ABC):
     """class that holds a collection of items that are randomly returned based on wheights this is mainly meant for
      board generation purposes"""
 
+    # noinspection PyPep8Naming
     @property
     @abstractmethod
     def MATERIAL_PROBABILITIES(self) -> Dict[str, float]:
@@ -99,6 +100,7 @@ class MaterialCollection(ABC):
     @classmethod
     def name(cls) -> str:
         """Choose a name at random from the collection using wheight defined in this collection"""
+        # noinspection PyUnresolvedReferences
         return choices([k.name() for k in cls.MATERIAL_PROBABILITIES.keys()],
                        cls.MATERIAL_PROBABILITIES.values(), k=1)[0]
 
@@ -119,6 +121,7 @@ class ColorMaterial(BaseMaterial, ABC):
         self.__color = self._configure_color()
         super().__init__(**kwargs)
 
+    # noinspection PyPep8Naming
     @property
     @abstractmethod
     def BASE_COLOR(self) -> Tuple[int, int, int]:
@@ -185,22 +188,19 @@ class ImageMaterial(BaseMaterial, ABC):
     """Materials displaying an image"""
 
     def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
-        """
-        Show an image as a surface instead of a single color
-
-        :param image: optional pre defines pygame Surface object
-        :return: a python Surface object
-        """
+        """Show an image as a surface instead of a single color"""
         if image is not None:
             return image
-        # if an image is provided return that otherwise a color
+        # if an image is provided return that otherwise a debugging color signifying the image is missing
         else:
             surface = pygame.Surface(BLOCK_SIZE)
-            surface.fill((0, 255, 13))
+            surface.fill((255, 0, 255))
             return surface
 
 
 class CancelMaterial(ImageMaterial):
+    """Material displaying a stop sign like image to be used to stop crafting"""
+    _ALLOWED_TASKS: ClassVar[Set] = set()
 
     def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
         image = image_sheets["materials"].image_at((20, 20))
@@ -208,6 +208,6 @@ class CancelMaterial(ImageMaterial):
 
 
 class UnbuildableMaterial(ImageMaterial):
+    """Materials that are unplacable. Do not have to eb part of a block neccesairily"""
     _ALLOWED_TASKS: ClassVar[Set] = {"Fetch", "Request", "Deliver"}
     BUILDABLE: ClassVar[bool] = False
-
