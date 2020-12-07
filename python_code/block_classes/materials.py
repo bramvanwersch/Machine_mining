@@ -1,14 +1,15 @@
 """Base material methods that form branches for more specific materials"""
 
 # library imports
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from random import randint, choices
 from typing import Set, Tuple, ClassVar, List, Dict
 
 # own imports
-from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR
+from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR, MAX_DEPTH
 from utility.image_handling import image_sheets
 from block_classes.blocks import *
+from utility.utilities import Gaussian
 
 
 class BaseMaterial(ABC):
@@ -191,27 +192,43 @@ class BorderMaterial(ColorMaterial):
 class ImageMaterial(BaseMaterial, ABC):
     """Materials displaying an image"""
 
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def IMAGE_SPECIFICATIONS(self) -> Dict:
+        pass
+
     def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
         """Show an image as a surface instead of a single color"""
-        if image is not None:
-            return image
-        # if an image is provided return that otherwise a debugging color signifying the image is missing
-        else:
-            surface = pygame.Surface(BLOCK_SIZE)
-            surface.fill((255, 0, 255))
-            return surface
+        img_s = self.IMAGE_SPECIFICATIONS
+        image = image_sheets[img_s["sheet_name"]].image_at(img_s["image_location"], color_key=img_s["color_key"])
+        return image
 
 
 class CancelMaterial(ImageMaterial):
     """Material displaying a stop sign like image to be used to stop crafting"""
     _ALLOWED_TASKS: ClassVar[Set] = set()
-
-    def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
-        image = image_sheets["materials"].image_at((20, 20))
-        return image
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (20, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
-class UnbuildableMaterial(ImageMaterial):
-    """Materials that are unplacable. Do not have to be part of a block neccesairily"""
+class Unbuildable(ABC):
+    """Inherit material from this to make it unbuildable"""
     _ALLOWED_TASKS: ClassVar[Set] = {"Fetch", "Request", "Deliver"}
     BUILDABLE: ClassVar[bool] = False
+
+
+class DepthMaterial(ABC):
+    """Abstract class for materials that are placed based on depth"""
+
+    @classmethod
+    def get_lh_at_depth(cls, depth: int) -> float:
+        norm_depth = depth / MAX_DEPTH * 100
+        lh = cls.DISTRIBUTION.probability(norm_depth)
+        return lh
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def DISTRIBUTION(self) -> Gaussian:
+        pass

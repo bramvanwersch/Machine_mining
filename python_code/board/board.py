@@ -793,17 +793,9 @@ class Board(BoardEventHandler, Serializer):
         return matrix
 
     def __get_material_lh_at_depth(self, material_list, depth):
-        """
-        Figure out the likelyood of all ores and return a wheighted randomly
-        chosen ore
-
-        :param depth: the depth for the ore to be at
-        :return: a string that is an ore
-        """
         likelyhoods = []
         for material in material_list:
-            norm_depth = depth / MAX_DEPTH * 100
-            lh = Gaussian(material.MEAN_DEPTH, material.SD).probability(norm_depth)
+            lh = material.get_lh_at_depth(depth)
             likelyhoods.append(round(lh, 10))
         norm_likelyhoods = normalize(likelyhoods)
 
@@ -818,7 +810,7 @@ class Board(BoardEventHandler, Serializer):
         generated
         :return: a list of offset indexes around 0,0
         """
-        size = randint(*getattr(block_classes.ground_materials, ore).CLUSTER_SIZE)
+        size = getattr(block_classes.ground_materials, ore).get_cluster_size()
         ore_locations = []
         while len(ore_locations) <= size:
             location = [0, 0]

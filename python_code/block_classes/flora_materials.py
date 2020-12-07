@@ -1,13 +1,15 @@
 from abc import ABC, abstractmethod
 from random import choice
+from typing import ClassVar, Dict
 
 import pygame
 
-from block_classes.materials import ImageMaterial, MaterialCollection
-from utility.image_handling import image_sheets
+from block_classes.materials import ImageMaterial, MaterialCollection, DepthMaterial
+from utility.constants import INVISIBLE_COLOR
+from utility.utilities import Gaussian
 
 
-class FloraMaterial(ImageMaterial, ABC):
+class FloraMaterial(DepthMaterial, ImageMaterial, ABC):
 
     #default no growth
     GROW_CHANCE = 0
@@ -17,14 +19,8 @@ class FloraMaterial(ImageMaterial, ABC):
     #TODO make unique per plants
     _BASE_TRANSPARANT_GROUP = 100
 
-    @property
-    @abstractmethod
-    def LOCATION_INFORMATION(self):
-        #information about location of images on the image sheets
-        return tuple
-
     def _configure_surface(self, image):
-        image1 = image_sheets["materials"].image_at(self.LOCATION_INFORMATION)
+        image1 = super()._configure_surface(image=image)
         image2 = pygame.transform.flip(image1, True, False)
         return [image1, image2]
 
@@ -33,77 +29,68 @@ class FloraMaterial(ImageMaterial, ABC):
         #this requires the self._surface to be an itterable
         return choice(self._surface)
 
+    # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def MEAN_DEPTH(self):
-        return 0
-
-    @property
-    @abstractmethod
-    def SD(self):
-        return 0
-
-    @property
-    @abstractmethod
-    def START_DIRECTION(self):
-        #direction of connection 0-3 N, E, S, W
-        return -1
+    def START_DIRECTION(self) -> int:
+        # direction of connection 0-3 N, E, S, W
+        pass
 
 
 class Fern(FloraMaterial):
 
-    MEAN_DEPTH = 30
-    SD = 10
+    DISTRIBUTION = Gaussian(30, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (30, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (30, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class Reed(FloraMaterial):
 
-    MEAN_DEPTH = 30
-    SD = 10
+    DISTRIBUTION = Gaussian(30, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (40, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (40, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class Moss(FloraMaterial):
 
-    MEAN_DEPTH = 40
-    SD = 10
+    DISTRIBUTION = Gaussian(40, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (90, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (90, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class BrownShroom(FloraMaterial):
 
-    MEAN_DEPTH= 80
-    SD = 10
+    DISTRIBUTION = Gaussian(80, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (50, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (50, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class BrownShroomers(FloraMaterial):
 
-    MEAN_DEPTH= 80
-    SD = 10
+    DISTRIBUTION = Gaussian(80, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (70, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (70, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class RedShroom(FloraMaterial):
 
-    MEAN_DEPTH= 80
-    SD = 10
+    DISTRIBUTION = Gaussian(80, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (80, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (80, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class RedShroomers(FloraMaterial):
 
-    MEAN_DEPTH = 80
-    SD = 10
+    DISTRIBUTION = Gaussian(80, 10)
     START_DIRECTION = 2
-    LOCATION_INFORMATION = (60, 20)
+    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (60, 20),
+                                                      "color_key": INVISIBLE_COLOR[:-1]}
 
 
 class ShroomCollection(MaterialCollection):
@@ -133,8 +120,7 @@ class MultiFloraMaterial(FloraMaterial, ABC):
 
 
 class Vine(MultiFloraMaterial):
-    MEAN_DEPTH = 30
-    SD = 10
+    DISTRIBUTION = Gaussian(30, 10)
     START_DIRECTION = 0
     CONTINUATION_DIRECTION = 2
     #-1 key is reserved for the starting image, 0-3 for the direction of addition

@@ -282,3 +282,9 @@ class Gaussian:
     def cumulative_probability(self, x):
         two_sided = erfc((x - self.mean) / (self.sd * sqrt(2)))
         return two_sided
+
+
+def is_abstract(cls):
+    """Check if a class is abstract by checking for attribute __abstractmethods__,
+    https://stackoverflow.com/questions/14410860/determine-if-a-python-class-is-an-abstract-base-class-or-concrete"""
+    return bool(getattr(cls, "__abstractmethods__", False))

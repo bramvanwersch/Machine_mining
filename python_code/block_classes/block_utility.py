@@ -1,7 +1,9 @@
 import inspect
 
 import block_classes
+import block_classes.materials
 from block_classes import machine_materials, flora_materials as flora_m, ground_materials as ground_m
+from utility.utilities import is_abstract
 
 
 # Collections used for getting all type of a certain material
@@ -28,19 +30,19 @@ def material_instance_from_string(string, **kwargs):
 def configure_material_collections():
     global fuel_materials, ore_materials, filler_materials, flora_materials
     for module in (flora_m, ground_m):
-        for name, obj in inspect.getmembers(module, inspect.isclass):
+        for name, cls in inspect.getmembers(module, inspect.isclass):
             selected_sets = []
-            if issubclass(obj, ground_m.FuelMaterial) and obj != ground_m.FuelMaterial:
+            if issubclass(cls, ground_m.Burnable) and not is_abstract(cls):
                 selected_sets.append(fuel_materials)
-            if issubclass(obj, ground_m.OreMaterial) and obj != ground_m.OreMaterial:
+            if issubclass(cls, ground_m.OreMaterial) and not is_abstract(cls):
                 selected_sets.append(ore_materials)
-            if issubclass(obj, ground_m.FillerMaterial) and obj != ground_m.FillerMaterial:
+            if issubclass(cls, ground_m.FillerMaterial) and not is_abstract(cls) and cls is not ground_m.FillerMaterial:
                 selected_sets.append(filler_materials)
-            if issubclass(obj, flora_m.FloraMaterial) or issubclass(obj, flora_m.MultiFloraMaterial) and obj not in\
-                    (flora_m.FloraMaterial, flora_m.MultiFloraMaterial):
+            if (issubclass(cls, flora_m.FloraMaterial) or issubclass(cls, flora_m.MultiFloraMaterial))\
+                    and not is_abstract(cls):
                 selected_sets.append(flora_materials)
             if len(selected_sets) > 0:
-               [set_.add(obj) for set_ in selected_sets]
+                [set_.add(cls) for set_ in selected_sets]
     __add_collection(flora_materials, flora_m.ShroomCollection())
     __add_collection(filler_materials, ground_m.StoneCollection())
 

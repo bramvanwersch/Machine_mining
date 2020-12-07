@@ -1,4 +1,4 @@
-from block_classes.materials import UnbuildableMaterial
+from block_classes.materials import Unbuildable
 
-class StoneCog(UnbuildableMaterial):
+class StoneCog(Unbuildable):
     pass

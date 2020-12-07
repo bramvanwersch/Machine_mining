@@ -7,6 +7,7 @@ BUGS:
 - Fix weird prioritisation with tasks
 - Mouse moves from window bar when moving windows in zoomed mode
 - There is a bug with lighting not updating when building or growing etc.
+- In zoomed mode there seems to be a lag problem probably associated with repeated transformation
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
