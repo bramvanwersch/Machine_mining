@@ -2,8 +2,8 @@
 
 # library imports
 from abc import abstractmethod, ABC
-from random import randint, choices
-from typing import Set, Tuple, ClassVar, List, Dict
+from random import randint, choices, choice
+from typing import Set, Tuple, ClassVar, List, Dict, Any
 
 # own imports
 from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR, MAX_DEPTH
@@ -30,6 +30,9 @@ class BaseMaterial(ABC):
 
     _BLOCK_TYPE: ClassVar[BaseBlock] = Block
     BUILDABLE: ClassVar[bool] = True
+
+    _surface: pygame.Surface
+    __transparant_group: int
 
     def __init__(self, image: pygame.Surface = None, **kwargs):
         self._surface = self._configure_surface(image=image)
@@ -70,7 +73,7 @@ class BaseMaterial(ABC):
         # allow inheriting classes to push muliple surfaces or a choice
         return self._surface
 
-    def to_block(self, pos: Tuple[int, int], **kwargs):
+    def to_block(self, pos: Tuple[int, int], **kwargs) -> BaseBlock:
         """Convert a material into the appropriate block
 
         Args:
@@ -175,10 +178,10 @@ class Air(ColorMaterial):
     _BLOCK_TYPE: ClassVar[BaseBlock] = AirBlock
     BASE_COLOR: ClassVar[Tuple[int, int, int]] = INVISIBLE_COLOR[:-1]
 
-    def _configure_color(self):
+    def _configure_color(self) -> Tuple[int, int, int]:
         return self.BASE_COLOR
 
-    def _configure_border_color(self):
+    def _configure_border_color(self) -> Tuple[int, int, int]:
         return self.BASE_COLOR
 
 
@@ -189,27 +192,85 @@ class BorderMaterial(ColorMaterial):
     MIN_COLOR: ClassVar[Tuple[int, int, int]] = (0, 0, 0)
 
 
+class ImageDefinition:
+    # this varaible will save when get_images is called once before te prevent unnecesairy transform an image_at calls
+    __IMAGES: ClassVar[List[pygame.Surface]] = []
+
+    __sheet_name: str
+    __image_location: Tuple[int, int]
+    __color_key: Tuple[int, int, int]
+    __flip: bool
+
+    def __init__(self, sheet_name: str, image_location: Tuple[int, int],
+                 color_key: Tuple[int, int, int] = INVISIBLE_COLOR[:-1], flip: bool = False):
+        self.__sheet_name = sheet_name
+        self.__image_location = image_location
+        self.__color_key = color_key
+        self.__flip = flip
+
+    def images(self) -> List[pygame.Surface]:
+        if len(self.__IMAGES) > 0:
+            return self.__IMAGES
+        norm_image = image_sheets[self.__sheet_name].image_at(self.__image_location, color_key=self.__color_key)
+        if self.__flip:
+            flip_image = pygame.transform.flip(norm_image, True, False)
+            self.__IMAGES = [norm_image, flip_image]
+            return [norm_image, flip_image]
+        else:
+            self.__IMAGES = [norm_image]
+            return [norm_image]
+
+
 class ImageMaterial(BaseMaterial, ABC):
     """Materials displaying an image"""
+    _surface: List[pygame.Surface]
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def IMAGE_SPECIFICATIONS(self) -> Dict:
+    def IMAGE_DEFINITIONS(self) -> ImageDefinition:
         pass
 
-    def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
+    def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
         """Show an image as a surface instead of a single color"""
-        img_s = self.IMAGE_SPECIFICATIONS
-        image = image_sheets[img_s["sheet_name"]].image_at(img_s["image_location"], color_key=img_s["color_key"])
-        return image
+        return self.IMAGE_DEFINITIONS.images()
+
+    @property
+    def surface(self) -> pygame.Surface:
+        return choice(self._surface)
+
+
+class MultiImageMaterial(ImageMaterial, ABC):
+    """Class for materials that have multiple images associated with them that can be bound to keys in a dictionary"""
+    image_key: int
+    _surface: Dict[Any, List[pygame.Surface]]
+
+    def __init__(self, image_number: int = -1, **kwargs):
+        super().__init__(**kwargs)
+        self.image_key = image_number
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def IMAGE_DEFINITIONS(self) -> Dict[Any, ImageDefinition]:
+        # signify the change in type
+        pass
+
+    def _configure_surface(self, image: pygame.Surface = None) -> Dict[Any, List[pygame.Surface]]:
+        surfaces = dict()
+        for name, image_defenition in self.IMAGE_DEFINITIONS.items():
+            surfaces[name] = image_defenition.images()
+        return surfaces
+
+    @property
+    def surface(self):
+        return choice(self._surface[self.image_key])
 
 
 class CancelMaterial(ImageMaterial):
     """Material displaying a stop sign like image to be used to stop crafting"""
     _ALLOWED_TASKS: ClassVar[Set] = set()
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (20, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (20, 20))
 
 
 class Unbuildable(ABC):
@@ -224,6 +285,7 @@ class DepthMaterial(ABC):
     @classmethod
     def get_lh_at_depth(cls, depth: int) -> float:
         norm_depth = depth / MAX_DEPTH * 100
+        # noinspection PyUnresolvedReferences
         lh = cls.DISTRIBUTION.probability(norm_depth)
         return lh
 

@@ -2,12 +2,12 @@
 
 # library imports
 from abc import ABC, abstractmethod
-from typing import Tuple, ClassVar, Dict
+from typing import Tuple, ClassVar, Dict, List
 from random import randint
 
 # own imports
 from block_classes.materials import MaterialCollection, ColorMaterial, Unbuildable, ImageMaterial, DepthMaterial,\
-    BaseMaterial
+    BaseMaterial, ImageDefinition
 from utility.utilities import Gaussian
 from utility.constants import INVISIBLE_COLOR
 
@@ -160,25 +160,20 @@ class Titanium(OreMaterial, ColorMaterial):
 
 
 class IronIngot(Unbuildable, ImageMaterial):
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (70, 10),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (70, 10))
 
 
 class GoldIngot(Unbuildable, ImageMaterial):
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (80, 10),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (80, 10))
 
 
 class ZincIngot(Unbuildable, ImageMaterial):
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (90, 10),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (90, 10))
 
 
 class CopperIngot(Unbuildable, ImageMaterial):
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (0, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (0, 20))
 
 
 class TitaniumIngot(Unbuildable, ImageMaterial):
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (10, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (10, 20))

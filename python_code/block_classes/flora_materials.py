@@ -1,33 +1,20 @@
 from abc import ABC, abstractmethod
 from random import choice
-from typing import ClassVar, Dict
-
+from typing import ClassVar, Dict, List
 import pygame
 
-from block_classes.materials import ImageMaterial, MaterialCollection, DepthMaterial
+from block_classes.materials import ImageMaterial, MaterialCollection, DepthMaterial,\
+    MultiImageMaterial, ImageDefinition
 from utility.constants import INVISIBLE_COLOR
 from utility.utilities import Gaussian
 
 
-class FloraMaterial(DepthMaterial, ImageMaterial, ABC):
+class FloraMaterial(DepthMaterial, ABC):
 
-    #default no growth
-    GROW_CHANCE = 0
     # the index that the plant grows that side N, E, S, W order, default is north (up)
     CONTINUATION_DIRECTION = 0
-    MAX_SIZE = 1
-    #TODO make unique per plants
+    # TODO make unique per plants
     _BASE_TRANSPARANT_GROUP = 100
-
-    def _configure_surface(self, image):
-        image1 = super()._configure_surface(image=image)
-        image2 = pygame.transform.flip(image1, True, False)
-        return [image1, image2]
-
-    @property
-    def surface(self):
-        #this requires the self._surface to be an itterable
-        return choice(self._surface)
 
     # noinspection PyPep8Naming
     @property
@@ -37,60 +24,53 @@ class FloraMaterial(DepthMaterial, ImageMaterial, ABC):
         pass
 
 
-class Fern(FloraMaterial):
+class Fern(FloraMaterial, ImageMaterial):
 
     DISTRIBUTION = Gaussian(30, 10)
     START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (30, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (30, 20), flip=True)
 
 
-class Reed(FloraMaterial):
+class Reed(FloraMaterial, ImageMaterial):
 
     DISTRIBUTION = Gaussian(30, 10)
     START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (40, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (40, 20), flip=True)
 
 
-class Moss(FloraMaterial):
+class Moss(FloraMaterial, ImageMaterial):
 
     DISTRIBUTION = Gaussian(40, 10)
     START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (90, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (90, 20), flip=True)
 
 
-class BrownShroom(FloraMaterial):
-
-    DISTRIBUTION = Gaussian(80, 10)
-    START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (50, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
-
-
-class BrownShroomers(FloraMaterial):
+class BrownShroom(FloraMaterial, ImageMaterial):
 
     DISTRIBUTION = Gaussian(80, 10)
     START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (70, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (50, 20), flip=True)
 
 
-class RedShroom(FloraMaterial):
-
-    DISTRIBUTION = Gaussian(80, 10)
-    START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (80, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
-
-
-class RedShroomers(FloraMaterial):
+class BrownShroomers(FloraMaterial, ImageMaterial):
 
     DISTRIBUTION = Gaussian(80, 10)
     START_DIRECTION = 2
-    IMAGE_SPECIFICATIONS: ClassVar[Dict[str, str]] = {"sheet_name": "materials", "image_location": (60, 20),
-                                                      "color_key": INVISIBLE_COLOR[:-1]}
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (70, 20), flip=True)
+
+
+class RedShroom(FloraMaterial, ImageMaterial):
+
+    DISTRIBUTION = Gaussian(80, 10)
+    START_DIRECTION = 2
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (80, 20), flip=True)
+
+
+class RedShroomers(FloraMaterial, ImageMaterial):
+
+    DISTRIBUTION = Gaussian(80, 10)
+    START_DIRECTION = 2
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (60, 20), flip=True)
 
 
 class ShroomCollection(MaterialCollection):
@@ -100,29 +80,15 @@ class ShroomCollection(MaterialCollection):
 
 class MultiFloraMaterial(FloraMaterial, ABC):
     MAX_SIZE = 6
-
-    def __init__(self, image_number=-1, **kwargs):
-        super().__init__(**kwargs)
-        self.image_key = image_number
-
-    def _configure_surface(self, image):
-        images = {}
-        for direction, loc in self.LOCATION_INFORMATION.items():
-            image = image_sheets["materials"].image_at(loc)
-            images[direction] = [image]
-            images[direction].append(pygame.transform.flip(image, True, False))
-        return images
-
-    @property
-    def surface(self):
-        #this requires the self._surface to be an itterable
-        return choice(self._surface[self.image_key])
+    # default no growth
+    GROW_CHANCE = 0
 
 
-class Vine(MultiFloraMaterial):
+class Vine(MultiFloraMaterial, MultiImageMaterial):
     DISTRIBUTION = Gaussian(30, 10)
     START_DIRECTION = 0
     CONTINUATION_DIRECTION = 2
-    #-1 key is reserved for the starting image, 0-3 for the direction of addition
-    LOCATION_INFORMATION = {-1:(0, 30), 2:(10, 30)}
+    # -1 key is reserved for the starting image, 0-3 for the direction of addition
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = {-1: ImageDefinition("materials", (0, 30), flip=True),
+                                                          2: ImageDefinition("materials", (10, 30), flip=True)}
     GROW_CHANCE = 0.1
