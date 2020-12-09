@@ -1,11 +1,8 @@
 from abc import abstractmethod, ABC
 
 import block_classes.building_materials
-from block_classes import materials
-from block_classes import flora_materials
-from block_classes import ground_materials
+from block_classes import materials, buildings
 from utility.utilities import Size
-from board import buildings
 from inventories import Item
 
 

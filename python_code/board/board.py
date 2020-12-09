@@ -1,11 +1,11 @@
-from random import choice, uniform
+from random import uniform
 from math import sin, cos
 
 import block_classes.building_materials
 from utility.utilities import *
 from board.pathfinding import PathFinder
-import board.buildings as buildings
-from board.buildings import *
+import block_classes.buildings as buildings
+from block_classes.buildings import *
 from utility.event_handling import BoardEventHandler
 from interfaces.small_interfaces import get_selected_item
 from network.pipes import Network

@@ -1,35 +1,40 @@
 from abc import ABC
+from typing import ClassVar, List
 
 from block_classes.blocks import NetworkBlock
-from block_classes.materials import ImageMaterial
-from utility.constants import MULTI_TASKS, MODES
+from block_classes.materials import ImageMaterial, MultiImageMaterial, BaseMaterial, Indestructable, ImageDefinition
+from utility.constants import MODES
 from utility.image_handling import image_sheets
 
 
-class BuildingMaterial(ImageMaterial, ABC):
+class BuildingMaterial(ABC):
     """
-    Abstraction level for all building materials, at the moment is useless
+    Abstraction level for all building allows for rapid identification
     """
-    _ALLOWED_TASKS = [task for task in MULTI_TASKS if task not in ["Building"]]
+    ALLOWED_TASKS = {task for task in BaseMaterial.ALLOWED_TASKS if task not in ["Building"]}
+
+    F
 
 
-class TerminalMaterial(BuildingMaterial):
-    #make sure it is indestructible
-    _ALLOWED_TASKS = [mode.name for mode in MODES.values() if mode.name not in ["Building", "Mining"]] + ["Empty inventory"]
+class TerminalMaterial(Indestructable, MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP = 2
+    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = {1: ImageDefinition("buildings", (0, 0)),
+                                                          2: ImageDefinition("buildings", (10, 0)),
+                                                          3: ImageDefinition("buildings", (0, 10)),
+                                                          4: ImageDefinition("buildings", (10, 10))}
 
 
-class FurnaceMaterial(BuildingMaterial):
+class FurnaceMaterial(BuildingMaterial, MultiImageMaterial):
     TEXT_COLOR = (255,255,255)
     _BASE_TRANSPARANT_GROUP = 3
 
 
-class FactoryMaterial(BuildingMaterial):
+class FactoryMaterial(BuildingMaterial, MultiImageMaterial):
     TEXT_COLOR = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP = 4
 
 
-class StonePipeMaterial(ImageMaterial):
+class StonePipeMaterial(BuildingMaterial, MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP = 5
     _BLOCK_TYPE = NetworkBlock
     # made as follows:

@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from random import choice
-from typing import ClassVar, Dict, List
-import pygame
+from typing import ClassVar, List
 
 from block_classes.materials import ImageMaterial, MaterialCollection, DepthMaterial,\
     MultiImageMaterial, ImageDefinition

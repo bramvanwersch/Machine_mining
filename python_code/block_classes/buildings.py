@@ -18,8 +18,10 @@ def block_i_from_material(material):
         building_block_i = material.BLOCK_TYPE
     return building_block_i
 
+
 def building_type_from_material(material):
     return material_mapping[material.name()]
+
 
 class Building(BaseBlock, ABC):
     """
@@ -29,8 +31,9 @@ class Building(BaseBlock, ABC):
     BLOCK_TYPE = Block
     SIZE = Size(*(BLOCK_SIZE * (2, 2)))
     ID = 0
-    def __init__(self, pos, material=None):
-        self.material = self.MATERIAL()
+
+    def __init__(self, pos, material):
+        self.material = material
         self.pos = pos
 
         self.id = "Building{}".format(self.ID)
@@ -38,7 +41,6 @@ class Building(BaseBlock, ABC):
 
         self.blocks = self._get_blocks( self.BLOCK_TYPE, self.MATERIAL)
         self.rect = pygame.Rect((*pos, *self.SIZE))
-
 
     def _action_function(self, *args):
         """
@@ -48,7 +50,6 @@ class Building(BaseBlock, ABC):
         :param args: optional arguments.
         """
         pass
-
 
     @property
     @abstractmethod
@@ -146,6 +147,7 @@ class Terminal(InterafaceBuilding, NetworkNode):
             for block in row:
                 block.inventory = self.inventory
         return blocks
+
 
 class Furnace(InterafaceBuilding, NetworkNode):
     """
