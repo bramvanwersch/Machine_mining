@@ -1,15 +1,16 @@
 """Base material methods that form branches for more specific materials"""
 
 # library imports
-from abc import abstractmethod
+import pygame
+from abc import ABC, abstractmethod
 from random import randint, choices, choice
 from typing import Set, Tuple, ClassVar, List, Dict, Any
 
 # own imports
-from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR, MAX_DEPTH, BLOCK_SIZE
-from utility.image_handling import image_sheets
-from block_classes.blocks import *
-from utility.utilities import Gaussian, Size
+import utility.constants as con
+import utility.image_handling as image_handling
+import block_classes.blocks as blocks
+import utility.utilities as util
 
 
 class BaseMaterial(ABC):
@@ -27,7 +28,7 @@ class BaseMaterial(ABC):
     # group 0 are not transparant
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 0
 
-    _BLOCK_TYPE: ClassVar[BaseBlock] = Block
+    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.Block
     BUILDABLE: ClassVar[bool] = True
     BUILDING: ClassVar[bool] = False
 
@@ -77,8 +78,8 @@ class BaseMaterial(ABC):
     def full_surface(self) -> pygame.Surface:
         return self._surface
 
-    def to_block(self, pos: Tuple[int, int], **kwargs) -> BaseBlock:
-        """Convert a material into the appropriate block
+    def to_block(self, pos: Tuple[int, int], **kwargs) -> blocks.BaseBlock:
+        """Convert a material into the appropriate block with that material
 
         Args:
             pos (list): lenght 2 list of the block position
@@ -96,17 +97,20 @@ class BaseMaterial(ABC):
     @property
     def mining_speed(self) -> float:
         """Mili seconds needed to mine a block with this material"""
-        return self.HARDNESS * MINING_SPEED_PER_HARDNESS
+        return self.HARDNESS * con.MINING_SPEED_PER_HARDNESS
 
 
 class MaterialCollection(ABC):
     """class that holds a collection of items that are randomly returned based on wheights this is mainly meant for
      board generation purposes"""
+    MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]]
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
     def MATERIAL_PROBABILITIES(self) -> Dict[str, float]:
+        """Dictionary linking material name to to a probability of returning that name when the name() metod is
+         called"""
         pass
 
     @classmethod
@@ -124,11 +128,13 @@ class MaterialCollection(ABC):
 
 
 class ColorDefinition:
+    """Defines a range of colors based on input parameters, is optimized on order to prevent repeated color image
+    creation"""
     BORDER_DARKER: ClassVar[int] = 20
 
     __images: List[pygame.Surface]
     __colors: List[Tuple[int, int, int]]
-    __surface_size: Size
+    __surface_size: util.Size
     __border_allowed: bool
 
     def __init__(
@@ -140,7 +146,7 @@ class ColorDefinition:
         min_color: Tuple[int, int, int] = (20, 20, 20),
         nr_colors: int = 10,
         change_range: Tuple[int, int] = (-10, 10),
-        size: Size = BLOCK_SIZE
+        size: util.Size = con.BLOCK_SIZE
     ):
         if len(additional_colors) > 0 or not more_colors:
             self.__colors = [base_color, *additional_colors]
@@ -165,11 +171,12 @@ class ColorDefinition:
         return new_colors
 
     def colors(self) -> List[pygame.Surface]:
+        """Create surfaces of a single color for all colors in self.__colors"""
         if len(self.__images) == 0:
             for color in self.__colors:
-                image = pygame.Surface(self.__surface_size)
+                image = pygame.Surface(self.__surface_size.size)
                 image.fill(color)
-                if SHOW_BLOCK_BORDER and self.__border_allowed:
+                if con.SHOW_BLOCK_BORDER and self.__border_allowed:
                     pygame.draw.rect(image, self.__configure_border_color(color),
                                      (0, 0, self.__surface_size.width, self.__surface_size.height), 1)
                 self.__images.append(image)
@@ -192,6 +199,8 @@ class ColorMaterial(BaseMaterial, ABC):
     """
     Materials can inherit this when they simply are one color
     """
+    COLOR_DEFINITIONS: ClassVar[ColorDefinition]
+
     _surface: List[pygame.Surface]
 
     # noinspection PyPep8Naming
@@ -201,11 +210,12 @@ class ColorMaterial(BaseMaterial, ABC):
         pass
 
     def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
-        """Show an image as a surface instead of a single color"""
+        """the self._surface attribute is set to this value. For colors this is a list of possible colors"""
         return self.COLOR_DEFINITIONS.colors()
 
     @property
     def surface(self) -> pygame.Surface:
+        """Return one of the colors at random"""
         return choice(self._surface)
 
     @property
@@ -218,8 +228,8 @@ class Air(ColorMaterial):
     ALLOWED_TASKS: ClassVar[Set] = {task for task in BaseMaterial.ALLOWED_TASKS if task not in ["Mining"]}
     HARDNESS: ClassVar[int] = 0
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 1
-    _BLOCK_TYPE: ClassVar[BaseBlock] = AirBlock
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition(INVISIBLE_COLOR[:-1], more_colors=False,
+    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.AirBlock
+    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition(con.INVISIBLE_COLOR[:-1], more_colors=False,
                                                                    border=False)
 
 
@@ -237,12 +247,18 @@ class ImageDefinition:
     __flip: bool
     # this varaible will save when get_images is called once before te prevent unnecesairy transform an image_at calls
     __images: List[pygame.Surface]
-    __size: Size
-    __image_size: Size
+    __size: util.Size
+    __image_size: util.Size
 
-    def __init__(self, sheet_name: str, image_location: Tuple[int, int],
-                 color_key: Tuple[int, int, int] = INVISIBLE_COLOR[:-1], flip: bool = False,
-                 image_size: Size = BLOCK_SIZE, size: Size = BLOCK_SIZE):
+    def __init__(
+        self,
+        sheet_name: str,
+        image_location: Tuple[int, int],
+        color_key: Tuple[int, int, int] = None,
+        flip: bool = False,
+        image_size: util.Size = con.BLOCK_SIZE,
+        size: util.Size = con.BLOCK_SIZE
+    ):
         self.__sheet_name = sheet_name
         self.__image_location = image_location
         self.__color_key = color_key
@@ -252,13 +268,18 @@ class ImageDefinition:
         self.__images = []
 
     def images(self) -> List[pygame.Surface]:
+        """Get/create all images defined by the image definition"""
         if len(self.__images) > 0:
             return self.__images
-        norm_image = image_sheets[self.__sheet_name].image_at(self.__image_location, color_key=self.__color_key,
-                                                              size=self.__size)
+        return self.__create_images()
+
+    def __create_images(self) -> List[pygame.Surface]:
+        """Get defined images from image sheets and potentially scale and transform when neccesairy"""
+        norm_image = image_handling.image_sheets[self.__sheet_name].image_at(
+            self.__image_location, color_key=self.__color_key, size=self.__size)
         norm_size = norm_image.get_size()
         if norm_size[0] != self.__image_size[0] or norm_size[1] != self.__image_size[1]:
-            norm_image = pygame.transform.scale(norm_image, self.__image_size)
+            norm_image = pygame.transform.scale(norm_image, self.__image_size.size)
         if self.__flip:
             flip_image = pygame.transform.flip(norm_image, True, False)
             self.__images = [norm_image, flip_image]
@@ -269,6 +290,8 @@ class ImageDefinition:
 
 class ImageMaterial(BaseMaterial, ABC):
     """Materials displaying an image"""
+    IMAGE_DEFINITIONS: ClassVar[ImageDefinition]
+
     _surface: List[pygame.Surface]
 
     # noinspection PyPep8Naming
@@ -278,7 +301,7 @@ class ImageMaterial(BaseMaterial, ABC):
         pass
 
     def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
-        """Show an image as a surface instead of a single color"""
+        """the self._surface attribute is set to this value. This is a list of possible images"""
         return self.IMAGE_DEFINITIONS.images()
 
     @property
@@ -293,6 +316,8 @@ class ImageMaterial(BaseMaterial, ABC):
 
 class MultiImageMaterial(ImageMaterial, ABC):
     """Class for materials that have multiple images associated with them that can be bound to keys in a dictionary"""
+    IMAGE_DEFINITIONS: ClassVar[Dict[Any, ImageDefinition]]
+
     image_key: int
     _surface: Dict[Any, List[pygame.Surface]]
 
@@ -300,14 +325,8 @@ class MultiImageMaterial(ImageMaterial, ABC):
         super().__init__(**kwargs)
         self.image_key = image_key if image_key else list(self.IMAGE_DEFINITIONS.keys())[0]
 
-    # noinspection PyPep8Naming
-    @property
-    @abstractmethod
-    def IMAGE_DEFINITIONS(self) -> Dict[Any, ImageDefinition]:
-        # signify the change in type
-        pass
-
     def _configure_surface(self, image: pygame.Surface = None) -> Dict[Any, List[pygame.Surface]]:
+        """the self._surface attribute is set to this value. This is dictionary of lists of possible images"""
         surfaces = dict()
         for name, image_defenition in self.IMAGE_DEFINITIONS.items():
             surfaces[name] = image_defenition.images()
@@ -337,10 +356,11 @@ class Unbuildable(ABC):
 
 class DepthMaterial(ABC):
     """Abstract class for materials that are placed based on depth"""
+    DISTRIBUTION: ClassVar[util.Gaussian]
 
     @classmethod
     def get_lh_at_depth(cls, depth: int) -> float:
-        norm_depth = depth / MAX_DEPTH * 100
+        norm_depth = depth / con.MAX_DEPTH * 100
         # noinspection PyUnresolvedReferences
         lh = cls.DISTRIBUTION.probability(norm_depth)
         return lh
@@ -348,7 +368,7 @@ class DepthMaterial(ABC):
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def DISTRIBUTION(self) -> Gaussian:
+    def DISTRIBUTION(self) -> util.Gaussian:
         pass
 
 
