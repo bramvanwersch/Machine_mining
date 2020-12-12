@@ -6,7 +6,7 @@ from random import randint, choices, choice
 from typing import Set, Tuple, ClassVar, List, Dict, Any
 
 # own imports
-from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR, MAX_DEPTH
+from utility.constants import SHOW_BLOCK_BORDER, MINING_SPEED_PER_HARDNESS, INVISIBLE_COLOR, MAX_DEPTH, BLOCK_SIZE
 from utility.image_handling import image_sheets
 from block_classes.blocks import *
 from utility.utilities import Gaussian, Size
@@ -29,6 +29,7 @@ class BaseMaterial(ABC):
 
     _BLOCK_TYPE: ClassVar[BaseBlock] = Block
     BUILDABLE: ClassVar[bool] = True
+    BUILDING: ClassVar[bool] = False
 
     _surface: pygame.Surface
     __transparant_group: int
@@ -70,6 +71,10 @@ class BaseMaterial(ABC):
     @property
     def surface(self) -> pygame.Surface:
         # allow inheriting classes to push muliple surfaces or a choice
+        return self._surface
+
+    @property
+    def full_surface(self) -> pygame.Surface:
         return self._surface
 
     def to_block(self, pos: Tuple[int, int], **kwargs) -> BaseBlock:
@@ -118,26 +123,36 @@ class MaterialCollection(ABC):
         return item in self.MATERIAL_PROBABILITIES
 
 
-class ColorCollectionDefinition:
+class ColorDefinition:
     BORDER_DARKER: ClassVar[int] = 20
 
     __images: List[pygame.Surface]
     __colors: List[Tuple[int, int, int]]
     __surface_size: Size
+    __border_allowed: bool
 
-    def __init__(self, base_color: Tuple[int, int, int], *additional_colors: Tuple[int, int, int],
-                 min_color: Tuple[int, int, int] = (20, 20, 20), nr_colors: int = 10,
-                 change_range: Tuple[int, int] = (-10, 10), size: Size = BLOCK_SIZE):
-        if len(additional_colors) > 0:
+    def __init__(
+        self,
+        base_color: Tuple[int, int, int],
+        *additional_colors: Tuple[int, int, int],
+        more_colors: bool = True,
+        border: bool = True,
+        min_color: Tuple[int, int, int] = (20, 20, 20),
+        nr_colors: int = 10,
+        change_range: Tuple[int, int] = (-10, 10),
+        size: Size = BLOCK_SIZE
+    ):
+        if len(additional_colors) > 0 or not more_colors:
             self.__colors = [base_color, *additional_colors]
         else:
             self.__colors = self.__configure_colors(base_color, min_color, nr_colors, change_range)
         self.__surface_size = size
+        self.__border_allowed = border
         self.__images = []
 
     def __configure_colors(self, base_color, min_color, nr_colors, change_range) -> List[Tuple[int, int, int]]:
         """Create a range of colors around a base color"""
-        new_colors = list(base_color)
+        new_colors = list([base_color])
         for _ in range(nr_colors):
             random_change = randint(change_range[0], change_range[1])
             # dont change the alpha channel if present
@@ -149,16 +164,16 @@ class ColorCollectionDefinition:
             new_colors.append(new_color)
         return new_colors
 
-    def get_color_surface(self) -> pygame.Surface:
+    def colors(self) -> List[pygame.Surface]:
         if len(self.__images) == 0:
             for color in self.__colors:
-                image = pygame.Surface(*self.__surface_size)
+                image = pygame.Surface(self.__surface_size)
                 image.fill(color)
-                if SHOW_BLOCK_BORDER:
+                if SHOW_BLOCK_BORDER and self.__border_allowed:
                     pygame.draw.rect(image, self.__configure_border_color(color),
                                      (0, 0, self.__surface_size.width, self.__surface_size.height), 1)
                 self.__images.append(image)
-        return choice(self.__images)
+        return self.__images
 
     def __configure_border_color(self, color) -> List[int]:
         """The color of the border that is slightly darker then the base color
@@ -177,52 +192,26 @@ class ColorMaterial(BaseMaterial, ABC):
     """
     Materials can inherit this when they simply are one color
     """
-    MIN_COLOR = (20, 20, 20)
-
-    def __init__(self, **kwargs):
-        self.__color = self._configure_color()
-        super().__init__(**kwargs)
+    _surface: List[pygame.Surface]
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def BASE_COLOR(self) -> Tuple[int, int, int]:
+    def COLOR_DEFINITIONS(self) -> ColorDefinition:
         pass
 
-    def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
-        """Create a surface that is of a single color based on the self.__color"""
-        surface = pygame.Surface(BLOCK_SIZE)
-        surface.fill(self.__color)
-        if SHOW_BLOCK_BORDER:
-            pygame.draw.rect(surface, self._configure_border_color(), (0, 0, BLOCK_SIZE.width, BLOCK_SIZE.height), 1)
-        return surface.convert()
+    def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
+        """Show an image as a surface instead of a single color"""
+        return self.COLOR_DEFINITIONS.colors()
 
-    def _configure_color(self) -> List:
-        """Create a color that becomes darker when the depth becomes bigger and with some random change in color.
+    @property
+    def surface(self) -> pygame.Surface:
+        return choice(self._surface)
 
-        Returns:
-             a list of lenght 3 with a r, g and b value as integers
-        """
-        new_color = list(self.BASE_COLOR)
-        random_change = randint(-10, 10)
-        # dont change the alpha channel if present
-        for index, color_component in enumerate(self.BASE_COLOR):
-            # make the color darker with depth and add a random component to it
-            color_component = max(self.MIN_COLOR[index], color_component + random_change)
-            new_color[index] = int(color_component)
-        return new_color
-
-    def _configure_border_color(self) -> List:
-        """The color of the border that is slightly darker then the base color
-
-        Returns:
-             a list of lenght 3 with a r, g and b value as integers
-        """
-        new_color = list(self.BASE_COLOR)
-        for index, color_component in enumerate(self.BASE_COLOR):
-            color_component = max(0, color_component - 30)
-            new_color[index] = color_component
-        return new_color
+    @property
+    def full_surface(self) -> pygame.Surface:
+        # make sure it is consistent
+        return self._surface[0]
 
 
 class Air(ColorMaterial):
@@ -230,20 +219,14 @@ class Air(ColorMaterial):
     HARDNESS: ClassVar[int] = 0
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 1
     _BLOCK_TYPE: ClassVar[BaseBlock] = AirBlock
-    BASE_COLOR: ClassVar[Tuple[int, int, int]] = INVISIBLE_COLOR[:-1]
-
-    def _configure_color(self) -> Tuple[int, int, int]:
-        return self.BASE_COLOR
-
-    def _configure_border_color(self) -> Tuple[int, int, int]:
-        return self.BASE_COLOR
+    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition(INVISIBLE_COLOR[:-1], more_colors=False,
+                                                                   border=False)
 
 
 class BorderMaterial(ColorMaterial):
     """Blocks at the border of the board"""
     ALLOWED_TASKS: ClassVar[Set] = set()
-    BASE_COLOR: ClassVar[Tuple[int, int, int]] = (0, 0, 0)
-    MIN_COLOR: ClassVar[Tuple[int, int, int]] = (0, 0, 0)
+    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((0, 0, 0), more_colors=False, border=False)
 
 
 class ImageDefinition:
@@ -254,19 +237,28 @@ class ImageDefinition:
     __flip: bool
     # this varaible will save when get_images is called once before te prevent unnecesairy transform an image_at calls
     __images: List[pygame.Surface]
+    __size: Size
+    __image_size: Size
 
     def __init__(self, sheet_name: str, image_location: Tuple[int, int],
-                 color_key: Tuple[int, int, int] = INVISIBLE_COLOR[:-1], flip: bool = False):
+                 color_key: Tuple[int, int, int] = INVISIBLE_COLOR[:-1], flip: bool = False,
+                 image_size: Size = BLOCK_SIZE, size: Size = BLOCK_SIZE):
         self.__sheet_name = sheet_name
         self.__image_location = image_location
         self.__color_key = color_key
         self.__flip = flip
+        self.__size = size
+        self.__image_size = image_size
         self.__images = []
 
     def images(self) -> List[pygame.Surface]:
         if len(self.__images) > 0:
             return self.__images
-        norm_image = image_sheets[self.__sheet_name].image_at(self.__image_location, color_key=self.__color_key)
+        norm_image = image_sheets[self.__sheet_name].image_at(self.__image_location, color_key=self.__color_key,
+                                                              size=self.__size)
+        norm_size = norm_image.get_size()
+        if norm_size[0] != self.__image_size[0] or norm_size[1] != self.__image_size[1]:
+            norm_image = pygame.transform.scale(norm_image, self.__image_size)
         if self.__flip:
             flip_image = pygame.transform.flip(norm_image, True, False)
             self.__images = [norm_image, flip_image]
@@ -293,15 +285,20 @@ class ImageMaterial(BaseMaterial, ABC):
     def surface(self) -> pygame.Surface:
         return choice(self._surface)
 
+    @property
+    def full_surface(self) -> pygame.Surface:
+        # make sure it is consistent
+        return self._surface[0]
+
 
 class MultiImageMaterial(ImageMaterial, ABC):
     """Class for materials that have multiple images associated with them that can be bound to keys in a dictionary"""
     image_key: int
     _surface: Dict[Any, List[pygame.Surface]]
 
-    def __init__(self, image_number: int = -1, **kwargs):
+    def __init__(self, image_key: Any = None, **kwargs):
         super().__init__(**kwargs)
-        self.image_key = image_number
+        self.image_key = image_key if image_key else list(self.IMAGE_DEFINITIONS.keys())[0]
 
     # noinspection PyPep8Naming
     @property
@@ -319,6 +316,11 @@ class MultiImageMaterial(ImageMaterial, ABC):
     @property
     def surface(self):
         return choice(self._surface[self.image_key])
+
+    @property
+    def full_surface(self) -> pygame.Surface:
+        # make sure it is consistent
+        return self._surface[self.image_key][0]
 
 
 class CancelMaterial(ImageMaterial):

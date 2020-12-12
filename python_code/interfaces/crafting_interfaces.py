@@ -14,7 +14,7 @@ class CraftingWindow(Window):
     """
     SIZE = Size(300, 250)
 
-    def __init__(self, craft_building, recipes, *groups, **kwargs):
+    def __init__(self, craft_building, *groups, recipes=None, **kwargs):
         self._craft_building = craft_building
         fr = self._craft_building.rect
         location = fr.bottomleft
@@ -109,8 +109,8 @@ class CraftingWindow(Window):
 class FactoryWindow(CraftingWindow):
     SIZE = Size(300, 250)
 
-    def __init__(self, craft_building, recipes, *groups):
-        super().__init__(craft_building, recipes, *groups, title = "CRAFTING:")
+    def __init__(self, craft_building, *groups, recipes=None):
+        super().__init__(craft_building, *groups, recipes=recipes, title = "CRAFTING:")
         self._grid_pane = None
         self._craftable_item_lbl = None
         self.__init_widgets()
@@ -139,8 +139,8 @@ class FactoryWindow(CraftingWindow):
 class FurnaceWindow(CraftingWindow):
     SIZE = Size(240, 220)
 
-    def __init__(self, furnace_object, recipes, *groups):
-        super().__init__(furnace_object, recipes, *groups,layer=INTERFACE_LAYER, title = "FURNACE")
+    def __init__(self, furnace_object, *groups, recipes=None):
+        super().__init__(furnace_object, *groups, recipes=recipes, title="FURNACE")
         self.__init_widgets()
         self.__requested_fuel = False
 

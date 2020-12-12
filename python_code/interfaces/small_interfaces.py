@@ -111,7 +111,7 @@ class TerminalWindow(Window):
     SIZE = Size(200, 100)
     COLOR = (173, 94, 29)
 
-    def __init__(self, terminal_object, *groups):
+    def __init__(self, terminal_object, *groups, recipes=None):
         self.__terminal = terminal_object
         self.__terminal_inv = self.__terminal.blocks[0][0].inventory
         fr = self.__terminal.rect

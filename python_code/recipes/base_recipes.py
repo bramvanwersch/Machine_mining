@@ -128,22 +128,17 @@ class BaseRecipe(ABC):
         return None
 
     def get_image(self):
-        if issubclass(self._material, block_classes.building_materials.BuildingMaterial):
-            return buildings.building_type_from_material(self._material).full_image()
-        return self._material().surface
+        return self._material().full_surface
 
     def get_image_grid(self):
         image_grid = []
         for row in self.__recipe_grid:
             image_row = []
             for material_type in row:
-                if issubclass(material_type, block_classes.building_materials.BuildingMaterial):
-                    mat_type = buildings.building_type_from_material(material_type)
-                    image_row.append([mat_type.name(), mat_type.full_image()])
-                else:
-                    image_row.append([material_type.name(), material_type().surface])
+                image_row.append([material_type.name(), material_type().full_surface])
             image_grid.append(image_row)
         return image_grid
+
 
 class CancelRecipe(BaseRecipe):
     CRAFTING_TIME = 0

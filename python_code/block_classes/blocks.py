@@ -1,7 +1,9 @@
 import pygame
-from abc import ABC
+from typing import ClassVar, List
+from abc import ABC, abstractmethod
 
-from utility.constants import BLOCK_SIZE, MULTI_TASKS
+from utility.constants import BLOCK_SIZE
+from utility.utilities import Size
 
 
 class BaseBlock(ABC):
@@ -10,11 +12,12 @@ class BaseBlock(ABC):
     """
     SIZE = BLOCK_SIZE
     ID = 0
+
     def __init__(self, pos, material, id=None, action=None):
         self.rect = pygame.Rect((*pos, *self.SIZE))
         self.material = material
-        self.__action_function = action
-        if id == None:
+        self._action_function = action
+        if id is None:
             self.id = self.ID
             BaseBlock.ID += 1
         else:
@@ -28,8 +31,8 @@ class BaseBlock(ABC):
         """
         Function to allow a action being triggered when needed
         """
-        if self.__action_function != None:
-            self.__action_function()
+        if self._action_function is not None:
+            self._action_function()
 
     @property
     def coord(self):
@@ -107,5 +110,36 @@ class ContainerBlock(NetworkBlock):
         self.inventory = None
 
     def add(self, *items):
-        if self.inventory != None:
+        if self.inventory is not None:
             self.inventory.add_items(*items)
+
+
+class MultiBlock(BaseBlock, ABC):
+    # have this here since you are technically allowed to call the size
+    MULTIBLOCK_DIMENSION: ClassVar[Size] = Size(1, 1)
+    SIZE = BaseBlock.SIZE * MULTIBLOCK_DIMENSION
+
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, material, **kwargs)
+        self.blocks = self._get_blocks()
+
+    @property
+    @abstractmethod
+    def MULTIBLOCK_DIMENSION(self) -> ClassVar[Size]:
+        pass
+
+    def _get_blocks(self) -> List[List[BaseBlock]]:
+        # TODO this is not great
+        import block_classes.block_utility as block_utility
+        blocks = []
+        topleft = self.rect.topleft
+        image_key_count = 1
+        for row_i in range(self.MULTIBLOCK_DIMENSION.height):
+            block_row = []
+            for column_i in range(self.MULTIBLOCK_DIMENSION.width):
+                material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key_count)
+                image_key_count += 1
+                pos = (topleft[0] + column_i * BLOCK_SIZE.width, topleft[1] + row_i * BLOCK_SIZE.height)
+                block_row.append(material.to_block(pos, id=self.id, action=self._action_function))
+            blocks.append(block_row)
+        return blocks

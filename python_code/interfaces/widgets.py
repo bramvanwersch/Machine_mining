@@ -638,12 +638,9 @@ class ItemLabel(Label):
         image = pygame.Surface(size)
         image.fill(color)
 
-        if self.item != None:
+        if self.item is not None:
             # get the item image and place it in the center
-            if isinstance(self.item.material, BuildingMaterial):
-                item_image = block_classes.buildings.building_type_from_material(self.item.material).full_image()
-            else:
-                item_image = self.item.material.surface
+            item_image = self.item.material.full_surface
             self.item_image = pygame.transform.scale(item_image, item_size)
             image.blit(self.item_image, (size.width / 2 - item_size.width / 2,
                                 size.height / 2 - item_size.height / 2))

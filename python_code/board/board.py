@@ -664,7 +664,7 @@ class Board(BoardEventHandler, Serializer):
                 block.transparant_group = unique_group()
                 chunk = self.__chunk_from_point(block.coord)
                 chunk.update_blocks(block)
-            if issubclass(building_block_i, InterafaceBuilding):
+            if issubclass(building_block_i, InterfaceBuilding):
                 finish_block = building_block_i(block.rect.topleft, self.main_sprite_group, material=material)
             else:
                 finish_block = building_block_i(block.rect.topleft, material=material)
