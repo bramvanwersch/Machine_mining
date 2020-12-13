@@ -1,11 +1,13 @@
-import pygame, os
+import pygame
+import os
 from pygame.locals import *
 
-from utility.utilities import Size
+import utility.utilities as util
+
 
 #innitialize fonts to pre load a font
 pygame.font.init()
-FONTS = {i : pygame.font.SysFont("roboto", i) for i in range(12,35)}
+FONTS = {i: pygame.font.SysFont("roboto", i) for i in range(12,35)}
 
 GAME_TIME = pygame.time.Clock()
 
@@ -16,17 +18,17 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 
 #location parameters
 #1920, 1080
-SCREEN_SIZE = Size(820, 820)
-CHUNK_SIZE = Size(510, 510)
-CHUNK_GRID_SIZE = Size(4, 4)
-BOARD_SIZE = Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
+SCREEN_SIZE = util.Size(820, 820)
+CHUNK_SIZE = util.Size(510, 510)
+CHUNK_GRID_SIZE = util.Size(4, 4)
+BOARD_SIZE = util.Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
 #y should not be lower then 1
 START_CHUNK_POS = (1, 1)
 
 #constant to tell when to recalculate the full chunk
 PF_UPDATE_TIME = 1000
 
-INTERFACE_WINDOW_SIZE = Size(500, 700)
+INTERFACE_WINDOW_SIZE = util.Size(500, 700)
 DYNAMIC_INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
                                 int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
@@ -41,10 +43,8 @@ INTERFACE_LAYER = LIGHT_LAYER + 1
 
 ORE_LIST = ["Iron", "Gold", "Copper", "Zinc", "Coal", "Titanium"]
 FILLER_LIST = ["TopDirt", "Stone", "Granite", "FinalStone"]
-BLOCK_SIZE = Size(10, 10)
+BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
-
-GAME_TIME = pygame.time.Clock()
 
 # this is sort of a green screen color, set this as a color key in order to be transparant when blitting
 INVISIBLE_COLOR = (0, 255, 0, 0)

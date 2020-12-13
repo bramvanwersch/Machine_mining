@@ -6,10 +6,8 @@ from typing import Tuple, ClassVar, Dict, List
 from random import randint
 
 # own imports
-from block_classes.materials import MaterialCollection, ColorMaterial, Unbuildable, ImageMaterial, DepthMaterial,\
-    BaseMaterial, ImageDefinition, ColorDefinition
-from utility.utilities import Gaussian
-from utility.constants import INVISIBLE_COLOR
+import block_classes.materials as base_materials
+import utility.utilities as util
 
 
 class FillerMaterial(ABC):
@@ -17,73 +15,73 @@ class FillerMaterial(ABC):
     pass
 
 
-class TopDirt(FillerMaterial, DepthMaterial, ColorMaterial):
+class TopDirt(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 2)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((137, 79, 33))
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 2)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((137, 79, 33))
 
 
-class Stone(FillerMaterial, DepthMaterial, ColorMaterial):
+class Stone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 10)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((155, 155, 155))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 155, 155))
 
 
-class GreenStone(FillerMaterial, DepthMaterial, ColorMaterial):
+class GreenStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 10)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((126, 155, 126))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((126, 155, 126))
 
 
-class RedStone(FillerMaterial, DepthMaterial, ColorMaterial):
+class RedStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 10)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((155, 126, 126))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 126, 126))
 
 
-class BlueStone(FillerMaterial, DepthMaterial, ColorMaterial):
+class BlueStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 10)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((126, 126, 155))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((126, 126, 155))
 
 
-class YellowStone(FillerMaterial, DepthMaterial, ColorMaterial):
+class YellowStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 10)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((155, 155, 126))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 155, 126))
 
 
-class StoneCollection(MaterialCollection):
+class StoneCollection(base_materials.MaterialCollection):
 
-    MATERIAL_PROBABILITIES: ClassVar[Dict[BaseMaterial, float]] = \
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {Stone: 0.95, GreenStone: 0.01, RedStone:  0.01, BlueStone: 0.01, YellowStone: 0.01}
 
 
-class Granite(FillerMaterial, DepthMaterial, ColorMaterial):
+class Granite(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
     HARDNESS: ClassVar[int] = 10
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(70, 7)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((105, 89, 76))
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 7)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((105, 89, 76))
 
 
-class FinalStone(FillerMaterial, DepthMaterial, ColorMaterial):
+class FinalStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
 
     HARDNESS: ClassVar[int] = 20
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(100, 2)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((199, 127, 195))
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((199, 127, 195))
 
 
-class Dirt(ColorMaterial):
+class Dirt(base_materials.ColorMaterial):
 
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((107, 49, 13))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((107, 49, 13))
 
 
-class OreMaterial(DepthMaterial, ABC):
+class OreMaterial(base_materials.DepthMaterial, ABC):
     WHEIGHT: ClassVar[int] = 2
     HARDNESS: ClassVar[int] = 5
 
@@ -108,72 +106,77 @@ class Burnable(ABC):
         pass
 
 
-class Iron(OreMaterial, ColorMaterial):
+class Iron(OreMaterial, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(50, 30)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 30)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (2, 10)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((184, 98, 92))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((184, 98, 92))
     WHEIGHT: ClassVar[int] = 3
 
 
-class Gold(OreMaterial, ColorMaterial):
+class Gold(OreMaterial, base_materials.ColorMaterial):
 
     HARDNESS: ClassVar[int] = 3
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(70, 3)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 3)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (2, 6)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((235, 173, 16))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((235, 173, 16))
     WHEIGHT: ClassVar[int] = 5
 
 
-class Zinc(OreMaterial, ColorMaterial):
+class Zinc(OreMaterial, base_materials.ColorMaterial):
 
     HARDNESS: ClassVar[int] = 3
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(20, 5)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(20, 5)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (2, 15)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((58, 90, 120))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((58, 90, 120))
 
 
-class Copper(OreMaterial, ColorMaterial):
+class Copper(OreMaterial, base_materials.ColorMaterial):
 
     HARDNESS: ClassVar[int] = 4
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(30, 2)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 2)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (5, 8)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((189, 99, 20))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((189, 99, 20))
 
 
-class Coal(OreMaterial, Burnable, ColorMaterial):
+class Coal(OreMaterial, Burnable, base_materials.ColorMaterial):
 
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(10, 50)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 50)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (6, 12)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((10, 10, 10))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((10, 10, 10))
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     FUEL_VALUE: ClassVar[int] = 5
 
 
-class Titanium(OreMaterial, ColorMaterial):
+class Titanium(OreMaterial, base_materials.ColorMaterial):
 
     HARDNESS: ClassVar[int] = 50
-    DISTRIBUTION: ClassVar[Gaussian] = Gaussian(100, 2)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (1, 2)
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition((152, 196, 237))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((152, 196, 237))
     WHEIGHT: ClassVar[int] = 10
 
 
-class IronIngot(Unbuildable, ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (70, 10))
+class IronIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (70, 10))
 
 
-class GoldIngot(Unbuildable, ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (80, 10))
+class GoldIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (80, 10))
 
 
-class ZincIngot(Unbuildable, ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (90, 10))
+class ZincIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (90, 10))
 
 
-class CopperIngot(Unbuildable, ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (0, 20))
+class CopperIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (0, 20))
 
 
-class TitaniumIngot(Unbuildable, ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (10, 20))
+class TitaniumIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (10, 20))

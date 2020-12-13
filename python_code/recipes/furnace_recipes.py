@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 
-import block_classes.ground_materials
-import recipes.base_recipes as br
-from block_classes import materials
-from utility.utilities import Size
+import block_classes.ground_materials as ground_materials
+import recipes.base_recipes as base_recipes
+import block_classes.materials as base_materials
+import utility.utilities as util
 
 
 class FurnaceRecipesInterface(ABC):
@@ -14,87 +14,91 @@ class FurnaceRecipesInterface(ABC):
         return 0
 
 
-class IronBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
+class IronBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
     FUEL_CONSUMPTION = 5
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = block_classes.ground_materials.IronIngot
-        br.BaseRecipe.__init__(self, mat)
+        mat = ground_materials.IronIngot
+        base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(2, 2))
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
 
-        row1 = [block_classes.ground_materials.Iron, block_classes.ground_materials.Iron]
-        row2 = [materials.Air, materials.Air]
+        row1 = [ground_materials.Iron, ground_materials.Iron]
+        row2 = [base_materials.Air, base_materials.Air]
 
         grid.add_all_rows(row1, row2)
         return grid
 
-class ZincBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
+
+class ZincBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
     FUEL_CONSUMPTION = 2
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = block_classes.ground_materials.ZincIngot
-        br.BaseRecipe.__init__(self, mat)
+        mat = ground_materials.ZincIngot
+        base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(2, 2))
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
 
-        row1 = [block_classes.ground_materials.Zinc, block_classes.ground_materials.Zinc]
-        row2 = [materials.Air, materials.Air]
+        row1 = [ground_materials.Zinc, ground_materials.Zinc]
+        row2 = [base_materials.Air, base_materials.Air]
 
         grid.add_all_rows(row1, row2)
         return grid
 
-class GoldBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
+
+class GoldBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
     FUEL_CONSUMPTION = 4
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = block_classes.ground_materials.GoldIngot
-        br.BaseRecipe.__init__(self, mat)
+        mat = ground_materials.GoldIngot
+        base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(2, 2))
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
 
-        row1 = [block_classes.ground_materials.Gold, block_classes.ground_materials.Gold]
-        row2 = [materials.Air, materials.Air]
+        row1 = [ground_materials.Gold, ground_materials.Gold]
+        row2 = [base_materials.Air, base_materials.Air]
 
         grid.add_all_rows(row1, row2)
         return grid
 
-class CopperBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
+
+class CopperBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
     FUEL_CONSUMPTION = 3
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = block_classes.ground_materials.CopperIngot
-        br.BaseRecipe.__init__(self, mat)
+        mat = ground_materials.CopperIngot
+        base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(2, 2))
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
 
-        row1 = [block_classes.ground_materials.Copper, block_classes.ground_materials.Copper]
-        row2 = [materials.Air, materials.Air]
+        row1 = [ground_materials.Copper, ground_materials.Copper]
+        row2 = [base_materials.Air, base_materials.Air]
 
         grid.add_all_rows(row1, row2)
         return grid
 
-class TitaniumBarRecipe(br.BaseRecipe, FurnaceRecipesInterface):
+
+class TitaniumBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
     FUEL_CONSUMPTION = 10
     CRAFTING_TIME = 3000
 
     def __init__(self):
-        mat = block_classes.ground_materials.TitaniumIngot
-        br.BaseRecipe.__init__(self, mat)
+        mat = ground_materials.TitaniumIngot
+        base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(2, 2))
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
 
-        row1 = [block_classes.ground_materials.Titanium, block_classes.ground_materials.Titanium]
-        row2 = [materials.Air, materials.Air]
+        row1 = [ground_materials.Titanium, ground_materials.Titanium]
+        row2 = [base_materials.Air, base_materials.Air]
 
         grid.add_all_rows(row1, row2)
         return grid

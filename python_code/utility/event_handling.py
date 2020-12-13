@@ -1,7 +1,7 @@
 from abc import ABC
 
-from utility.constants import *
-from utility.utilities import rect_from_block_matrix
+import utility.constants as con
+
 
 class EventHandler(ABC):
     """
@@ -13,7 +13,7 @@ class EventHandler(ABC):
         :param recordable_events: a list of keys that the handler should record
         """
         if recordable_keys == "ALL":
-            self.__pressed_keys = {key : Key(key) for key in KEYBOARD_KEYS}
+            self.__pressed_keys = {key : Key(key) for key in con.KEYBOARD_KEYS}
         else:
             self.__pressed_keys = {key: Key(key) for key in recordable_keys}
         self._dragging = False
@@ -30,25 +30,25 @@ class EventHandler(ABC):
         """
         leftover_events = []
         for event in events:
-            if event.type == KEYDOWN:
+            if event.type == con.KEYDOWN:
                 if event.key in self.__pressed_keys:
                     self.__pressed_keys[event.key].press(event)
                 else:
                     leftover_events.append(event)
 
-            elif event.type == KEYUP:
+            elif event.type == con.KEYUP:
                 if event.key in self.__pressed_keys:
                     self.__pressed_keys[event.key].unpress(event)
                 else:
                     leftover_events.append(event)
-            elif event.type == MOUSEBUTTONDOWN:
+            elif event.type == con.MOUSEBUTTONDOWN:
                 if event.button in self.__pressed_keys:
                     self.__pressed_keys[event.button].press(event)
                     if event.button == 1:
                         self._dragging = True
                 else:
                     leftover_events.append(event)
-            elif event.type == MOUSEBUTTONUP:
+            elif event.type == con.MOUSEBUTTONUP:
                 if event.button in self.__pressed_keys:
                     self.__pressed_keys[event.button].unpress(event)
                     if event.button == 1:
@@ -149,7 +149,7 @@ class BoardEventHandler(EventHandler, ABC):
     """
     def __init__(self, recordable_keys):
         super().__init__(recordable_keys)
-        self._mode = MODES[SELECTING]
+        self._mode = con.MODES[con.SELECTING]
 
 
     def handle_events(self, events):
@@ -173,10 +173,8 @@ class BoardEventHandler(EventHandler, ABC):
         pressed_modes = self.get_all_pressed()
         if len(pressed_modes):
             #make sure to clear the board of any remnants before switching
-            if pressed_modes[0].name in MODES:
+            if pressed_modes[0].name in con.MODES:
                 self.reset_selection_and_highlight(self._mode.persistent_highlight)
-                self._mode = MODES[pressed_modes[0].name]
+                self._mode = con.MODES[pressed_modes[0].name]
                 #for now print what the mode is, TODO add this into the gui somewhere
                 print(self._mode.name)
-
-

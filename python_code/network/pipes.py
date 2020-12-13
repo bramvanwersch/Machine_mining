@@ -1,13 +1,13 @@
 from math import ceil
 
-import block_classes.block_utility
-from block_classes.blocks import ContainerBlock, NetworkBlock
-from utility.constants import BLOCK_SIZE
-from utility.utilities import manhattan_distance, Serializer
-from network.network_tasks import EdgeTaskQueue
+import block_classes.block_utility as block_util
+import block_classes.blocks as block_classes
+import utility.constants as con
+import utility.utilities as util
+import network.network_tasks as network_tasks
 
 
-class Network(Serializer):
+class Network(util.Serializer):
 
     def __init__(self, edges=None, task_control=None):
         #connections between them
@@ -58,7 +58,7 @@ class Network(Serializer):
         for a_node in self.nodes:
             if not hasattr(a_node, "inventory"):
                 continue
-            for name in [f.name() for f in block_classes.block_utility.fuel_materials]:
+            for name in [f.name() for f in block_util.fuel_materials]:
                 item_pointer = a_node.inventory.item_pointer(name)
                 if item_pointer == None:
                     continue
@@ -137,7 +137,7 @@ class Network(Serializer):
         for edge in node.connected_edges:
             for c_node in edge.connected_nodes:
                 if hasattr(c_node, "inventory") and c_node != node:
-                    storage_connections.append([c_node, manhattan_distance(node.rect.center, c_node.rect.center), edge])
+                    storage_connections.append([c_node, util.manhattan_distance(node.rect.center, c_node.rect.center), edge])
         storage_connections.sort(key=lambda x: x[1])
         return storage_connections
 
@@ -153,14 +153,14 @@ class Network(Serializer):
         :param remove: if the block is removed or not.
         :return: a list Blocks that need an update to theire surface
         """
-        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], NetworkBlock)]
+        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], block_classes.NetworkBlock)]
         direction_indexes = "".join(direction_indexes)
         image_name = "{}_{}".format(len(direction_indexes), direction_indexes)
         if not remove:
             block.material.image_key = image_name
         if update:
-            return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], NetworkBlock)\
-                    and not isinstance(surrounding_blocks[i], ContainerBlock)]
+            return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], block_classes.NetworkBlock)\
+                    and not isinstance(surrounding_blocks[i], block_classes.ContainerBlock)]
         return []
 
     def add_pipe(self, block):
@@ -254,7 +254,7 @@ class NetworkNode:
         edge.connected_nodes.remove(self)
 
 
-class NetworkEdge(Serializer):
+class NetworkEdge(util.Serializer):
     #TODO make this cinfigure based on worst pipe. this is temporary
     MAX_REQUESTS = 10
     MAX_REQUEST_SIZE = 4
@@ -265,7 +265,7 @@ class NetworkEdge(Serializer):
         self.segments = segments if segments else set()
         # will be done when adding the buildings back
         self.connected_nodes = set()
-        self.task_queue = task_queue if task_queue else EdgeTaskQueue(self.MAX_REQUESTS, self.MAX_REQUEST_SIZE)
+        self.task_queue = task_queue if task_queue else network_tasks.EdgeTaskQueue(self.MAX_REQUESTS, self.MAX_REQUEST_SIZE)
 
     def to_dict(self):
         return {
@@ -277,7 +277,7 @@ class NetworkEdge(Serializer):
     @classmethod
     def from_dict(cls, **arguments):
         arguments["segments"] = [Segment.from_dict(**dct) for dct in arguments["segments"]]
-        arguments["task_queue"] = EdgeTaskQueue.from_dict(**arguments["task_queue"])
+        arguments["task_queue"] = network_tasks.EdgeTaskQueue.from_dict(**arguments["task_queue"])
         return super().from_dict(**arguments)
 
     def get_block_coordinates(self):
@@ -363,7 +363,7 @@ class NetworkEdge(Serializer):
         return len(self.segments)
 
 
-class Segment(Serializer):
+class Segment(util.Serializer):
     def __init__(self, loc):
         self.loc = tuple(loc)
 
@@ -380,7 +380,7 @@ class Segment(Serializer):
 
     def surrounding_segments(self):
         segments = []
-        for offset in [[-BLOCK_SIZE.width, 0], [0, BLOCK_SIZE.height], [BLOCK_SIZE.width, 0], [0, -BLOCK_SIZE.height]]:
+        for offset in [[-con.BLOCK_SIZE.width, 0], [0, con.BLOCK_SIZE.height], [con.BLOCK_SIZE.width, 0], [0, -con.BLOCK_SIZE.height]]:
             segments.append(Segment([self.loc[0] - offset[0], self.loc[1] - offset[1]]))
         return segments
 

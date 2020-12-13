@@ -1,14 +1,15 @@
-import sys, inspect
+import inspect
 
-import recipes.factory_recipes as factory_r
-import recipes.furnace_recipes as furnace_r
-from recipes.base_recipes import CancelRecipe, BaseRecipe
+import recipes.factory_recipes as factory_recipes
+import recipes.furnace_recipes as furnace_recipes
+import recipes.base_recipes as base_recipes
 
 recipe_books = {}
 
+
 def create_recipe_book():
     global recipe_books
-    recipe_books = {"factory": RecipeBook(factory_r), "furnace": RecipeBook(furnace_r)}
+    recipe_books = {"factory": RecipeBook(factory_recipes), "furnace": RecipeBook(furnace_recipes)}
 
 
 class RecipeBook:
@@ -23,9 +24,9 @@ class RecipeBook:
         :return: a list of all recipes
         """
         #filter out all the recipes.
-        recipes = [CancelRecipe()]
+        recipes = [base_recipes.CancelRecipe()]
         for name, obj in inspect.getmembers(recipe_module, inspect.isclass):
-            if issubclass(obj, BaseRecipe):
+            if issubclass(obj, base_recipes.BaseRecipe):
                 recipes.append(obj())
 
         return recipes

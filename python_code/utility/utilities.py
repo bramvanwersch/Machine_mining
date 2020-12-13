@@ -2,17 +2,28 @@ from pygame import Rect
 from math import pi, e, sqrt, erfc
 from abc import ABC, abstractmethod
 import json
+from time import time_ns
 
 
-GROUP = 0
+LAST_IDS = set()
 scenes = None
 
 
-def unique_group():
-    global GROUP
-    group_id = "u{}".format(GROUP)
-    GROUP += 1
-    return group_id
+def unique_id():
+    """Create a unique ID based using the time module"""
+    global LAST_IDS
+    time_stamp = str(time_ns())
+    if time_stamp not in LAST_IDS:
+        LAST_IDS = {time_stamp}
+        return time_stamp
+    else:
+        new_stamp = time_stamp
+        cycle = 1
+        while new_stamp in LAST_IDS:
+            new_stamp = f"{new_stamp}.{cycle}"
+            cycle += 1
+        LAST_IDS.add(new_stamp)
+        return new_stamp
 
 
 def create_scene_manager():
@@ -100,8 +111,10 @@ def normalize(values, scale=1):
             values[index] = 0
     return values
 
+
 def manhattan_distance(p1, p2):
     return abs(p1[0] - p2[0]) + abs(p1[1] - p2[1])
+
 
 def rect_from_block_matrix(block_matrix):
     """
@@ -117,10 +130,12 @@ def rect_from_block_matrix(block_matrix):
     size = (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1])
     return Rect((*start_pos, *size))
 
+
 def line_from_points(point1, point2):
     a = (point2[1] - point1[1]) / (point2[0] - point1[0])
     b = point1[1] - a * point1[0]
     return a, b
+
 
 def side_by_side(rect1, rect2):
     """

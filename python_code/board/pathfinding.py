@@ -1,8 +1,9 @@
 import random
 
-from utility.constants import BLOCK_SIZE, CHUNK_SIZE, BOARD_SIZE, GAME_TIME, PF_UPDATE_TIME
-from utility.utilities import rect_from_block_matrix, manhattan_distance, side_by_side
-from interfaces.interface_utility import p_to_r, p_to_c, relative_closest_direction, p_to_cp
+import utility.constants as con
+import utility.utilities as util
+import interfaces.interface_utility as interface_util
+
 
 class PathFinder:
     """
@@ -27,7 +28,7 @@ class PathFinder:
         """
         start_rect = None
         #find start rectangle
-        direction_index = relative_closest_direction(start.center)
+        direction_index = interface_util.relative_closest_direction(start.center)
         found = False
         for key in self.pathfinding_tree.rectangle_network[direction_index]:
             if (direction_index == 0 and key < start.centery) or (direction_index == 1 and key > start.centerx) or\
@@ -50,7 +51,7 @@ class PathFinder:
         for index, direction_size in enumerate((end_rect.top, end_rect.right, end_rect.bottom, end_rect.left)):
             if direction_size in self.pathfinding_tree.rectangle_network[index - 2]:
                 for rect in self.pathfinding_tree.rectangle_network[index - 2][direction_size]:
-                    if side_by_side(end_rect, rect) != None:
+                    if util.side_by_side(end_rect, rect) != None:
                         can_find = True
                         break
                 if can_find:
@@ -87,7 +88,7 @@ class PathFinder:
                 if direction == "N":
                     y = node.rect.top
                 else:
-                    y = node.rect.bottom - BLOCK_SIZE.height
+                    y = node.rect.bottom - con.BLOCK_SIZE.height
                 left_distance = right_distance= 0
                 #first check if the target should allign with the left or right
                 #side
@@ -104,10 +105,10 @@ class PathFinder:
                 if left_distance < right_distance:
                     x = max(prev_node.rect.left, node.rect.left)
                 else:
-                    x = min(prev_node.rect.right, node.rect.right) - BLOCK_SIZE[0]
+                    x = min(prev_node.rect.right, node.rect.right) - con.BLOCK_SIZE[0]
             elif direction in ["E", "W"]:
                 if direction == "E":
-                    x = node.rect.right - BLOCK_SIZE.width
+                    x = node.rect.right - con.BLOCK_SIZE.width
                 else:
                     x = node.rect.left
                 top_distance = bottom_distance = 0
@@ -124,7 +125,7 @@ class PathFinder:
                 if top_distance < bottom_distance:
                     y = max(prev_node.rect.top, node.rect.top)
                 else:
-                    y = min(prev_node.rect.bottom, node.rect.bottom) - BLOCK_SIZE[1]
+                    y = min(prev_node.rect.bottom, node.rect.bottom) - con.BLOCK_SIZE[1]
             path.append((x,y))
             prev_node = node
             node = node.parent
@@ -142,7 +143,7 @@ class PathFinder:
         start_node.g = start_node.f = 0
         end_node = Node(None, end, None)
         end_node.g = end_node.h = end_node.f = 0
-        start_node.h = manhattan_distance(start_node.position,
+        start_node.h = util.manhattan_distance(start_node.position,
                                           end_node.position)
         if start == end:
             return end_node
@@ -169,7 +170,7 @@ class PathFinder:
             closed_list.append(current_node)
 
             # Found the goal on block infront of destination
-            connection_direction = side_by_side(current_node.rect, end_node.rect)
+            connection_direction = util.side_by_side(current_node.rect, end_node.rect)
             if connection_direction is not None:
                 end_node.parent = current_node
                 end_node.direction_index = connection_direction
@@ -195,7 +196,7 @@ class PathFinder:
 
                 # Create the f, g, and h values
                 child.g = current_node.g + 1
-                child.h = manhattan_distance(child.position, end_node.position)
+                child.h = util.manhattan_distance(child.position, end_node.position)
                 child.f = child.g + child.h
 
                 # Child is already in the open list
@@ -220,7 +221,7 @@ class Path:
     def append(self, item):
         self.__coordinates.append(item)
         #distance will be zero for the first addition
-        self.__lenght += manhattan_distance(item, self.__coordinates[-1])
+        self.__lenght += util.manhattan_distance(item, self.__coordinates[-1])
 
     def pop(self, index = -1):
         return self.__coordinates.pop(index)
@@ -233,7 +234,7 @@ class Path:
 
     @property
     def path_lenght(self):
-        return self.__lenght + manhattan_distance(self.__coordinates[-1], self.start_location)
+        return self.__lenght + util.manhattan_distance(self.__coordinates[-1], self.start_location)
 
 
 class Node:
@@ -305,7 +306,7 @@ class PathfindingChunk:
         self.__local_rectangles = set()
         self.added_rects = []
         self.removed_rects = []
-        self.__times_passed = [random.randint(0, PF_UPDATE_TIME), PF_UPDATE_TIME]
+        self.__times_passed = [random.randint(0, con.PF_UPDATE_TIME), con.PF_UPDATE_TIME]
 
     def configure(self, rectangles):
         self.rectangle_network = rectangles
@@ -315,7 +316,7 @@ class PathfindingChunk:
         self.get_air_rectangles(self.matrix, covered_coordinates)
 
     def update(self):
-        self.__times_passed[0] += GAME_TIME.get_time()
+        self.__times_passed[0] += con.GAME_TIME.get_time()
         #fix mistakes in the fast updating
         if self.__times_passed[0] > self.__times_passed[1] and (len(self.removed_rects) > 0 or len(self.added_rects) > 0):
             #TODO make this a less temporary fix, is kind of crude right now --> works pretty good
@@ -345,7 +346,7 @@ class PathfindingChunk:
 
         corners = [rect.left, rect.top,
                    rect.bottom, rect.right]
-        direction_index = relative_closest_direction(rect.center)
+        direction_index = interface_util.relative_closest_direction(rect.center)
         all_found = False
         for key in self.rectangle_network[direction_index]:
             if (direction_index == 0 and key < rect.centery) or (direction_index == 1 and key > rect.centerx) or\
@@ -355,7 +356,7 @@ class PathfindingChunk:
                 continue
             for adj_rect in adjacent_rects:
                 #rectangles in different chunks do not take the matrix
-                if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
+                if interface_util.p_to_cp(adj_rect.topleft) != interface_util.p_to_cp(rect.topleft):
                     continue
                 if adj_rect.colliderect(rect):
                     adjacent_rectangles.append(adj_rect)
@@ -387,9 +388,9 @@ class PathfindingChunk:
                 continue
             for adj_rect in self.rectangle_network[index - 2][direction_size].copy():
                 #rectangles in different chunks do not take the matrix
-                if p_to_cp(adj_rect.topleft) != p_to_cp(rect.topleft):
+                if interface_util.p_to_cp(adj_rect.topleft) != interface_util.p_to_cp(rect.topleft):
                     continue
-                if side_by_side(rect, adj_rect) is not None:
+                if util.side_by_side(rect, adj_rect) is not None:
                     if adj_rect.left < corners[0]:
                         corners[0] = adj_rect.left
                     if adj_rect.top < corners[1]:
@@ -406,9 +407,9 @@ class PathfindingChunk:
         return self.__sub_matrix_from_corners(corners, all_rectangles)
 
     def __sub_matrix_from_corners(self, corners, all_rectangles):
-        start_column, start_row = (int((corners[0] % CHUNK_SIZE.width) / BLOCK_SIZE.width), int((corners[1] % CHUNK_SIZE.height) / BLOCK_SIZE.height))
-        row_lenght = p_to_r(corners[3] - corners[0])
-        column_lenght = p_to_c(corners[2] - corners[1])
+        start_column, start_row = (int((corners[0] % con.CHUNK_SIZE.width) / con.BLOCK_SIZE.width), int((corners[1] % con.CHUNK_SIZE.height) / con.BLOCK_SIZE.height))
+        row_lenght = interface_util.p_to_r(corners[3] - corners[0])
+        column_lenght = interface_util.p_to_c(corners[2] - corners[1])
         sub_matrix = []
         covered_coordinates = [[False for _ in range(row_lenght)] for _ in range(column_lenght)]
         for row_index in range(column_lenght):
@@ -430,7 +431,7 @@ class PathfindingChunk:
             # add connections
             if direction_size in self.rectangle_network[index - 2]:
                 for adj_rect in self.rectangle_network[index - 2][direction_size]:
-                    if side_by_side(rect, adj_rect) != None:
+                    if util.side_by_side(rect, adj_rect) != None:
                         rect.connecting_rects[index].add(adj_rect)
                         adj_rect.connecting_rects[index - 2].add(rect)
 
@@ -473,7 +474,7 @@ class PathfindingChunk:
                 # add the air rectangle to the list of rectangles
                 air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in
                               blocks[n_row:n_row + lm_coord[1] + 1]]
-                rect = AirRectangle(rect_from_block_matrix(air_matrix))
+                rect = AirRectangle(util.rect_from_block_matrix(air_matrix))
                 self.__add_rectangle(rect)
 
     def __find_air_rectangle(self, blocks, covered_coordinates):

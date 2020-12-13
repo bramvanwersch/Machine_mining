@@ -20,7 +20,7 @@ def material_instance_from_string(string: str, **kwargs) -> base_materials.BaseM
 
     Args:
         string (str): name of the material you want the instance from
-        **kwargs (dict): optional arguments
+        **kwargs: optional arguments
 
     Returns:
         material instance
@@ -31,8 +31,8 @@ def material_instance_from_string(string: str, **kwargs) -> base_materials.BaseM
         material = getattr(block_classes.flora_materials, string)
     elif string in dir(block_classes.building_materials):
         material = getattr(block_classes.building_materials, string)
-    elif string in dir(block_classes.machine_materials):
-        material = getattr(block_classes.machine_materials, string)
+    # elif string in dir(block_classes.machine_materials):
+    #     material = getattr(block_classes.machine_materials, string)
     else:
         material = getattr(base_materials, string)
     return material(**kwargs)

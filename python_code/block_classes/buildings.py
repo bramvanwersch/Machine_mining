@@ -1,16 +1,20 @@
-from block_classes.building_materials import BuildingMaterial, TerminalMaterial, FurnaceMaterial, FactoryMaterial
-from block_classes.materials import *
-from block_classes.blocks import *
-from inventories import Inventory, Filter
-from utility.utilities import Size
-from interfaces.small_interfaces import TerminalWindow, Window
-from interfaces.crafting_interfaces import FactoryWindow, FurnaceWindow
-import recipes.recipe_constants as r_constants
-from network.pipes import NetworkNode
+from abc import ABC, abstractmethod
+
+
+import block_classes.building_materials as build_materials
+import block_classes.materials as base_materials
+import block_classes.blocks as blocks
+import inventories
+import utility.utilities as util
+import interfaces.base_interface as base_interface
+import interfaces.small_interfaces as small_interfaces
+import interfaces.crafting_interfaces as craft_interfaces
+import recipes.recipe_utility as r_constants
+import network.pipes as network
 
 
 def block_i_from_material(material):
-    if isinstance(material, BuildingMaterial):
+    if isinstance(material, build_materials.BuildingMaterial):
         name = material.name().replace("Material", "")
         building_block_i = globals()[name]
     else:
@@ -22,7 +26,7 @@ def building_type_from_material(material):
     return material_mapping[material.name()]
 
 
-class Building(MultiBlock, ABC):
+class Building(blocks.MultiBlock, ABC):
     """
     Abstract class for buildings. Buildings are multiblock (can be 1) structures
     that contain an image
@@ -30,13 +34,13 @@ class Building(MultiBlock, ABC):
     ID = 0
 
     def __init__(self, pos, **kwargs):
-        MultiBlock.__init__(self, pos, self.MATERIAL, **kwargs)
+        super().__init__(pos, self.MATERIAL, **kwargs)
         self.id = "Building{}".format(self.ID)
         Building.ID += 1
 
     @property
     @abstractmethod
-    def MATERIAL(self) -> BaseMaterial:
+    def MATERIAL(self) -> base_materials.BaseMaterial:
         """
         Specify a material class. The material class should be called
         NameOfBuildingMaterial and the name of the building cannot contain the
@@ -49,7 +53,7 @@ class Building(MultiBlock, ABC):
 
 class InterfaceBuilding(Building, ABC):
     def __init__(self, pos, sprite_group, size=-1, in_filter=None, out_filter=None, recipes=None, **kwargs):
-        self.inventory = Inventory(size, in_filter=in_filter, out_filter=out_filter)
+        self.inventory = inventories.Inventory(size, in_filter=in_filter, out_filter=out_filter)
         Building.__init__(self, pos, action=self.__select_buidling_action, **kwargs)
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
@@ -76,44 +80,44 @@ class InterfaceBuilding(Building, ABC):
         return blocks
 
 
-class Terminal(InterfaceBuilding, NetworkNode):
+class Terminal(InterfaceBuilding, network.NetworkNode):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    MATERIAL: BaseMaterial = TerminalMaterial
-    MULTIBLOCK_DIMENSION: Size = Size(2, 2)
-    INTERFACE_TYPE: Window = TerminalWindow
+    MATERIAL: base_materials.BaseMaterial = build_materials.TerminalMaterial
+    MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
+    INTERFACE_TYPE: base_interface.Window = small_interfaces.TerminalWindow
 
     def __init__(self, pos, spite_group, **kwargs):
         InterfaceBuilding.__init__(self, pos, spite_group, size=-1, **kwargs)
-        NetworkNode.__init__(self)
+        network.NetworkNode.__init__(self)
 
 
-class Furnace(InterfaceBuilding, NetworkNode):
+class Furnace(InterfaceBuilding, network.NetworkNode):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    MATERIAL = FurnaceMaterial
-    MULTIBLOCK_DIMENSION: Size = Size(2, 2)
-    INTERFACE_TYPE: Window = FurnaceWindow
+    MATERIAL = build_materials.FurnaceMaterial
+    MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
+    INTERFACE_TYPE: base_interface.Window = craft_interfaces.FurnaceWindow
 
     def __init__(self, pos, spite_group, **kwargs):
-        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=Filter(whitelist=[None]),
-                                   out_filter=Filter(whitelist=[None]), size=200,
+        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=[None]),
+                                   out_filter=inventories.Filter(whitelist=[None]), size=200,
                                    recipes=r_constants.recipe_books["furnace"], **kwargs)
-        NetworkNode.__init__(self)
+        network.NetworkNode.__init__(self)
 
 
-class Factory(InterfaceBuilding, NetworkNode):
-    MATERIAL = FactoryMaterial
-    MULTIBLOCK_DIMENSION: Size = Size(2, 2)
-    INTERFACE_TYPE: Window = FactoryWindow
+class Factory(InterfaceBuilding, network.NetworkNode):
+    MATERIAL = build_materials.FactoryMaterial
+    MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
+    INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
 
     def __init__(self, pos, spite_group, **kwargs):
-        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=Filter(whitelist=[None]),
-                                   out_filter=Filter(whitelist=[None]),
+        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=[None]),
+                                   out_filter=inventories.Filter(whitelist=[None]),
                                    recipes=r_constants.recipe_books["factory"], **kwargs)
-        NetworkNode.__init__(self)
+        network.NetworkNode.__init__(self)
 
 
 material_mapping = {"TerminalMaterial" : Terminal,

@@ -1,9 +1,8 @@
 from abc import abstractmethod, ABC
 
-import block_classes.building_materials
-from block_classes import materials, buildings
-from utility.utilities import Size
-from inventories import Item
+import block_classes.materials as base_materials
+import utility.utilities as util
+import inventories
 
 
 class RecipeGrid:
@@ -18,7 +17,7 @@ class RecipeGrid:
         """
         self.size = size
         #grid that saves all materials
-        self.material_grid = [[[materials.Air] for _ in range(self.size.width)] for _ in range(self.size.height)]
+        self.material_grid = [[[base_materials.Air] for _ in range(self.size.width)] for _ in range(self.size.height)]
 
     def add_all_rows(self, *values):
         """
@@ -105,12 +104,12 @@ class BaseRecipe(ABC):
         counts = {}
         for row in self.__recipe_grid:
             for obj in row:
-                if obj != materials.Air:
+                if obj != base_materials.Air:
                     if obj not in counts:
                         counts[obj] = 1
                     else:
                         counts[obj] += 1
-        items = [Item(obj(), value) for obj, value in counts.items()]
+        items = [inventories.Item(obj(), value) for obj, value in counts.items()]
         return items
 
     @abstractmethod
@@ -145,10 +144,10 @@ class CancelRecipe(BaseRecipe):
     FUEL_CONSUMPTION = 0
 
     def __init__(self):
-        mat = materials.CancelMaterial
+        mat = base_materials.CancelMaterial
         super().__init__(mat)
         self.quantity = 0
-        self.needed_items = [Item(self._material, 20)]
+        self.needed_items = [inventories.Item(self._material, 20)]
 
     def _create_recipe_grid(self):
-        return RecipeGrid(Size(0,0))
+        return RecipeGrid(util.Size(0,0))

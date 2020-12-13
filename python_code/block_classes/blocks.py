@@ -1,27 +1,27 @@
 import pygame
-from typing import ClassVar, List
+from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-from utility.constants import BLOCK_SIZE
-from utility.utilities import Size
+import utility.constants as con
+import utility.utilities as util
+if TYPE_CHECKING:
+    import block_classes.materials as base_materials
 
 
 class BaseBlock(ABC):
     """
     Base class for the block_classes in image matrices
     """
-    SIZE = BLOCK_SIZE
-    ID = 0
+    SIZE: ClassVar[util.Size] = con.BLOCK_SIZE
 
-    def __init__(self, pos, material, id=None, action=None):
-        self.rect = pygame.Rect((*pos, *self.SIZE))
+    rect: pygame.Rect
+    material: "base_materials.BaseMaterial"
+
+    def __init__(self, pos: Tuple, material, id_: str = None, action: Callable = None):
+        self.rect = pygame.Rect((pos[0], pos[1], self.SIZE.width, self.SIZE.height))
         self.material = material
         self._action_function = action
-        if id is None:
-            self.id = self.ID
-            BaseBlock.ID += 1
-        else:
-            self.id = id
+        self.id = id_ if id_ else util.unique_id()
         self.light_level = 0
 
     def __getattr__(self, item):
@@ -116,7 +116,7 @@ class ContainerBlock(NetworkBlock):
 
 class MultiBlock(BaseBlock, ABC):
     # have this here since you are technically allowed to call the size
-    MULTIBLOCK_DIMENSION: ClassVar[Size] = Size(1, 1)
+    MULTIBLOCK_DIMENSION: ClassVar[util.Size] = util.Size(1, 1)
     SIZE = BaseBlock.SIZE * MULTIBLOCK_DIMENSION
 
     def __init__(self, pos, material, **kwargs):
@@ -125,7 +125,7 @@ class MultiBlock(BaseBlock, ABC):
 
     @property
     @abstractmethod
-    def MULTIBLOCK_DIMENSION(self) -> ClassVar[Size]:
+    def MULTIBLOCK_DIMENSION(self) -> ClassVar[util.Size]:
         pass
 
     def _get_blocks(self) -> List[List[BaseBlock]]:
@@ -139,7 +139,7 @@ class MultiBlock(BaseBlock, ABC):
             for column_i in range(self.MULTIBLOCK_DIMENSION.width):
                 material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key_count)
                 image_key_count += 1
-                pos = (topleft[0] + column_i * BLOCK_SIZE.width, topleft[1] + row_i * BLOCK_SIZE.height)
-                block_row.append(material.to_block(pos, id=self.id, action=self._action_function))
+                pos = (topleft[0] + column_i * con.BLOCK_SIZE.width, topleft[1] + row_i * con.BLOCK_SIZE.height)
+                block_row.append(material.to_block(pos, id_=self.id, action=self._action_function))
             blocks.append(block_row)
         return blocks

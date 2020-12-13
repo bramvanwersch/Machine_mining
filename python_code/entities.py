@@ -1,20 +1,21 @@
 from abc import ABC
 from itertools import count
+import pygame
 
-from utility.constants import *
-from utility.utilities import Size, Serializer
-from inventories import Inventory
-from tasks import TaskQueue, Task, FetchTask, EmptyInventoryTask
-from utility.event_handling import EventHandler
+import utility.constants as con
+import utility.utilities as util
+import inventories
+import tasks
+import utility.event_handling as event_handling
 
 
-class Entity(pygame.sprite.Sprite, Serializer, ABC):
+class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
     """
     Basic entity class is a sprite with an image.
     """
     COLOR = (255, 255, 255)
 
-    def __init__(self, pos, size, *groups, color=COLOR, layer=HIGHLIGHT_LAYER, static=True, zoomable=False,
+    def __init__(self, pos, size, *groups, color=COLOR, layer=con.HIGHLIGHT_LAYER, static=True, zoomable=False,
                  visible=True, **kwargs):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
@@ -145,7 +146,7 @@ class SelectionRectangle(ZoomableEntity):
         ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.__start_pos = list(pos)
         self.__prev_screen_pos = list(mouse_pos)
-        self.__size = Size(*size)
+        self.__size = util.Size(*size)
         self.__update_image()
 
     def to_dict(self):
@@ -240,45 +241,45 @@ class MovingEntity(ZoomableEntity):
         """
         new_centerx = max(0.5 * self.orig_rect.width,
                           min(self.orig_rect.centerx + self.speed.x,
-                          ORIGINAL_BOARD_SIZE.width - 0.5 * self.orig_rect.width))
+                              con.ORIGINAL_BOARD_SIZE.width - 0.5 * self.orig_rect.width))
 
         new_centery = max(0.5 * self.orig_rect.height,
                           min(self.orig_rect.centery + self.speed.y,
-                          ORIGINAL_BOARD_SIZE.height - 0.5 * self.orig_rect.height))
+                              con.ORIGINAL_BOARD_SIZE.height - 0.5 * self.orig_rect.height))
         return new_centerx, new_centery
 
 
-class CameraCentre(MovingEntity, EventHandler):
+class CameraCentre(MovingEntity, event_handling.EventHandler):
     """
     The camera center where the camera centers on
     """
     def __init__(self, pos, size, *groups, **kwargs):
         MovingEntity.__init__(self, pos, size, *groups, max_speed = 20, **kwargs)
-        EventHandler.__init__(self, [RIGHT, LEFT, UP, DOWN])
+        event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
         self.orig_rect = pygame.Rect(*pos, *size)
 
     def handle_events(self, events):
         """
         Handle events for moving the camera around the board
         """
-        leftover_events = EventHandler.handle_events(self, events)
-        if self.pressed(RIGHT, continious=True) and self.pressed(LEFT, continious=True):
+        leftover_events = event_handling.EventHandler.handle_events(self, events)
+        if self.pressed(con.RIGHT, continious=True) and self.pressed(con.LEFT, continious=True):
             self.speed.x = 0
         else:
-            if self.pressed(RIGHT, continious=True):
+            if self.pressed(con.RIGHT, continious=True):
                 self.speed.x = min(self.max_speed, self.speed.x + self.max_speed)
-            if self.pressed(LEFT, continious=True):
+            if self.pressed(con.LEFT, continious=True):
                 self.speed.x = max(-self.max_speed, self.speed.x - self.max_speed)
-            if not self.pressed(LEFT, continious=True) and not self.pressed(RIGHT, continious=True):
+            if not self.pressed(con.LEFT, continious=True) and not self.pressed(con.RIGHT, continious=True):
                 self.speed.x = 0
-        if self.pressed(DOWN, continious=True) and self.pressed(UP, continious=True):
+        if self.pressed(con.DOWN, continious=True) and self.pressed(con.UP, continious=True):
             self.speed.y = 0
         else:
-            if self.pressed(UP, continious=True):
+            if self.pressed(con.UP, continious=True):
                 self.speed.y = max(-self.max_speed, self.speed.y - self.max_speed)
-            if self.pressed(DOWN, continious=True):
+            if self.pressed(con.DOWN, continious=True):
                 self.speed.y = min(self.max_speed, self.speed.y + self.max_speed)
-            if not self.pressed(UP, continious=True) and not self.pressed(DOWN, continious=True):
+            if not self.pressed(con.UP, continious=True) and not self.pressed(con.DOWN, continious=True):
                 self.speed.y = 0
         return leftover_events
 
@@ -301,12 +302,12 @@ class Worker(MovingEntity):
         self.task_control = task_control
 
         # tasks
-        self.task_queue = TaskQueue()
+        self.task_queue = tasks.TaskQueue()
         self.path = []
         self.dest = None
 
         # inventory
-        self.inventory = Inventory(self.INVENTORY_SIZE)
+        self.inventory = inventories.Inventory(self.INVENTORY_SIZE)
 
         # for loading purposes
         if self.board:
@@ -342,13 +343,13 @@ class Worker(MovingEntity):
             else:
                 self.__perform_task()
         elif self.inventory.full:
-            self.task_queue.add(EmptyInventoryTask(self))
+            self.task_queue.add(tasks.EmptyInventoryTask(self))
         elif self.task_queue.empty():
             task = self.task_control.get_task(self.rect.center)
             if task != None:
                 self.task_queue.add(task)
             elif not self.inventory.empty:
-                self.task_queue.add(EmptyInventoryTask(self))
+                self.task_queue.add(tasks.EmptyInventoryTask(self))
 
     def __start_task(self):
         self.task_queue.task.start(self)
@@ -382,7 +383,7 @@ class Worker(MovingEntity):
         """
         Perform a given task and finish it if that is the case
         """
-        self.task_queue.task.task_progress[0] += GAME_TIME.get_time()
+        self.task_queue.task.task_progress[0] += con.GAME_TIME.get_time()
         if self.task_queue.task.finished:
             self.__next_task()
 
@@ -448,7 +449,7 @@ class TextSprite(ZoomableEntity):
         a second.
         """
         super().update(*args)
-        self.lifespan[0] += GAME_TIME.get_time()
+        self.lifespan[0] += con.GAME_TIME.get_time()
         if self.lifespan[0] >= self.lifespan[1]:
             self.kill()
         self.orig_rect.y -= 2

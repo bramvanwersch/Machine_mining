@@ -1,8 +1,8 @@
 import pygame
 
-from utility.constants import SCREEN_SIZE
-from utility.utilities import Serializer, Size
-from interfaces.widgets import Frame
+import utility.constants as con
+import utility.utilities as util
+import interfaces.widgets as widgets
 import entities
 
 
@@ -19,22 +19,22 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
     def update(self, *args):
         super().update(*args)
         if self.target:
-            x = -self.target.rect.center[0] + SCREEN_SIZE.width / 2
-            y = -self.target.rect.center[1] + SCREEN_SIZE.height / 2
+            x = -self.target.rect.center[0] + con.SCREEN_SIZE.width / 2
+            y = -self.target.rect.center[1] + con.SCREEN_SIZE.height / 2
             self.cam += (pygame.Vector2((x, y)) - self.cam)
-            self.cam.x = max(-(self.world_size.width-SCREEN_SIZE.width), min(0.0, self.cam.x))
-            self.cam.y = max(-(self.world_size.height-SCREEN_SIZE.height), min(0.0, self.cam.y))
+            self.cam.x = max(-(self.world_size.width - con.SCREEN_SIZE.width), min(0.0, self.cam.x))
+            self.cam.y = max(-(self.world_size.height - con.SCREEN_SIZE.height), min(0.0, self.cam.y))
 
     def to_dict(self):
         return {
             "cam": (self.cam.x, self.cam.y),
             "world_size": self.world_size.to_dict(),
-            "entities": [sprite.to_dict() for sprite in self.sprites() if sprite is not self.target and not isinstance(sprite, Frame)]
+            "entities": [sprite.to_dict() for sprite in self.sprites() if sprite is not self.target and not isinstance(sprite, widgets.Frame)]
         }
 
     @classmethod
     def from_dict(cls, target=None, **arguments):
-        arguments["world_size"] = Size.from_dict(**arguments["world_size"]),
+        arguments["world_size"] = util.Size.from_dict(**arguments["world_size"]),
         ents = arguments.pop("entities")
         new_instance = super().from_dict(target=target, **arguments)
         new_instance.add(getattr(entities, dct["type"]).from_dict(sprite_group=[],

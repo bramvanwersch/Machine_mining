@@ -2,16 +2,16 @@ import pygame
 from pygame.locals import *
 
 import interfaces.managers as window_managers
-from utility.event_handling import EventHandler
-from interfaces.interface_utility import screen_to_board_coordinate
-from utility.utilities import Size
-from utility.constants import KEYDOWN, K_ESCAPE, KMOD_NONE
-from interfaces.widgets import Frame, Label, Button
-from utility.image_handling import image_sheets
+import interfaces.interface_utility as interfacer_util
+import utility.utilities as util
+import utility.constants as con
+import interfaces.widgets as widgets
+import utility.image_handling as image_handlers
 
-class Window(Frame):
-    TOP_SIZE = Size(0, 25)
-    EXIT_BUTTON_SIZE = Size(25, 25)
+
+class Window(widgets.Frame):
+    TOP_SIZE = util.Size(0, 25)
+    EXIT_BUTTON_SIZE = util.Size(25, 25)
     COLOR = (173, 94, 29, 150)
     TOP_BAR_COLOR = (195, 195, 195)
     TEXT_COLOR = (0,0,0)
@@ -21,10 +21,10 @@ class Window(Frame):
     CLOSE_LIST = []
 
     def __init__(self, pos, size, *groups, color=COLOR, title=None, static=False, **kwargs):
-        Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
+        widgets.Frame.__init__(self, pos, size + self.TOP_SIZE, *groups, color=color, **kwargs)
 
-        if not isinstance(size, Size):
-            size = Size(*size)
+        if not isinstance(size, util.Size):
+            size = util.Size(*size)
         self.window_manager = window_managers.game_window_manager
         self.static = static
 
@@ -50,7 +50,7 @@ class Window(Frame):
         return self._visible and self._show_window
 
     def __add_top_border(self, size, title):
-        top_label = Label(Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height),
+        top_label = widgets.Label(util.Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height),
                           color=self.TOP_BAR_COLOR, selectable=False)
         if self.static:
             top_label.set_action(1, self.__top_label_action, values=[True], types=["pressed"])
@@ -58,9 +58,9 @@ class Window(Frame):
         self.add_widget((0,0), top_label, adjust=False)
         if title != None:
             top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25, add=True)
-        button_image = image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE)
-        hover_image = image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE)
-        exit_button = Button(self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image, selectable=False)
+        button_image = image_handlers.image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE)
+        hover_image = image_handlers.image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE)
+        exit_button = widgets.Button(self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image, selectable=False)
         exit_button.set_action(1, self._close_window, types=["unpressed"])
         self.add_widget((size.width - self.EXIT_BUTTON_SIZE.width, 0), exit_button, adjust=False)
 
@@ -72,10 +72,10 @@ class Window(Frame):
     def __top_label_action(self, value):
         self.__moving_window = value
         if value == True:
-            self.__previous_board_pos = screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)
+            self.__previous_board_pos = interfacer_util.screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)
 
     def __move_window(self):
-        board_pos = screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)
+        board_pos = interfacer_util.screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)
         moved_x = board_pos[0] - self.__previous_board_pos[0]
         moved_y = board_pos[1] - self.__previous_board_pos[1]
         self.__previous_board_pos = board_pos
@@ -88,7 +88,7 @@ class Window(Frame):
 
         :param title: String of what should be displayed
         """
-        title = FONTS[15].render(title, True, self.TEXTCOLOR)
+        title = con.FONTS[15].render(title, True, self.TEXTCOLOR)
         tr = title.get_rect()
         #center the title above the widet
         self.orig_image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))

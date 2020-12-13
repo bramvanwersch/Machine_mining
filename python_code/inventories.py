@@ -148,6 +148,7 @@ class Inventory:
             final_str += "{}: {}\n".format(item.name(), item.quantity)
         return final_str[:-1]
 
+
 class Item:
     """
     Tracks a single item using the __material of the item and a quantity

@@ -1,43 +1,46 @@
-import pygame, os
+import pygame
+import os
 
-from utility.constants import IMAGE_DIR, RLEACCEL, INVISIBLE_COLOR
-from utility.utilities import Size
+import utility.constants as con
+import utility.utilities as util
 
-#variable for all image sheets
+# variable for all image sheets
 image_sheets = {}
+
 
 def load_images():
     """
     Loads all the available image_sheets into memory and saves them by a descriptive name in a dictionary
     """
     global image_sheets
-    image_sheets["buildings"] = Spritesheet("building_materials.bmp", Size(10, 10))
-    image_sheets["general"] = Spritesheet("general.bmp", Size(10, 10))
-    image_sheets["materials"] = Spritesheet("materials.bmp", Size(10, 10))
+    image_sheets["buildings"] = Spritesheet("building_materials.bmp", util.Size(10, 10))
+    image_sheets["general"] = Spritesheet("general.bmp", util.Size(10, 10))
+    image_sheets["materials"] = Spritesheet("materials.bmp", util.Size(10, 10))
 
 
 def load_image(name, colorkey=None):
-    fullname = os.path.join(IMAGE_DIR, name)
+    fullname = os.path.join(con.IMAGE_DIR, name)
     try:
         image = pygame.image.load(fullname)
     except pygame.error:
         print("Cannot load image:", fullname)
-        raise SystemExit(str(geterror()))
+        raise SystemExit(str(pygame.geterror()))
     image = image.convert()
     if colorkey is not None:
         if colorkey == -1:
             colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey, RLEACCEL)
+        image.set_colorkey(colorkey, con.RLEACCEL)
         image = image.convert_alpha()
     return image
+
 
 class Spritesheet:
     def __init__(self, filename, size):
         self.sheet = load_image(filename)
         self.image_size = size
 
-    def image_at(self, coord, size = None, color_key = INVISIBLE_COLOR[:-1]):
-        if size == None:
+    def image_at(self, coord, size = None, color_key=con.INVISIBLE_COLOR[:-1]):
+        if size is None:
             size = self.image_size
         rect = pygame.Rect(*coord, *size)
         image = pygame.Surface(rect.size).convert()

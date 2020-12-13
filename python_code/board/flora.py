@@ -1,11 +1,13 @@
-from utility.constants import BLOCK_SIZE
-from block_classes import flora_materials
-from block_classes.blocks import Block
+import utility.constants as con
+import block_classes.blocks as blocks
+import block_classes.flora_materials as flora_materials
+
 
 class Plant:
 
     DIRECTION_ADDITON = [(0, -1), (1, 0), (0, 1), (-1, 0)]
     ID = 0
+
     def __init__(self, start_block):
         self.id = "Plant{}".format(self.ID)
         Plant.ID += 1
@@ -18,11 +20,11 @@ class Plant:
         if surrounding_blocks[dir] != "Air":
             return None
         material_obj = getattr(flora_materials, self.grow_block.name())
-        extension_block = Block(self.grow_block.coord, material_obj(image_number=dir), id=self.id)
+        extension_block = blocks.Block(self.grow_block.coord, material_obj(image_number=dir), id_=self.id)
 
         #move the tip of the plant forward
-        self.grow_block.rect.topleft = (self.grow_block.rect.left + BLOCK_SIZE.width * self.DIRECTION_ADDITON[dir][0],
-                                        self.grow_block.rect.top + BLOCK_SIZE.height * self.DIRECTION_ADDITON[dir][1])
+        self.grow_block.rect.topleft = (self.grow_block.rect.left + con.BLOCK_SIZE.width * self.DIRECTION_ADDITON[dir][0],
+                                        self.grow_block.rect.top + con.BLOCK_SIZE.height * self.DIRECTION_ADDITON[dir][1])
         self.__blocks.insert(len(self.__blocks) -1, extension_block)
         return extension_block, self.grow_block
 

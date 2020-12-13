@@ -1,24 +1,25 @@
-from interfaces.widgets import *
-from interfaces.base_interface import Window
-from interfaces.widgets import Label
-from utility.constants import INTERFACE_LAYER
-from utility.image_handling import image_sheets
-from inventories import Item
-from utility.utilities import Size
-from block_classes.block_utility import fuel_materials
+import pygame
+
+import interfaces.widgets as widgets
+import interfaces.base_interface as base_interface
+import utility.constants as con
+import utility.utilities as util
+import utility.image_handling as image_handlers
+import block_classes.block_utility as block_util
+import inventories
 
 
-class CraftingWindow(Window):
+class CraftingWindow(base_interface.Window):
     """
     A Frame for the crafting GUI
     """
-    SIZE = Size(300, 250)
+    SIZE = util.Size(300, 250)
 
     def __init__(self, craft_building, *groups, recipes=None, **kwargs):
         self._craft_building = craft_building
         fr = self._craft_building.rect
         location = fr.bottomleft
-        Window.__init__(self, location, self.SIZE, *groups, static=True, **kwargs)
+        base_interface.Window.__init__(self, location, self.SIZE, *groups, static=True, **kwargs)
 
         self._recipe_book = recipes
 
@@ -48,12 +49,12 @@ class CraftingWindow(Window):
 
     def _craft_item(self):
         if self._craftable_item_recipe != None and self._crafting and self._check_materials():
-            self._crafting_time[0] += GAME_TIME.get_time()
+            self._crafting_time[0] += con.GAME_TIME.get_time()
             over_time = self._crafting_time[1] - self._crafting_time[0]
             if over_time <= 0:
                 self._crafting = False
                 self._crafting_time[0] = abs(over_time)
-                item = Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
+                item = inventories.Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
                 self._craft_building.inventory.add_items(item, ignore_filter=True)
                 self._craft_building.pushed_items.append(item)
                 for item in self._craftable_item_recipe.needed_items:
@@ -72,11 +73,11 @@ class CraftingWindow(Window):
 
     def _create_recipe_selector(self, loc, size, color):
         # #create scrollable inventory
-        inventory_s  = ScrollPane(size, color=color)
+        inventory_s = widgets.ScrollPane(size, color=color)
         self.add_widget(loc, inventory_s)
         self.add_border(inventory_s)
 
-        s1 = SelectionGroup()
+        s1 = widgets.SelectionGroup()
         for recipe in self._recipe_book:
             # create an image with a background
             background = pygame.Surface((30, 30)).convert()
@@ -84,7 +85,7 @@ class CraftingWindow(Window):
             image = pygame.transform.scale(recipe.get_image(), (26, 26))
             background.blit(image, (2, 2, 26, 26))
 
-            lbl = Label((30, 30), color=color, image=background)
+            lbl = widgets.Label((30, 30), color=color, image=background)
 
             lbl.set_action(1, self.recipe_action, values=[recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)
@@ -100,14 +101,14 @@ class CraftingWindow(Window):
         if recipe._material.name() in self._craft_building.inventory:
             item = self._craft_building.inventory.item_pointer(recipe._material.name())
         else:
-            item = Item(recipe._material(), 0)
+            item = inventories.Item(recipe._material(), 0)
             self._craft_building.inventory.add_items(item, ignore_filter=True)
         self._craftable_item_lbl.add_item(item)
         self._crafting_time[1] = recipe.CRAFTING_TIME
 
 
 class FactoryWindow(CraftingWindow):
-    SIZE = Size(300, 250)
+    SIZE = util.Size(300, 250)
 
     def __init__(self, craft_building, *groups, recipes=None):
         super().__init__(craft_building, *groups, recipes=recipes, title = "CRAFTING:")
@@ -121,23 +122,23 @@ class FactoryWindow(CraftingWindow):
         start
         """
         #create material_grid
-        self.grid_pane = CraftingGrid((125, 125), Size(4, 4), self._craft_building.inventory, color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((125, 125), util.Size(4, 4), self._craft_building.inventory, color = (50, 50, 50))
         self.add_widget((10, 10), self.grid_pane)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=self.COLOR[:-1], selectable=False)
+        self._craftable_item_lbl = widgets.ItemLabel((50, 50), None, border=False, color=self.COLOR[:-1], selectable=False)
         self.add_widget((200, 50), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl)
 
         self._create_recipe_selector((10, 150), (280, 90), self.COLOR[:-1])
 
         #add arrow pointing from grid to display
-        a_lbl = ProgressArrow((50, 50), self._crafting_time, color=INVISIBLE_COLOR)
+        a_lbl = ProgressArrow((50, 50), self._crafting_time, color=con.INVISIBLE_COLOR)
         self.add_widget((140, 50), a_lbl)
 
 
 class FurnaceWindow(CraftingWindow):
-    SIZE = Size(240, 220)
+    SIZE = util.Size(240, 220)
 
     def __init__(self, furnace_object, *groups, recipes=None):
         super().__init__(furnace_object, *groups, recipes=recipes, title="FURNACE")
@@ -148,7 +149,7 @@ class FurnaceWindow(CraftingWindow):
         super().update()
         #configure fuel based on inventory fuel items.
         total_fuel = 0
-        for mat_name in [f.name() for f in fuel_materials]:
+        for mat_name in [f.name() for f in block_util.fuel_materials]:
             fuel_pointer = self._craft_building.inventory.item_pointer(mat_name)
             if fuel_pointer != None and fuel_pointer.quantity > 0:
                 total_fuel += fuel_pointer.FUEL_VALUE * fuel_pointer.quantity
@@ -166,13 +167,13 @@ class FurnaceWindow(CraftingWindow):
 
     def _craft_item(self):
         if self._crafting and self._check_materials() and self.__fuel_meter._fuel_lvl >= self._craftable_item_recipe.FUEL_CONSUMPTION:
-            self._crafting_time[0] += GAME_TIME.get_time()
+            self._crafting_time[0] += con.GAME_TIME.get_time()
             over_time = self._crafting_time[1] - self._crafting_time[0]
             if over_time <= 0:
                 self._crafting = False
                 self.__requested_fuel = False
                 self._crafting_time[0] = abs(over_time)
-                item = Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
+                item = inventories.Item(self._craftable_item_recipe._material(), self._craftable_item_recipe.quantity)
                 self._craft_building.inventory.add_items(item, ignore_filter=True)
                 self._craft_building.pushed_items.append(item)
                 self.__fuel_meter.add_fuel(-1 * self._craftable_item_recipe.FUEL_CONSUMPTION)
@@ -181,24 +182,24 @@ class FurnaceWindow(CraftingWindow):
 
     def __init_widgets(self):
         #create material_grid
-        self.grid_pane = CraftingGrid((64, 64), Size(2, 2), self._craft_building.inventory, color = (50, 50, 50))
+        self.grid_pane = CraftingGrid((64, 64), util.Size(2, 2), self._craft_building.inventory, color = (50, 50, 50))
         self.add_widget((40, 28), self.grid_pane)
 
         self.__fuel_meter = FuelMeter((25, 100))
         self.add_widget((10,10), self.__fuel_meter)
 
         # add arrow pointing from grid to displa
-        a_lbl = ProgressArrow((50, 50), self._crafting_time, color=INVISIBLE_COLOR)
+        a_lbl = ProgressArrow((50, 50), self._crafting_time, color=con.INVISIBLE_COLOR)
         self.add_widget((110, 35), a_lbl)
 
-        self._craftable_item_lbl = ItemLabel((50, 50), None, border=False, color=(150, 150, 150), selectable=False)
+        self._craftable_item_lbl = widgets.ItemLabel((50, 50), None, border=False, color=(150, 150, 150), selectable=False)
         self.add_widget((170, 32), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl, color=(75, 75, 75))
 
         self._create_recipe_selector((10, 120), (220, 90), self.COLOR[:-1])
 
 
-class CraftingGrid(Pane):
+class CraftingGrid(widgets.Pane):
     """
     Contains lables that are the represnetation of the crafting grid that can
     contain materials
@@ -217,7 +218,7 @@ class CraftingGrid(Pane):
         self.__recipe_changed = False
 
         self.__init_grid(grid_size)
-        self.size = Size(len(self._crafting_grid[0]), len(self._crafting_grid))
+        self.size = util.Size(len(self._crafting_grid[0]), len(self._crafting_grid))
 
     def wupdate(self, *args):
         super().wupdate()
@@ -229,8 +230,8 @@ class CraftingGrid(Pane):
         """
         start_pos = [5,5]
         #size of a grid square
-        total_size = Size(*self.rect.size) - (self.BORDER_DISTANCE, self.BORDER_DISTANCE)
-        grid_square = Size(*(total_size / grid_size)) - (1, 1)
+        total_size = util.Size(*self.rect.size) - (self.BORDER_DISTANCE, self.BORDER_DISTANCE)
+        grid_square = util.Size(*(total_size / grid_size)) - (1, 1)
         for row_i in range(grid_size.height):
             row = []
             for col_i in range(grid_size.width):
@@ -274,20 +275,20 @@ class CraftingGrid(Pane):
                 lbl.set_present(None)
 
 
-class GridLabel(Label):
+class GridLabel(widgets.Label):
     POS_COLOR = (0, 255, 0, 100)
     NEG_COLOR = (255, 0, 0, 100)
     def __init__(self, size, **kwargs):
         super().__init__(size, selectable=False, **kwargs)
         self.__item_present = None
-        self.__positive_mark = image_sheets["general"].image_at((80, 0), size=(10, 10))
+        self.__positive_mark = image_handlers.image_sheets["general"].image_at((80, 0), size=(10, 10))
 
-        self.__negative_mark = image_sheets["general"].image_at((70, 0), size=(10, 10))
+        self.__negative_mark = image_handlers.image_sheets["general"].image_at((70, 0), size=(10, 10))
         self.__item_image = None
 
     def set_item(self, item_image):
         if item_image != None:
-            item_image = pygame.transform.scale(item_image, Size(*self.rect.size) - (4, 4))
+            item_image = pygame.transform.scale(item_image, util.Size(*self.rect.size) - (4, 4))
         self.__item_image = item_image
         self.set_image(self.__item_image)
 
@@ -307,11 +308,11 @@ class GridLabel(Label):
             self.set_image(image)
 
 
-class ProgressArrow(Label):
+class ProgressArrow(widgets.Label):
     def __init__(self, size, progress_list, **kwargs):
         super().__init__(size, selectable=False, **kwargs)
-        self.__arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20))
-        self.__full_progress_arrow = image_sheets["general"].image_at((0, 20), size=(20, 20))
+        self.__arrow_image = image_handlers.image_sheets["general"].image_at((0, 0), size=(20, 20))
+        self.__full_progress_arrow = image_handlers.image_sheets["general"].image_at((0, 20), size=(20, 20))
         self.__arrow_image = pygame.transform.scale(self.__arrow_image, size)
         self.__full_progress_arrow = pygame.transform.scale(self.__full_progress_arrow, size)
         self.__progress = progress_list
@@ -337,21 +338,21 @@ class ProgressArrow(Label):
         self.set_image(progress_arrow)
 
 
-class FuelMeter(Pane):
+class FuelMeter(widgets.Pane):
     MAX_FUEL = 100
     def __init__(self, size, max_fuel=MAX_FUEL, **kwargs):
-        super().__init__(size, color=INVISIBLE_COLOR, **kwargs)
+        super().__init__(size, color=con.INVISIBLE_COLOR, **kwargs)
         self._fuel_lvl = 0
         self.__max_fuel = max_fuel
 
         self.__init_widgets()
 
     def __init_widgets(self):
-        text_lbl = Label((25, 10), color=INVISIBLE_COLOR, selectable=False)
+        text_lbl = widgets.Label((25, 10), color=con.INVISIBLE_COLOR, selectable=False)
         text_lbl.set_text("Fuel", (0,0), font_size=16)
         self.add_widget((0,0), text_lbl)
 
-        self.fuel_indicator = Label((20, self.rect.height - 20), color=INVISIBLE_COLOR, selectable=False)
+        self.fuel_indicator = widgets.Label((20, self.rect.height - 20), color=con.INVISIBLE_COLOR, selectable=False)
         self.add_border(self.fuel_indicator)
         self.add_widget((2, 15), self.fuel_indicator)
 

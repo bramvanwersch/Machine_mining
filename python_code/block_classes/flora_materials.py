@@ -1,13 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, List
 
-from block_classes.materials import ImageMaterial, MaterialCollection, DepthMaterial,\
-    MultiImageMaterial, ImageDefinition
-from utility.constants import INVISIBLE_COLOR
-from utility.utilities import Gaussian
+import block_classes.materials as base_materials
+import utility.utilities as util
 
 
-class FloraMaterial(DepthMaterial, ABC):
+class FloraMaterial(base_materials.DepthMaterial, ABC):
 
     # the index that the plant grows that side N, E, S, W order, default is north (up)
     CONTINUATION_DIRECTION = 0
@@ -22,56 +20,63 @@ class FloraMaterial(DepthMaterial, ABC):
         pass
 
 
-class Fern(FloraMaterial, ImageMaterial):
+class Fern(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(30, 10)
+    DISTRIBUTION = util.Gaussian(30, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (30, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (30, 20), flip=True)
 
 
-class Reed(FloraMaterial, ImageMaterial):
+class Reed(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(30, 10)
+    DISTRIBUTION = util.Gaussian(30, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (40, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (40, 20), flip=True)
 
 
-class Moss(FloraMaterial, ImageMaterial):
+class Moss(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(40, 10)
+    DISTRIBUTION = util.Gaussian(40, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (90, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (90, 20), flip=True)
 
 
-class BrownShroom(FloraMaterial, ImageMaterial):
+class BrownShroom(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(80, 10)
+    DISTRIBUTION = util.Gaussian(80, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (50, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (50, 20), flip=True)
 
 
-class BrownShroomers(FloraMaterial, ImageMaterial):
+class BrownShroomers(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(80, 10)
+    DISTRIBUTION = util.Gaussian(80, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (70, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (70, 20), flip=True)
 
 
-class RedShroom(FloraMaterial, ImageMaterial):
+class RedShroom(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(80, 10)
+    DISTRIBUTION = util.Gaussian(80, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (80, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (80, 20), flip=True)
 
 
-class RedShroomers(FloraMaterial, ImageMaterial):
+class RedShroomers(FloraMaterial, base_materials.ImageMaterial):
 
-    DISTRIBUTION = Gaussian(80, 10)
+    DISTRIBUTION = util.Gaussian(80, 10)
     START_DIRECTION = 2
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (60, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (60, 20), flip=True)
 
 
-class ShroomCollection(MaterialCollection):
+class ShroomCollection(base_materials.MaterialCollection):
 
     MATERIAL_PROBABILITIES = {BrownShroom: 0.4, BrownShroomers: 0.1, RedShroom: 0.4, RedShroomers: 0.1}
 
@@ -82,11 +87,12 @@ class MultiFloraMaterial(FloraMaterial, ABC):
     GROW_CHANCE = 0
 
 
-class Vine(MultiFloraMaterial, MultiImageMaterial):
-    DISTRIBUTION = Gaussian(30, 10)
+class Vine(MultiFloraMaterial, base_materials.MultiImageMaterial):
+    DISTRIBUTION = util.Gaussian(30, 10)
     START_DIRECTION = 0
     CONTINUATION_DIRECTION = 2
     # -1 key is reserved for the starting image, 0-3 for the direction of addition
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = {-1: ImageDefinition("materials", (0, 30), flip=True),
-                                                          2: ImageDefinition("materials", (10, 30), flip=True)}
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        {-1: base_materials.ImageDefinition("materials", (0, 30), flip=True),
+         2: base_materials.ImageDefinition("materials", (10, 30), flip=True)}
     GROW_CHANCE = 0.1

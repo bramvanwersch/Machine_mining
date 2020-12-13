@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 
-from utility.utilities import Serializer
-from utility.constants import GAME_TIME
-from inventories import Item
+import utility.utilities as util
+import utility.constants as con
+import inventories
 
 
-class EdgeTaskQueue(Serializer):
+class EdgeTaskQueue(util.Serializer):
     #one block of free distance
     FREE_DISTANCE = 10
 
@@ -37,11 +37,11 @@ class EdgeTaskQueue(Serializer):
         item = kwargs.pop("item")
         nr_requests = int(item.quantity / self.__max_request_size) + 1
         for _ in range(1, nr_requests):
-            reduced_item = Item(item.material, self.__max_request_size)
+            reduced_item = inventories.Item(item.material, self.__max_request_size)
             task = task_class(node, time, item=reduced_item, **kwargs)
             self.__add_to_task_queue(task)
         if item.quantity % self.__max_request_size != 0:
-            reduced_item = Item(item.material, item.quantity % self.__max_request_size)
+            reduced_item = inventories.Item(item.material, item.quantity % self.__max_request_size)
             task = task_class(node, time, item=reduced_item, **kwargs)
             self.__add_to_task_queue(task)
 
@@ -68,7 +68,7 @@ class EdgeTaskQueue(Serializer):
                     self.active_tasks.append(self.queued_tasks.pop(0))
 
 
-class NetworkTask(Serializer, ABC):
+class NetworkTask(util.Serializer, ABC):
     def __init__(self, node, time, start_time=0):
         self.originating_node = node
         self.progress = [start_time, time]
@@ -90,7 +90,7 @@ class NetworkTask(Serializer, ABC):
     def work(self):
         if self.finished:
             return
-        self.progress[0] += GAME_TIME.get_time()
+        self.progress[0] += con.GAME_TIME.get_time()
         if self.finished:
             self._hand_in()
 

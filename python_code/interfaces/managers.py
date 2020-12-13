@@ -1,9 +1,11 @@
 import pygame
 
-from utility.constants import SCREEN_SIZE, BOARD_SIZE, INTERFACE_LAYER, MOUSEBUTTONDOWN, MOUSEBUTTONUP
-from interfaces.interface_utility import screen_to_board_coordinate
+import utility.constants as con
+import interfaces.interface_utility as util
+
 
 game_window_manager = None
+
 
 def create_window_managers(camera_target):
     global game_window_manager
@@ -30,7 +32,7 @@ class WindowManager:
                     self.remove(open_window)
         self.windows[window.id] = window
         if len(self.window_order) == 0:
-            window._layer = INTERFACE_LAYER
+            window._layer = con.INTERFACE_LAYER
         else:
             window._layer = self.window_order[-1]._layer + 1
         self.window_order.append(window)
@@ -44,7 +46,7 @@ class WindowManager:
         else:
             self.window_order.pop(rem_index)
             for w in self.window_order:
-                w._layer = max(w._layer - 1, INTERFACE_LAYER)
+                w._layer = max(w._layer - 1, con.INTERFACE_LAYER)
         window.show_window(False)
 
     def __set_top_window(self, window):
@@ -54,7 +56,7 @@ class WindowManager:
             self.add(window)
 
     def __find_hovered_window(self, mouse_pos):
-        board_coord = screen_to_board_coordinate(mouse_pos, self.__target, 1)
+        board_coord = util.screen_to_board_coordinate(mouse_pos, self.__target, 1)
         selected_window = None
         for window in self.windows.values():
             if window.static:
@@ -83,12 +85,12 @@ class WindowManager:
         #select a window when the user clicks it and collect all mouse events (and others)
         #if hovering over the window
         for event in events:
-            if event.type in (MOUSEBUTTONDOWN, MOUSEBUTTONUP):
+            if event.type in (con.MOUSEBUTTONDOWN, con.MOUSEBUTTONUP):
                 #make sure to unfocus when clicking outside
                 if hovered_window != self.window_order[-1]:
                     self.window_order[-1].set_focus(False)
                 if hovered_window != None:
-                    if event.button == 1 and event.type == MOUSEBUTTONDOWN:
+                    if event.button == 1 and event.type == con.MOUSEBUTTONDOWN:
                         self.__set_top_window(hovered_window)
                         hovered_window.set_focus(True)
                     window_mouse_events.append(event)

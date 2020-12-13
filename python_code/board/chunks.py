@@ -1,33 +1,35 @@
-import block_classes.flora_materials
-from utility.constants import *
-from utility.utilities import GameException, Serializer
-from block_classes.blocks import *
-from block_classes import materials, block_utility
-from entities import ZoomableEntity
-from interfaces.interface_utility import p_to_c, p_to_r
-from board.pathfinding import PathfindingChunk
-from board.flora import Plant
-from inventories import Item
+import pygame
+
+import block_classes.flora_materials as flora_materials
+import block_classes.materials as base_materials
+import block_classes.block_utility as block_util
+import utility.constants as con
+import utility.utilities as util
+import entities
+import inventories
+import interfaces.interface_utility as interface_util
+import board.pathfinding as pathfinding
+import board.flora as flora
 
 
-class Chunk(Serializer):
+class Chunk(util.Serializer):
 
     def __init__(self, pos, foreground, background, main_sprite_group):
         #chunk with sizes in pixels lowest value should 0,0
-        self.rect = pygame.Rect((*pos, *CHUNK_SIZE))
+        self.rect = pygame.Rect((*pos, *con.CHUNK_SIZE))
 
         self.plants = {}
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
 
-        offset = [int(pos[0] / CHUNK_SIZE.width), int(pos[1] / CHUNK_SIZE.height)]
-        foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = BOARD_LAYER, offset=offset)
-        background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = BACKGROUND_LAYER, offset=offset)
-        light_image = LightImage(self.rect.topleft, main_sprite_group, layer = LIGHT_LAYER, color=(0, 0, 0, 255))
-        selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = HIGHLIGHT_LAYER, color=INVISIBLE_COLOR)
+        offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
+        foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = con.BOARD_LAYER, offset=offset)
+        background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = con.BACKGROUND_LAYER, offset=offset)
+        light_image = LightImage(self.rect.topleft, main_sprite_group, layer = con.LIGHT_LAYER, color=(0, 0, 0, 255))
+        selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
 
         self.layers = [light_image, selection_image, foreground_image, background_image]
-        self.pathfinding_chunk = PathfindingChunk(self.__matrix)
+        self.pathfinding_chunk = pathfinding.PathfindingChunk(self.__matrix)
 
     @property
     def coord(self):
@@ -54,12 +56,12 @@ class Chunk(Serializer):
 
         for block in blocks:
             local_block_rect = self.__local_adjusted_rect(block.rect)
-            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
-            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
 
             #check if a new plant, if so make sure the start is unique
-            if isinstance(block.material, block_classes.flora_materials.MultiFloraMaterial) and block.id not in self.plants:
-                plant = Plant(block)
+            if isinstance(block.material, flora_materials.MultiFloraMaterial) and block.id not in self.plants:
+                plant = flora.Plant(block)
                 self.plants[plant.id] = plant
                 block.material.image_key = -1
             # add the block
@@ -73,16 +75,16 @@ class Chunk(Serializer):
 
         removed_items = []
         for block in blocks:
-            removed_items.append(Item(block.material))
+            removed_items.append(inventories.Item(block.material))
             if hasattr(block, "inventory"):
                 items = block.inventory.get_all_items(ignore_filter=True)
                 removed_items.extend(items)
             local_block_rect = self.__local_adjusted_rect(block.rect)
-            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=2)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
             # remove the highlight
-            self.add_rectangle(local_block_rect, INVISIBLE_COLOR, layer=1)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
             column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
-            self.__matrix[row][column] = AirBlock(block.rect.topleft, materials.Air())
+            self.__matrix[row][column] = base_materials.Air().to_block(block.rect.topleft)
             self.pathfinding_chunk.removed_rects.append(block.rect)
         return removed_items
 
@@ -95,7 +97,7 @@ class Chunk(Serializer):
         try:
             return self.__matrix[row][column]
         except IndexError:
-            raise GameException("Point: {} is not within chunk at {}".format(point, self.rect))
+            raise util.GameException("Point: {} is not within chunk at {}".format(point, self.rect))
 
     def overlapping_blocks(self, rect):
         column_start, row_start = self.__local_adusted_block_coordinate(rect.topleft)
@@ -110,12 +112,12 @@ class Chunk(Serializer):
 
     def __local_adusted_block_coordinate(self, point):
         #get the coordinate of a block in the local self.matrix grid
-        row = p_to_r(point[1]) - p_to_r(self.rect.y)
-        column = p_to_c(point[0]) - p_to_r(self.rect.x)
+        row = interface_util.p_to_r(point[1]) - interface_util.p_to_r(self.rect.y)
+        column = interface_util.p_to_c(point[0]) - interface_util.p_to_r(self.rect.x)
         return [column, row]
 
     def __local_adjusted_rect(self, rect):
-        topleft = (rect.left % CHUNK_SIZE.width, rect.top % CHUNK_SIZE.height)
+        topleft = (rect.left % con.CHUNK_SIZE.width, rect.top % con.CHUNK_SIZE.height)
         return pygame.Rect((*topleft, *rect.size))
 
 ##GENERATE CHUNK FUNCTIONS
@@ -130,21 +132,21 @@ class Chunk(Serializer):
         for row_i, row in enumerate(s_matrix):
             for column_i, value in enumerate(row):
                 #create position
-                pos = (self.rect.left + column_i * BLOCK_SIZE.width,
-                       self.rect.top + row_i * BLOCK_SIZE.height,)
-                material_instance = block_utility.material_instance_from_string(s_matrix[row_i][column_i], depth=row_i)
+                pos = (self.rect.left + column_i * con.BLOCK_SIZE.width,
+                       self.rect.top + row_i * con.BLOCK_SIZE.height,)
+                material_instance = block_util.material_instance_from_string(s_matrix[row_i][column_i], depth=row_i)
                 block = material_instance.to_block(pos)
-                if isinstance(material_instance, block_classes.flora_materials.MultiFloraMaterial):
-                    plant = Plant(block)
+                if isinstance(material_instance, flora_materials.MultiFloraMaterial):
+                    plant = flora.Plant(block)
                     self.plants[plant.id] = plant
                 s_matrix[row_i][column_i] = block
         return s_matrix
 
 
 class StartChunk(Chunk):
-    START_RECTANGLE = pygame.Rect((CHUNK_SIZE.width / 2 - (CHUNK_SIZE.width / 2) / 2,
-                                   CHUNK_SIZE.height / 2 - (CHUNK_SIZE.height / 10) / 2,
-                                   CHUNK_SIZE.width / 2,  CHUNK_SIZE.height / 10))
+    START_RECTANGLE = pygame.Rect((con.CHUNK_SIZE.width / 2 - (con.CHUNK_SIZE.width / 2) / 2,
+                                   con.CHUNK_SIZE.height / 2 - (con.CHUNK_SIZE.height / 10) / 2,
+                                   con.CHUNK_SIZE.width / 2,  con.CHUNK_SIZE.height / 10))
 
     def __init__(self, pos, foreground, background, main_sprite_group):
         foreground = self.__adjust_foreground_string_matrix(foreground)
@@ -152,20 +154,20 @@ class StartChunk(Chunk):
 
     def __adjust_foreground_string_matrix(self, matrix):
         #generate the air space at the start position
-        for row_i in range(p_to_r(self.START_RECTANGLE.top), p_to_r(self.START_RECTANGLE.bottom)):
-            for column_i in range(p_to_c(self.START_RECTANGLE.left), p_to_c(self.START_RECTANGLE.right)):
+        for row_i in range(interface_util.p_to_r(self.START_RECTANGLE.top), interface_util.p_to_r(self.START_RECTANGLE.bottom)):
+            for column_i in range(interface_util.p_to_c(self.START_RECTANGLE.left), interface_util.p_to_c(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"
         return matrix
 
 
-class BoardImage(ZoomableEntity):
+class BoardImage(entities.ZoomableEntity):
     """
     Convert a matrix of block_classes into a surface that persists as an entity. This
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """
     def __init__(self, pos, main_sprite_group, **kwargs):
-        ZoomableEntity.__init__(self, pos, CHUNK_SIZE, main_sprite_group, **kwargs)
+        entities.ZoomableEntity.__init__(self, pos, con.CHUNK_SIZE, main_sprite_group, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -174,11 +176,11 @@ class BoardImage(ZoomableEntity):
         block_matrix = kwargs["block_matrix"]
         offset = kwargs["offset"]
         image = pygame.Surface(size)
-        image.set_colorkey(INVISIBLE_COLOR, RLEACCEL)
+        image.set_colorkey(con.INVISIBLE_COLOR, con.RLEACCEL)
         image = image.convert()
         for row in block_matrix:
             for block in row:
-                block_rect = (block.rect.left - offset[0] * CHUNK_SIZE.width, block.rect.top - offset[1] * CHUNK_SIZE.height,*block.rect.size)
+                block_rect = (block.rect.left - offset[0] * con.CHUNK_SIZE.width, block.rect.top - offset[1] * con.CHUNK_SIZE.height,*block.rect.size)
                 image.blit(block.surface, block_rect)
         return image
 
@@ -226,8 +228,8 @@ class LightImage(TransparantBoardImage):
     def __init__(self, pos, main_sprite_group, **kwargs):
         super().__init__(pos, main_sprite_group, **kwargs)
         # first values can be determined when the first rectangle is added
-        self.__left = BOARD_SIZE.width
-        self.__top = BOARD_SIZE.height
+        self.__left = con.BOARD_SIZE.width
+        self.__top = con.BOARD_SIZE.height
         self.__right = 0
         self.__bottom = 0
         self.__updated = False

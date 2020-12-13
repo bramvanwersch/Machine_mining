@@ -1,54 +1,60 @@
 from abc import ABC
 
 import block_classes.building_materials
-import block_classes.ground_materials
-import recipes.base_recipes as br
-from block_classes import materials
-from utility.utilities import Size
+import block_classes.ground_materials as ground_materials
+import recipes.base_recipes as base_recipes
+import block_classes.materials as base_materials
+import utility.utilities as util
 
 
 class FactoryRecipeInterface(ABC):
     pass
 
-class FurnaceRecipe(br.BaseRecipe, FactoryRecipeInterface):
+
+class FurnaceRecipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
     CRAFTING_TIME = 1000
+
     def __init__(self):
         mat = block_classes.building_materials.FurnaceMaterial
-        br.BaseRecipe.__init__(self, mat)
+        base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(3, 3))
+        grid = base_recipes.RecipeGrid(util.Size(3, 3))
 
-        row1 = [block_classes.ground_materials.Stone, block_classes.ground_materials.Stone, block_classes.ground_materials.Stone]
-        row2 = [block_classes.ground_materials.Stone, block_classes.ground_materials.Coal, block_classes.ground_materials.Stone]
+        row1 = [ground_materials.Stone, ground_materials.Stone, ground_materials.Stone]
+        row2 = [ground_materials.Stone, ground_materials.Coal, ground_materials.Stone]
 
         grid.add_all_rows(row1, row2, row1)
         return grid
 
-class CompactStoneRecipe(br.BaseRecipe, FactoryRecipeInterface):
+
+class CompactStoneRecipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
     CRAFTING_TIME = 100
+
     def __init__(self):
         mat = block_classes.building_materials.StoneBrickMaterial
-        br.BaseRecipe.__init__(self, mat)
+        base_recipes.BaseRecipe.__init__(self, mat)
         self.quantity = 2
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(2, 2))
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
 
-        row = [block_classes.ground_materials.Stone, block_classes.ground_materials.Stone]
+        row = [ground_materials.Stone, ground_materials.Stone]
         grid.add_all_rows(row, row)
         return grid
 
-class StonePipe(br.BaseRecipe, FactoryRecipeInterface):
+
+class StonePipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
     CRAFTING_TIME = 1000
+
     def __init__(self):
         mat = block_classes.building_materials.StonePipeMaterial
-        br.BaseRecipe.__init__(self, mat)
+        base_recipes.BaseRecipe.__init__(self, mat)
         self.quantity = 2
 
     def _create_recipe_grid(self):
-        grid = br.RecipeGrid(Size(3, 3))
-        top = [block_classes.ground_materials.Stone, block_classes.ground_materials.Stone, block_classes.ground_materials.Stone]
-        middle = [materials.Air, materials.Air, materials.Air]
+        grid = base_recipes.RecipeGrid(util.Size(3, 3))
+        top = [ground_materials.Stone, ground_materials.Stone, ground_materials.Stone]
+        middle = [base_materials.Air, base_materials.Air, base_materials.Air]
         grid.add_all_rows(top, middle, top)
         return grid

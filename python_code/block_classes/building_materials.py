@@ -2,16 +2,16 @@ from abc import ABC, abstractmethod
 import pygame
 from typing import ClassVar, List, Tuple, Dict
 
-from utility.utilities import Size
-from block_classes.blocks import NetworkBlock, BaseBlock, ContainerBlock
-from block_classes.materials import ImageMaterial, MultiImageMaterial, BaseMaterial, Indestructable, ImageDefinition
+import utility.utilities as util
+import block_classes.blocks as blocks
+import block_classes.materials as base_materials
 
 
 class BuildingMaterial(ABC):
     """
     Abstraction level for all building allows for rapid identification
     """
-    ALLOWED_TASKS = {task for task in BaseMaterial.ALLOWED_TASKS if task not in ["Building"]}
+    ALLOWED_TASKS = {task for task in base_materials.BaseMaterial.ALLOWED_TASKS if task not in ["Building"]}
 
 
 class Building(ABC):
@@ -23,64 +23,69 @@ class Building(ABC):
 
     @property
     @abstractmethod
-    def FULL_SURFACE(self) -> ImageDefinition:
+    def FULL_SURFACE(self) -> base_materials.ImageDefinition:
         pass
 
 
-class TerminalMaterial(Building, Indestructable, MultiImageMaterial):
+class TerminalMaterial(Building, base_materials.Indestructable, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP = 2
-    _BLOCK_TYPE: ClassVar[BaseBlock] = ContainerBlock
-    FULL_SURFACE = ImageDefinition("buildings", (0, 0), size=Size(20, 20))
-    IMAGE_DEFINITIONS: ClassVar[Dict[int, List[ImageDefinition]]] = {1: ImageDefinition("buildings", (0, 0)),
-                                                                     2: ImageDefinition("buildings", (10, 0)),
-                                                                     3: ImageDefinition("buildings", (0, 10)),
-                                                                     4: ImageDefinition("buildings", (10, 10))}
+    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.ContainerBlock
+    FULL_SURFACE = base_materials.ImageDefinition("buildings", (0, 0), size=util.Size(20, 20))
+    IMAGE_DEFINITIONS: ClassVar[Dict[int, List[base_materials.ImageDefinition]]] = \
+        {1: base_materials.ImageDefinition("buildings", (0, 0)),
+         2: base_materials.ImageDefinition("buildings", (10, 0)),
+         3: base_materials.ImageDefinition("buildings", (0, 10)),
+         4: base_materials.ImageDefinition("buildings", (10, 10))}
 
 
-class FurnaceMaterial(Building, BuildingMaterial, MultiImageMaterial):
+class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP = 3
-    _BLOCK_TYPE: ClassVar[BaseBlock] = ContainerBlock
-    FULL_SURFACE = ImageDefinition("buildings", (20, 0), size=Size(20, 20))
-    IMAGE_DEFINITIONS: ClassVar[Dict[int, List[ImageDefinition]]] = {1: ImageDefinition("buildings", (20, 0)),
-                                                                     2: ImageDefinition("buildings", (30, 0)),
-                                                                     3: ImageDefinition("buildings", (20, 10)),
-                                                                     4: ImageDefinition("buildings", (30, 10))}
+    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.ContainerBlock
+    FULL_SURFACE = base_materials.ImageDefinition("buildings", (20, 0), size=util.Size(20, 20))
+    IMAGE_DEFINITIONS: ClassVar[Dict[int, List[base_materials.ImageDefinition]]] = \
+        {1: base_materials.ImageDefinition("buildings", (20, 0)),
+         2: base_materials.ImageDefinition("buildings", (30, 0)),
+         3: base_materials.ImageDefinition("buildings", (20, 10)),
+         4: base_materials.ImageDefinition("buildings", (30, 10))}
 
 
-class FactoryMaterial(Building, BuildingMaterial, MultiImageMaterial):
+class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP = 4
-    _BLOCK_TYPE: ClassVar[BaseBlock] = ContainerBlock
-    FULL_SURFACE = ImageDefinition("buildings", (40, 0), size=Size(20, 20))
-    IMAGE_DEFINITIONS: ClassVar[Dict[int, List[ImageDefinition]]] = {1: ImageDefinition("buildings", (40, 0)),
-                                                                     2: ImageDefinition("buildings", (50, 0)),
-                                                                     3: ImageDefinition("buildings", (40, 10)),
-                                                                     4: ImageDefinition("buildings", (50, 10))}
+    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.ContainerBlock
+    FULL_SURFACE = base_materials.ImageDefinition("buildings", (40, 0), size=util.Size(20, 20))
+    IMAGE_DEFINITIONS: ClassVar[Dict[int, List[base_materials.ImageDefinition]]] = \
+        {1: base_materials.ImageDefinition("buildings", (40, 0)),
+         2: base_materials.ImageDefinition("buildings", (50, 0)),
+         3: base_materials.ImageDefinition("buildings", (40, 10)),
+         4: base_materials.ImageDefinition("buildings", (50, 10))}
 
 
-class StonePipeMaterial(BuildingMaterial, MultiImageMaterial):
+class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP = 5
-    _BLOCK_TYPE: ClassVar[BaseBlock] = NetworkBlock
+    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.NetworkBlock
     # made as follows:
     # first number for the amount of connections (0, 1, 2, 3, 4)
     # then 2 to 4 letters for n = 0, e = 1, s = 2, w = 3, with that order
-    IMAGE_DEFINITIONS: ClassVar[Dict[str, List[ImageDefinition]]] = {"2_13": ImageDefinition("materials", (10, 0)),
-                                                                     "2_02": ImageDefinition("materials", (20, 0)),
-                                                                     "2_23": ImageDefinition("materials", (30, 0)),
-                                                                     "2_03": ImageDefinition("materials", (40, 0)),
-                                                                     "2_12": ImageDefinition("materials", (50, 0)),
-                                                                     "2_01": ImageDefinition("materials", (60, 0)),
-                                                                     "3_013": ImageDefinition("materials", (70, 0)),
-                                                                     "3_012": ImageDefinition("materials", (80, 0)),
-                                                                     "3_023": ImageDefinition("materials", (90, 0)),
-                                                                     "3_123": ImageDefinition("materials", (0, 10)),
-                                                                     "4_0123": ImageDefinition("materials", (10, 10)),
-                                                                     "1_3": ImageDefinition("materials", (20, 10)),
-                                                                     "1_0": ImageDefinition("materials", (30, 10)),
-                                                                     "1_1": ImageDefinition("materials", (40, 10)),
-                                                                     "1_2": ImageDefinition("materials", (50, 10)),
-                                                                     "0_": ImageDefinition("materials", (60, 10))}
+    IMAGE_DEFINITIONS: ClassVar[Dict[str, List[base_materials.ImageDefinition]]] = \
+        {"2_13": base_materials.ImageDefinition("materials", (10, 0)),
+         "2_02": base_materials.ImageDefinition("materials", (20, 0)),
+         "2_23": base_materials.ImageDefinition("materials", (30, 0)),
+         "2_03": base_materials.ImageDefinition("materials", (40, 0)),
+         "2_12": base_materials.ImageDefinition("materials", (50, 0)),
+         "2_01": base_materials.ImageDefinition("materials", (60, 0)),
+         "3_013": base_materials.ImageDefinition("materials", (70, 0)),
+         "3_012": base_materials.ImageDefinition("materials", (80, 0)),
+         "3_023": base_materials.ImageDefinition("materials", (90, 0)),
+         "3_123": base_materials.ImageDefinition("materials", (0, 10)),
+         "4_0123": base_materials.ImageDefinition("materials", (10, 10)),
+         "1_3": base_materials.ImageDefinition("materials", (20, 10)),
+         "1_0": base_materials.ImageDefinition("materials", (30, 10)),
+         "1_1": base_materials.ImageDefinition("materials", (40, 10)),
+         "1_2": base_materials.ImageDefinition("materials", (50, 10)),
+         "0_": base_materials.ImageDefinition("materials", (60, 10))}
+
 
     image_key: str
 
@@ -95,7 +100,7 @@ class StonePipeMaterial(BuildingMaterial, MultiImageMaterial):
     #     return {self.__IMAGE_NAMES[i] : images[i] for i in range(len(images))}
 
 
-class StoneBrickMaterial(ImageMaterial):
+class StoneBrickMaterial(base_materials.ImageMaterial):
 
     HARDNESS = 4
-    IMAGE_DEFINITIONS: ClassVar[List[ImageDefinition]] = ImageDefinition("materials", (0, 0))
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = base_materials.ImageDefinition("materials", (0, 0))

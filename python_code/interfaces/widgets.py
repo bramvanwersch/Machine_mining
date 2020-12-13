@@ -1,11 +1,12 @@
 from abc import ABC
+import pygame
 
-from entities import ZoomableEntity
-from utility.constants import *
-from utility.event_handling import EventHandler
-from interfaces.interface_utility import screen_to_board_coordinate
-from block_classes.building_materials import BuildingMaterial
-import block_classes.buildings
+import entities
+import utility.constants as con
+import utility.utilities as util
+import utility.image_handling as image_handlers
+import utility.event_handling as event_handlers
+import interfaces.interface_utility as interface_util
 
 
 class KeyActionFunctions:
@@ -84,7 +85,7 @@ class SelectionGroup:
             [w.set_selected(True) for w in self.__widgets]
 
 
-class Widget(EventHandler, ABC):
+class Widget(event_handlers.EventHandler, ABC):
     """
     Basic widget class
     """
@@ -187,12 +188,12 @@ class Label(Widget):
         elif len(color) == 4:
             image = pygame.Surface(size).convert_alpha()
         image.fill(color)
-        image.set_colorkey(INVISIBLE_COLOR, RLEACCEL)
+        image.set_colorkey(con.INVISIBLE_COLOR, con.RLEACCEL)
         if border:
             pygame.draw.rect(image, border_color, (0,0,*self.rect.size), 4)
         #add text when defined
         if text:
-            text = FONTS[font_size].render(text, True, text_color)
+            text = con.FONTS[font_size].render(text, True, text_color)
             text_rect = text.get_rect()
             if text_pos == "center":
                 text_pos = (self.rect.width / 2 - text_rect.width / 2, self.rect.height / 2 - text_rect.height / 2)
@@ -246,7 +247,7 @@ class Label(Widget):
         """
         if not add:
             self._clean_image()
-        s = FONTS[font_size].render(str(text), True, color)
+        s = con.FONTS[font_size].render(str(text), True, color)
         rect = s.get_rect()
         if pos == "center":
             pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
@@ -403,20 +404,20 @@ class Pane(Label):
         self.image = self.orig_image.copy()
 
 
-class Frame(ZoomableEntity, Pane):
+class Frame(entities.ZoomableEntity, Pane):
     """
     Container for widgets, that is an entity so it can act as a window. Every
     gui should have a frame to be able to display and handle updates
     """
     def __init__(self, pos, size, *groups, **kwargs):
         Pane.__init__(self, size, **kwargs)
-        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
+        entities.ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
-        self.set_action(K_UP, self.__select_next_widget, values=[K_UP], types=["pressed"])
-        self.set_action(K_DOWN, self.__select_next_widget, values=[K_DOWN], types=["pressed"])
-        self.set_action(K_LEFT, self.__select_next_widget, values=[K_LEFT], types=["pressed"])
-        self.set_action(K_RIGHT, self.__select_next_widget, values=[K_RIGHT], types=["pressed"])
-        self.set_action(K_RETURN, self.__activate_selected_widget, types=["pressed"])
+        self.set_action(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
+        self.set_action(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
+        self.set_action(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
+        self.set_action(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
+        self.set_action(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
 
     def update(self, *args):
         """
@@ -465,12 +466,12 @@ class Frame(ZoomableEntity, Pane):
         else:
             s_rect = self.selected_widget.rect
             self.selected_widget.set_selected(False)
-        if direction == K_UP or direction == K_DOWN:
+        if direction == con.K_UP or direction == con.K_DOWN:
             # make sure widgets are partially overlapping in the x-direction
             elligable_widgets = [w for w in selectable_widgets
                                 if (w.rect.left >= s_rect.left and w.rect.left <= s_rect.right) or
                                 (w.rect.right <= s_rect.right and w.rect.right >= s_rect.left)]
-            if direction == K_UP:
+            if direction == con.K_UP:
                 elligable_widgets_above = [w for w in elligable_widgets if w.rect.centery < s_rect.centery]
                 if len(elligable_widgets_above) > 0:
                     # select the closest above the current
@@ -480,12 +481,12 @@ class Frame(ZoomableEntity, Pane):
                 if len(elligable_widgets_below) > 0:
                     # select the closest bewow the current
                     self.selected_widget = sorted(elligable_widgets_below, key=lambda x: x.rect.centery - s_rect.centery)[0]
-        if direction == K_LEFT or direction == K_RIGHT:
+        if direction == con.K_LEFT or direction == con.K_RIGHT:
             # make sure widgets are partially overlapping in the x-direction
             elligable_widgets = [w for w in selectable_widgets
                                 if (w.rect.top >= s_rect.top and w.rect.top <= s_rect.bottom) or
                                 (w.rect.bottom <= s_rect.bottom and w.rect.bottom >= s_rect.top)]
-            if direction == K_LEFT:
+            if direction == con.K_LEFT:
                 elligable_widgets_west = [w for w in elligable_widgets if w.rect.centerx < s_rect.centerx]
                 if len(elligable_widgets_west) > 0:
                     # select the closest above the current
@@ -506,7 +507,7 @@ class Frame(ZoomableEntity, Pane):
         leftover_events = super().handle_events(events)
         pos = pygame.mouse.get_pos()
         if self.static:
-            pos = screen_to_board_coordinate(pos, self.groups()[0].target, 1)
+            pos = interface_util.screen_to_board_coordinate(pos, self.groups()[0].target, 1)
         hovered = self._find_hovered_widgets(pos)
 
         #handle all events from the most front widget to the most back one.
@@ -632,7 +633,7 @@ class ItemLabel(Label):
         :See: Label._create_image()
         :return: pygame Surface object
         """
-        size = Size(*size)
+        size = util.Size(*size)
         item_size = size - (10, 10)
         # create a background surface
         image = pygame.Surface(size)
@@ -664,165 +665,134 @@ class ItemLabel(Label):
 class ProgressArrow(Label):
     def __init__(self, pos, size, **kwargs):
         super().__init__(pos, size, **kwargs)
-        arrow_image = image_sheets["general"].image_at((0, 0), size=(20, 20))
+        arrow_image = image_handlers.image_sheets["general"].image_at((0, 0), size=(20, 20))
         arrow_image = pygame.transform.scale(arrow_image, (50,50))
-        a_lbl = Label((140, 50), (50, 50), color=INVISIBLE_COLOR)
+        a_lbl = Label((140, 50), (50, 50), color=con.INVISIBLE_COLOR)
         a_lbl.set_image(arrow_image)
 
 ### ALL OLD STUFF ### could come in handy later
 
-# class Button(Widget):
-#     def __init__(self, text="", text_color=(0, 0, 0),
-#                  highlight_color=(252, 151, 0)):
-#         Widget.__init__(self, size, color, **kwargs)
-#         # create a selected and unselected image to swich between
-#         text = self.font30.render(text, True, text_color,
-#                                   self.background_color)
-#         unselected_surface = pygame.Surface(
-#             (text.get_rect().width + 14, text.get_rect().height + 14))
-#         unselected_surface.fill(self.background_color)
-#         self.rect = unselected_surface.blit(text, (
-#         text.get_rect().x + 7, text.get_rect().y + 7))
-#         self.unselected_image = unselected_surface
+
+# class TextLog:
+#     def __init__(self):
+#         self.user_log = {}
+#         self.warning_log = {}
+#         self.location = 0
 #
-#         selected_surface = unselected_surface.copy()
-#         pygame.draw.rect(selected_surface, (0, 0, 0),
-#                          selected_surface.get_rect(), 3)
-#         self.selected_image = selected_surface
+#     def __getitem__(self, key):
+#         return self.user_log[len(self.user_log) - key]
 #
-#         self.image = self.unselected_image
+#     def __len__(self):
+#         return len(self.user_log)
+#
+#     def __iter__(self):
+#         combined_keys = list(self.user_log.keys()) + list(
+#             self.warning_log.keys())
+#         combined_keys.sort()
+#         combined = {**self.user_log, **self.warning_log}
+#         sorted_lines = reversed(list(combined[key] for key in combined_keys))
+#         return iter(sorted_lines)
+#
+#     def append(self, value):
+#         self.user_log[len(self.user_log) + len(self.warning_log)] = value
+#         value.rendered_str = value.rendered_str
+#
+#     def append_um(self, value):
+#         # append user messages like warnings and conformations
+#         self.warning_log[len(self.user_log) + len(self.warning_log)] = value
+#         value.rendered_str = value.rendered_str
+#
+#     def line_up(self):
+#         if not self.user_log:
+#             return Line()
+#         if self.location < len(self.user_log):
+#             self.location += 1
+#         return list(self.user_log.values())[-self.location].copy()
+#
+#     def line_down(self):
+#         if self.location > 0:
+#             self.location -= 1
+#         if self.location == 0:
+#             return Line()
+#         return list(self.user_log.values())[-self.location].copy()
+#
+#
+# class Line:
+#     MAX_LINE_SIZE = 155
+#     BACKGROUND_COLOR = (75, 75, 75)
+#
+#     def __init__(self, text="", color=(0, 255, 0)):
+#         self.color = color
 #         self.text = text
-#         self.selectable = True
-#         self.selected = False
+#         self.line_location = len(self.text)
+#         self.rendered_str = None
+#         self.font18 = pygame.font.Font(
+#             con.DATA_DIR + "//Menu//font//manaspc.ttf", 18)
 #
-#     def set_selected(self, selected):
-#         self.selected = selected
-#         if self.selected:
-#             self.image = self.selected_image
+#     def __str__(self):
+#         return self.text
+#
+#     def render_str(self, blinker=False, header=""):
+#         if self.rendered_str:
+#             return self.rendered_str
 #         else:
-#             self.image = self.unselected_image
-
-
-class TextLog:
-    def __init__(self):
-        self.user_log = {}
-        self.warning_log = {}
-        self.location = 0
-
-    def __getitem__(self, key):
-        return self.user_log[len(self.user_log) - key]
-
-    def __len__(self):
-        return len(self.user_log)
-
-    def __iter__(self):
-        combined_keys = list(self.user_log.keys()) + list(
-            self.warning_log.keys())
-        combined_keys.sort()
-        combined = {**self.user_log, **self.warning_log}
-        sorted_lines = reversed(list(combined[key] for key in combined_keys))
-        return iter(sorted_lines)
-
-    def append(self, value):
-        self.user_log[len(self.user_log) + len(self.warning_log)] = value
-        value.rendered_str = value.rendered_str
-
-    def append_um(self, value):
-        # append user messages like warnings and conformations
-        self.warning_log[len(self.user_log) + len(self.warning_log)] = value
-        value.rendered_str = value.rendered_str
-
-    def line_up(self):
-        if not self.user_log:
-            return Line()
-        if self.location < len(self.user_log):
-            self.location += 1
-        return list(self.user_log.values())[-self.location].copy()
-
-    def line_down(self):
-        if self.location > 0:
-            self.location -= 1
-        if self.location == 0:
-            return Line()
-        return list(self.user_log.values())[-self.location].copy()
-
-
-class Line:
-    MAX_LINE_SIZE = 155
-    BACKGROUND_COLOR = (75, 75, 75)
-
-    def __init__(self, text="", color=(0, 255, 0)):
-        self.color = color
-        self.text = text
-        self.line_location = len(self.text)
-        self.rendered_str = None
-        self.font18 = pygame.font.Font(
-            constants.DATA_DIR + "//Menu//font//manaspc.ttf", 18)
-
-    def __str__(self):
-        return self.text
-
-    def render_str(self, blinker=False, header=""):
-        if self.rendered_str:
-            return self.rendered_str
-        else:
-            return self.__get_render_str(blinker, header)
-
-    def __get_render_str(self, blinker, header):
-        if blinker:
-            t = "{}{}_{}".format(header, self.text[:self.line_location],
-                                 self.text[self.line_location + 1:])
-        else:
-            t = "{}{}".format(header, self.text)
-        # if line is bigger then max of screen seperate the words and put them on separate lines
-        size = [utilities.SCREEN_SIZE.size[0], 0]
-        line_heigth = self.font18.size("k")[1]
-        if len(t) > self.MAX_LINE_SIZE:
-            words = t.split(" ")
-            text = [""]
-            l = 0
-            for word in words:
-                if l + len(word) < self.MAX_LINE_SIZE:
-                    text[len(text) - 1] += word + " "
-                    l += len(word) + 1
-                else:
-                    s = self.font18.size(text[len(text) - 1])
-                    size[1] += line_heigth
-                    l = 0
-                    text.append("")
-            size[1] += line_heigth
-        else:
-            text = [t]
-            size = self.font18.size(t)
-        surf = pygame.Surface((size[0] + 2, size[1] + 2))
-
-        surf.fill(self.BACKGROUND_COLOR)
-        for i, line in enumerate(text):
-            rt = self.font18.render(line, True, self.color)
-            surf.blit(rt, (0, rt.get_size()[1] * i))
-        return surf
-
-    def __len__(self):
-        return len(self.text)
-
-    def __add__(self, other):
-        if self.line_location + other <= len(self.text):
-            self.line_location += other
-
-    def __sub__(self, other):
-        if self.line_location - other >= 0:
-            self.line_location -= other
-
-    def append(self, value):
-        self.text = self.text[:self.line_location] + value + self.text[
-                                                             self.line_location:]
-        self.line_location += len(value)
-
-    def delete(self):
-        if self.line_location > 0:
-            self.line_location -= 1
-            self.text = self.text[:self.line_location] + self.text[
-                                                         self.line_location + 1:]
-
-    def copy(self):
-        return Line(text=self.text, color=self.color)
+#             return self.__get_render_str(blinker, header)
+#
+#     def __get_render_str(self, blinker, header):
+#         if blinker:
+#             t = "{}{}_{}".format(header, self.text[:self.line_location],
+#                                  self.text[self.line_location + 1:])
+#         else:
+#             t = "{}{}".format(header, self.text)
+#         # if line is bigger then max of screen seperate the words and put them on separate lines
+#         size = [con.SCREEN_SIZE.size[0], 0]
+#         line_heigth = self.font18.size("k")[1]
+#         if len(t) > self.MAX_LINE_SIZE:
+#             words = t.split(" ")
+#             text = [""]
+#             l = 0
+#             for word in words:
+#                 if l + len(word) < self.MAX_LINE_SIZE:
+#                     text[len(text) - 1] += word + " "
+#                     l += len(word) + 1
+#                 else:
+#                     s = self.font18.size(text[len(text) - 1])
+#                     size[1] += line_heigth
+#                     l = 0
+#                     text.append("")
+#             size[1] += line_heigth
+#         else:
+#             text = [t]
+#             size = self.font18.size(t)
+#         surf = pygame.Surface((size[0] + 2, size[1] + 2))
+#
+#         surf.fill(self.BACKGROUND_COLOR)
+#         for i, line in enumerate(text):
+#             rt = self.font18.render(line, True, self.color)
+#             surf.blit(rt, (0, rt.get_size()[1] * i))
+#         return surf
+#
+#     def __len__(self):
+#         return len(self.text)
+#
+#     def __add__(self, other):
+#         if self.line_location + other <= len(self.text):
+#             self.line_location += other
+#
+#     def __sub__(self, other):
+#         if self.line_location - other >= 0:
+#             self.line_location -= other
+#
+#     def append(self, value):
+#         self.text = self.text[:self.line_location] + value + self.text[
+#                                                              self.line_location:]
+#         self.line_location += len(value)
+#
+#     def delete(self):
+#         if self.line_location > 0:
+#             self.line_location -= 1
+#             self.text = self.text[:self.line_location] + self.text[
+#                                                          self.line_location + 1:]
+#
+#     def copy(self):
+#         return Line(text=self.text, color=self.color)
