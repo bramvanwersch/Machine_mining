@@ -1,10 +1,10 @@
 import inspect
 from typing import Set
 
-import block_classes
 import block_classes.materials as base_materials
 import block_classes.ground_materials as ground_m
 import block_classes.flora_materials as flora_m
+import block_classes.building_materials as build_m
 import utility.utilities as util
 
 
@@ -25,12 +25,12 @@ def material_instance_from_string(string: str, **kwargs) -> base_materials.BaseM
     Returns:
         material instance
     """
-    if string in dir(block_classes.ground_materials):
-        material = getattr(block_classes.ground_materials, string)
-    elif string in dir(block_classes.flora_materials):
-        material = getattr(block_classes.flora_materials, string)
-    elif string in dir(block_classes.building_materials):
-        material = getattr(block_classes.building_materials, string)
+    if string in dir(ground_m):
+        material = getattr(ground_m, string)
+    elif string in dir(flora_m):
+        material = getattr(flora_m, string)
+    elif string in dir(build_m):
+        material = getattr(build_m, string)
     # elif string in dir(block_classes.machine_materials):
     #     material = getattr(block_classes.machine_materials, string)
     else:

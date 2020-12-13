@@ -153,13 +153,13 @@ class Network(util.Serializer):
         :param remove: if the block is removed or not.
         :return: a list Blocks that need an update to theire surface
         """
-        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], block_classes.NetworkBlock)]
+        direction_indexes = [str(i) for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], block_classes.NetworkEdgeBlock)]
         direction_indexes = "".join(direction_indexes)
         image_name = "{}_{}".format(len(direction_indexes), direction_indexes)
         if not remove:
             block.material.image_key = image_name
         if update:
-            return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], block_classes.NetworkBlock)\
+            return [surrounding_blocks[i] for i in range(len(surrounding_blocks)) if isinstance(surrounding_blocks[i], block_classes.NetworkEdgeBlock)\
                     and not isinstance(surrounding_blocks[i], block_classes.ContainerBlock)]
         return []
 

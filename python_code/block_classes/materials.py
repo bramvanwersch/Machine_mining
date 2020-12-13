@@ -28,7 +28,7 @@ class BaseMaterial(ABC):
     # group 0 are not transparant
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 0
 
-    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.Block
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.Block
     BUILDABLE: ClassVar[bool] = True
     BUILDING: ClassVar[bool] = False
 
@@ -78,7 +78,7 @@ class BaseMaterial(ABC):
     def full_surface(self) -> pygame.Surface:
         return self._surface
 
-    def to_block(self, pos: Tuple[int, int], **kwargs) -> blocks.BaseBlock:
+    def to_block(self, pos: Tuple[int, int], **kwargs) -> blocks.Block:
         """Convert a material into the appropriate block with that material
 
         Args:
@@ -228,7 +228,7 @@ class Air(ColorMaterial):
     ALLOWED_TASKS: ClassVar[Set] = {task for task in BaseMaterial.ALLOWED_TASKS if task not in ["Mining"]}
     HARDNESS: ClassVar[int] = 0
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 1
-    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.AirBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.Block
     COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition(con.INVISIBLE_COLOR[:-1], more_colors=False,
                                                                    border=False)
 

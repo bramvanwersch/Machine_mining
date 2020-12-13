@@ -29,7 +29,7 @@ class Building(ABC):
 
 class TerminalMaterial(Building, base_materials.Indestructable, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP = 2
-    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
     FULL_SURFACE = base_materials.ImageDefinition("buildings", (0, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[base_materials.ImageDefinition]]] = \
         {1: base_materials.ImageDefinition("buildings", (0, 0)),
@@ -41,7 +41,7 @@ class TerminalMaterial(Building, base_materials.Indestructable, base_materials.M
 class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP = 3
-    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
     FULL_SURFACE = base_materials.ImageDefinition("buildings", (20, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[base_materials.ImageDefinition]]] = \
         {1: base_materials.ImageDefinition("buildings", (20, 0)),
@@ -53,7 +53,7 @@ class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
 class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP = 4
-    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
     FULL_SURFACE = base_materials.ImageDefinition("buildings", (40, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[base_materials.ImageDefinition]]] = \
         {1: base_materials.ImageDefinition("buildings", (40, 0)),
@@ -64,7 +64,7 @@ class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
 
 class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP = 5
-    _BLOCK_TYPE: ClassVar[blocks.BaseBlock] = blocks.NetworkBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.NetworkEdgeBlock
     # made as follows:
     # first number for the amount of connections (0, 1, 2, 3, 4)
     # then 2 to 4 letters for n = 0, e = 1, s = 2, w = 3, with that order

@@ -113,7 +113,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         building_objects = [getattr(buildings, dct["type"]).from_dict(**dct) for dct in builds]
         [inst.add_building(build) for build in building_objects]
         # add the network blocks back
-        inst.add_blocks(*[block_classes.NetworkBlock(pos, getattr(build_materials, type_)) for pos, type_ in pipe_coords])
+        inst.add_blocks(*[block_classes.NetworkEdgeBlock(pos, getattr(build_materials, type_)) for pos, type_ in pipe_coords])
 
     def __grow_flora(self):
         for row in self.chunk_matrix:
@@ -238,13 +238,13 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 chunk = self.__chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
-            if isinstance(block, block_classes.NetworkBlock):
+            if isinstance(block, block_classes.NetworkEdgeBlock):
                 self.pipe_network.remove_pipe(block)
             surrounding_blocks = self.surrounding_blocks(block)
             for index, s_block in enumerate(surrounding_blocks):
                 if s_block == None:
                     continue
-                elif isinstance(s_block, block_classes.NetworkBlock) and not isinstance(s_block, block_classes.ContainerBlock):
+                elif isinstance(s_block, block_classes.NetworkEdgeBlock) and not isinstance(s_block, block_classes.ContainerBlock):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
                     self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is still solid
@@ -279,7 +279,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         building_instance = self.__buildings.pop(block.id, None)
         if building_instance == None:
             return
-        if isinstance(block, block_classes.NetworkBlock):
+        if isinstance(block, block_classes.NetworkEdgeBlock):
             self.pipe_network.remove_node(building_instance)
         blocks = building_instance.blocks
         for row in blocks:
@@ -301,7 +301,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             if isinstance(block, buildings.Building):
                 self.add_building(block)
             else:
-                if isinstance(block, block_classes.NetworkBlock):
+                if isinstance(block, block_classes.NetworkEdgeBlock):
                     update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update))
                     if update:
                         self.pipe_network.add_pipe(block)

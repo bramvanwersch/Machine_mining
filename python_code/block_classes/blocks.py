@@ -6,9 +6,10 @@ import utility.constants as con
 import utility.utilities as util
 if TYPE_CHECKING:
     import block_classes.materials as base_materials
+    import inventories
 
 
-class BaseBlock(ABC):
+class Block(ABC):
     """
     Base class for the block_classes in image matrices
     """
@@ -16,120 +17,111 @@ class BaseBlock(ABC):
 
     rect: pygame.Rect
     material: "base_materials.BaseMaterial"
+    _action_function: Callable
+    id: str
+    light_level: int
 
-    def __init__(self, pos: Tuple, material, id_: str = None, action: Callable = None):
+    def __init__(
+        self,
+        pos: List[int],
+        material: "base_materials.BaseMaterial",
+        id_: str = None,
+        action: Callable = None,
+        light_level: int = 0
+    ):
         self.rect = pygame.Rect((pos[0], pos[1], self.SIZE.width, self.SIZE.height))
         self.material = material
         self._action_function = action
         self.id = id_ if id_ else util.unique_id()
-        self.light_level = 0
+        self.light_level = light_level
 
     def __getattr__(self, item):
         return getattr(self.material, item)
 
-    def action(self):
-        """
-        Function to allow a action being triggered when needed
-        """
+    def action(self) -> None:
+        """Trigger action defined in self._action_function"""
         if self._action_function is not None:
             self._action_function()
 
     @property
-    def coord(self):
-        """
-        Simplify getting the coordinate of a block
-
-        :return: the topleft cooridnate of the block rectangle.
-        """
+    def coord(self) -> Tuple[int, int]:
+        """Convenience coordinate"""
         return self.rect.topleft
 
     def is_task_allowded(self, task_type: str) -> bool:
-        return task_type in self.allowed_tasks
+        """Check if the material allows a task to be performed"""
+        return task_type in self.material.allowed_tasks
 
-    def name(self):
-        """
-        The name of the material of the block
-
-        :return: a string
-        """
+    def name(self) -> str:
+        """name of material"""
         return self.material.name()
 
     def __eq__(self, other):
-        """
-        Method used when == is called using this object
-
-        :param other: a string that is the name of a block
-        :return: a boolean
-        """
+        """Compare this block instance with a string, comparing the name of this block with another"""
+        if not isinstance(other, str) and other is not None:
+            raise NotImplementedError("For comparissons with blocks use strings")
         return other == self.material.name()
 
     def __hash__(self):
-        """
-        Function for hashing a block. Kind of obsolote
-        TODO check how usefull this is and if neccesairy
-        :return: a hash
-        """
-        return hash(str(self.rect.topleft))
+        return hash((self.coord, self.name()))
 
 
-class AirBlock(BaseBlock):
-    """
-    Special case of a block class that is an empty block with no surface
-    """
-    def __init__(self, pos, material, **kwargs):
+class NetworkEdgeBlock(Block):
+    """Block that is part of a network"""
+    network_group: int
+
+    def __init__(
+        self,
+        pos: List[int],
+        material: "base_materials.BaseMaterial",
+        group: int = 1,
+        **kwargs
+    ):
         super().__init__(pos, material, **kwargs)
+        self.network_group = group
 
 
-class Block(BaseBlock):
-    """
-    A normal block containing anythin but air
-    """
-    def __init__(self, pos, material, **kwargs):
-        super().__init__(pos, material, **kwargs)
-        self.rect = self.surface.get_rect(topleft=pos)
-
-    @property
-    def surface(self):
-        return self.material.surface
-
-
-class NetworkBlock(Block):
-    def __init__(self, pos, material, **kwargs):
-        super().__init__(pos, material, **kwargs)
-        self.network_group = 1
-
-
-class ContainerBlock(NetworkBlock):
+class ContainerBlock(NetworkEdgeBlock):
     """
     Block that has an inventory
     """
-    #TODO take a critical look at this block and inheritance to container Inventory
-    def __init__(self, pos, material, **kwargs):
+    inventory: "inventories.Inventory"
+
+    def __init__(
+        self,
+        pos: List[int],
+        material: "base_materials.BaseMaterial",
+        inventory: "inventories.Inventory" = None,
+        **kwargs
+    ):
         super().__init__(pos, material, **kwargs)
-        #how full the terminal is does not matter
-        self.inventory = None
-
-    def add(self, *items):
-        if self.inventory is not None:
-            self.inventory.add_items(*items)
+        self.inventory = inventory
 
 
-class MultiBlock(BaseBlock, ABC):
+class MultiBlock(Block, ABC):
     # have this here since you are technically allowed to call the size
     MULTIBLOCK_DIMENSION: ClassVar[util.Size] = util.Size(1, 1)
-    SIZE = BaseBlock.SIZE * MULTIBLOCK_DIMENSION
+    SIZE = Block.SIZE * MULTIBLOCK_DIMENSION
 
-    def __init__(self, pos, material, **kwargs):
+    blocks: List[List[Block]]
+
+    def __init__(
+        self,
+        pos: List[int],
+        material: "base_materials.BaseMaterial",
+        **kwargs
+    ):
         super().__init__(pos, material, **kwargs)
         self.blocks = self._get_blocks()
 
+    # noinspection PyPep8Naming
     @property
     @abstractmethod
     def MULTIBLOCK_DIMENSION(self) -> ClassVar[util.Size]:
         pass
 
-    def _get_blocks(self) -> List[List[BaseBlock]]:
-        # TODO this is not great
+    def _get_blocks(self) -> List[List[Block]]:
+        # has to be the case to prevent circular imports
         import block_classes.block_utility as block_utility
         blocks = []
         topleft = self.rect.topleft
