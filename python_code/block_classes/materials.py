@@ -78,7 +78,7 @@ class BaseMaterial(ABC):
     def full_surface(self) -> pygame.Surface:
         return self._surface
 
-    def to_block(self, pos: Tuple[int, int], **kwargs) -> blocks.Block:
+    def to_block(self, pos: List[int], **kwargs) -> blocks.Block:
         """Convert a material into the appropriate block with that material
 
         Args:
