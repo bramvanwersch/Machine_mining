@@ -31,6 +31,7 @@ class BaseMaterial(ABC):
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.Block
     BUILDABLE: ClassVar[bool] = True
     BUILDING: ClassVar[bool] = False
+    __slots__ = ("_surface", "__transparant_group")
 
     _surface: pygame.Surface
     __transparant_group: int
@@ -131,6 +132,7 @@ class ColorDefinition:
     """Defines a range of colors based on input parameters, is optimized on order to prevent repeated color image
     creation"""
     BORDER_DARKER: ClassVar[int] = 20
+    __slots__ = ("__colors", "__images", "__surface_size", "__border_allowed")
 
     __images: List[pygame.Surface]
     __colors: List[Tuple[int, int, int]]
@@ -241,6 +243,8 @@ class BorderMaterial(ColorMaterial):
 
 class ImageDefinition:
     """Define an image and make sure that image creation is not done repeatedly"""
+    __slots__ = ("__sheet_name", "__image_location", "__color_key", "__flip", "__size", "__image_size", "__images")
+
     __sheet_name: str
     __image_location: Tuple[int, int]
     __color_key: Tuple[int, int, int]
@@ -317,6 +321,7 @@ class ImageMaterial(BaseMaterial, ABC):
 class MultiImageMaterial(ImageMaterial, ABC):
     """Class for materials that have multiple images associated with them that can be bound to keys in a dictionary"""
     IMAGE_DEFINITIONS: ClassVar[Dict[Any, ImageDefinition]]
+    __slots__ = "image_key"
 
     image_key: int
     _surface: Dict[Any, List[pygame.Surface]]
