@@ -14,6 +14,7 @@ class Block(ABC):
     Base class for the block_classes in image matrices
     """
     SIZE: ClassVar[util.Size] = con.BLOCK_SIZE
+    __slots__ = "rect", "material", "_action_function", "id", "light_level"
 
     rect: pygame.Rect
     material: "base_materials.BaseMaterial"
@@ -68,6 +69,8 @@ class Block(ABC):
 
 class NetworkEdgeBlock(Block):
     """Block that is part of a network"""
+    __slots__ = "network_group"
+
     network_group: int
 
     def __init__(
@@ -85,6 +88,8 @@ class ContainerBlock(NetworkEdgeBlock):
     """
     Block that has an inventory
     """
+    __slots__ = "inventory"
+
     inventory: "inventories.Inventory"
 
     def __init__(
@@ -102,6 +107,7 @@ class MultiBlock(Block, ABC):
     # have this here since you are technically allowed to call the size
     MULTIBLOCK_DIMENSION: ClassVar[util.Size] = util.Size(1, 1)
     SIZE = Block.SIZE * MULTIBLOCK_DIMENSION
+    __slots__ = "blocks"
 
     blocks: List[List[Block]]
 
@@ -131,7 +137,7 @@ class MultiBlock(Block, ABC):
             for column_i in range(self.MULTIBLOCK_DIMENSION.width):
                 material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key_count)
                 image_key_count += 1
-                pos = (topleft[0] + column_i * con.BLOCK_SIZE.width, topleft[1] + row_i * con.BLOCK_SIZE.height)
+                pos = [topleft[0] + column_i * con.BLOCK_SIZE.width, topleft[1] + row_i * con.BLOCK_SIZE.height]
                 block_row.append(material.to_block(pos, id_=self.id, action=self._action_function))
             blocks.append(block_row)
         return blocks

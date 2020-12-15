@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import ClassVar, List, Tuple, Dict, Set
+import pygame
 
 import utility.utilities as util
 import block_classes.blocks as blocks
@@ -15,6 +16,10 @@ class Building(ABC):
     BUILDING: ClassVar[bool] = True
 
     FULL_SURFACE: ClassVar[base_materials.ImageDefinition]
+
+    @property
+    def full_surface(self) -> pygame.Surface:
+        return self.FULL_SURFACE.images()[0]
 
     # noinspection PyPep8Naming
     @property

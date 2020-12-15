@@ -13,15 +13,6 @@ import recipes.recipe_utility as r_constants
 import network.pipes as network
 
 
-def block_i_from_material(material):
-    if isinstance(material, build_materials.BuildingMaterial):
-        name = material.name().replace("Material", "")
-        building_block_i = globals()[name]
-    else:
-        building_block_i = material.BLOCK_TYPE
-    return building_block_i
-
-
 def building_type_from_material(material):
     return material_mapping[material.name()]
 
@@ -60,6 +51,7 @@ class InterfaceBuilding(Building, ABC):
 
         self.interface = self.INTERFACE_TYPE(self, sprite_group, recipes=recipes)
 
+    # noinspection PyPep8Naming
     @property
     @abstractmethod
     def INTERFACE_TYPE(self):
@@ -120,6 +112,6 @@ class Factory(InterfaceBuilding, network.NetworkNode):
         network.NetworkNode.__init__(self)
 
 
-material_mapping = {"TerminalMaterial" : Terminal,
-                    "FurnaceMaterial" : Furnace,
-                    "FactoryMaterial" : Factory}
+material_mapping = {"TerminalMaterial": Terminal,
+                    "FurnaceMaterial": Furnace,
+                    "FactoryMaterial": Factory}
