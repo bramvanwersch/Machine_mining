@@ -13,7 +13,7 @@ class BuildingMaterial(ABC):
 
 
 class Building(ABC):
-    BUILDING: ClassVar[bool] = True
+    """abstraction level for all buildings"""
 
     FULL_SURFACE: ClassVar[base_materials.ImageDefinition]
 

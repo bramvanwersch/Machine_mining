@@ -499,7 +499,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 if item == None:
                     return
                 material = small_interface.get_selected_item().material
-                building_block_i = material.BLOCK_TYPE
+                building_block_i = material.block_type
                 self.add_building_rectangle(self.get_key(1).event.pos, size=building_block_i.SIZE)
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
@@ -664,7 +664,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             #this should always be 1 block
             block = blocks[0]
             material = small_interface.get_selected_item().material
-            building_block_i = material.BLOCK_TYPE
+            building_block_i = material.block_type
             group = block.transparant_group
             if group != 0:
                 block.transparant_group = util.unique_id()

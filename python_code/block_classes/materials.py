@@ -30,7 +30,6 @@ class BaseMaterial(ABC):
 
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.Block
     BUILDABLE: ClassVar[bool] = True
-    BUILDING: ClassVar[bool] = False
     __slots__ = "_surface", "__transparant_group"
 
     _surface: pygame.Surface
@@ -78,6 +77,10 @@ class BaseMaterial(ABC):
     @property
     def full_surface(self) -> pygame.Surface:
         return self._surface
+
+    @property
+    def block_type(self) -> type:
+        return self._BLOCK_TYPE
 
     def to_block(self, pos: List[int], **kwargs) -> blocks.Block:
         """Convert a material into the appropriate block with that material

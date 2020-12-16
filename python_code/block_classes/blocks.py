@@ -49,6 +49,14 @@ class Block(ABC):
         """Convenience coordinate"""
         return self.rect.topleft
 
+    @property
+    def transparant_group(self):
+        return self.material.transparant_group
+
+    @transparant_group.setter
+    def transparant_group(self, value):
+        self.material.transparant_group = value
+
     def is_task_allowded(self, task_type: str) -> bool:
         """Check if the material allows a task to be performed"""
         return task_type in self.material.allowed_tasks
