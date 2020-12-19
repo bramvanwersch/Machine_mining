@@ -3,6 +3,7 @@ import pygame
 import interfaces.widgets as widgets
 import utility.constants as con
 import interfaces.base_interface as base_interfaces
+import scenes
 import utility.utilities as util
 
 # globals
@@ -104,10 +105,10 @@ class PauseWindow(base_interfaces.Window):
         self.add_widget(("center", y_coord), exit_button)
 
     def __back_to_main_menu(self):
-        util.scenes.set_active_scene("MainMenu")
+        scenes.scenes.set_active_scene("MainMenu")
 
     def __save(self):
-        util.scenes["Game"].save()
+        scenes.scenes["Game"].save()
 
 
 class TerminalWindow(base_interfaces.Window):

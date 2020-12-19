@@ -8,21 +8,23 @@ class EventHandler(ABC):
     Class for handling all sorts of events issued by the user, all events that
     are defined as part of this handler are consumed while looping trough them
     """
-    def __init__(self, recordable_keys):
+    def __init__(self, recordable_keys=None):
         """
         :param recordable_events: a list of keys that the handler should record
         """
         if recordable_keys == "ALL":
-            self.__pressed_keys = {key : Key(key) for key in con.KEYBOARD_KEYS}
-        else:
+            self.__pressed_keys = {key: Key(key) for key in con.KEYBOARD_KEYS}
+        elif recordable_keys:
             self.__pressed_keys = {key: Key(key) for key in recordable_keys}
+        else:
+            self.__pressed_keys = {}
         self._dragging = False
 
     def add_recordable_key(self, key):
         if key not in self.__pressed_keys:
             self.__pressed_keys[key] = Key(key)
 
-    def __record_pressed_keys(self, events):
+    def __record_pressed_keys(self, events, consume=True):
         """
         Record what buttons are pressed in self.__pressed_keys dictionary
 
@@ -57,8 +59,10 @@ class EventHandler(ABC):
                     leftover_events.append(event)
             else:
                 leftover_events.append(event)
-
-        return leftover_events
+        if consume:
+            return leftover_events
+        else:
+            return events
 
     def get_key(self, key):
         if key in self.__pressed_keys:
@@ -89,13 +93,13 @@ class EventHandler(ABC):
                 unpressed_keys.append(self.__pressed_keys[key])
         return unpressed_keys
 
-    def handle_events(self, events):
+    def handle_events(self, events, consume=True):
         """
         Handles events for the inheriting class.
         :param events:
         :return:
         """
-        return self.__record_pressed_keys(events)
+        return self.__record_pressed_keys(events, consume)
 
 class Key:
     def __init__(self, name):

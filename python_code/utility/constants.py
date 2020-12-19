@@ -125,11 +125,6 @@ MULTI_TASKS = \
      "Selecting": TaskConstants(False), "Empty inventory": TaskConstants(True), "Fetch": TaskConstants(True),
      "Request": TaskConstants(True), "Deliver": TaskConstants(True)}
 
-# interface control
-CRAFTING = K_c
-
-INTERFACE_KEYS = [CRAFTING, K_ESCAPE, BUILDING]
-
 # debug controls
 SHOW_BLOCK_BORDER = True
 FPS = True

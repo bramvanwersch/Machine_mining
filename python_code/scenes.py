@@ -1,19 +1,22 @@
+#!/usr/bin/python3
+
+# library imports
 import os
 import warnings
 from abc import ABC
-
 import pygame
 
+# own imports
 import board.board
 import entities
 import tasks
 from board import sprite_groups as sprite_groups, chunks as chunks
 from interfaces import widgets as widgets, interface_utility as interface_util, small_interfaces as small_interfaces, \
     managers as window_managers
-from utility import constants as con, utilities as util
+from utility import constants as con, utilities as util, event_handling
 
 
-scenes = None
+scenes: "SceneManager"
 
 
 def create_scene_manager():
@@ -45,12 +48,13 @@ class SceneManager:
         return self.active_scene.going
 
 
-class Scene(ABC):
-    def __init__(self, screen, sprite_group):
+class Scene(event_handling.EventHandler, ABC):
+    def __init__(self, screen, sprite_group, recorder_events="ALL"):
+        event_handling.EventHandler.__init__(self, recorder_events)
         self.screen = screen
         self.rect = self.screen.get_rect()
 
-        #value used for the main regulator to determine what rectangles of the screen to update
+        # value used for the main regulator to determine what rectangles of the screen to update
         self.board_update_rectangles = []
         self.sprite_group = sprite_group
 
@@ -59,16 +63,19 @@ class Scene(ABC):
 
     def update(self):
         self.scene_updates()
-        self.handle_events()
+        self.scene_event_handling()
         self.sprite_group.update()
         self.draw()
 
-    def handle_events(self):
+    def scene_event_handling(self, consume=False):
+        """Starting point for event handling"""
         if len(pygame.event.get(con.QUIT)) > 0:
             self.going = False
             return []
         events = pygame.event.get()
-        return events
+        # record all pressed events for this scene but do not consume them
+        leftovers = self.handle_events(events, consume)
+        return leftovers
 
     def set_update_rectangles(self):
         # default is the full screen least efficient
@@ -101,7 +108,7 @@ class MainMenu(Scene):
 
     def __init_widgets(self):
         self.main_menu_frame = widgets.Frame((0, 0), util.Size(*self.rect.size), self.sprite_group,
-                                     color=(173, 94, 29), static=False)
+                                             color=(173, 94, 29), static=False)
 
         button_size = util.Size(100, 40)
         y_coord = 200
@@ -124,22 +131,24 @@ class MainMenu(Scene):
         quit_button.set_action(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
-    def handle_events(self):
-        events = super().handle_events()
+    def scene_event_handling(self, consume=False):
+        events = super().scene_event_handling(consume=consume)
         self.main_menu_frame.handle_events(events)
 
     def __start_game(self):
+        global scenes
         game = Game(self.screen)
         executor = interface_util.ThreadPoolExecutorStackTraced()
         future = executor.submit(game.start)
-        util.scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
-        util.scenes.set_active_scene(LoadingScreen.name())
+        scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
+        scenes.set_active_scene(LoadingScreen.name())
 
     def __load_game(self):
+        global scenes
         warnings.warn("Game loading is not avaialable yet", util.NotImplementedWarning)
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "r") as fp:
             game = Game.from_json(fp)
-        util.scenes[Game.name()] = game
+        scenes[Game.name()] = game
 
     def __open_settings(self):
         warnings.warn("No settings available yet", util.NotImplementedWarning)
@@ -162,11 +171,12 @@ class LoadingScreen(Scene):
 
     def __init_widgets(self):
         self.__loading_frame = widgets.Frame((0, 0), util.Size(*self.rect.size), self.sprite_group,
-                                     color=(173, 94, 29), static=False)
+                                             color=(173, 94, 29), static=False)
         self.__progress_label = widgets.Label((500, 20), (173, 94, 29))
         self.__loading_frame.add_widget(("center", "center"), self.__progress_label)
 
     def scene_updates(self):
+        global scenes
         super().scene_updates()
         if hasattr(self.loading_scene, "progress"):
             self.__progress_label.set_text(self.loading_scene.progress, "center", font_size=30)
@@ -176,8 +186,8 @@ class LoadingScreen(Scene):
                 # if an exception was raised make sure to exit
                 exit(-1)
             self.executor.shutdown()
-            util.scenes[self.loading_scene.name()] = self.loading_scene
-            util.scenes.set_active_scene(self.loading_scene.name())
+            scenes[self.loading_scene.name()] = self.loading_scene
+            scenes.set_active_scene(self.loading_scene.name())
             self.__finished_loading = True
 
     def draw(self):
@@ -189,7 +199,7 @@ class LoadingScreen(Scene):
 
 
 class Game(Scene, util.Serializer):
-    def __init__(self, screen, camera_center=None, board=None, task_control=None):
+    def __init__(self, screen, camera_center=None, board_=None, task_control=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
@@ -204,10 +214,11 @@ class Game(Scene, util.Serializer):
         # zoom variables
         self._zoom = 1.0
         self.progress = ""
-        self.board = board
+        self.board = board_
         self.task_control = task_control
 
         # ready made windows
+        self.window_manager = None
         self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                   self.sprite_group) if self.board else None
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
@@ -233,20 +244,23 @@ class Game(Scene, util.Serializer):
         # for some more elaborate setting up of variables
         self.progress = "Populating with miners..."
         start_chunk = self.board.get_start_chunk()
-        appropriate_location = (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width + start_chunk.rect.left,
-            + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
+        appropriate_location = \
+            (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width +
+             start_chunk.rect.left, + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
             entities.Worker(appropriate_location, self.sprite_group, board=self.board, task_control=self.task_control)
         # add one of the imventories of the terminal
         if self.building_interface is None:
             self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
-                                                                  self.sprite_group)
+                                                                      self.sprite_group)
         self.camera_center.rect.center = start_chunk.rect.center
 
     def to_dict(self):
         return {
             "camera_center": self.camera_center.to_dict(),
-            "entities": [sprite.to_dict() for sprite in self.sprite_group.sprites() if not isinstance(sprite, widgets.Frame) and not isinstance(sprite, chunks.BoardImage) and sprite is not self.camera_center],
+            "entities": [sprite.to_dict() for sprite in self.sprite_group.sprites()
+                         if not isinstance(sprite, widgets.Frame) and not
+                         isinstance(sprite, chunks.BoardImage) and sprite is not self.camera_center],
             "board": self.board.to_dict()
         }
 
@@ -276,34 +290,22 @@ class Game(Scene, util.Serializer):
         super().draw()
         self.draw_debug_info()
 
-    def handle_events(self):
-        events = super().handle_events()
-        cam_events = []
-        leftover_events = []
-        for event in events:
-            if event.type == con.KEYDOWN and event.key in con.INTERFACE_KEYS:
-                self.__handle_interface_selection_events(event)
-                # allow these events to trigger after
-                leftover_events.append(event)
+    def scene_event_handling(self, consume=False):
+        events = super().scene_event_handling()
+        self.__handle_interface_selection_events()
+        # this means that events going to the camera center can not be used by any other window/scene
+        leftover_events = self.camera_center.handle_events(events)
+        leftover_events = self.window_manager.handle_events(leftover_events)
 
-            elif (event.type == con.KEYDOWN or event.type == con.KEYUP) and \
-                    event.key in con.CAMERA_KEYS:
-                cam_events.append(event)
-            else:
-                leftover_events.append(event)
-        if cam_events:
-            self.camera_center.handle_events(cam_events)
-        if leftover_events:
-            leftover_events = self.window_manager.handle_events(leftover_events)
-            for event in leftover_events:
-                if event.type == con.MOUSEBUTTONDOWN or event.type == con.MOUSEBUTTONUP:
-                    if event.button == 4:
-                        self.__zoom_entities(0.1)
-                    elif event.button == 5:
-                        self.__zoom_entities(-0.1)
-                if event.type == con.KEYUP and event.key == con.K_ESCAPE:
-                    self.window_manager.add(self.pause_window)
-            self.board.handle_events(leftover_events)
+        # this means that events where pushed to the board TODO make sure to change when moving opening to board
+        if len(self.window_manager.windows) == 0:
+            if self.pressed(4) or self.unpressed(4):
+                self.__zoom_entities(0.1)
+            if self.pressed(5) or self.unpressed(5):
+                self.__zoom_entities(-0.1)
+            if self.unpressed(con.K_ESCAPE):
+                self.window_manager.add(self.pause_window)
+        self.board.handle_events(leftover_events)
 
     def set_update_rectangles(self):
         # get a number of rectangles that encompass the changed board state
@@ -321,7 +323,7 @@ class Game(Scene, util.Serializer):
         for row in self.board.chunk_matrix:
             for chunk in row:
                 rect = chunk.layers[0].get_update_rect()
-                if rect == None:
+                if rect is None:
                     continue
                 vision_u_rects.append(rect)
 
@@ -363,7 +365,7 @@ class Game(Scene, util.Serializer):
             y = 1 + (con.SCREEN_SIZE.height / 2 - c[1]) / (con.SCREEN_SIZE.height / 2)
         else:
             y = 1
-        visible_rect = pygame.Rect(0, 0, int(con.SCREEN_SIZE.width * x), int(con.SCREEN_SIZE.height * y ))
+        visible_rect = pygame.Rect(0, 0, int(con.SCREEN_SIZE.width * x), int(con.SCREEN_SIZE.height * y))
         visible_rect.center = c
 
         self._visible_entities = 0
@@ -379,7 +381,6 @@ class Game(Scene, util.Serializer):
     def draw_debug_info(self):
         x_coord = 5
         line_distance = 12
-        #is big enough
         width = 70
 
         y_coord = 5
@@ -389,8 +390,8 @@ class Game(Scene, util.Serializer):
             self.screen.blit(fps, (x_coord, y_coord))
             y_coord += line_distance
         if con.ENTITY_NMBR:
-            en = con.FONTS[18].render("e: {}/{}".format(self._visible_entities, len(self.sprite_group.sprites())),
-                                  True, pygame.Color('white'))
+            en = con.FONTS[18].render("e: {}/{}".format(self._visible_entities, len(self.sprite_group.sprites())), True,
+                                      pygame.Color('white'))
             self.screen.blit(en, (x_coord, y_coord))
             y_coord += line_distance
         if con.SHOW_ZOOM:
@@ -399,9 +400,8 @@ class Game(Scene, util.Serializer):
             y_coord += line_distance
         self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])
 
-#handeling of events
-    def __handle_interface_selection_events(self, event):
-        if event.key == con.BUILDING:
+    def __handle_interface_selection_events(self):
+        if self.pressed(con.BUILDING):
             self.window_manager.add(self.building_interface)
 
     def __zoom_entities(self, increase):
@@ -412,7 +412,7 @@ class Game(Scene, util.Serializer):
         """
         prev_zoom_level = self._zoom
         self._zoom = round(min(max(0.4, self._zoom + increase), 2), 1)
-        #prevent unnecesairy recalculations
+        # prevent unnecesairy recalculations
         if prev_zoom_level != self._zoom:
             for sprite in self.sprite_group.sprites():
                 if sprite.zoomable:
