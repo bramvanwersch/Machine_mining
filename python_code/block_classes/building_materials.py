@@ -1,7 +1,11 @@
+#!/usr/bin/python3
+
+# library imports
 from abc import ABC, abstractmethod
 from typing import ClassVar, List, Tuple, Dict, Set
 import pygame
 
+# own imports
 import utility.utilities as util
 import block_classes.blocks as blocks
 import block_classes.materials as base_materials

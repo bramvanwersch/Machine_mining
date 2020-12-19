@@ -1,6 +1,10 @@
+#!/usr/bin/python3
+
+# library imports
 import inspect
 from typing import Set
 
+# own imports
 import block_classes.materials as base_materials
 import block_classes.ground_materials as ground_m
 import block_classes.flora_materials as flora_m

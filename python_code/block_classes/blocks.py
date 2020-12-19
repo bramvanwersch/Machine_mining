@@ -1,7 +1,11 @@
+#!/usr/bin/python3
+
+# library imports
 import pygame
 from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
+# own imports
 import utility.constants as con
 import utility.utilities as util
 if TYPE_CHECKING:

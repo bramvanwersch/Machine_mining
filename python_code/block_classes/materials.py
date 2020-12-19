@@ -1,4 +1,5 @@
-"""Base material methods that form branches for more specific materials"""
+#!/usr/bin/python3
+"""Base material methods"""
 
 # library imports
 import pygame

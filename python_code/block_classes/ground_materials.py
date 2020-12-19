@@ -1,4 +1,4 @@
-
+#!/usr/bin/python3
 
 # library imports
 from abc import ABC, abstractmethod
@@ -16,74 +16,66 @@ class FillerMaterial(ABC):
 
 
 class TopDirt(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 2)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((137, 79, 33))
 
 
 class Stone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 155, 155))
 
 
 class GreenStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((126, 155, 126))
 
 
 class RedStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 126, 126))
 
 
 class BlueStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((126, 126, 155))
 
 
 class YellowStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 155, 126))
 
 
 class StoneCollection(base_materials.MaterialCollection):
-
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {Stone: 0.95, GreenStone: 0.01, RedStone:  0.01, BlueStone: 0.01, YellowStone: 0.01}
 
 
 class Granite(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     HARDNESS: ClassVar[int] = 10
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 7)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((105, 89, 76))
 
 
 class FinalStone(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-
     HARDNESS: ClassVar[int] = 20
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((199, 127, 195))
 
 
 class Dirt(base_materials.ColorMaterial):
-
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((107, 49, 13))
 
 
 class OreMaterial(base_materials.DepthMaterial, ABC):
     WHEIGHT: ClassVar[int] = 2
     HARDNESS: ClassVar[int] = 5
+
+    CLUSTER_SIZE: Tuple[int, int]
 
     # noinspection PyPep8Naming
     @property
@@ -98,6 +90,7 @@ class OreMaterial(base_materials.DepthMaterial, ABC):
 
 
 class Burnable(ABC):
+    FUEL_VALUE: int
 
     # noinspection PyPep8Naming
     @property
@@ -107,7 +100,6 @@ class Burnable(ABC):
 
 
 class Iron(OreMaterial, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 30)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (2, 10)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((184, 98, 92))
@@ -115,7 +107,6 @@ class Iron(OreMaterial, base_materials.ColorMaterial):
 
 
 class Gold(OreMaterial, base_materials.ColorMaterial):
-
     HARDNESS: ClassVar[int] = 3
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 3)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (2, 6)
@@ -124,7 +115,6 @@ class Gold(OreMaterial, base_materials.ColorMaterial):
 
 
 class Zinc(OreMaterial, base_materials.ColorMaterial):
-
     HARDNESS: ClassVar[int] = 3
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(20, 5)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (2, 15)
@@ -132,7 +122,6 @@ class Zinc(OreMaterial, base_materials.ColorMaterial):
 
 
 class Copper(OreMaterial, base_materials.ColorMaterial):
-
     HARDNESS: ClassVar[int] = 4
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 2)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (5, 8)
@@ -140,7 +129,6 @@ class Copper(OreMaterial, base_materials.ColorMaterial):
 
 
 class Coal(OreMaterial, Burnable, base_materials.ColorMaterial):
-
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 50)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (6, 12)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((10, 10, 10))
@@ -149,7 +137,6 @@ class Coal(OreMaterial, Burnable, base_materials.ColorMaterial):
 
 
 class Titanium(OreMaterial, base_materials.ColorMaterial):
-
     HARDNESS: ClassVar[int] = 50
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
     CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (1, 2)

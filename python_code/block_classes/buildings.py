@@ -1,6 +1,10 @@
+# !/usr/bin/python3
+
+# library imports
 from abc import ABC, abstractmethod
 from typing import List, TYPE_CHECKING
 
+# own imports
 import block_classes.building_materials as build_materials
 import block_classes.materials as base_materials
 import block_classes.blocks as block_classes
@@ -16,6 +20,7 @@ if TYPE_CHECKING:
     from interfaces.managers import game_window_manager
 
 
+# TODO check the use of this
 def building_type_from_material(material):
     return material_mapping[material.name()]
 
