@@ -421,7 +421,7 @@ class Game(Scene, util.Serializer):
                                   True, pygame.Color('white'))
             self.screen.blit(en, (x_coord, y_coord))
             y_coord += line_distance
-        if con.ZOOM:
+        if con.SHOW_ZOOM:
             z = con.FONTS[18].render("zoom: {}x".format(self._zoom), True, pygame.Color('white'))
             self.screen.blit(z, (x_coord, y_coord))
             y_coord += line_distance

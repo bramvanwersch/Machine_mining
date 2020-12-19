@@ -36,14 +36,14 @@ class TaskControl:
             if len([b for b in surrounding_blocks if b != None and b.transparant_group != 0]) > 0:
                 if block not in self.reachable_block_tasks:
                     self.reachable_block_tasks[block] = {}
-                if task.name() in self.reachable_block_tasks[block] and con.MULTI_TASKS[type]:
+                if task.name() in self.reachable_block_tasks[block] and con.MULTI_TASKS[type].multi:
                     self.reachable_block_tasks[block][task.name()].append(task)
                 else:
                     self.reachable_block_tasks[block][task.name()] = MultipleTaskList(task)
             else:
                 if block not in self.unreachable_block_tasks:
                     self.unreachable_block_tasks[block] = {}
-                if task.name() in self.unreachable_block_tasks[block] and con.MULTI_TASKS[type]:
+                if task.name() in self.unreachable_block_tasks[block] and con.MULTI_TASKS[type].multi:
                     self.unreachable_block_tasks[block][task.name()].append(task)
                 else:
                     self.unreachable_block_tasks[block][task.name()] = MultipleTaskList(task)

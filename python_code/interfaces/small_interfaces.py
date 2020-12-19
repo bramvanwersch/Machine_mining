@@ -116,7 +116,7 @@ class TerminalWindow(base_interfaces.Window):
 
     def __init__(self, terminal_object, *groups, recipes=None):
         self.__terminal = terminal_object
-        self.__terminal_inv = self.__terminal.block_classes[0][0].inventory
+        self.__terminal_inv = self.__terminal.blocks[0][0].inventory
         fr = self.__terminal.rect
         location = fr.bottomleft
         super().__init__(location, self.SIZE,
