@@ -6,7 +6,6 @@ from time import time_ns
 
 
 LAST_IDS = set()
-scenes = None
 
 
 def unique_id():
@@ -24,35 +23,6 @@ def unique_id():
             cycle += 1
         LAST_IDS.add(new_stamp)
         return new_stamp
-
-
-def create_scene_manager():
-    global scenes
-    scenes = SceneManager()
-
-
-class SceneManager:
-    def __init__(self):
-        # the drawing destination surface
-        self.scenes = {}
-        self.active_scene = None
-
-    def set_active_scene(self, name):
-        if self.active_scene:
-            self.active_scene.exit()
-        self.active_scene = self.scenes[name]
-
-    def __getitem__(self, item):
-        return self.scenes[item]
-
-    def __setitem__(self, key, value):
-        self.scenes[key] = value
-
-    def __delitem__(self, key):
-        del self.scenes[key]
-
-    def is_scene_alive(self):
-        return self.active_scene.going
 
 
 class GameException(Exception):
