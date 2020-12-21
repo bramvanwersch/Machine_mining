@@ -124,7 +124,7 @@ class BoardGenerator:
     def __add_flora(self, col_i, row_i, flora_likelyhoods, matrix):
         s_coords = self.__get_surrounding_block_coords(col_i, row_i)
         elligable_indexes = [coord for coord in s_coords if coord is not None and
-                             matrix[coord[1]][coord[0]] not in ["Air", None]]
+                             matrix[coord[1]][coord[0]] != "Air"]
         # if direction cant have a flora return
         if len(elligable_indexes) == 0:
             return

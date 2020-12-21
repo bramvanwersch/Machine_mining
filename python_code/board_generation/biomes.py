@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar
 
 import utility.utilities as util
-import block_classes.block_utility as block_util
+import block_classes.flora_materials as flora_materials
 import block_classes.ground_materials as ground_materials
 if TYPE_CHECKING:
     from block_classes.materials import DepthMaterial
@@ -90,10 +90,30 @@ class Biome(ABC):
 
 
 class NormalBiome(Biome):
-    FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = block_util.filler_materials
-    ORE_MATERIALS: ClassVar[List["DepthMaterial"]] = block_util.ore_materials
-    FLORA_MATERIALS: ClassVar[List["DepthMaterial"]] = block_util.flora_materials
-    BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [ground_materials.Dirt()]
+    FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.StoneCollection(),
+        ground_materials.Dirt,
+        ground_materials.Granite,
+        ground_materials.FinalStone
+    ]
+    ORE_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.Iron,
+        ground_materials.Gold,
+        ground_materials.Zinc,
+        ground_materials.Copper,
+        ground_materials.Coal,
+        ground_materials.Titanium
+    ]
+    FLORA_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        flora_materials.Fern,
+        flora_materials.Reed,
+        flora_materials.Moss,
+        flora_materials.ShroomCollection(),
+        flora_materials.Vine
+    ]
+    BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.BackDirt
+    ]
 
 
 all_biomes = [NormalBiome]
