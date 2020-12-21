@@ -2,7 +2,7 @@
 
 # library imports
 import pygame
-from typing import Dict, Tuple
+from typing import Tuple
 import os
 from pygame.locals import *
 
@@ -30,7 +30,11 @@ SCREEN_SIZE = util.Size(820, 820)
 CHUNK_SIZE = util.Size(510, 510)
 CHUNK_GRID_SIZE = util.Size(4, 4)
 BOARD_SIZE = util.Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
+# preserve the board size
+ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 START_CHUNK_POS = (1, 1)  # has to be positive
+if START_CHUNK_POS[0] >= CHUNK_GRID_SIZE[0] or START_CHUNK_POS[1] >= CHUNK_GRID_SIZE[0]:
+    raise util.GameException("Start chunk must be within the board")
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
 
@@ -38,7 +42,6 @@ MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
 INTERFACE_WINDOW_SIZE = util.Size(500, 700)
 DYNAMIC_INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
                                 int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
-ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 
 # layers
 BOTTOM_LAYER = 0
@@ -132,3 +135,4 @@ ENTITY_NMBR = True
 AIR_RECTANGLES = False
 WARNINGS = True
 SHOW_ZOOM = True
+NO_LIGHTING = True

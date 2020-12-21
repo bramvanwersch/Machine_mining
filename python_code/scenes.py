@@ -15,13 +15,8 @@ from interfaces import widgets as widgets, interface_utility as interface_util, 
     managers as window_managers
 from utility import constants as con, utilities as util, event_handling
 
-
+# defined below SceneManager
 scenes: "SceneManager"
-
-
-def create_scene_manager():
-    global scenes
-    scenes = SceneManager()
 
 
 class SceneManager:
@@ -46,6 +41,9 @@ class SceneManager:
 
     def is_scene_alive(self):
         return self.active_scene.going
+
+
+scenes: "SceneManager" = SceneManager()
 
 
 class Scene(event_handling.EventHandler, ABC):
@@ -370,7 +368,7 @@ class Game(Scene, util.Serializer):
 
         self._visible_entities = 0
         for sprite in self.sprite_group.sprites():
-            if not sprite.static or (sprite.rect.colliderect(visible_rect) and
+            if con.NO_LIGHTING or not sprite.static or (sprite.rect.colliderect(visible_rect) and
                                      sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):
                 sprite.show(True)
                 if sprite.is_showing:

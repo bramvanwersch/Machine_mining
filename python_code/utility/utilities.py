@@ -1,8 +1,9 @@
 from pygame import Rect
-from math import pi, e, sqrt, erfc
+from math import pi, e, sqrt, erfc, pow
 from abc import ABC, abstractmethod
 import json
 from time import time_ns
+from numpy import array, linalg, exp
 
 
 LAST_IDS = set()
@@ -237,7 +238,7 @@ class Size(Serializer):
     def __getitem__(self, item):
         return self.size[item]
 
-#general
+    # general
     def __len__(self):
         return len(self.size)
 
@@ -247,26 +248,42 @@ class Size(Serializer):
     def copy(self):
         return Size(self.width, self.height)
 
+
 class Gaussian:
     def __init__(self, mean, sd):
         self.mean = mean
         self.sd = sd
 
     def probability(self, x):
-        """
-        Calculate the probability of encountering x given self.mean and
-        self.sd
-
-        :param x: a real number
-        :return: a probability between 0 and 1
-        """
-        #The probability density for a Gaussian distribution
+        """Give the probability of encountering x exactly"""
         probability = (1 / sqrt(2 * pi * self.sd ** 2)) * (e ** (- 0.5 * (x - self.mean) ** 2 / self.sd ** 2))
         return probability
 
     def cumulative_probability(self, x):
         two_sided = erfc((x - self.mean) / (self.sd * sqrt(2)))
         return two_sided
+
+    def ci_95(self):
+        """95% confidence intervall using 1.96 standard deviations from the mean as estimate"""
+        return [self.mean - 1.96 * self.sd, self.mean + 1.96 * self.sd]
+
+
+class TwoDimensionalGaussian:
+    """Special multivariate 2D case with symetrical variance resulting in circular/oval shape based on sigmas"""
+    def __init__(self, gaussian1, gaussian2):
+        self.__gausians = [gaussian1, gaussian2]
+        self.means = array([[gaussian1.mean], [gaussian2.mean]])
+        self.sigmas = array([[gaussian1.sd], [gaussian2.sd]])
+        self.covariance_matrix = array([[gaussian1.sd, 0], [0, gaussian2.sd]])
+        self.inv_covaraince_matrix = linalg.inv(self.covariance_matrix)
+        self.determinant = linalg.det(self.covariance_matrix)
+        self.norm_constant = 1 / (((2 * pi) ** (len(self.means) / 2)) * (self.determinant ** 0.5))
+
+    def probability(self, x, y):
+        x = array([[x], [y]])
+        x_mu = array(x - self.means)
+        part2 = -0.5 * (x_mu.T.dot(self.inv_covaraince_matrix).dot(x_mu))
+        return float(self.norm_constant * exp(part2))
 
 
 def is_abstract(cls):

@@ -39,9 +39,6 @@ class Main:
         # load all recipes
         recipe_constants.create_recipe_book()
 
-        # create manager
-        scenes.create_scene_manager()
-
         # pre loaded scenes
         scenes.scenes[scenes.MainMenu.name()] = scenes.MainMenu(self.screen)
         scenes.scenes.set_active_scene(scenes.MainMenu.name())
@@ -52,7 +49,10 @@ class Main:
             self.screen.fill((0, 0, 0))
             active_scene = scenes.scenes.active_scene
             active_scene.update()
-            pygame.display.update(active_scene.board_update_rectangles)
+            if con.NO_LIGHTING:
+                pygame.display.flip()
+            else:
+                pygame.display.update(active_scene.board_update_rectangles)
             con.GAME_TIME.tick(200)
 
         pygame.quit()

@@ -94,6 +94,10 @@ class BaseMaterial(ABC):
         """
         return self._BLOCK_TYPE(pos, self, **kwargs)
 
+    def is_solid(self) -> bool:
+        """test if a material is considered solid or not"""
+        return self.__transparant_group == 0
+
     @abstractmethod
     def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
         """Configure the surface if the material on instantiation"""

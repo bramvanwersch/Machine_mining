@@ -1,16 +1,14 @@
-from random import uniform, choice, randint, choices
-from math import sin, cos, pi
+from random import uniform
 import pygame
 
 import utility.utilities as util
+import board_generation.generation as generator
 import utility.constants as con
 import utility.event_handling as event_handling
 import block_classes.blocks as block_classes
-import block_classes.block_utility as block_util
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
 import block_classes.flora_materials as flora_materials
-import block_classes.ground_materials as ground_materials
 import board.pathfinding as pathfinding
 import network.pipes as network
 import interfaces.small_interfaces as small_interface
@@ -22,29 +20,6 @@ import entities
 
 class Board(event_handling.BoardEventHandler, util.Serializer):
 
-    # ORE cluster values
-    # the amount of normal block_classes per cluster
-    CLUSTER_LIKELYHOOD = 120
-    # the max size of a ore cluster around the center
-    MAX_CLUSTER_SIZE = 3
-
-    # CAVE values
-    MAX_CAVES = int((con.CHUNK_GRID_SIZE.width * con.CHUNK_GRID_SIZE.height) / 6)
-    # the fraction of the distance between points based on the shortest side of the board
-    POINT_FRACTION_DISTANCE = 0.35
-    # distance the center of the cave should at least be away from the border
-    CAVE_X_BORDER_DISTANCE = int(0.1 * con.BOARD_SIZE.width)
-    CAVE_Y_BORDER_DISTANCE = int(0.1 * con.BOARD_SIZE.height)
-    NUMBER_OF_CAVE_POINTS = int(con.CHUNK_GRID_SIZE.width * con.CHUNK_GRID_SIZE.height * 1.3)
-    # the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
-    CAVE_STOP_SPREAD_CHANCE = 0.05
-
-    # BORDER values
-    SPREAD_LIKELYHOOD = util.Gaussian(0, 2)
-    MAX_SPREAD_DISTANCE = 4
-
-    # PLANT values
-    FLORA_CHANCE = 0.1
     START_RECTANGLE = pygame.Rect((con.BOARD_SIZE.width / 2 - 125, 0, 250, 50))
     BLOCK_PER_CLUSRTER = 500
 
@@ -125,8 +100,9 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                             self.add_blocks(*new_blocks)
 
     def __generate_chunk_matrix(self, main_sprite_group):
-        foreground_matrix = self.__generate_foreground_string_matrix()
-        background_matrix = self.__generate_background_string_matrix()
+        board_generator = generator.BoardGenerator()
+        foreground_matrix = board_generator.foreground_matrix
+        background_matrix = board_generator.backgroun_matrix
         chunk_matrix = []
         for col_c in range(con.CHUNK_GRID_SIZE.height):
             chunk_row = []
@@ -682,212 +658,6 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group, removed_blocks=overlap_blocks)
 
 
-#### MAP GENERATION FUNCTIONS ###
-
-    def __generate_foreground_string_matrix(self):
-        matrix = self.__generate_stone_background()
-        self.__add_ores(matrix)
-        self.__add_caves(matrix)
-        self.__add_border(matrix)
-        self.__add_flora(matrix)
-        return matrix
-
-    def __generate_stone_background(self):
-        matrix = []
-        for row_i in range(interface_util.p_to_r(con.BOARD_SIZE.height)):
-            filler_likelyhoods = self.__get_material_lh_at_depth(block_util.filler_materials, row_i)
-            row = []
-            for _ in range(interface_util.p_to_c(con.BOARD_SIZE.width)):
-                filler = choices([f.name() for f in block_util.filler_materials], filler_likelyhoods, k=1)[0]
-                row.append(filler)
-            matrix.append(row)
-        return matrix
-
-    def __add_caves(self, matrix):
-        nr_caves = randint(self.MAX_CAVES - int(max(self.MAX_CAVES / 2, 1)), self.MAX_CAVES)
-        for _ in range(nr_caves):
-            cave_points = self.__get_cave_points()
-            #get the line between the points
-            for index in range(1, len(cave_points)):
-                point1 = cave_points[index - 1]
-                point2 = cave_points[index]
-                a, b = util.line_from_points(point1, point2)
-                if abs(a) < 1:
-                    number_of_breaks = int(abs(point1[0] - point2[0]) * abs(1 / a))
-                else:
-                    number_of_breaks = int(abs(point1[0] - point2[0]) * abs(a))
-                break_size = (point2[0] - point1[0]) / number_of_breaks
-                x_values = [point1[0] + index * break_size for index in range(0, number_of_breaks)]
-                y_values = [a * x + b for x in x_values]
-                #make all block_classes air on the direct line
-                for index in range(len(x_values)):
-                    x = int(x_values[index])
-                    y = int(y_values[index])
-                    matrix[min(y, int(con.BOARD_SIZE.height / con.BLOCK_SIZE.height) -1)][min(x, int(con.BOARD_SIZE.width / con.BLOCK_SIZE.width) - 1)] = "Air"
-                    surrounding_coords = [coord for coord in self.__get_surrounding_block_coords(x, y) if matrix[coord[1]][coord[0]] not in ["Air", None]]
-                    #extend the cave around the direct line.
-                    while len(surrounding_coords) > 0:
-                        if uniform(0, 1) < self.CAVE_STOP_SPREAD_CHANCE:
-                            break
-                        remove_block = choice(surrounding_coords)
-                        surrounding_coords.remove(remove_block)
-                        matrix[remove_block[1]][remove_block[0]] = "Air"
-                        new_sur_coords = surrounding_coords.extend([coord for coord in self.__get_surrounding_block_coords(*remove_block) if matrix[coord[1]][coord[0]] not in ["Air", None]])
-        return matrix
-
-    def __get_cave_points(self):
-        max_radius = int(min(*con.BOARD_SIZE) * self.POINT_FRACTION_DISTANCE)
-
-        # random point on the board within 10% of the boundaries
-        first_point = [randint(self.CAVE_X_BORDER_DISTANCE, con.BOARD_SIZE.width - self.CAVE_X_BORDER_DISTANCE),
-                       randint(self.CAVE_Y_BORDER_DISTANCE, con.BOARD_SIZE.height - self.CAVE_Y_BORDER_DISTANCE)]
-        cave_points = [first_point]
-        prev_direction = uniform(0, 2 * pi)
-        amnt_points = randint(self.NUMBER_OF_CAVE_POINTS - int(max(self.NUMBER_OF_CAVE_POINTS / 2, 1)), self.NUMBER_OF_CAVE_POINTS)
-        while len(cave_points) < amnt_points:
-            radius = randint(max(1, int(max_radius / 2)), max_radius)
-            prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
-            new_x = min(max(int(cave_points[-1][0] + cos(prev_direction) * radius), self.CAVE_X_BORDER_DISTANCE),
-                        con.BOARD_SIZE.width - self.CAVE_X_BORDER_DISTANCE)
-            new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), self.CAVE_Y_BORDER_DISTANCE),
-                        con.BOARD_SIZE.height - self.CAVE_Y_BORDER_DISTANCE)
-            #make sure no double points and no straight lines
-            if [new_x, new_y] in cave_points or \
-                    int(new_x / con.BLOCK_SIZE.width) == int(cave_points[-1][0] / con.BLOCK_SIZE.width) or\
-                    int(new_y / con.BLOCK_SIZE.height) == int(cave_points[-1][1] / con.BLOCK_SIZE.height):
-                continue
-            cave_points.append([new_x, new_y])
-        return [[int(x / con.BLOCK_SIZE.width), int(y / con.BLOCK_SIZE.height)] for x, y in cave_points]
-
-    def __get_surrounding_block_coords(self, x, y):
-        surrounding_coords = [None for _ in range(4)]
-        for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
-            surrounding_coord = [x + new_position[0], y + new_position[1]]
-            # Make sure within range
-            if surrounding_coord[0] >= con.BOARD_SIZE.width / con.BLOCK_SIZE.width or \
-                    surrounding_coord[0] < 0 or \
-                    surrounding_coord[1] >= con.BOARD_SIZE.height / con.BLOCK_SIZE.height or \
-                    surrounding_coord[1] < 0:
-                continue
-            surrounding_coords[index] = surrounding_coord
-        return surrounding_coords
-
-    def __add_ores(self, matrix):
-        """
-        Fill a matrix with names of the materials of the respective block_classes
-
-        :return: a matrix containing strings corresponding to names of __material
-        classes.
-        """
-
-        # generate some ores inbetween the start and end locations
-        for row_i, row in enumerate(matrix):
-            ore_likelyhoods = self.__get_material_lh_at_depth(block_util.ore_materials, row_i)
-            for column_i, value in enumerate(row):
-                if randint(1, self.CLUSTER_LIKELYHOOD) == 1:
-                    # decide the ore
-                    ore = choices([f.name() for f in block_util.ore_materials], ore_likelyhoods, k=1)[0]
-                    # create a list of locations around the current location
-                    # where an ore is going to be located
-                    ore_locations = self.__create_ore_cluster(ore, (column_i, row_i))
-                    for loc in ore_locations:
-                        try:
-                            matrix[loc[1]][loc[0]] = ore
-                        except IndexError:
-                            # if outside board skip
-                            continue
-        return matrix
-
-    def __get_material_lh_at_depth(self, material_list, depth):
-        likelyhoods = []
-        for material in material_list:
-            lh = material.get_lh_at_depth(depth)
-            likelyhoods.append(round(lh, 10))
-        norm_likelyhoods = util.normalize(likelyhoods)
-
-        return norm_likelyhoods
-
-    def __create_ore_cluster(self, ore, center):
-        """
-        Generate a list of index offsets for a certain ore
-
-        :param ore: string name of an ore
-        :param center: a coordinate around which the ore cluster needs to be
-        generated
-        :return: a list of offset indexes around 0,0
-        """
-        size = getattr(ground_materials, ore).get_cluster_size()
-        ore_locations = []
-        while len(ore_locations) <= size:
-            location = [0, 0]
-            for index in range(2):
-                pos = choice([-1, 1])
-                # assert index is bigger then 0
-                location[index] = max(0, pos * randint(0, self.MAX_CLUSTER_SIZE) + center[index])
-            if location not in ore_locations:
-                ore_locations.append(location)
-        return ore_locations
-
-    def __add_border(self, matrix):
-        #north border
-        rows = matrix[0:self.MAX_SPREAD_DISTANCE]
-        for row_i in range(len(rows)):
-            border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(row_i)
-            for col_i in range(len(matrix[row_i])):
-                if uniform(0, 1) < border_block_chance:
-                    matrix[row_i][col_i] = "BorderMaterial"
-        #south border
-        rows = matrix[- (self.MAX_SPREAD_DISTANCE + 1):-1]
-        for row_i in range(len(rows)):
-            border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(row_i)
-            for col_i in range(len(matrix[row_i])):
-                if uniform(0, 1) < border_block_chance:
-                    matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
-        #east border
-        for row_i in range(len(matrix)):
-            for col_i in range(len(matrix[row_i][0:self.MAX_SPREAD_DISTANCE])):
-                border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(col_i)
-                if uniform(0, 1) < border_block_chance:
-                    matrix[row_i][col_i] = "BorderMaterial"
-        #west border
-        for row_i in range(len(matrix)):
-            for col_i in range(len(matrix[row_i][- (self.MAX_SPREAD_DISTANCE + 1):-1])):
-                border_block_chance = self.SPREAD_LIKELYHOOD.cumulative_probability(col_i)
-                if uniform(0, 1) < border_block_chance:
-                    matrix[- (row_i + 1)][ - (col_i + 1)] = "BorderMaterial"
-
-        return matrix
-
-    def __add_flora(self, matrix):
-        for row_i in range(len(matrix)):
-            flora_likelyhoods = [self.__get_material_lh_at_depth([m for m in block_util.flora_materials if m.START_DIRECTION == 0], row_i),
-                                 self.__get_material_lh_at_depth([m for m in block_util.flora_materials if m.START_DIRECTION == 1], row_i),
-                                 self.__get_material_lh_at_depth([m for m in block_util.flora_materials if m.START_DIRECTION == 2], row_i),
-                                 self.__get_material_lh_at_depth([m for m in block_util.flora_materials if m.START_DIRECTION == 3], row_i)]
-            for col_i, string in enumerate(matrix[row_i]):
-                if string != "Air":
-                    continue
-                s_coords = self.__get_surrounding_block_coords(col_i, row_i)
-                elligable_indexes = [coord for coord in s_coords if matrix[coord[1]][coord[0]] in [m.name() for m in block_util.filler_materials]]
-                if len(elligable_indexes) == 0 or uniform(0, 1) >= self.FLORA_CHANCE:
-                    continue
-                chosen_index = s_coords.index(choice(elligable_indexes))
-                if len(flora_likelyhoods[chosen_index]) == 0:
-                    continue
-                flora = choices([m for m in block_util.flora_materials if m.START_DIRECTION == chosen_index], flora_likelyhoods[chosen_index], k=1)
-                matrix[row_i][col_i] = flora[0].name()
-
-    def __generate_background_string_matrix(self):
-        """
-        Generate the backdrop matrix.
-
-        :return: a matrix of the given size
-        """
-        matrix = []
-        for _ in range(interface_util.p_to_r(con.BOARD_SIZE.height)):
-            row = ["Dirt"] * interface_util.p_to_c(con.BOARD_SIZE.width)
-            matrix.append(row)
-        return matrix
 
     def __add_starter_buildings(self):
         """

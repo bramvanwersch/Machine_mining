@@ -16,7 +16,7 @@ class FillerMaterial(ABC):
 
 
 class TopDirt(FillerMaterial, base_materials.DepthMaterial, base_materials.ColorMaterial):
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 2)
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(0, 10)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((137, 79, 33))
 
 
@@ -67,7 +67,8 @@ class FinalStone(FillerMaterial, base_materials.DepthMaterial, base_materials.Co
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((199, 127, 195))
 
 
-class Dirt(base_materials.ColorMaterial):
+class Dirt(base_materials.DepthMaterial, base_materials.ColorMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 10)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((107, 49, 13))
 
 
