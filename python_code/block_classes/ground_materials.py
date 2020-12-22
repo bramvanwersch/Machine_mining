@@ -15,32 +15,27 @@ class Dirt(base_materials.DepthMaterial, base_materials.ColorMaterial):
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((137, 79, 33))
 
 
-class Stone(base_materials.DepthMaterial, base_materials.ColorMaterial):
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+class Stone(base_materials.ColorMaterial):
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 155, 155))
 
 
-class GreenStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+class GreenStone(base_materials.ColorMaterial):
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((126, 155, 126))
 
 
-class RedStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+class RedStone(base_materials.ColorMaterial):
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 126, 126))
 
 
-class BlueStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+class BlueStone(base_materials.ColorMaterial):
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((126, 126, 155))
 
 
-class YellowStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+class YellowStone(base_materials.ColorMaterial):
     HARDNESS: ClassVar[int] = 3
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((155, 155, 126))
 
@@ -48,6 +43,7 @@ class YellowStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
 class StoneCollection(base_materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {Stone: 0.95, GreenStone: 0.01, RedStone:  0.01, BlueStone: 0.01, YellowStone: 0.01}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
 
 
 class Granite(base_materials.DepthMaterial, base_materials.ColorMaterial):
@@ -62,9 +58,58 @@ class FinalStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((199, 127, 195))
 
 
+class BasicIce(base_materials.ColorMaterial):
+    HARDNESS: ClassVar[int] = 1
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((74, 131, 168))
+
+
+class Snow(base_materials.ColorMaterial):
+    HARDNESS: ClassVar[int] = 1
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((193, 197, 199))
+
+
+class DirtIceCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {BasicIce: 0.5, Snow: 0.45, Dirt: 0.05}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(0, 10)
+
+
+class StoneIceCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {BasicIce: 0.5, Snow: 0.45, Stone: 0.05}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+
+
+class GraniteIceCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {BasicIce: 0.45, Snow: 0.40, Granite: 0.15}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 7)
+
+
+class FinalIceCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {BasicIce: 0.40, Snow: 0.35, FinalStone: 0.25}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
+
+
 class BackDirt(base_materials.DepthMaterial, base_materials.ColorMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(20, 10)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((97, 39, 3))
+
+
+class BackStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 10)
-    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((107, 49, 13))
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((55, 55, 55))
+
+
+class BackFinalStone(base_materials.DepthMaterial, base_materials.ColorMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((72, 0, 70))
+
+
+class BackIce(base_materials.DepthMaterial, base_materials.ColorMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((24, 81, 118))
 
 
 class OreMaterial(base_materials.DepthMaterial, ABC):

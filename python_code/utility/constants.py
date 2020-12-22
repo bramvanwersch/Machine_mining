@@ -36,7 +36,7 @@ START_CHUNK_POS = (1, 1)  # has to be positive
 if START_CHUNK_POS[0] >= CHUNK_GRID_SIZE[0] or START_CHUNK_POS[1] >= CHUNK_GRID_SIZE[0]:
     raise util.GameException("Start chunk must be within the board")
 BLOCK_SIZE = util.Size(10, 10)
-MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height
+MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
 
 # windows
 INTERFACE_WINDOW_SIZE = util.Size(500, 700)

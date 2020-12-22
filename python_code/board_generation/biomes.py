@@ -86,7 +86,16 @@ class Biome(ABC):
             lh = material.get_lh_at_depth(depth)
             likelyhoods.append(round(lh, 10))
         norm_likelyhoods = util.normalize(likelyhoods)
-        return {material_list[index].name(): lh for index, lh in enumerate(norm_likelyhoods)}
+
+        # calculate accumulated probabilities when relevant
+        material_likelyhoods = {}
+        for index, lh in enumerate(norm_likelyhoods):
+            name = material_list[index].name()
+            if name in material_likelyhoods:
+                material_likelyhoods[name] += lh
+            else:
+                material_likelyhoods[name] = lh
+        return material_likelyhoods
 
 
 class NormalBiome(Biome):
@@ -99,7 +108,6 @@ class NormalBiome(Biome):
     ORE_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.Iron,
         ground_materials.Gold,
-        ground_materials.Zinc,
         ground_materials.Copper,
         ground_materials.Coal,
         ground_materials.Titanium
@@ -112,8 +120,33 @@ class NormalBiome(Biome):
         flora_materials.Vine
     ]
     BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [
-        ground_materials.BackDirt
+        ground_materials.BackDirt,
+        ground_materials.BackStone,
+        ground_materials.BackFinalStone
     ]
 
 
-all_biomes = [NormalBiome]
+class IceBiome(Biome):
+    FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.DirtIceCollection(),
+        ground_materials.StoneIceCollection(),
+        ground_materials.GraniteIceCollection(),
+        ground_materials.FinalIceCollection()
+    ]
+    ORE_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.Iron,
+        ground_materials.Gold,
+        ground_materials.Zinc,
+        ground_materials.Coal,
+        ground_materials.Titanium
+    ]
+    FLORA_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        flora_materials.Icicle,
+        flora_materials.SnowLayer
+    ]
+    BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.BackIce
+    ]
+
+
+all_biomes = [NormalBiome, IceBiome]

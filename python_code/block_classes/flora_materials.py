@@ -9,7 +9,7 @@ import block_classes.materials as base_materials
 import utility.utilities as util
 
 
-class FloraMaterial(base_materials.DepthMaterial, ABC):
+class FloraMaterial(ABC):
     """Class for all flora materials"""
     # the index that the plant grows that side N, E, S, W order, default is north (up)
     CONTINUATION_DIRECTION: ClassVar[int] = 0
@@ -25,24 +25,21 @@ class FloraMaterial(base_materials.DepthMaterial, ABC):
         pass
 
 
-class Fern(FloraMaterial, base_materials.ImageMaterial):
-
+class Fern(FloraMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
         base_materials.ImageDefinition("materials", (30, 20), flip=True)
 
 
-class Reed(FloraMaterial, base_materials.ImageMaterial):
-
+class Reed(FloraMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
         base_materials.ImageDefinition("materials", (40, 20), flip=True)
 
 
-class Moss(FloraMaterial, base_materials.ImageMaterial):
-
+class Moss(FloraMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(40, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
@@ -50,41 +47,47 @@ class Moss(FloraMaterial, base_materials.ImageMaterial):
 
 
 class BrownShroom(FloraMaterial, base_materials.ImageMaterial):
-
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(80, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
         base_materials.ImageDefinition("materials", (50, 20), flip=True)
 
 
 class BrownShroomers(FloraMaterial, base_materials.ImageMaterial):
-
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(80, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
         base_materials.ImageDefinition("materials", (70, 20), flip=True)
 
 
 class RedShroom(FloraMaterial, base_materials.ImageMaterial):
-
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(80, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
         base_materials.ImageDefinition("materials", (80, 20), flip=True)
 
 
 class RedShroomers(FloraMaterial, base_materials.ImageMaterial):
-
-    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(80, 10)
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
         base_materials.ImageDefinition("materials", (60, 20), flip=True)
 
 
 class ShroomCollection(base_materials.MaterialCollection):
-
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {BrownShroom: 0.4, BrownShroomers: 0.1, RedShroom: 0.4, RedShroomers: 0.1}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(80, 10)
+
+
+class Icicle(FloraMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    START_DIRECTION: ClassVar[int] = 0
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (20, 30), flip=True)
+
+
+class SnowLayer(FloraMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    START_DIRECTION: ClassVar[int] = 2
+    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
+        base_materials.ImageDefinition("materials", (30, 30), flip=True)
 
 
 class MultiFloraMaterial(FloraMaterial, ABC):
@@ -93,7 +96,7 @@ class MultiFloraMaterial(FloraMaterial, ABC):
     GROW_CHANCE: ClassVar[float] = 0.0
 
 
-class Vine(MultiFloraMaterial, base_materials.MultiImageMaterial):
+class Vine(MultiFloraMaterial, base_materials.DepthMaterial, base_materials.MultiImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     START_DIRECTION: ClassVar[int] = 0
     CONTINUATION_DIRECTION: ClassVar[int] = 2

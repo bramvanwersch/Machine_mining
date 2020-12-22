@@ -12,8 +12,8 @@ import board_generation.biomes as biome_classes
 
 class BoardGenerator:
     __BIOME_SIZES: ClassVar[Dict[str, util.Size]] = \
-        {"tiny": util.Size(25, 25), "small": util.Size(50, 50), "normal": util.Size(100, 100),
-         "big": util.Size(150, 150), "massive": util.Size(200, 200), "huge": util.Size(300, 300)}  # in blocks
+        {"tiny": util.Size(50, 50), "small": util.Size(100, 100), "normal": util.Size(200, 200),
+         "big": util.Size(300, 300), "massive": util.Size(500, 500), "huge": util.Size(1000, 1000)}  # in blocks
 
     # ORE cluster values
     CLUSTER_LIKELYHOOD = 1 / 120
@@ -57,9 +57,9 @@ class BoardGenerator:
 
     def generate_biome_matrix(self) -> List[List[biome_classes.Biome]]:
         biome_matrix = []
-        # slightly more then the 95% confidence that is the size of the biome_size
-        sd_x = self.biome_size.width * 4
-        sd_y = self.biome_size.height * 4
+        # sufficient amount of overlap
+        sd_x = self.biome_size.width * 15
+        sd_y = self.biome_size.height * 15
         # make sure that even partial areas of the board are covered by a biome
         for row_i in range(ceil(con.BOARD_SIZE.height / self.biome_size.height)):
             row = []
@@ -72,7 +72,7 @@ class BoardGenerator:
             biome_matrix.append(row)
         return biome_matrix
 
-    def biome_from_point(self, x, y):
+    def biome_liklyhoods_from_point(self, x, y):
         biome_matrix_col = int(x / self.biome_size.width)
         biome_matrix_row = int(y / self.biome_size.height)
         main_biome = self.biome_matrix[biome_matrix_row][biome_matrix_col]
@@ -80,13 +80,13 @@ class BoardGenerator:
         # collect all surrounding biomes
         for new_position in [(0, -1), (1, 0), (0, 1), (-1, 0)]:
             surrounding_coord = [biome_matrix_col + new_position[0], biome_matrix_row + new_position[1]]
-            if surrounding_coord[0] >= int(con.BOARD_SIZE.width / self.biome_size.width) - 1 or surrounding_coord[0] < 0 or \
-               surrounding_coord[1] >= int(con.BOARD_SIZE.height / self.biome_size.height) - 1 or surrounding_coord[1] < 0:
+            if surrounding_coord[0] >= len(self.biome_matrix[0]) - 1 or surrounding_coord[0] < 0 \
+                    or surrounding_coord[1] >= len(self.biome_matrix) - 1 or surrounding_coord[1] < 0:
                 continue
             surrounding_biomes.append(self.biome_matrix[surrounding_coord[1]][surrounding_coord[0]])
         wheights = util.normalize([b.get_likelyhood_at_coord(x, y) for b in surrounding_biomes])
-        biome = choices(surrounding_biomes, wheights, k=1)
-        return biome[0]
+        biome_likelyhoods = {biome: wheights[index] for index, biome in enumerate(surrounding_biomes)}
+        return biome_likelyhoods
 
     def __generate_foreground_string_matrix(self):
         matrix = [[None for _ in range(interface_util.p_to_c(con.ORIGINAL_BOARD_SIZE.width))]
@@ -104,7 +104,8 @@ class BoardGenerator:
                 x = col_i * con.BLOCK_SIZE.width
                 y = row_i * con.BLOCK_SIZE.height
                 # determine biome based on coordinate
-                biome = self.biome_from_point(x, y)
+                biome_liklyhoods = self.biome_liklyhoods_from_point(x, y)
+                biome = choices(list(biome_liklyhoods.keys()), list(biome_liklyhoods.values()), k=1)[0]
                 # only add plants in caves
                 if matrix[row_i][col_i] == "Air" and uniform(0, 1) < self.FLORA_LIKELYHOOD:
                     flora_likelyhoods = biome.get_flora_lh_at_depth(row_i)
@@ -113,9 +114,11 @@ class BoardGenerator:
                     ore_likelyhoods = biome.get_ore_lh_at_depth(row_i)
                     self.__add_ore_cluster(col_i, row_i, ore_likelyhoods, matrix)
                 elif matrix[row_i][col_i] is None:
-                    filler_likelyhood = biome.get_filler_lh_at_depth(row_i)
-                    filler = choices(list(filler_likelyhood.keys()), list(filler_likelyhood.values()), k=1)
-                    matrix[row_i][col_i] = filler[0]
+                    filler_likelyhoods = biome.get_filler_lh_at_depth(row_i)
+                    filler = choices(list(filler_likelyhoods.keys()), list(filler_likelyhoods.values()), k=1)[0]
+                    matrix[row_i][col_i] = filler
+                # reget the biome to get slightly different front and backgrounds
+                biome = choices(list(biome_liklyhoods.keys()), list(biome_liklyhoods.values()), k=1)[0]
                 background_likelyhoods = biome.get_background_lh_at_depth(row_i)
                 background_mat = choices(list(background_likelyhoods.keys()),
                                          list(background_likelyhoods.values()), k=1)[0]

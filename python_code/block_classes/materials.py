@@ -109,33 +109,6 @@ class BaseMaterial(ABC):
         return self.HARDNESS * con.MINING_SPEED_PER_HARDNESS
 
 
-class MaterialCollection(ABC):
-    """class that holds a collection of items that are randomly returned based on wheights this is mainly meant for
-     board generation purposes"""
-    MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]]
-
-    # noinspection PyPep8Naming
-    @property
-    @abstractmethod
-    def MATERIAL_PROBABILITIES(self) -> Dict[str, float]:
-        """Dictionary linking material name to to a probability of returning that name when the name() metod is
-         called"""
-        pass
-
-    @classmethod
-    def name(cls) -> str:
-        """Choose a name at random from the collection using wheight defined in this collection"""
-        # noinspection PyUnresolvedReferences
-        return choices([k.name() for k in cls.MATERIAL_PROBABILITIES.keys()],
-                       cls.MATERIAL_PROBABILITIES.values(), k=1)[0]
-
-    def __getattr__(self, item):
-        return getattr(list(self.MATERIAL_PROBABILITIES.keys())[0], item)
-
-    def __contains__(self, item):
-        return item in self.MATERIAL_PROBABILITIES
-
-
 class ColorDefinition:
     """Defines a range of colors based on input parameters, is optimized on order to prevent repeated color image
     creation"""
@@ -383,6 +356,33 @@ class DepthMaterial(ABC):
     @abstractmethod
     def DISTRIBUTION(self) -> util.Gaussian:
         pass
+
+
+class MaterialCollection(DepthMaterial, ABC):
+    """class that holds a collection of items that are randomly returned based on wheights this is mainly meant for
+     board generation purposes"""
+    MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]]
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def MATERIAL_PROBABILITIES(self) -> Dict[DepthMaterial, float]:
+        """Dictionary linking material type to to a probability of returning that name when the name() metod is
+         called"""
+        pass
+
+    @classmethod
+    def name(cls) -> str:
+        """Choose a name at random from the collection using wheight defined in this collection"""
+        # noinspection PyUnresolvedReferences
+        return choices([k.name() for k in cls.MATERIAL_PROBABILITIES.keys()],
+                       cls.MATERIAL_PROBABILITIES.values(), k=1)[0]
+
+    def __getattr__(self, item):
+        return getattr(list(self.MATERIAL_PROBABILITIES.keys())[0], item)
+
+    def __contains__(self, item):
+        return item in self.MATERIAL_PROBABILITIES
 
 
 class InventoryMaterial:
