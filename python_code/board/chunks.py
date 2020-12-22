@@ -1,6 +1,6 @@
 import pygame
 
-import block_classes.environment_materials as flora_materials
+import block_classes.environment_materials as environment_materials
 import block_classes.materials as base_materials
 import block_classes.block_utility as block_util
 import utility.constants as con
@@ -60,7 +60,7 @@ class Chunk(util.Serializer):
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
 
             #check if a new plant, if so make sure the start is unique
-            if isinstance(block.material, flora_materials.MultiFloraMaterial) and block.id not in self.plants:
+            if isinstance(block.material, environment_materials.MultiFloraMaterial) and block.id not in self.plants:
                 plant = flora.Plant(block)
                 self.plants[plant.id] = plant
                 block.material.image_key = -1
@@ -136,7 +136,7 @@ class Chunk(util.Serializer):
                        self.rect.top + row_i * con.BLOCK_SIZE.height,)
                 material_instance = block_util.material_instance_from_string(s_matrix[row_i][column_i], depth=row_i)
                 block = material_instance.to_block(pos)
-                if isinstance(material_instance, flora_materials.MultiFloraMaterial):
+                if isinstance(material_instance, environment_materials.MultiFloraMaterial):
                     plant = flora.Plant(block)
                     self.plants[plant.id] = plant
                 s_matrix[row_i][column_i] = block

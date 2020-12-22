@@ -1,12 +1,10 @@
 from random import randint, choices, uniform, choice
 from math import pi, cos, sin, ceil
-from typing import List, Dict, Union, ClassVar
-import numpy as np
+from typing import List, Dict, Union, ClassVar, Set
 
 from utility import constants as con, utilities as util
 import interfaces.interface_utility as interface_util
-import block_classes.block_utility as block_util
-import block_classes.ground_materials as ground_materials
+from block_classes import ground_materials, block_utility as block_util
 import board_generation.biomes as biome_classes
 
 
@@ -40,6 +38,7 @@ class BoardGenerator:
     # chance of a plant to occur when location is valid 10%
     FLORA_LIKELYHOOD = 0.1
 
+    __environment_material_name: ClassVar[Set[str]]
     biomes: List[type]
 
     def __init__(
@@ -47,6 +46,7 @@ class BoardGenerator:
         allowed_biomes: Union[List, str] = "ALL",
         biome_size: Union[str, util.Size] = "normal",
     ):
+        self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
         if allowed_biomes == "ALL":
             self.biomes = biome_classes.all_biomes
         else:
@@ -109,7 +109,7 @@ class BoardGenerator:
                 # only add plants in caves
                 if matrix[row_i][col_i] == "Air" and uniform(0, 1) < self.FLORA_LIKELYHOOD:
                     flora_likelyhoods = biome.get_flora_lh_at_depth(row_i)
-                    self.__add_flora(col_i, row_i, flora_likelyhoods, matrix)
+                    self.__add_environment(col_i, row_i, flora_likelyhoods, matrix)
                 elif uniform(0, 1) < self.CLUSTER_LIKELYHOOD:
                     ore_likelyhoods = biome.get_ore_lh_at_depth(row_i)
                     self.__add_ore_cluster(col_i, row_i, ore_likelyhoods, matrix)
@@ -124,10 +124,13 @@ class BoardGenerator:
                                          list(background_likelyhoods.values()), k=1)[0]
                 background_matrix[row_i][col_i] = background_mat
 
-    def __add_flora(self, col_i, row_i, flora_likelyhoods, matrix):
+    def __add_environment(self, col_i, row_i, flora_likelyhoods, matrix):
         s_coords = self.__get_surrounding_block_coords(col_i, row_i)
-        elligable_indexes = [coord for coord in s_coords if coord is not None and
-                             matrix[coord[1]][coord[0]] != "Air"]
+        elligable_indexes = []
+        for coord in s_coords:
+            if coord is not None and matrix[coord[1]][coord[0]] != "Air" and \
+                    matrix[coord[1]][coord[0]] not in self.__environment_material_names:
+                elligable_indexes.append(coord)
         # if direction cant have a flora return
         if len(elligable_indexes) == 0:
             return

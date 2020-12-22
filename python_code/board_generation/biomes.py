@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar
 
 import utility.utilities as util
-import block_classes.environment_materials as flora_materials
+import block_classes.environment_materials as environment_materials
 import block_classes.ground_materials as ground_materials
 if TYPE_CHECKING:
     from block_classes.materials import DepthMaterial
@@ -113,11 +113,11 @@ class NormalBiome(Biome):
         ground_materials.Titanium
     ]
     FLORA_MATERIALS: ClassVar[List["DepthMaterial"]] = [
-        flora_materials.Fern,
-        flora_materials.Reed,
-        flora_materials.Moss,
-        flora_materials.ShroomCollection(),
-        flora_materials.Vine
+        environment_materials.Fern,
+        environment_materials.Reed,
+        environment_materials.Moss,
+        environment_materials.ShroomCollection(),
+        environment_materials.Vine
     ]
     BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.BackDirt,
@@ -141,8 +141,8 @@ class IceBiome(Biome):
         ground_materials.Titanium
     ]
     FLORA_MATERIALS: ClassVar[List["DepthMaterial"]] = [
-        flora_materials.Icicle,
-        flora_materials.SnowLayer
+        environment_materials.Icicle,
+        environment_materials.SnowLayer
     ]
     BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.BackIce

@@ -8,7 +8,7 @@ import utility.event_handling as event_handling
 import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
-import block_classes.environment_materials as flora_materials
+import block_classes.environment_materials as environment_materials
 import board.pathfinding as pathfinding
 import network.pipes as network
 import interfaces.small_interfaces as small_interface
@@ -208,7 +208,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         for block in blocks:
             if block.id in self.__buildings:
                 removed_items.append(self.remove_building(block))
-            elif isinstance(block.material, flora_materials.MultiFloraMaterial):
+            elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             else:
                 chunk = self.__chunk_from_point(block.rect.topleft)
@@ -224,7 +224,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
                     self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is still solid
-                elif isinstance(s_block.material, flora_materials.EnvironmentMaterial) and \
+                elif isinstance(s_block.material, environment_materials.EnvironmentMaterial) and \
                         index == s_block.material.CONTINUATION_DIRECTION:
                     removed_items.extend(self.remove_blocks(s_block))
         return removed_items
@@ -610,7 +610,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
                 return
             #make sure the plant is allowed to grow at the given place
-            if isinstance(small_interface.get_selected_item().material, flora_materials.MultiFloraMaterial) and not self.__can_add_flora(block, small_interface.get_selected_item().material):
+            if isinstance(small_interface.get_selected_item().material, environment_materials.MultiFloraMaterial) and not self.__can_add_flora(block, small_interface.get_selected_item().material):
                 self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
                 return
             #the first block of the selection is the start block of the material

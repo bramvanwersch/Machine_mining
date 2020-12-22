@@ -1,6 +1,6 @@
 import utility.constants as con
 import block_classes.blocks as blocks
-import block_classes.environment_materials as flora_materials
+import block_classes.environment_materials as environment_materials
 
 
 class Plant:
@@ -19,7 +19,7 @@ class Plant:
         dir = self.material.CONTINUATION_DIRECTION
         if surrounding_blocks[dir] != "Air":
             return None
-        material_obj = getattr(flora_materials, self.grow_block.name())
+        material_obj = getattr(environment_materials, self.grow_block.name())
         extension_block = blocks.Block(self.grow_block.coord, material_obj(image_number=dir), id_=self.id)
 
         #move the tip of the plant forward
