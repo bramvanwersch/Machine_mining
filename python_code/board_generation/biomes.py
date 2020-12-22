@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar
+from random import choices
 
-import utility.utilities as util
+from utility import utilities as util, constants as con
 import block_classes.environment_materials as environment_materials
 import block_classes.ground_materials as ground_materials
 if TYPE_CHECKING:
@@ -13,10 +14,13 @@ all_biomes: List[type]
 
 
 class Biome(ABC):
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian]
     FILLER_MATERIALS: ClassVar[List["DepthMaterial"]]
     ORE_MATERIALS: ClassVar[List["DepthMaterial"]]
     FLORA_MATERIALS: ClassVar[List["DepthMaterial"]]
     BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]]
+
+    distribution: util.TwoDimensionalGaussian
 
     def __init__(
         self,
@@ -26,7 +30,22 @@ class Biome(ABC):
         self.distribution = util.TwoDimensionalGaussian(x_gaussian, y_gaussian)
 
     def get_likelyhood_at_coord(self, x: int, y: int) -> float:
+        """The likelyhood of the given coordinate being part of this biome"""
         return self.distribution.probability(x, y)
+
+    @classmethod
+    def get_likelyhood_at_depth(cls, depth: int) -> float:
+        """Likelyhood of this biome occuring at exactly depth"""
+        # make sure that the depth is expressed between 1 and 100
+        norm_depth = depth / con.MAX_DEPTH * 100
+        return cls.DEPTH_DISTRIBUTION.probability(norm_depth)
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def DEPTH_DISTRIBUTION(self) -> util.Gaussian:
+        """The likelyhood of this biome occuring at a given depth"""
+        pass
 
     # noinspection PyPep8Naming
     @property
@@ -99,6 +118,7 @@ class Biome(ABC):
 
 
 class NormalBiome(Biome):
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 30)
     FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.StoneCollection(),
         ground_materials.Dirt,
@@ -127,6 +147,7 @@ class NormalBiome(Biome):
 
 
 class IceBiome(Biome):
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 20)
     FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.DirtIceCollection(),
         ground_materials.StoneIceCollection(),
@@ -149,4 +170,27 @@ class IceBiome(Biome):
     ]
 
 
-all_biomes = [NormalBiome, IceBiome]
+class BiomeGenerationDefinition(ABC):
+    BIOME_PROBABILITIES: ClassVar[Dict[type, float]]
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def BIOME_PROBABILITIES(self) -> Dict[type, float]:
+        """Dictionary linking biome to a gaussian expressing the frequency of the biome over the generation"""
+        pass
+
+    @classmethod
+    def get_biome(cls, depth: int) -> type:
+        """Calculate the likelyhood of a biome for a given depth based on the frequency of the biome overall and a
+        likelyhood given the depth"""
+        biome_lhs_at_depth = {biome: biome.get_likelyhood_at_depth(depth) * frequencey
+                              for biome, frequencey in cls.BIOME_PROBABILITIES.items()}
+        biome_type = choices(list(biome_lhs_at_depth.keys()), list(biome_lhs_at_depth.values()), k=1)[0]
+        return biome_type
+
+
+class NormalBiomeGeneration(BiomeGenerationDefinition):
+    BIOME_PROBABILITIES: ClassVar[Dict[type, float]] = {
+        NormalBiome: 0.75, IceBiome: 0.25
+    }

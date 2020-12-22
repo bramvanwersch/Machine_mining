@@ -250,6 +250,8 @@ class Size(Serializer):
 
 
 class Gaussian:
+    __slots__ = "sd", "mean"
+
     def __init__(self, mean, sd):
         self.mean = mean
         self.sd = sd
@@ -270,19 +272,20 @@ class Gaussian:
 
 class TwoDimensionalGaussian:
     """Special multivariate 2D case with symetrical variance resulting in circular/oval shape based on sigmas"""
+    __slots__ = "means", "sigmas", "covariance_matrix", "inv_covariance_matrix", "determinant", "norm_constant"
+
     def __init__(self, gaussian1, gaussian2):
-        self.__gausians = [gaussian1, gaussian2]
         self.means = array([[gaussian1.mean], [gaussian2.mean]])
         self.sigmas = array([[gaussian1.sd], [gaussian2.sd]])
         self.covariance_matrix = array([[gaussian1.sd, 0], [0, gaussian2.sd]])
-        self.inv_covaraince_matrix = linalg.inv(self.covariance_matrix)
+        self.inv_covariance_matrix = linalg.inv(self.covariance_matrix)
         self.determinant = linalg.det(self.covariance_matrix)
         self.norm_constant = 1 / (((2 * pi) ** (len(self.means) / 2)) * (self.determinant ** 0.5))
 
     def probability(self, x, y):
         x = array([[x], [y]])
         x_mu = array(x - self.means)
-        part2 = -0.5 * (x_mu.T.dot(self.inv_covaraince_matrix).dot(x_mu))
+        part2 = -0.5 * (x_mu.T.dot(self.inv_covariance_matrix).dot(x_mu))
         return float(self.norm_constant * exp(part2))
 
 

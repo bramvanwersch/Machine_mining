@@ -10,8 +10,8 @@ import board_generation.biomes as biome_classes
 
 class BoardGenerator:
     __BIOME_SIZES: ClassVar[Dict[str, util.Size]] = \
-        {"tiny": util.Size(50, 50), "small": util.Size(100, 100), "normal": util.Size(200, 200),
-         "big": util.Size(300, 300), "massive": util.Size(500, 500), "huge": util.Size(1000, 1000)}  # in blocks
+        {"tiny": util.Size(100, 100), "small": util.Size(200, 200), "normal": util.Size(500, 500),
+         "big": util.Size(750, 7500), "massive": util.Size(1000, 1000), "huge": util.Size(1500, 1500)}  # in blocks
 
     # ORE cluster values
     CLUSTER_LIKELYHOOD = 1 / 120
@@ -39,18 +39,18 @@ class BoardGenerator:
     FLORA_LIKELYHOOD = 0.1
 
     __environment_material_name: ClassVar[Set[str]]
-    biomes: List[type]
+    biome_definition: biome_classes.BiomeGenerationDefinition
 
     def __init__(
         self,
-        allowed_biomes: Union[List, str] = "ALL",
+        biome_generation_def: Union[biome_classes.BiomeGenerationDefinition, str] = "normal",
         biome_size: Union[str, util.Size] = "normal",
     ):
         self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
-        if allowed_biomes == "ALL":
-            self.biomes = biome_classes.all_biomes
+        if biome_generation_def == "normal":
+            self.biome_definition = biome_classes.NormalBiomeGeneration()
         else:
-            self.biomes = allowed_biomes
+            self.biome_definition = biome_generation_def
         self.biome_size = self.__BIOME_SIZES[biome_size] if biome_size in self.__BIOME_SIZES else biome_size
         self.biome_matrix = self.generate_biome_matrix()
         self.foreground_matrix, self.backgroun_matrix = self.__generate_foreground_string_matrix()
@@ -66,7 +66,8 @@ class BoardGenerator:
             for col_i in range(ceil(con.BOARD_SIZE.width / self.biome_size.width)):
                 mean_x = randint(col_i * self.biome_size.width, (col_i + 1) * self.biome_size.width)
                 mean_y = randint(row_i * self.biome_size.height, (row_i + 1) * self.biome_size.height)
-                biome_type = choice(self.biomes)
+                # check depths in blocks
+                biome_type = self.biome_definition.get_biome(int(mean_y / con.BLOCK_SIZE.height))
                 biome_instance = biome_type(util.Gaussian(mean_x, sd_x), util.Gaussian(mean_y, sd_y))
                 row.append(biome_instance)
             biome_matrix.append(row)
