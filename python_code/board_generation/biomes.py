@@ -2,11 +2,11 @@ from abc import ABC, abstractmethod
 from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar
 
 import utility.utilities as util
-import block_classes.flora_materials as flora_materials
+import block_classes.environment_materials as flora_materials
 import block_classes.ground_materials as ground_materials
 if TYPE_CHECKING:
     from block_classes.materials import DepthMaterial
-    from block_classes.flora_materials import FloraMaterial
+    from block_classes.environment_materials import EnvironmentMaterial
 
 
 all_biomes: List[type]
@@ -43,7 +43,7 @@ class Biome(ABC):
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def FLORA_MATERIALS(self) -> List["FloraMaterial"]:
+    def FLORA_MATERIALS(self) -> List["EnvironmentMaterial"]:
         pass
 
     # noinspection PyPep8Naming

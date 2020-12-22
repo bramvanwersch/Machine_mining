@@ -8,7 +8,7 @@ import utility.event_handling as event_handling
 import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
-import block_classes.flora_materials as flora_materials
+import block_classes.environment_materials as flora_materials
 import board.pathfinding as pathfinding
 import network.pipes as network
 import interfaces.small_interfaces as small_interface
@@ -224,7 +224,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
                     self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is still solid
-                elif isinstance(s_block.material, flora_materials.FloraMaterial) and \
+                elif isinstance(s_block.material, flora_materials.EnvironmentMaterial) and \
                         index == s_block.material.CONTINUATION_DIRECTION:
                     removed_items.extend(self.remove_blocks(s_block))
         return removed_items

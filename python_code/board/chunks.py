@@ -1,6 +1,6 @@
 import pygame
 
-import block_classes.flora_materials as flora_materials
+import block_classes.environment_materials as flora_materials
 import block_classes.materials as base_materials
 import block_classes.block_utility as block_util
 import utility.constants as con

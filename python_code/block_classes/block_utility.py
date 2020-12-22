@@ -7,7 +7,7 @@ from typing import Set
 # own imports
 import block_classes.materials as base_materials
 import block_classes.ground_materials as ground_m
-import block_classes.flora_materials as flora_m
+import block_classes.environment_materials as flora_m
 import block_classes.building_materials as build_m
 import utility.utilities as util
 
@@ -48,7 +48,7 @@ def configure_material_collections() -> None:
             selected_sets = []
             if issubclass(cls, ground_m.Burnable) and not util.is_abstract(cls):
                 selected_sets.append(fuel_materials)
-            if (issubclass(cls, flora_m.FloraMaterial) or issubclass(cls, flora_m.MultiFloraMaterial))\
+            if (issubclass(cls, flora_m.EnvironmentMaterial) or issubclass(cls, flora_m.MultiFloraMaterial))\
                     and not util.is_abstract(cls):
                 selected_sets.append(flora_materials)
             if len(selected_sets) > 0:
