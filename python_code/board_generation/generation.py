@@ -18,15 +18,15 @@ class BoardGenerator:
     __BIOME_BLEND: ClassVar[Dict[str, int]] = \
         {"tiny": 1, "small": 5, "normal": 15, "severe": 30, "extreme": 50}
 
-    # CAVE values
-    MAX_CAVES = max(int((con.CHUNK_GRID_SIZE.width * con.CHUNK_GRID_SIZE.height) / 6), 1)
+    # CAVE values TODO change these when generating dynamic map
+    MAX_CAVES = 2
     # the fraction of the distance between points based on the shortest side of the board
     POINT_FRACTION_DISTANCE = 0.35
     # distance the center of the cave should at least be away from the border 10%
     CAVE_X_BORDER_DISTANCE = int(0.1 * con.BOARD_SIZE.width)
     CAVE_Y_BORDER_DISTANCE = int(0.1 * con.BOARD_SIZE.height)
     # number of points a cave consists of
-    NUMBER_OF_CAVE_POINTS = int(con.CHUNK_GRID_SIZE.width * con.CHUNK_GRID_SIZE.height * 1.3)
+    NUMBER_OF_CAVE_POINTS = 10
     # the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
     CAVE_STOP_SPREAD_CHANCE = 0.01
 
@@ -56,11 +56,10 @@ class BoardGenerator:
         self.foreground_matrix, self.backgroun_matrix = self.__generate_foreground_string_matrix()
 
     def generate_biome_matrix(self) -> List[List[biome_classes.Biome]]:
-        """Generate a list of lists whit biomes in quadrants of th"""
         biome_matrix = []
-        # sufficient amount of overlap
-        sd_x = self.__biome_size.width * self.__biome_blend
-        sd_y = self.__biome_size.height * self.__biome_blend
+        # allow the shapes of the distributions to be a bit different
+        sd_x = self.__biome_size.width * self.__biome_blend * uniform(0.8, 1.2)
+        sd_y = self.__biome_size.height * self.__biome_blend * uniform(0.8, 1.2)
         # make sure that even partial areas of the board are covered by a biome
         for row_i in range(ceil(con.BOARD_SIZE.height / self.__biome_size.height)):
             row = []
@@ -177,10 +176,10 @@ class BoardGenerator:
         nr_caves = randint(self.MAX_CAVES - int(max(self.MAX_CAVES / 2, 1)), self.MAX_CAVES)
         for _ in range(nr_caves):
             cave_points = self.__get_cave_points()
-            #get the line between the points
-            for index in range(1, len(cave_points)):
-                point1 = cave_points[index - 1]
-                point2 = cave_points[index]
+            # get the line between the points
+            for index1 in range(1, len(cave_points)):
+                point1 = cave_points[index1 - 1]
+                point2 = cave_points[index1]
                 a, b = util.line_from_points(point1, point2)
                 if abs(a) < 1:
                     number_of_breaks = int(abs(point1[0] - point2[0]) * abs(1 / a))
@@ -189,20 +188,26 @@ class BoardGenerator:
                 break_size = (point2[0] - point1[0]) / number_of_breaks
                 x_values = [point1[0] + index * break_size for index in range(0, number_of_breaks)]
                 y_values = [a * x + b for x in x_values]
-                #make all block_classes air on the direct line
-                for index in range(len(x_values)):
-                    x = int(x_values[index])
-                    y = int(y_values[index])
-                    matrix[min(y, int(con.BOARD_SIZE.height / con.BLOCK_SIZE.height) -1)][min(x, int(con.BOARD_SIZE.width / con.BLOCK_SIZE.width) - 1)] = "Air"
-                    surrounding_coords = [coord for coord in self.__get_surrounding_block_coords(x, y) if coord is not None and matrix[coord[1]][coord[0]] != "Air"]
-                    #extend the cave around the direct line.
+                # make all block_classes air on the direct line
+                for index2 in range(len(x_values)):
+                    x = int(x_values[index2])
+                    matrix_x = min(x, int(con.BOARD_SIZE.width / con.BLOCK_SIZE.width) - 1)
+                    y = int(y_values[index2])
+                    matrix_y = min(y, int(con.BOARD_SIZE.height / con.BLOCK_SIZE.height) - 1)
+                    matrix[matrix_y][matrix_x] = "Air"
+                    surrounding_coords = [coord for coord in self.__get_surrounding_block_coords(x, y)
+                                          if coord is not None and matrix[coord[1]][coord[0]] != "Air"]
+                    # extend the cave around the direct line.
                     while len(surrounding_coords) > 0:
                         if uniform(0, 1) < self.CAVE_STOP_SPREAD_CHANCE:
                             break
-                        remove_block = choice(surrounding_coords)
-                        surrounding_coords.remove(remove_block)
-                        matrix[remove_block[1]][remove_block[0]] = "Air"
-                        surrounding_coords.extend([coord for coord in self.__get_surrounding_block_coords(*remove_block) if coord is not None and matrix[coord[1]][coord[0]] != "Air"])
+                        remove_coord = choice(surrounding_coords)
+                        surrounding_coords.remove(remove_coord)
+                        matrix[remove_coord[1]][remove_coord[0]] = "Air"
+                        additional_surrounding_coords = \
+                            [coord for coord in self.__get_surrounding_block_coords(*remove_coord)
+                             if coord is not None and matrix[coord[1]][coord[0]] != "Air"]
+                        surrounding_coords.extend(additional_surrounding_coords)
         return matrix
 
     def __get_cave_points(self):
@@ -213,7 +218,8 @@ class BoardGenerator:
                        randint(self.CAVE_Y_BORDER_DISTANCE, con.BOARD_SIZE.height - self.CAVE_Y_BORDER_DISTANCE)]
         cave_points = [first_point]
         prev_direction = uniform(0, 2 * pi)
-        amnt_points = randint(self.NUMBER_OF_CAVE_POINTS - int(max(self.NUMBER_OF_CAVE_POINTS / 2, 1)), self.NUMBER_OF_CAVE_POINTS)
+        amnt_points = randint(self.NUMBER_OF_CAVE_POINTS - int(max(self.NUMBER_OF_CAVE_POINTS / 2, 1)),
+                              self.NUMBER_OF_CAVE_POINTS)
         while len(cave_points) < amnt_points:
             radius = randint(max(1, int(max_radius / 2)), max_radius)
             prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
@@ -221,7 +227,7 @@ class BoardGenerator:
                         con.BOARD_SIZE.width - self.CAVE_X_BORDER_DISTANCE)
             new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), self.CAVE_Y_BORDER_DISTANCE),
                         con.BOARD_SIZE.height - self.CAVE_Y_BORDER_DISTANCE)
-            #make sure no double points and no straight lines
+            # make sure no double points and no straight lines
             if [new_x, new_y] in cave_points or \
                     int(new_x / con.BLOCK_SIZE.width) == int(cave_points[-1][0] / con.BLOCK_SIZE.width) or \
                     int(new_y / con.BLOCK_SIZE.height) == int(cave_points[-1][1] / con.BLOCK_SIZE.height):
@@ -243,31 +249,31 @@ class BoardGenerator:
         return surrounding_coords
 
     def __add_border(self, matrix):
-        #north border
+        # north border
         rows = matrix[0:self.MAX_BORDER_SPREAD_DISTANCE]
         for row_i in range(len(rows)):
             border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(row_i)
             for col_i in range(len(matrix[row_i])):
                 if uniform(0, 1) < border_block_chance:
                     matrix[row_i][col_i] = "BorderMaterial"
-        #south border
+        # south border
         rows = matrix[- (self.MAX_BORDER_SPREAD_DISTANCE + 1):-1]
         for row_i in range(len(rows)):
             border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(row_i)
             for col_i in range(len(matrix[row_i])):
                 if uniform(0, 1) < border_block_chance:
                     matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
-        #east border
+        # east border
         for row_i in range(len(matrix)):
             for col_i in range(len(matrix[row_i][0:self.MAX_BORDER_SPREAD_DISTANCE])):
                 border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
                 if uniform(0, 1) < border_block_chance:
                     matrix[row_i][col_i] = "BorderMaterial"
-        #west border
+        # west border
         for row_i in range(len(matrix)):
             for col_i in range(len(matrix[row_i][- (self.MAX_BORDER_SPREAD_DISTANCE + 1):-1])):
                 border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
                 if uniform(0, 1) < border_block_chance:
-                    matrix[- (row_i + 1)][ - (col_i + 1)] = "BorderMaterial"
+                    matrix[- (row_i + 1)][- (col_i + 1)] = "BorderMaterial"
 
         return matrix

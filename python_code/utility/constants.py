@@ -27,8 +27,8 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 # sizes
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)
-CHUNK_SIZE = util.Size(510, 510)
-CHUNK_GRID_SIZE = util.Size(4, 4)
+CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
+CHUNK_GRID_SIZE = util.Size(8, 8)
 BOARD_SIZE = util.Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
 # preserve the board size
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
