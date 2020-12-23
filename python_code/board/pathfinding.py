@@ -351,7 +351,7 @@ class PathfindingChunk:
         for key in self.rectangle_network[direction_index]:
             if (direction_index == 0 and key < rect.centery) or (direction_index == 1 and key > rect.centerx) or\
                 (direction_index == 2 and key > rect.centery) or (direction_index == 3 and key < rect.centerx):
-                adjacent_rects = self.rectangle_network[direction_index][key]
+                adjacent_rects = self.rectangle_network[direction_index][key].copy()
             else:
                 continue
             for adj_rect in adjacent_rects:
