@@ -144,9 +144,10 @@ class Chunk(util.Serializer):
 
 
 class StartChunk(Chunk):
-    START_RECTANGLE = pygame.Rect((con.CHUNK_SIZE.width / 2 - (con.CHUNK_SIZE.width / 2) / 2,
-                                   con.CHUNK_SIZE.height / 2 - (con.CHUNK_SIZE.height / 10) / 2,
-                                   con.CHUNK_SIZE.width / 2,  con.CHUNK_SIZE.height / 10))
+    START_RECTANGLE = pygame.Rect((round((con.CHUNK_SIZE.width / 2 - (con.CHUNK_SIZE.width / 2) / 2) / 10) * 10,
+                                   round((con.CHUNK_SIZE.height / 2 - (con.CHUNK_SIZE.height / 10) / 2) / 10) * 10,
+                                   round((con.CHUNK_SIZE.width / 2) / 10) * 10,
+                                   round((con.CHUNK_SIZE.height / 5) / 10) * 10))
 
     def __init__(self, pos, foreground, background, main_sprite_group):
         foreground = self.__adjust_foreground_string_matrix(foreground)
