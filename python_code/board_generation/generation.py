@@ -18,11 +18,6 @@ class BoardGenerator:
     __BIOME_BLEND: ClassVar[Dict[str, int]] = \
         {"tiny": 1, "small": 5, "normal": 15, "severe": 30, "extreme": 50}
 
-    # ORE cluster values
-    CLUSTER_LIKELYHOOD = 1 / 120
-    # max distance of ores from the center of a cluster 49 max ores in a cluster
-    MAX_CLUSTER_SIZE = 3
-
     # CAVE values
     MAX_CAVES = max(int((con.CHUNK_GRID_SIZE.width * con.CHUNK_GRID_SIZE.height) / 6), 1)
     # the fraction of the distance between points based on the shortest side of the board
@@ -33,18 +28,16 @@ class BoardGenerator:
     # number of points a cave consists of
     NUMBER_OF_CAVE_POINTS = int(con.CHUNK_GRID_SIZE.width * con.CHUNK_GRID_SIZE.height * 1.3)
     # the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
-    CAVE_STOP_SPREAD_CHANCE = 0.05
+    CAVE_STOP_SPREAD_CHANCE = 0.01
 
     # BORDER values
     BORDER_SPREAD_LIKELYHOOD = util.Gaussian(0, 2)
     MAX_BORDER_SPREAD_DISTANCE = 4
 
-    # PLANT values
-    # chance of a plant to occur when location is valid 10%
-    FLORA_LIKELYHOOD = 0.1
-
-    __environment_material_name: ClassVar[Set[str]]
+    __environment_material_name: Set[str]
     __biome_definition: biome_classes.BiomeGenerationDefinition
+    __biome_size: util.Size
+    __biome_blend: int
 
     def __init__(
         self,
@@ -119,12 +112,12 @@ class BoardGenerator:
                 biome_liklyhoods = self.biome_liklyhoods_from_point(x, y)
                 biome = choices(list(biome_liklyhoods.keys()), list(biome_liklyhoods.values()), k=1)[0]
                 # only add plants in caves
-                if matrix[row_i][col_i] == "Air" and uniform(0, 1) < self.FLORA_LIKELYHOOD:
+                if matrix[row_i][col_i] == "Air" and uniform(0, 1) < biome.FLORA_LIKELYHOOD:
                     flora_likelyhoods = biome.get_flora_lh_at_depth(row_i)
                     self.__add_environment(col_i, row_i, flora_likelyhoods, matrix)
-                elif uniform(0, 1) < self.CLUSTER_LIKELYHOOD:
+                elif uniform(0, 1) < biome.CLUSTER_LIKELYHOOD:
                     ore_likelyhoods = biome.get_ore_lh_at_depth(row_i)
-                    self.__add_ore_cluster(col_i, row_i, ore_likelyhoods, matrix)
+                    self.__add_ore_cluster(col_i, row_i, ore_likelyhoods, matrix, biome)
                 elif matrix[row_i][col_i] is None:
                     filler_likelyhoods = biome.get_filler_lh_at_depth(row_i)
                     filler = choices(list(filler_likelyhoods.keys()), list(filler_likelyhoods.values()), k=1)[0]
@@ -154,9 +147,9 @@ class BoardGenerator:
                         list(flora_likelyhoods[chosen_index].values()), k=1)[0]
         matrix[row_i][col_i] = flora
 
-    def __add_ore_cluster(self, col_i, row_i, ore_likelyhoods, matrix):
+    def __add_ore_cluster(self, col_i, row_i, ore_likelyhoods, matrix, biome):
         ore = choices(list(ore_likelyhoods.keys()), list(ore_likelyhoods.values()), k=1)[0]
-        ore_locations = self.__create_ore_cluster(ore, (col_i, row_i))
+        ore_locations = self.__create_ore_cluster(ore, (col_i, row_i), biome)
         ore_locations.append([col_i, row_i])
         for loc in ore_locations:
             try:
@@ -167,7 +160,7 @@ class BoardGenerator:
                 # if outside board skip
                 continue
 
-    def __create_ore_cluster(self, ore, center):
+    def __create_ore_cluster(self, ore, center, biome):
         size = getattr(ground_materials, ore).get_cluster_size()
         ore_locations = []
         while len(ore_locations) <= size:
@@ -175,7 +168,7 @@ class BoardGenerator:
             for index in range(2):
                 pos = choice([-1, 1])
                 # assert index is bigger then 0
-                location[index] = max(0, pos * randint(0, self.MAX_CLUSTER_SIZE) + center[index])
+                location[index] = max(0, pos * randint(0, biome.MAX_CLUSTER_SIZE) + center[index])
             if location not in ore_locations:
                 ore_locations.append(location)
         return ore_locations

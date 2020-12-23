@@ -14,6 +14,12 @@ all_biomes: List[type]
 
 
 class Biome(ABC):
+    CLUSTER_LIKELYHOOD: float = 1 / 120
+    # max distance of ores from the center of a cluster 49 max ores in a cluster
+    MAX_CLUSTER_SIZE: int = 3
+    # chance of a plant to occur when location is valid 10%
+    FLORA_LIKELYHOOD = 0.1
+
     DEPTH_DISTRIBUTION: ClassVar[util.Gaussian]
     FILLER_MATERIALS: ClassVar[List["DepthMaterial"]]
     ORE_MATERIALS: ClassVar[List["DepthMaterial"]]
