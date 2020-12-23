@@ -9,9 +9,14 @@ import board_generation.biomes as biome_classes
 
 
 class BoardGenerator:
+    # the size of quadrants where a new biome is chosen
     __BIOME_SIZES: ClassVar[Dict[str, util.Size]] = \
         {"tiny": util.Size(100, 100), "small": util.Size(200, 200), "normal": util.Size(500, 500),
          "big": util.Size(750, 7500), "massive": util.Size(1000, 1000), "huge": util.Size(1500, 1500)}  # in blocks
+
+    # determines the standard deviation of the biomes, high values means very broad distributions
+    __BIOME_BLEND: ClassVar[Dict[str, int]] = \
+        {"tiny": 1, "small": 5, "normal": 15, "severe": 30, "extreme": 50}
 
     # ORE cluster values
     CLUSTER_LIKELYHOOD = 1 / 120
@@ -39,43 +44,49 @@ class BoardGenerator:
     FLORA_LIKELYHOOD = 0.1
 
     __environment_material_name: ClassVar[Set[str]]
-    biome_definition: biome_classes.BiomeGenerationDefinition
+    __biome_definition: biome_classes.BiomeGenerationDefinition
 
     def __init__(
         self,
-        biome_generation_def: Union[biome_classes.BiomeGenerationDefinition, str] = "normal",
+        biome_generation_def: Union[biome_classes.BiomeGenerationDefinition, str] = None,
         biome_size: Union[str, util.Size] = "normal",
+        biome_blend: Union[str, int] = "normal"
     ):
         self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
-        if biome_generation_def == "normal":
-            self.biome_definition = biome_classes.NormalBiomeGeneration()
-        else:
-            self.biome_definition = biome_generation_def
-        self.biome_size = self.__BIOME_SIZES[biome_size] if biome_size in self.__BIOME_SIZES else biome_size
+        self.__biome_definition = biome_generation_def if biome_generation_def else\
+            biome_classes.NormalBiomeGeneration()
+        self.__biome_size = self.__BIOME_SIZES[biome_size] if biome_size in self.__BIOME_SIZES else biome_size
+        self.__biome_blend = self.__BIOME_BLEND[biome_blend] if biome_blend in self.__BIOME_BLEND else biome_blend
+
+        # TODO make these dynamically grow when new areas are loaded
         self.biome_matrix = self.generate_biome_matrix()
         self.foreground_matrix, self.backgroun_matrix = self.__generate_foreground_string_matrix()
 
     def generate_biome_matrix(self) -> List[List[biome_classes.Biome]]:
+        """Generate a list of lists whit biomes in quadrants of th"""
         biome_matrix = []
         # sufficient amount of overlap
-        sd_x = self.biome_size.width * 15
-        sd_y = self.biome_size.height * 15
+        sd_x = self.__biome_size.width * self.__biome_blend
+        sd_y = self.__biome_size.height * self.__biome_blend
         # make sure that even partial areas of the board are covered by a biome
-        for row_i in range(ceil(con.BOARD_SIZE.height / self.biome_size.height)):
+        for row_i in range(ceil(con.BOARD_SIZE.height / self.__biome_size.height)):
             row = []
-            for col_i in range(ceil(con.BOARD_SIZE.width / self.biome_size.width)):
-                mean_x = randint(col_i * self.biome_size.width, (col_i + 1) * self.biome_size.width)
-                mean_y = randint(row_i * self.biome_size.height, (row_i + 1) * self.biome_size.height)
+            for col_i in range(ceil(con.BOARD_SIZE.width / self.__biome_size.width)):
+                # make sure that distribution centers are not right at the edge of the quadrant
+                mean_x = randint(int(col_i * self.__biome_size.width * 1.1),
+                                 int((col_i + 1) * self.__biome_size.width * 0.9))
+                mean_y = randint(int(row_i * self.__biome_size.height * 1.1),
+                                 int((row_i + 1) * self.__biome_size.height * 0.9))
                 # check depths in blocks
-                biome_type = self.biome_definition.get_biome(int(mean_y / con.BLOCK_SIZE.height))
+                biome_type = self.__biome_definition.get_biome(int(mean_y / con.BLOCK_SIZE.height))
                 biome_instance = biome_type(util.Gaussian(mean_x, sd_x), util.Gaussian(mean_y, sd_y))
                 row.append(biome_instance)
             biome_matrix.append(row)
         return biome_matrix
 
     def biome_liklyhoods_from_point(self, x, y):
-        biome_matrix_col = int(x / self.biome_size.width)
-        biome_matrix_row = int(y / self.biome_size.height)
+        biome_matrix_col = int(x / self.__biome_size.width)
+        biome_matrix_row = int(y / self.__biome_size.height)
         main_biome = self.biome_matrix[biome_matrix_row][biome_matrix_col]
         surrounding_biomes = [main_biome]
         # collect all surrounding biomes

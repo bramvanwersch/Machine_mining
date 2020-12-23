@@ -30,3 +30,4 @@ INTERFACE FEATURES:
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
 - add numpy arrays for the chunks instead of the current lists of lists
+- make the board dynamically grow when new areas are explored but in a seeded way
