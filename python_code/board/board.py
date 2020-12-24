@@ -225,7 +225,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                     self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is still solid
                 elif isinstance(s_block.material, environment_materials.EnvironmentMaterial) and \
-                        index == s_block.material.CONTINUATION_DIRECTION:
+                        index == s_block.material.START_DIRECTION:
                     removed_items.extend(self.remove_blocks(s_block))
         return removed_items
 
