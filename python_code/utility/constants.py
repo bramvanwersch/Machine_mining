@@ -28,15 +28,18 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-CHUNK_GRID_SIZE = util.Size(8, 8)
-BOARD_SIZE = util.Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
+INIT_CHUNK_GRID_SIZE = util.Size(5, 5)
+BOARD_SIZE = util.Size(INIT_CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, INIT_CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
 # preserve the board size
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
-START_CHUNK_POS = (1, 1)  # has to be positive
-if START_CHUNK_POS[0] >= CHUNK_GRID_SIZE[0] or START_CHUNK_POS[1] >= CHUNK_GRID_SIZE[0]:
+START_DEPTH = 250
+START_CHUNK_POS = (1sssss, int(START_DEPTH / CHUNK_SIZE.height))  # within the chunk_tree of board. x is always 0
+if START_CHUNK_POS[0] >= INIT_CHUNK_GRID_SIZE[0] or START_CHUNK_POS[1] >= INIT_CHUNK_GRID_SIZE[0]:
     raise util.GameException("Start chunk must be within the board")
 BLOCK_SIZE = util.Size(10, 10)
-MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
+MAX_DEPTH = 5_000  # in blocks
+# area in pixels when starting the game that has pre-calculated caves and structures
+INIT_BIOME_LOAD_SPACE = 20 * CHUNK_SIZE.width
 
 # windows
 INTERFACE_WINDOW_SIZE = util.Size(500, 700)

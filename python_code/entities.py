@@ -246,6 +246,7 @@ class MovingEntity(ZoomableEntity):
         new_centery = max(0.5 * self.orig_rect.height,
                           min(self.orig_rect.centery + self.speed.y,
                               con.ORIGINAL_BOARD_SIZE.height - 0.5 * self.orig_rect.height))
+        return self.orig_rect.centerx + self.speed.x, self.orig_rect.centery + self.speed.y
         return new_centerx, new_centery
 
 

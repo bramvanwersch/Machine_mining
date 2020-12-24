@@ -2,7 +2,7 @@ from random import uniform
 import pygame
 
 import utility.utilities as util
-import board_generation.generation as generator
+import board_generation.board_generator as generator
 import utility.constants as con
 import utility.event_handling as event_handling
 import block_classes.blocks as block_classes
@@ -31,7 +31,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         # setup the board
         self.pf = pathfinding.PathFinder()
 
-        self.chunk_matrix = chunk_matrix if chunk_matrix else self.__generate_chunk_matrix(main_sprite_group)
+        self.chunk_tree = self.__generate_chunk_matrix(main_sprite_group)
 
         self.task_control = None
 
@@ -73,7 +73,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def to_dict(self):
         return {
-            "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
+            "chunk_matrix": [chunk.to_dict() for row in self.chunk_tree for chunk in row],
             "pipe_coordinates": self.pipe_network.pipe_coordinates(),
             "buildings": [building.to_dict() for building in self.__buildings.values()],
             "grow_update_time": self.__grow_update_time
@@ -91,8 +91,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         inst.add_blocks(*[block_classes.NetworkEdgeBlock(pos, getattr(build_materials, type_)) for pos, type_ in pipe_coords])
 
     def __grow_flora(self):
-        for row in self.chunk_matrix:
-            for chunk in row:
+        for row_dict in self.chunk_tree.values():
+            for chunk in row_dict.values():
                 for plant in chunk.plants.values():
                     if plant.can_grow() and uniform(0,1) < plant.material.GROW_CHANCE:
                         new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
@@ -101,33 +101,30 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def __generate_chunk_matrix(self, main_sprite_group):
         board_generator = generator.BoardGenerator()
-        foreground_matrix = board_generator.foreground_matrix
-        background_matrix = board_generator.backgroun_matrix
-        chunk_matrix = []
-        for col_c in range(con.CHUNK_GRID_SIZE.height):
-            chunk_row = []
-            for row_c in range(con.CHUNK_GRID_SIZE.width):
-                point_pos = (row_c * con.CHUNK_SIZE.width, col_c * con.CHUNK_SIZE.height)
-                for_string_matrix = [row[interface_util.p_to_c(row_c * con.CHUNK_SIZE.height):interface_util.p_to_r((row_c + 1) * con.CHUNK_SIZE.height)] for\
-                    row in foreground_matrix[interface_util.p_to_r(col_c * con.CHUNK_SIZE.width):interface_util.p_to_r((col_c + 1) * con.CHUNK_SIZE.width)]]
-                back_string_matrix = [row[interface_util.p_to_c(row_c * con.CHUNK_SIZE.height):interface_util.p_to_r((row_c + 1) * con.CHUNK_SIZE.height)] for\
-                    row in background_matrix[interface_util.p_to_r(col_c * con.CHUNK_SIZE.width):interface_util.p_to_r((col_c + 1) * con.CHUNK_SIZE.width)]]
-                if (row_c, col_c) == con.START_CHUNK_POS:
-                    chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
+        chunk_tree = {}
+        start_pos = [0 - con.START_CHUNK_POS[0] * con.CHUNK_SIZE.width, 0]
+        for row_i in range(con.INIT_CHUNK_GRID_SIZE.height):
+            chunk_row = {}
+            for col_i in range(con.INIT_CHUNK_GRID_SIZE.width):
+                pixel_pos = (start_pos[0] + col_i * con.CHUNK_SIZE.width, start_pos[1] + row_i * con.CHUNK_SIZE.height)
+                for_string_matrix, back_string_matrix = board_generator.generate_chunk(pixel_pos)
+                chunk_row_i = int(pixel_pos[1] / con.CHUNK_SIZE.height)
+                chunk_col_i = int(pixel_pos[0] / con.CHUNK_SIZE.width)
+                if (chunk_col_i, chunk_row_i) == con.START_CHUNK_POS:
+                    chunk = chunks.StartChunk(pixel_pos, for_string_matrix, back_string_matrix, main_sprite_group)
                 else:
-                    chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
-                chunk_row.append(chunk)
+                    chunk = chunks.Chunk(pixel_pos, for_string_matrix, back_string_matrix, main_sprite_group)
+                chunk_row_i = int(pixel_pos[1] / con.CHUNK_SIZE.height)
+                chunk_col_i = int(pixel_pos[0] / con.CHUNK_SIZE.width)
+                if chunk_row_i in chunk_tree:
+                    chunk_tree[chunk_row_i][chunk_col_i] = chunk
+                else:
+                    chunk_tree[chunk_row_i] = {chunk_col_i: chunk}
                 self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
-            chunk_matrix.append(chunk_row)
-        return chunk_matrix
+        return chunk_tree
 
     def get_start_chunk(self):
-        for row in self.chunk_matrix:
-            for chunk in row:
-                if isinstance(chunk, chunks.StartChunk):
-                    return chunk
-        #should not happen
-        return None
+        return self.chunk_tree[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]]
 
     def __get_chunks_from_rect(self, rect):
         affected_chunks = []
@@ -399,7 +396,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def __chunk_from_point(self, point):
         column, row = interface_util.p_to_cp(point)
-        return self.chunk_matrix[row][column]
+        return self.chunk_tree[row][column]
 
     def __block_from_point(self, point):
         chunk = self.__chunk_from_point(point)
@@ -413,7 +410,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         :param keep: if the previous highlight should be kept
         """
         #bit retarded
-        zoom = self.chunk_matrix[0][0].layers[0]._zoom
+        zoom = self.chunk_tree[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]].layers[0]._zoom
         mouse_pos = interface_util.screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
@@ -423,7 +420,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def add_building_rectangle(self, pos, size=(10, 10)):
         # bit retarded
-        zoom = self.chunk_matrix[0][0].layers[0]._zoom
+        zoom = self.chunk_tree[0][0].layers[0]._zoom
         mouse_pos = interface_util.screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         self.selection_rectangle = entities.ZoomableEntity(mouse_pos, size - con.BLOCK_SIZE,
                                                   self.main_sprite_group, zoom=zoom, color=con.INVISIBLE_COLOR)
@@ -480,7 +477,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
                 # bit retarded
-                zoom = self.chunk_matrix[0][0].layers[0]._zoom
+                zoom = self.chunk_tree[0][0].layers[0]._zoom
                 board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos, self.main_sprite_group.target, zoom)
                 chunk = self.__chunk_from_point(board_coord)
                 chunk.get_block(board_coord).action()
@@ -655,17 +652,17 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 overlap_blocks = self.__get_blocks_from_rect(overlap_rect)
             else:
                 overlap_blocks = [block]
-            self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group, removed_blocks=overlap_blocks)
-
-
+            self.task_control.add(self._mode.name, block, finish_block=finish_block, original_group=group, removed_blocks=overlap_blocks)
 
     def __add_starter_buildings(self):
         """
         Add all starter building that should be placed before the game starts
         """
         start_chunk = self.get_start_chunk()
-        appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width + start_chunk.rect.left,
-                                              + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + + start_chunk.rect.top)
+        appropriate_location = \
+            pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width)
+                           * con.BLOCK_SIZE.width + start_chunk.rect.left - con.START_CHUNK_POS[0] * con.CHUNK_SIZE.width,
+                           start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top - con.START_CHUNK_POS[1] * con.CHUNK_SIZE.height)
         t = buildings.Terminal(appropriate_location + (60, -10), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (40, -10), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (20, -10), self.main_sprite_group)

@@ -25,6 +25,7 @@ class Biome(ABC):
     ORE_MATERIALS: ClassVar[List["DepthMaterial"]]
     FLORA_MATERIALS: ClassVar[List["DepthMaterial"]]
     BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]]
+    __slots__ = "distribution"
 
     distribution: util.TwoDimensionalGaussian
 

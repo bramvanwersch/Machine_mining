@@ -147,11 +147,12 @@ class StartChunk(Chunk):
     START_RECTANGLE = pygame.Rect((round((con.CHUNK_SIZE.width / 2 - (con.CHUNK_SIZE.width / 2) / 2) / 10) * 10,
                                    round((con.CHUNK_SIZE.height / 2 - (con.CHUNK_SIZE.height / 10) / 2) / 10) * 10,
                                    round((con.CHUNK_SIZE.width / 2) / 10) * 10,
-                                   round((con.CHUNK_SIZE.height / 5) / 10) * 10))
+                                   round((con.CHUNK_SIZE.height / 5) / 10) * 10))  # relative to the current chunk
 
     def __init__(self, pos, foreground, background, main_sprite_group):
         foreground = self.__adjust_foreground_string_matrix(foreground)
         super().__init__(pos, foreground, background, main_sprite_group)
+        print(self.rect, self.START_RECTANGLE)
 
     def __adjust_foreground_string_matrix(self, matrix):
         #generate the air space at the start position

@@ -244,7 +244,7 @@ class Game(Scene, util.Serializer):
         start_chunk = self.board.get_start_chunk()
         appropriate_location = \
             (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width +
-             start_chunk.rect.left, + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
+             start_chunk.rect.left, start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(5):
             entities.Worker(appropriate_location, self.sprite_group, board=self.board, task_control=self.task_control)
         # add one of the imventories of the terminal
@@ -318,8 +318,8 @@ class Game(Scene, util.Serializer):
         # rectangles containing part or whole chunks that are visible due to vision
         vision_u_rects = []
 
-        for row in self.board.chunk_matrix:
-            for chunk in row:
+        for row_dict in self.board.chunk_tree.values():
+            for chunk in row_dict.values():
                 rect = chunk.layers[0].get_update_rect()
                 if rect is None:
                     continue
