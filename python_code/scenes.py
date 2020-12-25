@@ -320,6 +320,8 @@ class Game(Scene, util.Serializer):
 
         for row in self.board.chunk_matrix:
             for chunk in row:
+                if chunk is None:
+                    continue
                 rect = chunk.layers[0].get_update_rect()
                 if rect is None:
                     continue

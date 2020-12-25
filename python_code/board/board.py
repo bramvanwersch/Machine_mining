@@ -93,6 +93,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
     def __grow_flora(self):
         for row in self.chunk_matrix:
             for chunk in row:
+                if chunk is None:
+                    continue
                 for plant in chunk.plants.values():
                     if plant.can_grow() and uniform(0,1) < plant.material.GROW_CHANCE:
                         new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
@@ -100,34 +102,23 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                             self.add_blocks(*new_blocks)
 
     def __generate_chunk_matrix(self, main_sprite_group):
+        chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
+                        for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
         board_generator = generator.BoardGenerator()
-        foreground_matrix = board_generator.foreground_matrix
-        background_matrix = board_generator.backgroun_matrix
-        chunk_matrix = []
-        for col_c in range(con.CHUNK_GRID_SIZE.height):
-            chunk_row = []
-            for row_c in range(con.CHUNK_GRID_SIZE.width):
-                point_pos = (row_c * con.CHUNK_SIZE.width, col_c * con.CHUNK_SIZE.height)
-                for_string_matrix = [row[interface_util.p_to_c(row_c * con.CHUNK_SIZE.height):interface_util.p_to_r((row_c + 1) * con.CHUNK_SIZE.height)] for\
-                    row in foreground_matrix[interface_util.p_to_r(col_c * con.CHUNK_SIZE.width):interface_util.p_to_r((col_c + 1) * con.CHUNK_SIZE.width)]]
-                back_string_matrix = [row[interface_util.p_to_c(row_c * con.CHUNK_SIZE.height):interface_util.p_to_r((row_c + 1) * con.CHUNK_SIZE.height)] for\
-                    row in background_matrix[interface_util.p_to_r(col_c * con.CHUNK_SIZE.width):interface_util.p_to_r((col_c + 1) * con.CHUNK_SIZE.width)]]
-                if (row_c, col_c) == con.START_CHUNK_POS:
+        for row_i in con.START_LOAD_AREA[1]:
+            for col_i in con.START_LOAD_AREA[0]:
+                point_pos = (col_i * con.CHUNK_SIZE.width, row_i * con.CHUNK_SIZE.height)
+                for_string_matrix, back_string_matrix = board_generator.generate_chunk(point_pos)
+                if (col_i, row_i) == con.START_CHUNK_POS:
                     chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
                 else:
                     chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
-                chunk_row.append(chunk)
+                chunk_matrix[row_i][col_i] = chunk
                 self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
-            chunk_matrix.append(chunk_row)
         return chunk_matrix
 
     def get_start_chunk(self):
-        for row in self.chunk_matrix:
-            for chunk in row:
-                if isinstance(chunk, chunks.StartChunk):
-                    return chunk
-        #should not happen
-        return None
+        return self.chunk_matrix[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]]
 
     def __get_chunks_from_rect(self, rect):
         affected_chunks = []
@@ -413,7 +404,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         :param keep: if the previous highlight should be kept
         """
         #bit retarded
-        zoom = self.chunk_matrix[0][0].layers[0]._zoom
+        zoom = self.get_start_chunk().layers[0]._zoom
         mouse_pos = interface_util.screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         # should the highlighted area stay when a new one is selected
         if not keep and self.__highlight_rectangle:
@@ -423,7 +414,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def add_building_rectangle(self, pos, size=(10, 10)):
         # bit retarded
-        zoom = self.chunk_matrix[0][0].layers[0]._zoom
+        zoom = self.get_start_chunk().layers[0]._zoom
         mouse_pos = interface_util.screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
         self.selection_rectangle = entities.ZoomableEntity(mouse_pos, size - con.BLOCK_SIZE,
                                                   self.main_sprite_group, zoom=zoom, color=con.INVISIBLE_COLOR)
@@ -480,7 +471,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         elif self.unpressed(1):
             if self._mode.name == "Selecting":
                 # bit retarded
-                zoom = self.chunk_matrix[0][0].layers[0]._zoom
+                zoom = self.get_start_chunk().layers[0]._zoom
                 board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos, self.main_sprite_group.target, zoom)
                 chunk = self.__chunk_from_point(board_coord)
                 chunk.get_block(board_coord).action()

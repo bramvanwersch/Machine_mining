@@ -28,13 +28,13 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-CHUNK_GRID_SIZE = util.Size(8, 8)
-BOARD_SIZE = util.Size(CHUNK_GRID_SIZE.width * CHUNK_SIZE.width, CHUNK_GRID_SIZE.height * CHUNK_SIZE.height)
+BOARD_SIZE = util.Size(10_000, 5000)
 # preserve the board size
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
-START_CHUNK_POS = (1, 1)  # has to be positive
-if START_CHUNK_POS[0] >= CHUNK_GRID_SIZE[0] or START_CHUNK_POS[1] >= CHUNK_GRID_SIZE[0]:
-    raise util.GameException("Start chunk must be within the board")
+# the center of the board
+START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
+START_LOAD_AREA = [range(START_CHUNK_POS[0] - 1, START_CHUNK_POS[0] + 2), range(0, 10)]
+
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
 
