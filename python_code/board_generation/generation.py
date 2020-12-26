@@ -20,7 +20,7 @@ class BoardGenerator:
         {"tiny": 1, "small": 5, "normal": 15, "severe": 30, "extreme": 50}
 
     # CAVE values TODO change these when generating dynamic map
-    MAX_CAVES = 10
+    MAX_CAVES = 8
     # the fraction of the distance between points based on the shortest side of the board
     POINT_FRACTION_DISTANCE = 0.35
     # distance the center of the cave should at least be away from the border 10%
@@ -29,7 +29,7 @@ class BoardGenerator:
     # number of points a cave consists of
     MAX_CAVE_POINTS = 20
     # the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
-    CAVE_STOP_SPREAD_CHANCE = 0.01
+    CAVE_STOP_SPREAD_CHANCE = 0.05
 
     # BORDER values
     BORDER_SPREAD_LIKELYHOOD = util.Gaussian(0, 2)

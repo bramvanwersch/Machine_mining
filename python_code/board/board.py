@@ -125,25 +125,26 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         tl_column, tl_row = interface_util.p_to_cp(rect.topleft)
         br_column, br_row = interface_util.p_to_cp(rect.bottomright)
         top = rect.top
-        for row in range(br_row - tl_row + 1):
+        for row in range((br_row - tl_row) + 1):
             if row == 0:
                 height = min(con.CHUNK_SIZE.height - (top % con.CHUNK_SIZE.height), rect.height)
-            else:
+            elif row == br_row - tl_row:
                 height = ((rect.bottom - top) % con.CHUNK_SIZE.height)
+            else:
+                height = con.CHUNK_SIZE.height
             left = rect.left
-            for column in range(br_column - tl_column + 1):
+            for column in range((br_column - tl_column) + 1):
                 if column == 0:
                     width = min(con.CHUNK_SIZE.width - (left % con.CHUNK_SIZE.width), rect.width)
-                else:
+                elif column == br_column - tl_column:
                     width = ((rect.right - left) % con.CHUNK_SIZE.width)
+                else:
+                    width = con.CHUNK_SIZE.width
                 topleft = (left, top)
-
-                # set width and heigth to chunk size if they are 0
-                width = con.CHUNK_SIZE.width if width == 0 else width
-                height = con.CHUNK_SIZE.height if height == 0 else height
                 new_rect = pygame.Rect((*topleft, width, height))
                 chunk = self.__chunk_from_point(topleft)
-                affected_chunks.append([chunk, new_rect])
+                if chunk is not None:
+                    affected_chunks.append([chunk, new_rect])
                 left += width
             top += height
         return affected_chunks
@@ -488,6 +489,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         if self.selection_rectangle is None:
             return
         chunks_rectangles = self.__get_chunks_from_rect(self.selection_rectangle.orig_rect)
+        if len(chunks_rectangles) == 0:
+            return
         first_chunk = chunks_rectangles[0][0]
         selection_matrix = first_chunk.overlapping_blocks(chunks_rectangles[0][1])
         for chunk, rect in chunks_rectangles[1:]:
@@ -501,8 +504,6 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             else:
                 for row_i, row in enumerate(blocks):
                     selection_matrix.append(row)
-        for index in range(len(selection_matrix[1:])):
-            assert len(selection_matrix[index]) == len(selection_matrix[index - 1])
         # the user is selecting block_classes
         if len(selection_matrix) > 0:
             self._assign_tasks(selection_matrix)
@@ -582,7 +583,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         sur_blocks = self.surrounding_blocks(block)
 
         if sur_blocks[flora.CONTINUATION_DIRECTION  - 2] != None and\
-                sur_blocks[flora.CONTINUATION_DIRECTION  - 2].transparant_group == 0:
+                sur_blocks[flora.CONTINUATION_DIRECTION - 2].transparant_group == 0:
             return True
         return False
 
