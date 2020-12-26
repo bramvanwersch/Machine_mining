@@ -137,6 +137,10 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 else:
                     width = ((rect.right - left) % con.CHUNK_SIZE.width)
                 topleft = (left, top)
+
+                # set width and heigth to chunk size if they are 0
+                width = con.CHUNK_SIZE.width if width == 0 else width
+                height = con.CHUNK_SIZE.height if height == 0 else height
                 new_rect = pygame.Rect((*topleft, width, height))
                 chunk = self.__chunk_from_point(topleft)
                 affected_chunks.append([chunk, new_rect])
@@ -481,7 +485,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def __process_selection(self):
 
-        if self.selection_rectangle == None:
+        if self.selection_rectangle is None:
             return
         chunks_rectangles = self.__get_chunks_from_rect(self.selection_rectangle.orig_rect)
         first_chunk = chunks_rectangles[0][0]
