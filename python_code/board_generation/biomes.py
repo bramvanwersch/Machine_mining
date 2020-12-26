@@ -32,8 +32,10 @@ class Biome(ABC):
         self,
         x_gaussian: util.Gaussian,
         y_gaussian: util.Gaussian,
+        covariance1: float = 0.0,
+        covariance2: float = 0.0,
     ):
-        self.distribution = util.TwoDimensionalGaussian(x_gaussian, y_gaussian)
+        self.distribution = util.TwoDimensionalGaussian(x_gaussian, y_gaussian, covariance1, covariance2)
 
     def get_likelyhood_at_coord(self, x: int, y: int) -> float:
         """The likelyhood of the given coordinate being part of this biome"""

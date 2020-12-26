@@ -176,8 +176,9 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 surrounding_pos[1] < 0:
                 continue
             chunk = self.__chunk_from_point(surrounding_pos)
-            surrounding_block = chunk.get_block(surrounding_pos)
-            blocks[index] = surrounding_block
+            if chunk:
+                surrounding_block = chunk.get_block(surrounding_pos)
+                blocks[index] = surrounding_block
         return blocks
 
     def surrounding_chunks(self, chunk):

@@ -274,10 +274,10 @@ class TwoDimensionalGaussian:
     """Special multivariate 2D case with symetrical variance resulting in circular/oval shape based on sigmas"""
     __slots__ = "means", "sigmas", "covariance_matrix", "inv_covariance_matrix", "determinant", "norm_constant"
 
-    def __init__(self, gaussian1, gaussian2):
+    def __init__(self, gaussian1, gaussian2, covariance1=0, covariance2=0):
         self.means = array([[gaussian1.mean], [gaussian2.mean]])
         self.sigmas = array([[gaussian1.sd], [gaussian2.sd]])
-        self.covariance_matrix = array([[gaussian1.sd, 0], [0, gaussian2.sd]])
+        self.covariance_matrix = array([[gaussian1.sd, covariance1], [covariance2, gaussian2.sd]])
         self.inv_covariance_matrix = linalg.inv(self.covariance_matrix)
         self.determinant = linalg.det(self.covariance_matrix)
         self.norm_constant = 1 / (((2 * pi) ** (len(self.means) / 2)) * (self.determinant ** 0.5))

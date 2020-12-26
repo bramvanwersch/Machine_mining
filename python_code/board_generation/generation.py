@@ -27,7 +27,7 @@ class BoardGenerator:
     CAVE_X_BORDER_DISTANCE = int(0.1 * con.BOARD_SIZE.width)
     CAVE_Y_BORDER_DISTANCE = int(0.1 * con.BOARD_SIZE.height)
     # number of points a cave consists of
-    NUMBER_OF_CAVE_POINTS = 10
+    MAX_CAVE_POINTS = 20
     # the chance for a cave to stop extending around its core. Do not go lower then 0.0001 --> takes a long time
     CAVE_STOP_SPREAD_CHANCE = 0.01
 
@@ -59,19 +59,23 @@ class BoardGenerator:
 
     def __generate_biomes(self) -> List[List[biome_classes.Biome]]:
         biome_matrix = []
-        # allow the shapes of the distributions to be a bit different
-        sd_x = self.__biome_size.width * self.__biome_blend * uniform(0.8, 1.2)
-        sd_y = self.__biome_size.height * self.__biome_blend * uniform(0.8, 1.2)
+
         # make sure that even partial areas of the board are covered by a biome
         for row_i in range(ceil(con.BOARD_SIZE.height / self.__biome_size.height)):
             row = []
             for col_i in range(ceil(con.BOARD_SIZE.width / self.__biome_size.width)):
-                # make sure that distribution centers are not right at the edge of the quadrant
-                mean_x = randint(col_i * self.__biome_size.width, col_i * 1.5 * self.__biome_size.width)
-                mean_y = randint(row_i * self.__biome_size.height, row_i * 1.5 * self.__biome_size.height)
+                # allow the shapes of the distributions to be a bit different
+                sd_x = self.__biome_size.width * self.__biome_blend * uniform(0.6, 1.4)
+                sd_y = self.__biome_size.height * self.__biome_blend * uniform(0.6, 1.4)
+                # allow the distribution to be tilted
+                cov1 = uniform(-sd_x, sd_x)
+                cov2 = uniform(-sd_y, sd_y)
+                mean_x = col_i * self.__biome_size.width + 0.5 * self.__biome_size.width
+                mean_y = row_i * self.__biome_size.height + 0.5 * self.__biome_size.height
+
                 # check depths in blocks
                 biome_type = self.__biome_definition.get_biome(int(mean_y / con.BLOCK_SIZE.height))
-                biome_instance = biome_type(util.Gaussian(mean_x, sd_x), util.Gaussian(mean_y, sd_y))
+                biome_instance = biome_type(util.Gaussian(mean_x, sd_x), util.Gaussian(mean_y, sd_y), cov1, cov2)
                 row.append(biome_instance)
             biome_matrix.append(row)
         return biome_matrix
@@ -121,7 +125,9 @@ class BoardGenerator:
                   for _ in range(interface_util.p_to_r(con.CHUNK_SIZE.height))]
         background_matrix = [[None for _ in range(interface_util.p_to_c(con.CHUNK_SIZE.width))]
                              for _ in range(interface_util.p_to_r(con.CHUNK_SIZE.height))]
-        self.__add_blocks(pygame.Rect((*topleft, *con.CHUNK_SIZE.size)), matrix, background_matrix)
+        chunk_rect = pygame.Rect((*topleft, *con.CHUNK_SIZE.size))
+        self.__add_pre_defined_blocks(chunk_rect, matrix)
+        self.__add_blocks(chunk_rect, matrix, background_matrix)
         # add a border if neccesairy
         if topleft[1] == 0:
             self.__add_border(matrix, "north")
@@ -129,7 +135,7 @@ class BoardGenerator:
             self.__add_border(matrix, "south")
         return matrix, background_matrix
 
-    def __add_blocks(self, rect, matrix, background_matrix):
+    def __add_pre_defined_blocks(self, rect, matrix):
         for row_i in range(int(rect.height / con.BLOCK_SIZE.height)):
             for col_i in range(int(rect.width / con.BLOCK_SIZE.width)):
                 block_x_coord = int(rect.left / con.BLOCK_SIZE.width) + col_i
@@ -137,6 +143,12 @@ class BoardGenerator:
                 # add pre_defined_blocks
                 if (block_x_coord, block_y_coord) in self.__predefined_blocks:
                     matrix[row_i][col_i] = self.__predefined_blocks.get((block_x_coord, block_y_coord))
+
+    def __add_blocks(self, rect, matrix, background_matrix):
+        for row_i in range(int(rect.height / con.BLOCK_SIZE.height)):
+            for col_i in range(int(rect.width / con.BLOCK_SIZE.width)):
+                block_x_coord = int(rect.left / con.BLOCK_SIZE.width) + col_i
+                block_y_coord = int(rect.top / con.BLOCK_SIZE.height) + row_i
                 block = matrix[row_i][col_i]
                 # determine biome based on coordinate
                 biome_liklyhoods = self.biome_liklyhoods_from_point(block_x_coord * con.BLOCK_SIZE.width,
@@ -250,8 +262,8 @@ class BoardGenerator:
 
         cave_points = [start_point]
         prev_direction = uniform(0, 2 * pi)
-        amnt_points = randint(self.NUMBER_OF_CAVE_POINTS - int(max(self.NUMBER_OF_CAVE_POINTS / 2, 1)),
-                              self.NUMBER_OF_CAVE_POINTS)
+        amnt_points = randint(self.MAX_CAVE_POINTS - int(max(self.MAX_CAVE_POINTS / 2, 1)),
+                              self.MAX_CAVE_POINTS)
         while len(cave_points) < amnt_points:
             radius = randint(max(1, int(max_radius / 2)), max_radius)
             prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
