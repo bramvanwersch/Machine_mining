@@ -1,5 +1,6 @@
 from random import uniform
 import pygame
+from typing import List, Union
 
 import utility.utilities as util
 import board_generation.generation as generator
@@ -23,6 +24,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
     START_RECTANGLE = pygame.Rect((con.BOARD_SIZE.width / 2 - 125, 0, 250, 50))
     BLOCK_PER_CLUSRTER = 500
 
+    chunk_matrix: List[List[Union[chunks.Chunk, None]]]
+
     def __init__(self, main_sprite_group, chunk_matrix=None, pipe_network=None, grow_update_time=0):
         event_handling.BoardEventHandler.__init__(self, [1, 2, 3, 4, con.MINING, con.CANCEL, con.BUILDING, con.SELECTING])
         self.inventorie_blocks = []
@@ -31,7 +34,12 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         # setup the board
         self.pf = pathfinding.PathFinder()
 
-        self.chunk_matrix = chunk_matrix if chunk_matrix else self.__generate_chunk_matrix(main_sprite_group)
+        self.board_generator = generator.BoardGenerator()
+        self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
+                             for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
+        self.__loaded_chunks = set()
+        self.main_sprite_group = main_sprite_group
+        self.generate_chunks(*con.START_LOAD_AREA)
 
         self.task_control = None
 
@@ -44,14 +52,13 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         self.pipe_network = network.Network(self.task_control)
 
         self.__buildings = {}
+        self.changed_light_blocks = set()
         self.__grow_update_time = grow_update_time
 
     def setup_board(self):
         self.__add_starter_buildings()
         for _ in range(10):
-            self.__grow_flora()
-
-        self.changed_light_blocks = set()
+            self.update_board()
 
     def update_board(self):
 
@@ -65,11 +72,20 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         #update pathfinding
         self.pf.update()
 
-        #grow cycle updates
+        # chunk updates
         self.__grow_update_time += con.GAME_TIME.get_time()
-        if self.__grow_update_time > con.GROW_CYCLE_UPDATE_TIME:
-            self.__grow_flora()
-            self.__grow_update_time = 0
+        for chunk in self.__loaded_chunks.copy():
+            if not chunk.is_showing():
+                continue
+            if self.__grow_update_time > con.GROW_CYCLE_UPDATE_TIME:
+                self.__grow_flora(chunk)
+                self.__grow_update_time = 0
+            # when the first update happens to a chunk meaning the player is there generate new ones.
+            if not chunk.changed[1] and chunk.changed[0]:
+                chunk_coord = interface_util.p_to_cp(chunk.rect.topleft)
+                self.generate_chunks(range(chunk_coord[0] - 1, chunk_coord[0] + 2),
+                                     range(chunk_coord[1] - 1, chunk_coord[1] + 2))
+                chunk.changed[1] = True
 
     def to_dict(self):
         return {
@@ -90,32 +106,28 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         # add the network blocks back
         inst.add_blocks(*[block_classes.NetworkEdgeBlock(pos, getattr(build_materials, type_)) for pos, type_ in pipe_coords])
 
-    def __grow_flora(self):
-        for row in self.chunk_matrix:
-            for chunk in row:
-                if chunk is None:
-                    continue
-                for plant in chunk.plants.values():
-                    if plant.can_grow() and uniform(0,1) < plant.material.GROW_CHANCE:
-                        new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
-                        if new_blocks != None:
-                            self.add_blocks(*new_blocks)
+    def __grow_flora(self, chunk):
+        for plant in chunk.plants.values():
+            if plant.can_grow() and uniform(0, 1) < plant.material.GROW_CHANCE:
+                new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
+                if new_blocks is not None:
+                    self.add_blocks(*new_blocks)
 
-    def __generate_chunk_matrix(self, main_sprite_group):
-        chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
-                        for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
-        board_generator = generator.BoardGenerator()
-        for row_i in con.START_LOAD_AREA[1]:
-            for col_i in con.START_LOAD_AREA[0]:
+    def generate_chunks(self, col_coords_load, row_coords_load):
+        for row_i in row_coords_load:
+            for col_i in col_coords_load:
+                if self.chunk_matrix[row_i][col_i] is not None:
+                    continue
                 point_pos = (col_i * con.CHUNK_SIZE.width, row_i * con.CHUNK_SIZE.height)
-                for_string_matrix, back_string_matrix = board_generator.generate_chunk(point_pos)
+                for_string_matrix, back_string_matrix = self.board_generator.generate_chunk(point_pos)
                 if (col_i, row_i) == con.START_CHUNK_POS:
-                    chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
+                    chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
+                                              first_time=True)
                 else:
-                    chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, main_sprite_group)
-                chunk_matrix[row_i][col_i] = chunk
+                    chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group)
+                self.chunk_matrix[row_i][col_i] = chunk
+                self.__loaded_chunks.add(chunk)
                 self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
-        return chunk_matrix
 
     def get_start_chunk(self):
         return self.chunk_matrix[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]]

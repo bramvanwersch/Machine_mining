@@ -14,13 +14,15 @@ import board.flora as flora
 
 class Chunk(util.Serializer):
 
-    def __init__(self, pos, foreground, background, main_sprite_group):
+    def __init__(self, pos, foreground, background, main_sprite_group, first_time=False):
         #chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *con.CHUNK_SIZE))
 
         self.plants = {}
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
+        # changed, if it is the first time
+        self.changed = [False, first_time]
 
         offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
         foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = con.BOARD_LAYER, offset=offset)
@@ -35,6 +37,9 @@ class Chunk(util.Serializer):
     def coord(self):
         return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
 
+    def is_showing(self):
+        return self.layers[2].is_showing()
+
     def to_dict(self):
         return {
             "pos": self.rect.topleft,
@@ -47,13 +52,13 @@ class Chunk(util.Serializer):
         super().from_dict(main_sprite_group=sprite_group, **arguments)
 
     def add_rectangle(self, rect, color, layer=2, border=0):
-
+        self.changed[0] = True
         local_rect = self.__local_adjusted_rect(rect)
         image = self.layers[layer]
         image.add_rect(local_rect, color, border)
 
     def add_blocks(self, *blocks):
-
+        self.changed[0] = True
         for block in blocks:
             local_block_rect = self.__local_adjusted_rect(block.rect)
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
@@ -72,7 +77,7 @@ class Chunk(util.Serializer):
             self.pathfinding_chunk.added_rects.append(block.rect)
 
     def remove_blocks(self, *blocks):
-
+        self.changed[0] = True
         removed_items = []
         for block in blocks:
             removed_items.append(inventories.Item(block.material))
@@ -149,9 +154,9 @@ class StartChunk(Chunk):
                                    round((con.CHUNK_SIZE.width / 2) / 10) * 10,
                                    round((con.CHUNK_SIZE.height / 5) / 10) * 10))
 
-    def __init__(self, pos, foreground, background, main_sprite_group):
+    def __init__(self, pos, foreground, background, main_sprite_group, **kwargs):
         foreground = self.__adjust_foreground_string_matrix(foreground)
-        super().__init__(pos, foreground, background, main_sprite_group)
+        super().__init__(pos, foreground, background, main_sprite_group, **kwargs)
 
     def __adjust_foreground_string_matrix(self, matrix):
         #generate the air space at the start position

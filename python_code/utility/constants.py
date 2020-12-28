@@ -28,12 +28,13 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)  # pixels
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-BOARD_SIZE = util.Size(100_000, 50_000)
+BOARD_SIZE = util.Size(100_000, 5000)
 # preserve the board size
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 # the center of the board
 START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
-START_LOAD_AREA = [range(START_CHUNK_POS[0] - 1, START_CHUNK_POS[0] + 2), range(0, 10)]  # always consecutive
+START_LOAD_AREA = [range(START_CHUNK_POS[0] - 1, START_CHUNK_POS[0] + 2),
+                   range(START_CHUNK_POS[1] - 1, START_CHUNK_POS[1] + 2)]  # always consecutive
 
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks

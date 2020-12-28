@@ -32,7 +32,7 @@ class BoardGenerator:
         {"short": 25, "normal": 50, "long": 100, "very long": 200, "when does it stop?": 500}
     # the chance for a cave to stop extending around its core. Do not go lower then 0.0005 --> takes a long time
     CAVE_STOP_SPREAD_CHANCE: ClassVar[Dict[str, int]] =\
-        {"very low": 0.1, "low": 0.05, "normal": 0.02, "large": 0.008, "massive": 0.002}
+        {"very large": 0.1, "large": 0.8, "normal": 0.05, "low": 0.01, "very low": 0.005}
 
     # BORDER values
     BORDER_SPREAD_LIKELYHOOD = util.Gaussian(0, 2)
@@ -68,27 +68,27 @@ class BoardGenerator:
             (max(0, con.START_LOAD_AREA[0][0] * con.CHUNK_SIZE.width - self.__minimum_generation_length),
              max(0, con.START_LOAD_AREA[1][0] * con.CHUNK_SIZE.height - self.__minimum_generation_length),
              min(len(con.START_LOAD_AREA[0]) * con.CHUNK_SIZE.width + 2 * self.__minimum_generation_length,
-                 con.BOARD_SIZE.width),
+                 con.ORIGINAL_BOARD_SIZE.width),
              min(len(con.START_LOAD_AREA[1]) * con.CHUNK_SIZE.height + 2 * self.__minimum_generation_length,
-                 con.BOARD_SIZE.height))
+                 con.ORIGINAL_BOARD_SIZE.height))
         )
         self.__biome_definition = biome_generation_def if biome_generation_def else\
             biome_classes.NormalBiomeGeneration()
         self.__biome_size = self.BIOME_SIZES.get(biome_size, biome_size)
         self.__biome_blend = self.BIOME_BLEND.get(biome_blend, biome_blend)
         # fill the biome matrix with empty values
-        self.__biome_matrix = [[None for _ in range(ceil(con.BOARD_SIZE.width / self.__biome_size.width))]
-                               for _ in range(ceil(con.BOARD_SIZE.height / self.__biome_size.height))]
+        self.__biome_matrix = [[None for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.width / self.__biome_size.width))]
+                               for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.height / self.__biome_size.height))]
         self.__generate_biomes(self.__generation_rect)
 
         self.__predefined_blocks = PredefinedBlocks()
         self.__generate_structure_locations(self.__generation_rect)
 
     def __determine_cave_quadrant_size(self, caves_nr: int) -> util.Size:
-        total_blocks = (con.BOARD_SIZE.width / con.BLOCK_SIZE.width) * (con.BOARD_SIZE.height / con.BLOCK_SIZE.height)
+        total_blocks = (con.ORIGINAL_BOARD_SIZE.width / con.BLOCK_SIZE.width) * (con.ORIGINAL_BOARD_SIZE.height / con.BLOCK_SIZE.height)
         total_caves = (total_blocks / 100_000) * caves_nr
         # Me brother : )
-        cave_quadrant_side = int(sqrt((con.BOARD_SIZE.width * con.BOARD_SIZE.height) / total_caves))
+        cave_quadrant_side = int(sqrt((con.ORIGINAL_BOARD_SIZE.width * con.ORIGINAL_BOARD_SIZE.height) / total_caves))
         return util.Size(cave_quadrant_side, cave_quadrant_side)
 
     def generate_biome_structures(self, direction: str) -> None:
@@ -102,17 +102,17 @@ class BoardGenerator:
             )
         elif direction == "E":
             rect = pygame.Rect(
-                (min(con.BOARD_SIZE.width, self.__generation_rect.right + self.__EXTENDED_LOAD_AMOUNT),
+                (min(con.ORIGINAL_BOARD_SIZE.width, self.__generation_rect.right + self.__EXTENDED_LOAD_AMOUNT),
                  self.__generation_rect.top,
-                 min(con.BOARD_SIZE.width - self.__generation_rect.right, self.__EXTENDED_LOAD_AMOUNT),
+                 min(con.ORIGINAL_BOARD_SIZE.width - self.__generation_rect.right, self.__EXTENDED_LOAD_AMOUNT),
                  self.__generation_rect.height)
             )
         elif direction == "S":
             rect = pygame.Rect(
                 (self.__generation_rect.left,
-                 min(con.BOARD_SIZE.height, self.__generation_rect.bottom + self.__EXTENDED_LOAD_AMOUNT),
+                 min(con.ORIGINAL_BOARD_SIZE.height, self.__generation_rect.bottom + self.__EXTENDED_LOAD_AMOUNT),
                  self.__generation_rect.width,
-                 min(con.BOARD_SIZE.height - self.__generation_rect.bottom, self.__EXTENDED_LOAD_AMOUNT))
+                 min(con.ORIGINAL_BOARD_SIZE.height - self.__generation_rect.bottom, self.__EXTENDED_LOAD_AMOUNT))
             )
         elif direction == "W":
             rect = pygame.Rect(
@@ -189,10 +189,10 @@ class BoardGenerator:
         if self.__generation_rect.top > 0 and \
                 chunk_rect.top - self.__minimum_generation_length < self.__generation_rect.top:
             self.generate_biome_structures("N")
-        elif self.__generation_rect.right < con.BOARD_SIZE.width and \
+        elif self.__generation_rect.right < con.ORIGINAL_BOARD_SIZE.width and \
                 chunk_rect.right + self.__minimum_generation_length > self.__generation_rect.right:
             self.generate_biome_structures("E")
-        elif self.__generation_rect.bottom < con.BOARD_SIZE.height and \
+        elif self.__generation_rect.bottom < con.ORIGINAL_BOARD_SIZE.height and \
                 chunk_rect.bottom + self.__minimum_generation_length > self.__generation_rect.bottom:
             self.generate_biome_structures("S")
         elif self.__generation_rect.left > 0 and \
@@ -201,10 +201,14 @@ class BoardGenerator:
         self.__add_pre_defined_blocks(chunk_rect, matrix)
         self.__add_blocks(chunk_rect, matrix, background_matrix)
         # add a border if neccesairy
-        if topleft[1] == 0:
+        if topleft[1] <= 0:
             self.__add_border(matrix, "north")
-        elif topleft[1] / con.BLOCK_SIZE.height + con.CHUNK_SIZE.height >= con.MAX_DEPTH:
+        elif topleft[1] + con.CHUNK_SIZE.height >= con.ORIGINAL_BOARD_SIZE.height:
             self.__add_border(matrix, "south")
+        elif topleft[0] <= 0:
+            self.__add_border(matrix, "west")
+        elif topleft[0] + con.CHUNK_SIZE.width >= con.ORIGINAL_BOARD_SIZE.width:
+            self.__add_border(matrix, "east")
         return matrix, background_matrix
 
     def __add_pre_defined_blocks(self, rect, matrix):
@@ -309,9 +313,9 @@ class BoardGenerator:
             # make all block_classes air on the direct line
             for index2 in range(len(x_values)):
                 x = int(x_values[index2])
-                matrix_x = min(x, int(con.BOARD_SIZE.width / con.BLOCK_SIZE.width) - 1)
+                matrix_x = min(x, int(con.ORIGINAL_BOARD_SIZE.width / con.BLOCK_SIZE.width) - 1)
                 y = int(y_values[index2])
-                matrix_y = min(y, int(con.BOARD_SIZE.height / con.BLOCK_SIZE.height) - 1)
+                matrix_y = min(y, int(con.ORIGINAL_BOARD_SIZE.height / con.BLOCK_SIZE.height) - 1)
                 self.__predefined_blocks.add((matrix_x, matrix_y), "Air")
                 surrounding_coords = \
                     [coord for coord in self.__get_surrounding_block_coords(x, y) if coord is not None
@@ -336,8 +340,8 @@ class BoardGenerator:
         while len(cave_points) < amnt_points:
             radius = randint(max(1, int(self.MAX_POINT_DISTANCE / 2)), self.MAX_POINT_DISTANCE)
             prev_direction = uniform(prev_direction - 0.5 * pi, prev_direction + 0.5 * pi)
-            new_x = min(max(int(cave_points[-1][0] + cos(prev_direction) * radius), 0), con.BOARD_SIZE.width)
-            new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), 0), con.BOARD_SIZE.height)
+            new_x = min(max(int(cave_points[-1][0] + cos(prev_direction) * radius), 0), con.ORIGINAL_BOARD_SIZE.width)
+            new_y = min(max(int(cave_points[-1][1] + sin(prev_direction) * radius), 0), con.ORIGINAL_BOARD_SIZE.height)
             # make sure no double points and no straight lines
             if [new_x, new_y] in cave_points or \
                     int(new_x / con.BLOCK_SIZE.width) == int(cave_points[-1][0] / con.BLOCK_SIZE.width) or \
@@ -351,9 +355,9 @@ class BoardGenerator:
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
             surrounding_coord = [x + new_position[0], y + new_position[1]]
             # Make sure within range
-            if surrounding_coord[0] >= con.BOARD_SIZE.width / con.BLOCK_SIZE.width or \
+            if surrounding_coord[0] >= con.ORIGINAL_BOARD_SIZE.width / con.BLOCK_SIZE.width or \
                     surrounding_coord[0] < 0 or \
-                    surrounding_coord[1] >= con.BOARD_SIZE.height / con.BLOCK_SIZE.height or \
+                    surrounding_coord[1] >= con.ORIGINAL_BOARD_SIZE.height / con.BLOCK_SIZE.height or \
                     surrounding_coord[1] < 0:
                 continue
             surrounding_coords[index] = surrounding_coord
@@ -374,6 +378,18 @@ class BoardGenerator:
                 for col_i in range(len(matrix[row_i])):
                     if uniform(0, 1) < border_block_chance:
                         matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
+        elif direction == "east":
+            for row_i in range(len(matrix)):
+                for col_i in range(len(matrix[row_i][0:self.MAX_BORDER_SPREAD_DISTANCE])):
+                    border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
+                    if uniform(0, 1) < border_block_chance:
+                        matrix[row_i][col_i] = "BorderMaterial"
+        elif direction == "west":
+            for row_i in range(len(matrix)):
+                for col_i in range(len(matrix[row_i][- (self.MAX_BORDER_SPREAD_DISTANCE + 1):-1])):
+                    border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
+                    if uniform(0, 1) < border_block_chance:
+                        matrix[- (row_i + 1)][ - (col_i + 1)] = "BorderMaterial"
         else:
             raise util.GameException("Unrecognized direction for border: {}".format(direction))
 
