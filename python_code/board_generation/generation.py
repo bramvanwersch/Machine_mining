@@ -10,6 +10,9 @@ import board_generation.biomes as biome_classes
 
 
 class BoardGenerator:
+    # extend loading of biomes and structures by this much everytime terrain has to be loaded
+    __EXTENDED_LOAD_AMOUNT: int = 2000
+
     # the size of quadrants where a new biome is chosen
     BIOME_SIZES: ClassVar[Dict[str, util.Size]] = \
         {"tiny": util.Size(100, 100), "small": util.Size(200, 200), "normal": util.Size(500, 500),
@@ -61,11 +64,7 @@ class BoardGenerator:
         # minimum distance (x and y) between the closest generated chunk and the non-generated structures and biomes
         self.__minimum_generation_length = ceil(self.__cave_length * self.MAX_POINT_DISTANCE)
         # tracks what part of the board the structures and biomes have been generated for.
-        self.__structure_biome_generation_rectangle = \
-            pygame.Rect((con.START_CHUNK_POS[0] * con.CHUNK_SIZE.width,
-                         con.START_CHUNK_POS[1] * con.CHUNK_SIZE.height, 0, 0))
-
-        innit_generation_rect = pygame.Rect(
+        self.__generation_rect = pygame.Rect(
             (max(0, con.START_LOAD_AREA[0][0] * con.CHUNK_SIZE.width - self.__minimum_generation_length),
              max(0, con.START_LOAD_AREA[1][0] * con.CHUNK_SIZE.height - self.__minimum_generation_length),
              min(len(con.START_LOAD_AREA[0]) * con.CHUNK_SIZE.width + 2 * self.__minimum_generation_length,
@@ -80,10 +79,10 @@ class BoardGenerator:
         # fill the biome matrix with empty values
         self.__biome_matrix = [[None for _ in range(ceil(con.BOARD_SIZE.width / self.__biome_size.width))]
                                for _ in range(ceil(con.BOARD_SIZE.height / self.__biome_size.height))]
-        self.__generate_biomes(innit_generation_rect)
+        self.__generate_biomes(self.__generation_rect)
 
         self.__predefined_blocks = PredefinedBlocks()
-        self.__generate_structure_locations(innit_generation_rect)
+        self.__generate_structure_locations(self.__generation_rect)
 
     def __determine_cave_quadrant_size(self, caves_nr: int) -> util.Size:
         total_blocks = (con.BOARD_SIZE.width / con.BLOCK_SIZE.width) * (con.BOARD_SIZE.height / con.BLOCK_SIZE.height)
@@ -92,12 +91,48 @@ class BoardGenerator:
         cave_quadrant_side = int(sqrt((con.BOARD_SIZE.width * con.BOARD_SIZE.height) / total_caves))
         return util.Size(cave_quadrant_side, cave_quadrant_side)
 
+    def generate_biome_structures(self, direction: str) -> None:
+        # create a rectangle that does not overlap with the __generation_rectangle and extends one of four directions
+        if direction == "N":
+            rect = pygame.Rect(
+                (self.__generation_rect.left,
+                 max(0, self.__generation_rect.top - self.__EXTENDED_LOAD_AMOUNT),
+                 self.__generation_rect.width,
+                 min(self.__generation_rect.top, self.__EXTENDED_LOAD_AMOUNT))
+            )
+        elif direction == "E":
+            rect = pygame.Rect(
+                (min(con.BOARD_SIZE.width, self.__generation_rect.right + self.__EXTENDED_LOAD_AMOUNT),
+                 self.__generation_rect.top,
+                 min(con.BOARD_SIZE.width - self.__generation_rect.right, self.__EXTENDED_LOAD_AMOUNT),
+                 self.__generation_rect.height)
+            )
+        elif direction == "S":
+            rect = pygame.Rect(
+                (self.__generation_rect.left,
+                 min(con.BOARD_SIZE.height, self.__generation_rect.bottom + self.__EXTENDED_LOAD_AMOUNT),
+                 self.__generation_rect.width,
+                 min(con.BOARD_SIZE.height - self.__generation_rect.bottom, self.__EXTENDED_LOAD_AMOUNT))
+            )
+        elif direction == "W":
+            rect = pygame.Rect(
+                (max(0, self.__generation_rect.left - self.__EXTENDED_LOAD_AMOUNT),
+                 self.__generation_rect.top,
+                 min(self.__generation_rect.left, self.__EXTENDED_LOAD_AMOUNT),
+                 self.__generation_rect.height)
+            )
+        else:
+            raise util.GameException("Expected N, E, S or W not {}".format(direction))
+        self.__generate_biomes(rect)
+        self.__generate_structure_locations(rect)
+        self.__generation_rect.union_ip(rect)
+
     def __generate_biomes(self, rect) -> None:
         row_start = int(rect.top / self.__biome_size.height)
         col_start = int(rect.left / self.__biome_size.width)
         # make sure that even partial areas of the board are covered by a biome
-        for row_i in range(ceil(rect.height / self.__biome_size.height)):
-            for col_i in range(ceil(rect.width / self.__biome_size.width)):
+        for row_i in range(int(rect.height / self.__biome_size.height)):
+            for col_i in range(int(rect.width / self.__biome_size.width)):
                 row_i += row_start
                 col_i += col_start
                 # allow the shapes of the distributions to be a bit different (more oval)
@@ -117,8 +152,8 @@ class BoardGenerator:
     def __generate_structure_locations(self, rect):
         row_start = int(rect.top / self.__cave_quadrant_size.height)
         col_start = int(rect.left / self.__cave_quadrant_size.width)
-        for row_i in range(ceil(rect.height / self.__cave_quadrant_size.height)):
-            for col_i in range(ceil(rect.width / self.__cave_quadrant_size.width)):
+        for row_i in range(int(rect.height / self.__cave_quadrant_size.height)):
+            for col_i in range(int(rect.width / self.__cave_quadrant_size.width)):
                 row_i += row_start
                 col_i += col_start
                 x_coord = randint(int(col_i * self.__cave_quadrant_size.height),
@@ -150,6 +185,19 @@ class BoardGenerator:
         background_matrix = [[None for _ in range(interface_util.p_to_c(con.CHUNK_SIZE.width))]
                              for _ in range(interface_util.p_to_r(con.CHUNK_SIZE.height))]
         chunk_rect = pygame.Rect((*topleft, *con.CHUNK_SIZE.size))
+        # check if surrounding generation needs to be extended
+        if self.__generation_rect.top > 0 and \
+                chunk_rect.top - self.__minimum_generation_length < self.__generation_rect.top:
+            self.generate_biome_structures("N")
+        elif self.__generation_rect.right < con.BOARD_SIZE.width and \
+                chunk_rect.right + self.__minimum_generation_length > self.__generation_rect.right:
+            self.generate_biome_structures("E")
+        elif self.__generation_rect.bottom < con.BOARD_SIZE.height and \
+                chunk_rect.bottom + self.__minimum_generation_length > self.__generation_rect.bottom:
+            self.generate_biome_structures("S")
+        elif self.__generation_rect.left > 0 and \
+                chunk_rect.left - self.__minimum_generation_length < self.__generation_rect.left:
+            self.generate_biome_structures("W")
         self.__add_pre_defined_blocks(chunk_rect, matrix)
         self.__add_blocks(chunk_rect, matrix, background_matrix)
         # add a border if neccesairy

@@ -469,7 +469,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             elif self._mode.name == "Building":
                 item = small_interface.get_selected_item()
                 # if no item is selected dont do anything
-                if item == None:
+                if item is None:
                     return
                 material = small_interface.get_selected_item().material
                 building_block_i = material.block_type
@@ -480,6 +480,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 zoom = self.get_start_chunk().layers[0]._zoom
                 board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos, self.main_sprite_group.target, zoom)
                 chunk = self.__chunk_from_point(board_coord)
+                if chunk is None:
+                    return
                 chunk.get_block(board_coord).action()
             self.__process_selection()
             self.remove_selection()
