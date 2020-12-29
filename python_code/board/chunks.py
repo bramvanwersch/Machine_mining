@@ -25,13 +25,17 @@ class Chunk(util.Serializer):
         self.changed = [False, first_time]
 
         offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
-        foreground_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__matrix, layer = con.BOARD_LAYER, offset=offset)
-        background_image = BoardImage(self.rect.topleft, main_sprite_group, block_matrix = self.__back_matrix, layer = con.BACKGROUND_LAYER, offset=offset)
-        light_image = LightImage(self.rect.topleft, main_sprite_group, layer = con.LIGHT_LAYER, color=con.INVISIBLE_COLOR if con.NO_LIGHTING else (0, 0, 0, 255))
-        selection_image = TransparantBoardImage(self.rect.topleft, main_sprite_group, layer = con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
+        foreground_image = BoardImage(self.rect.topleft, block_matrix = self.__matrix, layer = con.BOARD_LAYER, offset=offset)
+        background_image = BoardImage(self.rect.topleft, block_matrix = self.__back_matrix, layer = con.BACKGROUND_LAYER, offset=offset)
+        light_image = LightImage(self.rect.topleft, layer = con.LIGHT_LAYER, color=con.INVISIBLE_COLOR if con.NO_LIGHTING else (0, 0, 0, 255))
+        selection_image = TransparantBoardImage(self.rect.topleft, layer = con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
 
         self.layers = [light_image, selection_image, foreground_image, background_image]
         self.pathfinding_chunk = pathfinding.PathfindingChunk(self.__matrix)
+        main_sprite_group.add(foreground_image)
+        main_sprite_group.add(background_image)
+        main_sprite_group.add(light_image)
+        main_sprite_group.add(selection_image)
 
     @property
     def coord(self):
@@ -172,8 +176,8 @@ class BoardImage(entities.ZoomableEntity):
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """
-    def __init__(self, pos, main_sprite_group, **kwargs):
-        entities.ZoomableEntity.__init__(self, pos, con.CHUNK_SIZE, main_sprite_group, **kwargs)
+    def __init__(self, pos, **kwargs):
+        entities.ZoomableEntity.__init__(self, pos, con.CHUNK_SIZE, **kwargs)
 
     def _create_image(self, size, color, **kwargs):
         """
@@ -186,7 +190,7 @@ class BoardImage(entities.ZoomableEntity):
         image = image.convert()
         for row in block_matrix:
             for block in row:
-                block_rect = (block.rect.left - offset[0] * con.CHUNK_SIZE.width, block.rect.top - offset[1] * con.CHUNK_SIZE.height,*block.rect.size)
+                block_rect = (block.rect.left - offset[0] * con.CHUNK_SIZE.width, block.rect.top - offset[1] * con.CHUNK_SIZE.height, *block.rect.size)
                 image.blit(block.surface, block_rect)
         return image
 
@@ -231,8 +235,8 @@ class TransparantBoardImage(BoardImage):
 
 
 class LightImage(TransparantBoardImage):
-    def __init__(self, pos, main_sprite_group, **kwargs):
-        super().__init__(pos, main_sprite_group, **kwargs)
+    def __init__(self, pos,  **kwargs):
+        super().__init__(pos, **kwargs)
         # first values can be determined when the first rectangle is added
         self.__left = con.BOARD_SIZE.width
         self.__top = con.BOARD_SIZE.height

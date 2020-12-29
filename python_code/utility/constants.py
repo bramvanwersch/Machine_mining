@@ -33,8 +33,8 @@ BOARD_SIZE = util.Size(100_000, 5000)
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 # the center of the board
 START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
-START_LOAD_AREA = [range(START_CHUNK_POS[0] - 1, START_CHUNK_POS[0] + 2),
-                   range(START_CHUNK_POS[1] - 1, START_CHUNK_POS[1] + 2)]  # always consecutive
+START_LOAD_AREA = [range(START_CHUNK_POS[0] - 2, START_CHUNK_POS[0] + 3),
+                   range(START_CHUNK_POS[1] - 2, START_CHUNK_POS[1] + 3)]  # always consecutive
 
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
@@ -137,3 +137,4 @@ AIR_RECTANGLES = False
 WARNINGS = True
 SHOW_ZOOM = True
 NO_LIGHTING = True
+SHOW_THREADS = True

@@ -318,21 +318,18 @@ class Game(Scene, util.Serializer):
         # rectangles containing part or whole chunks that are visible due to vision
         vision_u_rects = []
 
-        for row in self.board.chunk_matrix:
-            for chunk in row:
-                if chunk is None:
-                    continue
-                rect = chunk.layers[0].get_update_rect()
-                if rect is None:
-                    continue
-                vision_u_rects.append(rect)
+        for chunk in self.board.loaded_chunks:
+            rect = chunk.layers[0].get_update_rect()
+            if rect is None:
+                continue
+            vision_u_rects.append(rect)
 
-                adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
-                                             round((rect[1] - relative_board_start[1]) * zoom),
-                                             round(rect.width * zoom), round(rect.height * zoom)))
-                clipped_rect = adjusted_rect.clip(self.rect)
-                if clipped_rect.width > 0 and clipped_rect.height > 0:
-                    board_u_rects.append(clipped_rect)
+            adjusted_rect = pygame.Rect((round((rect[0] - relative_board_start[0]) * zoom),
+                                         round((rect[1] - relative_board_start[1]) * zoom),
+                                         round(rect.width * zoom), round(rect.height * zoom)))
+            clipped_rect = adjusted_rect.clip(self.rect)
+            if clipped_rect.width > 0 and clipped_rect.height > 0:
+                board_u_rects.append(clipped_rect)
         for window in self.window_manager.windows.values():
             rect = window.orig_rect
             if not window.static:
@@ -397,6 +394,10 @@ class Game(Scene, util.Serializer):
         if con.SHOW_ZOOM:
             z = con.FONTS[18].render("zoom: {}x".format(self._zoom), True, pygame.Color('white'))
             self.screen.blit(z, (x_coord, y_coord))
+            y_coord += line_distance
+        if con.SHOW_THREADS:
+            st = con.FONTS[18].render("active threads: {}".format(len(self.board._loading_chunks)), True, pygame.Color('white'))
+            self.screen.blit(st, (x_coord, y_coord))
             y_coord += line_distance
         self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])
 

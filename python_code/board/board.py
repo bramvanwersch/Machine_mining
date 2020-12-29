@@ -1,6 +1,7 @@
 from random import uniform
 import pygame
 from typing import List, Union
+from threading import Thread
 
 import utility.utilities as util
 import board_generation.generation as generator
@@ -37,9 +38,11 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         self.board_generator = generator.BoardGenerator()
         self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
                              for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
-        self.__loaded_chunks = set()
+        self.loaded_chunks = set()
+        # chunks that are currently loading to make sure that no double chunks are generated
+        self._loading_chunks = set()
         self.main_sprite_group = main_sprite_group
-        self.generate_chunks(*con.START_LOAD_AREA)
+        self.generate_chunks(*con.START_LOAD_AREA, thread_it=False)
 
         self.task_control = None
 
@@ -74,7 +77,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
         # chunk updates
         self.__grow_update_time += con.GAME_TIME.get_time()
-        for chunk in self.__loaded_chunks.copy():
+        for chunk in self.loaded_chunks.copy():
             if not chunk.is_showing():
                 continue
             if self.__grow_update_time > con.GROW_CYCLE_UPDATE_TIME:
@@ -82,10 +85,10 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 self.__grow_update_time = 0
             # when the first update happens to a chunk meaning the player is there generate new ones.
             if not chunk.changed[1] and chunk.changed[0]:
+                chunk.changed[1] = True
                 chunk_coord = interface_util.p_to_cp(chunk.rect.topleft)
                 self.generate_chunks(range(chunk_coord[0] - 1, chunk_coord[0] + 2),
                                      range(chunk_coord[1] - 1, chunk_coord[1] + 2))
-                chunk.changed[1] = True
 
     def to_dict(self):
         return {
@@ -113,21 +116,30 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 if new_blocks is not None:
                     self.add_blocks(*new_blocks)
 
-    def generate_chunks(self, col_coords_load, row_coords_load):
+    def generate_chunks(self, col_coords_load, row_coords_load, thread_it=True):
         for row_i in row_coords_load:
             for col_i in col_coords_load:
-                if self.chunk_matrix[row_i][col_i] is not None:
+                if self.chunk_matrix[row_i][col_i] is not None or (col_i, row_i) in self._loading_chunks:
                     continue
-                point_pos = (col_i * con.CHUNK_SIZE.width, row_i * con.CHUNK_SIZE.height)
-                for_string_matrix, back_string_matrix = self.board_generator.generate_chunk(point_pos)
-                if (col_i, row_i) == con.START_CHUNK_POS:
-                    chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
-                                              first_time=True)
+                self._loading_chunks.add((col_i, row_i))
+                if thread_it:
+                    # make sure 2 threads are not working on the same thing
+                    Thread(target=self.generate_chunk, args=(row_i, col_i)).start()
                 else:
-                    chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group)
-                self.chunk_matrix[row_i][col_i] = chunk
-                self.__loaded_chunks.add(chunk)
-                self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
+                    self.generate_chunk(row_i, col_i)
+
+    def generate_chunk(self, row_i, col_i):
+        point_pos = (col_i * con.CHUNK_SIZE.width, row_i * con.CHUNK_SIZE.height)
+        for_string_matrix, back_string_matrix = self.board_generator.generate_chunk(point_pos)
+        if (col_i, row_i) == con.START_CHUNK_POS:
+            chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
+                                      first_time=True)
+        else:
+            chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group)
+        self.chunk_matrix[row_i][col_i] = chunk
+        self.loaded_chunks.add(chunk)
+        self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
+        self._loading_chunks.remove((col_i, row_i))
 
     def get_start_chunk(self):
         return self.chunk_matrix[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]]
