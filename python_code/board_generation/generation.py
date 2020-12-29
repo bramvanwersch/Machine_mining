@@ -1,6 +1,6 @@
 from random import randint, choices, uniform, choice
 from math import pi, cos, sin, ceil, sqrt
-from typing import List, Dict, Union, ClassVar, Set, Tuple
+from typing import List, Dict, Union, ClassVar, Set, Tuple, Iterable
 import pygame
 
 from utility import constants as con, utilities as util
@@ -54,6 +54,11 @@ class BoardGenerator:
         cave_broadness: Union[str, float] = "normal"
     ):
         self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
+
+        # for tracking what chunks have been covered by generation 0 is not covered 1 is covered by ores and environment
+        # 2 is covered with filler blocks
+        self.__generated_chunks_matrix = [[0 for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.width / con.CHUNK_SIZE.width))]
+                                          for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.height / con.CHUNK_SIZE.height))]
 
         # amount of cave points
         self.__cave_length = self.CAVE_LENGTH.get(cave_length, cave_length)
@@ -185,31 +190,49 @@ class BoardGenerator:
         background_matrix = [[None for _ in range(interface_util.p_to_c(con.CHUNK_SIZE.width))]
                              for _ in range(interface_util.p_to_r(con.CHUNK_SIZE.height))]
         chunk_rect = pygame.Rect((*topleft, *con.CHUNK_SIZE.size))
+        chunk_coord = interface_util.p_to_cp(topleft)
+
+        # if the chunk was already generated do not do it again
+        if self.__generated_chunks_matrix[chunk_coord[1]][chunk_coord[0]] == 2:
+            return None, None
+        # extend structures as caves and biomes when needed
+        self.__extend_surrounding_generation(chunk_rect)
+        # generate ores and environment one chunk out from the generated boundary to allow generation over chunks
+        self.__add_special_blocks(chunk_coord)
+        # add all blocks that have been pre-defined by surrounding generation and ore and environment
+        self.__add_pre_defined_blocks(chunk_rect, matrix)
+        self.__add_filler_blocks(chunk_rect, matrix, background_matrix)
+        self.__add_border(matrix, topleft)
+
+        # save that this chunk was covered by generation
+        self.__generated_chunks_matrix[chunk_coord[1]][chunk_coord[0]] = 2
+        return matrix, background_matrix
+
+    def __extend_surrounding_generation(self, rect):
         # check if surrounding generation needs to be extended
         if self.__generation_rect.top > 0 and \
-                chunk_rect.top - self.__minimum_generation_length < self.__generation_rect.top:
+                rect.top - self.__minimum_generation_length < self.__generation_rect.top:
             self.generate_biome_structures("N")
         elif self.__generation_rect.right < con.ORIGINAL_BOARD_SIZE.width and \
-                chunk_rect.right + self.__minimum_generation_length > self.__generation_rect.right:
+                rect.right + self.__minimum_generation_length > self.__generation_rect.right:
             self.generate_biome_structures("E")
         elif self.__generation_rect.bottom < con.ORIGINAL_BOARD_SIZE.height and \
-                chunk_rect.bottom + self.__minimum_generation_length > self.__generation_rect.bottom:
+                rect.bottom + self.__minimum_generation_length > self.__generation_rect.bottom:
             self.generate_biome_structures("S")
         elif self.__generation_rect.left > 0 and \
-                chunk_rect.left - self.__minimum_generation_length < self.__generation_rect.left:
+                rect.left - self.__minimum_generation_length < self.__generation_rect.left:
             self.generate_biome_structures("W")
-        self.__add_pre_defined_blocks(chunk_rect, matrix)
-        self.__add_blocks(chunk_rect, matrix, background_matrix)
+
+    def __add_border(self, matrix, topleft):
         # add a border if neccesairy
         if topleft[1] <= 0:
-            self.__add_border(matrix, "north")
+            self.__add_directional_border(matrix, "north")
         elif topleft[1] + con.CHUNK_SIZE.height >= con.ORIGINAL_BOARD_SIZE.height:
-            self.__add_border(matrix, "south")
+            self.__add_directional_border(matrix, "south")
         elif topleft[0] <= 0:
-            self.__add_border(matrix, "west")
+            self.__add_directional_border(matrix, "west")
         elif topleft[0] + con.CHUNK_SIZE.width >= con.ORIGINAL_BOARD_SIZE.width:
-            self.__add_border(matrix, "east")
-        return matrix, background_matrix
+            self.__add_directional_border(matrix, "east")
 
     def __add_pre_defined_blocks(self, rect, matrix):
         for row_i in range(int(rect.height / con.BLOCK_SIZE.height)):
@@ -220,7 +243,7 @@ class BoardGenerator:
                 if (block_x_coord, block_y_coord) in self.__predefined_blocks:
                     matrix[row_i][col_i] = self.__predefined_blocks.get((block_x_coord, block_y_coord))
 
-    def __add_blocks(self, rect, matrix, background_matrix):
+    def __add_filler_blocks(self, rect, matrix, background_matrix):
         for row_i in range(int(rect.height / con.BLOCK_SIZE.height)):
             for col_i in range(int(rect.width / con.BLOCK_SIZE.width)):
                 block_x_coord = int(rect.left / con.BLOCK_SIZE.width) + col_i
@@ -230,14 +253,7 @@ class BoardGenerator:
                 biome_liklyhoods = self.__biome_liklyhoods_from_point(block_x_coord * con.BLOCK_SIZE.width,
                                                                       block_y_coord * con.BLOCK_SIZE.height)
                 biome = choices(list(biome_liklyhoods.keys()), list(biome_liklyhoods.values()), k=1)[0]
-                # only add plants in caves
-                if block == "Air" and uniform(0, 1) < biome.FLORA_LIKELYHOOD:
-                    flora_likelyhoods = biome.get_flora_lh_at_depth(block_y_coord)
-                    self.__add_environment(col_i, row_i, flora_likelyhoods, matrix)
-                elif block is None and uniform(0, 1) < biome.CLUSTER_LIKELYHOOD:
-                    ore_likelyhoods = biome.get_ore_lh_at_depth(block_y_coord)
-                    self.__add_ore_cluster(col_i, row_i, ore_likelyhoods, matrix, biome)
-                elif block is None:
+                if block is None:
                     filler_likelyhoods = biome.get_filler_lh_at_depth(block_y_coord)
                     filler = choices(list(filler_likelyhoods.keys()), list(filler_likelyhoods.values()), k=1)[0]
                     matrix[row_i][col_i] = filler
@@ -248,16 +264,43 @@ class BoardGenerator:
                                          list(background_likelyhoods.values()), k=1)[0]
                 background_matrix[row_i][col_i] = background_mat
 
-    def __add_environment(self, col_i, row_i, flora_likelyhoods, matrix):
-        s_coords = self.__get_surrounding_block_coords(col_i, row_i)
+    def __add_special_blocks(self, chunk_coord):
+        # check in a 3 * 3 around the chunk_coord if there is still special blocks to generate
+        for chunk_row in range(max(0, chunk_coord[1] - 1), chunk_coord[1] + 2):
+            for chunk_col in range(max(0, chunk_coord[0] - 1), chunk_coord[0] + 2):
+                if self.__generated_chunks_matrix[chunk_row][chunk_col] != 0:
+                    continue
+                rect = pygame.Rect((chunk_col * con.CHUNK_SIZE.width, chunk_row * con.CHUNK_SIZE.height,
+                                    con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
+                for row_i in range(int(rect.height / con.BLOCK_SIZE.height)):
+                    for col_i in range(int(rect.width / con.BLOCK_SIZE.width)):
+                        block_x_coord = int(rect.left / con.BLOCK_SIZE.width) + col_i
+                        block_y_coord = int(rect.top / con.BLOCK_SIZE.height) + row_i
+                        # determine biome based on coordinate
+
+                        biome_liklyhoods = self.__biome_liklyhoods_from_point(block_x_coord * con.BLOCK_SIZE.width,
+                                                                              block_y_coord * con.BLOCK_SIZE.height)
+                        biome = choices(list(biome_liklyhoods.keys()), list(biome_liklyhoods.values()), k=1)[0]
+                        # only add plants in caves
+                        if self.__predefined_blocks.check((block_x_coord, block_y_coord), ["Air"])\
+                                and uniform(0, 1) < biome.FLORA_LIKELYHOOD:
+                            flora_likelyhoods = biome.get_flora_lh_at_depth(block_y_coord)
+                            self.__add_environment(block_x_coord, block_y_coord, flora_likelyhoods)
+                        elif uniform(0, 1) < biome.CLUSTER_LIKELYHOOD:
+                            ore_likelyhoods = biome.get_ore_lh_at_depth(block_y_coord)
+                            self.__add_ore_cluster(block_x_coord, block_y_coord, ore_likelyhoods, biome.MAX_CLUSTER_SIZE)
+                self.__generated_chunks_matrix[chunk_row][chunk_col] = 1
+
+    def __add_environment(self, block_x_coord, block_y_coord, flora_likelyhoods):
+        s_coords = self.__get_surrounding_block_coords(block_x_coord, block_y_coord)
         elligable_indexes = []
         for coord in s_coords:
             try:
-                if coord is not None and matrix[coord[1]][coord[0]] != "Air" and \
-                        matrix[coord[1]][coord[0]] not in self.__environment_material_names:
+                if coord is not None and \
+                        not self.__predefined_blocks.check(coord, {"Air", *self.__environment_material_names}):
                     elligable_indexes.append(coord)
             except IndexError:
-                # ignore coords outside the chunk
+                # ignore coords outside the chunk to not cover them twice
                 continue
         # if direction cant have a flora return
         if len(elligable_indexes) == 0:
@@ -268,22 +311,18 @@ class BoardGenerator:
             return
         flora = choices(list(flora_likelyhoods[chosen_index].keys()),
                         list(flora_likelyhoods[chosen_index].values()), k=1)[0]
-        matrix[row_i][col_i] = flora
+        self.__predefined_blocks.add((block_x_coord, block_y_coord), flora, overwrite=False)
 
-    def __add_ore_cluster(self, col_i, row_i, ore_likelyhoods, matrix, biome):
+    def __add_ore_cluster(self, block_x_coord, block_y_coord, ore_likelyhoods, max_cluster_size):
         ore = choices(list(ore_likelyhoods.keys()), list(ore_likelyhoods.values()), k=1)[0]
-        ore_locations = self.__create_ore_cluster(ore, (col_i, row_i), biome)
-        ore_locations.append([col_i, row_i])
+        ore_locations = self.__create_ore_cluster(ore, (block_x_coord, block_y_coord), max_cluster_size)
+        ore_locations.append([block_x_coord, block_y_coord])
         for loc in ore_locations:
-            try:
-                if matrix[loc[1]][loc[0]] == "Air":
-                    continue
-                matrix[loc[1]][loc[0]] = ore
-            except IndexError:
-                # if outside board skip
+            if self.__predefined_blocks.check((block_x_coord, block_y_coord), ["Air"]):
                 continue
+            self.__predefined_blocks.add(loc, ore, overwrite=False)
 
-    def __create_ore_cluster(self, ore, center, biome):
+    def __create_ore_cluster(self, ore, center, max_cluster_size):
         size = getattr(ground_materials, ore).get_cluster_size()
         ore_locations = []
         while len(ore_locations) <= size:
@@ -291,7 +330,7 @@ class BoardGenerator:
             for index in range(2):
                 pos = choice([-1, 1])
                 # assert index is bigger then 0
-                location[index] = max(0, pos * randint(0, biome.MAX_CLUSTER_SIZE) + center[index])
+                location[index] = max(0, pos * randint(0, max_cluster_size) + center[index])
             if location not in ore_locations:
                 ore_locations.append(location)
         return ore_locations
@@ -319,7 +358,7 @@ class BoardGenerator:
                 self.__predefined_blocks.add((matrix_x, matrix_y), "Air")
                 surrounding_coords = \
                     [coord for coord in self.__get_surrounding_block_coords(x, y) if coord is not None
-                     and not self.__predefined_blocks.check(coord, "Air")]
+                     and not self.__predefined_blocks.check(coord, ["Air"])]
                 # extend the cave around the direct line.
                 while len(surrounding_coords) > 0:
                     if uniform(0, 1) < self.__cave_stop_spread_chance:
@@ -329,7 +368,7 @@ class BoardGenerator:
                     self.__predefined_blocks.add(remove_coord, "Air")
                     additional_surrounding_coords = \
                         [coord for coord in self.__get_surrounding_block_coords(*remove_coord) if coord is not None
-                         and not self.__predefined_blocks.check(coord, "Air")]
+                         and not self.__predefined_blocks.check(coord, ["Air"])]
                     surrounding_coords.extend(additional_surrounding_coords)
 
     def __get_cave_points(self, start_point):
@@ -363,7 +402,7 @@ class BoardGenerator:
             surrounding_coords[index] = surrounding_coord
         return surrounding_coords
 
-    def __add_border(self, matrix, direction):
+    def __add_directional_border(self, matrix, direction):
         if direction == "north":
             rows = matrix[0:self.MAX_BORDER_SPREAD_DISTANCE]
             for row_i in range(len(rows)):
@@ -417,8 +456,8 @@ class PredefinedBlocks:
     def get(self, coord: Union[Tuple[int, int], List[int]]) -> str:
         return self.__internal_tree[coord[1]].pop(coord[0])
 
-    def check(self, coord: Union[Tuple[int, int], List[int]], value: str) -> bool:
-        return coord in self and self.__internal_tree[coord[1]][coord[0]] == value
+    def check(self, coord: Union[Tuple[int, int], List[int]], values: Iterable) -> bool:
+        return coord in self and any(value == self.__internal_tree[coord[1]][coord[0]] for value in values)
 
     def __contains__(self, item: Union[Tuple[int, int], List[int]]):
         return item[1] in self.__internal_tree and item[0] in self.__internal_tree[item[1]]
