@@ -110,7 +110,7 @@ class MainMenu(Scene):
 
         button_size = util.Size(100, 40)
         y_coord = 200
-        play_button = widgets.Button(button_size, color=(100, 100, 100), text="START", font_size=30)
+        play_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
         play_button.set_action(1, self.__start_game, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), play_button)
 
@@ -153,6 +153,45 @@ class MainMenu(Scene):
 
     def __quit(self):
         self.going = False
+
+
+class SettingsScene(Scene):
+    def __init__(self, screen):
+        sprite_group = sprite_groups.ShowToggleLayerUpdates()
+        super().__init__(screen, sprite_group)
+
+        # all the available menu frames
+        self.settings_menu_frame = None
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        self.settings_menu_frame = widgets.Frame((0, 0), util.Size(*self.rect.size), self.sprite_group,
+                                                 color=(173, 94, 29), static=False)
+
+        button_size = util.Size(100, 40)
+        y_coord = 200
+        play_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
+        play_button.set_action(1, self.__start_game, types=["unpressed"])
+        self.settings_menu_frame.add_widget(("center", y_coord), play_button)
+
+        y_coord += 50
+        load_button = widgets.Button(button_size, color=(100, 100, 100), text="LOAD", font_size=30)
+        load_button.set_action(1, self.__load_game, types=["unpressed"])
+        self.settings_menu_frame.add_widget(("center", y_coord), load_button)
+
+        y_coord += 50
+        settings_button = widgets.Button(button_size, color=(100, 100, 100), text="SETTINGS", font_size=30)
+        settings_button.set_action(1, self.__open_settings, types=["unpressed"])
+        self.settings_menu_frame.add_widget(("center", y_coord), settings_button)
+
+        y_coord += 50
+        quit_button = widgets.Button(button_size, color=(100, 100, 100), text="QUIT", font_size=30)
+        quit_button.set_action(1, self.__quit, types=["unpressed"])
+        self.settings_menu_frame.add_widget(("center", y_coord), quit_button)
+
+    def scene_event_handling(self, consume=False):
+        events = super().scene_event_handling(consume=consume)
+        self.settings_menu_frame.handle_events(events)
 
 
 class LoadingScreen(Scene):
@@ -396,7 +435,8 @@ class Game(Scene, util.Serializer):
             self.screen.blit(z, (x_coord, y_coord))
             y_coord += line_distance
         if con.SHOW_THREADS:
-            st = con.FONTS[18].render("active threads: {}".format(len(self.board._loading_chunks)), True, pygame.Color('white'))
+            st = con.FONTS[18].render("threads: {}".format(len(self.board._loading_chunks)),
+                                      True, pygame.Color('white'))
             self.screen.blit(st, (x_coord, y_coord))
             y_coord += line_distance
         self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])

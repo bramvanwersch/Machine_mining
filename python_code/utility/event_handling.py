@@ -57,6 +57,16 @@ class EventHandler(ABC):
                         self._dragging = False
                 else:
                     leftover_events.append(event)
+            elif event.type == con.HOVER:
+                if event.button in self.__pressed_keys:
+                    self.__pressed_keys[event.button].press(event)
+                else:
+                    leftover_events.append(event)
+            elif event.type == con.UNHOVER:
+                if event.button in self.__pressed_keys:
+                    self.__pressed_keys[event.button].unpress(event)
+                else:
+                    leftover_events.append(event)
             else:
                 leftover_events.append(event)
         if consume:
@@ -100,6 +110,7 @@ class EventHandler(ABC):
         :return:
         """
         return self.__record_pressed_keys(events, consume)
+
 
 class Key:
     def __init__(self, name):

@@ -1,5 +1,6 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 import pygame
+from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar
 
 import entities
 import utility.constants as con
@@ -9,58 +10,83 @@ import utility.event_handling as event_handlers
 import interfaces.interface_utility as interface_util
 
 
-class KeyActionFunctions:
+class BaseEvent(ABC):
+    ALLOWED_STATES: ClassVar[List[str]]
+
+    def __init__(
+        self,
+        function: Callable,
+        values: List = None,
+        types: List = None
+    ):
+        self.states = {state_name: None for state_name in self.ALLOWED_STATES}
+        self.add_action(function, values, types)
+
+    def add_action(
+        self,
+        function: Callable,
+        values: List = None,
+        types: List = None
+    ) -> None:
+        """Add an action for one of the 2 states"""
+        types = types if types else ["pressed", "unpressed"]
+        values = values if values else []
+        for _type in types:
+            if _type not in types:
+                raise util.GameException("State {} is not allowed for {} use one of {}".format(_type, type(self),
+                                                                                               self.ALLOWED_STATES))
+            self.states[_type] = [function, values]
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def ALLOWED_STATES(self) -> List[str]:
+        pass
+
+    def __call__(
+        self,
+        *args,
+        **kwargs
+    ) -> Any:
+        """Allows the class to act like a function"""
+        if self.states[args[0]] is not None:
+            function, values = self.states[args[0]]
+            function(*values)
+
+
+class KeyEvent(BaseEvent):
     """
     Action function for defining actions for widgets. Can be called like a
     function
     """
-    def __init__(self, function, values = [], types=["pressed", "unpressed"]):
-        """
-        :param function: a function object that can be triggered
-        :param values: a value or pointer to supply to the function
-        :param types: a list of types that should trigger the function
-        """
-        self.functions = {}
-        self.add_action(function, values, types)
-
-    def add_action(self, function, values=[], types=["pressed", "unpressed"]):
-        for type in types:
-            self.functions[type] = [function, values]
-
-    def __call__(self, *args, **kwargs):
-        """
-        Allows the class to act like a function
-
-        :param args: optional args
-        :param kwargs: optional kwargs
-        """
-        if args[0] in self.functions:
-            function, values = self.functions[args[0]]
-            function(*values)
+    ALLOWED_STATES: ClassVar[List[str]] = ["pressed", "unpressed"]
 
 
-class HoverAction:
-    def __init__(self, continious = False):
+class HoverEvent(BaseEvent):
+    ALLOWED_STATES: ClassVar[List[str]] = ["hover", "unhover"]
+
+    def __init__(
+        self,
+        function: Callable,
+        values: List = None,
+        types: List = None,
+        continious: bool = False
+    ):
+        super().__init__(function, values, types)
+        self.__prev_hover_state = "unhover"
         self.__continious = continious
-        self.__prev_hover_state = False
-        self.__action_functions = {True : None, False : None}
 
-    def set(self, hover):
-        """
-        Set and trigger an hover event when appropraite
-
-        :param hover: a boolean that tells if the mouse is hovering or not
-        """
-        if hover != self.__prev_hover_state or self.__continious:
-            if self.__action_functions[hover]:
-                self.__action_functions[hover]("hover")
-        self.__prev_hover_state = hover
-
-    def set_hover_action(self, action, values=[]):
-        self.__action_functions[True] = KeyActionFunctions(action, values, ["hover"])
-
-    def set_unhover_action(self, action, values=[]):
-        self.__action_functions[False] = KeyActionFunctions(action, values, ["hover"])
+    def __call__(
+        self,
+        *args,
+        **kwargs
+    ) -> Any:
+        """Make sure that hover events are not triggered every time if the hover state did not change unless forced
+        by __continious flag"""
+        if args[0] != self.__prev_hover_state or self.__continious:
+            self.__prev_hover_state = args[0]
+            function, values = self.states[args[0]]
+            function(*values)
 
 
 class SelectionGroup:
@@ -128,11 +154,17 @@ class Widget(event_handlers.EventHandler, ABC):
         if key in self.action_functions:
             self.action_functions[key].add_action(action_function, values, types)
         else:
-            self.action_functions[key] = KeyActionFunctions(action_function, values, types)
+            self.action_functions[key] = KeyEvent(action_function, values, types)
             self.add_recordable_key(key)
 
-    def handle_events(self, events):
-        leftover_events = super().handle_events(events)
+    def add_hover(self, hover_action_function, unhover_action_function, hover_values=None, unhover_values=None):
+        self.set_action(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"])
+        self.set_action(con.BTN_UNHOVER, unhover_action_function, values=unhover_values, types=["unpressed"])
+        self.add_recordable_key(con.BTN_HOVER)
+        self.add_recordable_key(con.BTN_UNHOVER)
+
+    def handle_events(self, events, consume=True):
+        leftover_events = super().handle_events(events, consume)
 
         pressed = self.get_all_pressed()
         unpressed = self.get_all_unpressed()
@@ -282,9 +314,7 @@ class Button(Label):
     def __init__(self, size, **kwargs):
         super().__init__(size, **kwargs)
         self._hover_image = self._create_hover_image(**kwargs)
-        self._hover = HoverAction()
-        self._hover.set_hover_action(self.set_image, values=[self._hover_image])
-        self._hover.set_unhover_action(self.set_image, values=[None])
+        self.add_hover(self.set_image, self.set_image, hover_values=[self._hover_image], unhover_values=[None])
 
     def _create_hover_image(self, hover_image=None, **kwargs):
         if hover_image:
@@ -336,7 +366,7 @@ class Pane(Label):
         Update all the widgets in this container, and make sure to redraw them
         when needed
 
-        :param args: optiinal argumetns
+        :param args: optional argumetns
         """
         for widget in self.widgets:
             widget.wupdate()
@@ -354,22 +384,23 @@ class Pane(Label):
         of the list
         """
         selected_widgets = []
+        unselected_widgets = []
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
         for widget in self.widgets:
             collide = widget.rect.collidepoint(adjusted_pos)
-            #save if the widget is hovered over at this moment when implementing a hover action
-            if hasattr(widget, "_hover"):
-                widget._hover.set(collide)
             if collide:
                 if isinstance(widget, Pane):
                     selected_widgets.append(widget)
-                    lower_selected = widget._find_hovered_widgets(adjusted_pos)
+                    lower_selected, lower_unselected = widget._find_hovered_widgets(adjusted_pos)
                     if lower_selected:
-                        for w in lower_selected:
-                            selected_widgets.append(w)
+                        selected_widgets.extend(lower_selected)
+                    elif lower_unselected:
+                        lower_unselected.extend(lower_unselected)
                 else:
                     selected_widgets.append(widget)
-        return selected_widgets
+            else:
+                unselected_widgets.append(widget)
+        return selected_widgets, unselected_widgets
 
     def _get_selectable_widgets(self):
         selectable_widgets = []
@@ -502,18 +533,23 @@ class Frame(entities.ZoomableEntity, Pane):
         if self.selected_widget != None:
             self.selected_widget.action(1, "unpressed")
 
-    def handle_events(self, events):
+    def handle_events(self, events, consume=True):
         # events that are triggered on this frame widget trigger first
-        leftover_events = super().handle_events(events)
+        leftover_events = super().handle_events(events, consume)
         pos = pygame.mouse.get_pos()
         if self.static:
             pos = interface_util.screen_to_board_coordinate(pos, self.groups()[0].target, 1)
-        hovered = self._find_hovered_widgets(pos)
+        hovered, unhovered = self._find_hovered_widgets(pos)
 
-        #handle all events from the most front widget to the most back one.
-        while hovered != None and len(hovered) > 0:
+        # add a hover event that can be consumed in the same way as normal events.
+        leftover_events.append(pygame.event.Event(con.HOVER, button=con.BTN_HOVER))
+        # handle all events from the most front widget to the most back one.
+        while hovered is not None and len(hovered) > 0 and len(leftover_events) > 0:
             widget = hovered.pop()
             leftover_events = widget.handle_events(leftover_events)
+        unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_UNHOVER)]
+        for widget in unhovered:
+            widget.handle_events(unhover_event)
         return leftover_events
 
 
