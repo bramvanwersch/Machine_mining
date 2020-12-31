@@ -87,7 +87,7 @@ class CraftingWindow(base_interface.Window):
 
             lbl = widgets.Label((30, 30), color=color, image=background)
 
-            lbl.set_action(1, self.recipe_action, values=[recipe, lbl, s1], types=["unpressed"])
+            lbl.add_key_event_listener(1, self.recipe_action, values=[recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)
             inventory_s.add_widget((0, 0), lbl)
 

@@ -70,7 +70,7 @@ class BuildingWindow(base_interfaces.Window):
                     if selected:
                         select_an_item(self)
 
-                lbl.set_action(1, set_selected, [lbl, True], ["pressed"])
+                lbl.add_key_event_listener(1, set_selected, [lbl, True], ["pressed"])
                 self._inventory_sp.add_widget((0, 0), lbl)
 
     def __initiate_widgets(self):
@@ -91,17 +91,17 @@ class PauseWindow(base_interfaces.Window):
         y_coord = 150
 
         continue_button = widgets.Button(button_size, color=(100, 100, 100), text="CONTINUE", font_size=30)
-        continue_button.set_action(1, self._close_window, types=["unpressed"])
+        continue_button.add_key_event_listener(1, self._close_window, types=["unpressed"])
         self.add_widget(("center", y_coord), continue_button)
 
         y_coord += 50
         save_button = widgets.Button(button_size, color=(100, 100, 100), text="SAVE", font_size=30)
-        save_button.set_action(1, self.__save, types=["unpressed"])
+        save_button.add_key_event_listener(1, self.__save, types=["unpressed"])
         self.add_widget(("center", y_coord), save_button)
 
         y_coord += 50
         exit_button = widgets.Button(button_size, color=(100, 100, 100), text="EXIT", font_size=30)
-        exit_button.set_action(1, self.__back_to_main_menu, types=["unpressed"])
+        exit_button.add_key_event_listener(1, self.__back_to_main_menu, types=["unpressed"])
         self.add_widget(("center", y_coord), exit_button)
 
     def __back_to_main_menu(self):

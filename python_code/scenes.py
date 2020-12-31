@@ -111,22 +111,22 @@ class MainMenu(Scene):
         button_size = util.Size(100, 40)
         y_coord = 200
         play_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
-        play_button.set_action(1, self.__start_game, types=["unpressed"])
+        play_button.add_key_event_listener(1, self.__start_game, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), play_button)
 
         y_coord += 50
         load_button = widgets.Button(button_size, color=(100, 100, 100), text="LOAD", font_size=30)
-        load_button.set_action(1, self.__load_game, types=["unpressed"])
+        load_button.add_key_event_listener(1, self.__load_game, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), load_button)
 
         y_coord += 50
         settings_button = widgets.Button(button_size, color=(100, 100, 100), text="SETTINGS", font_size=30)
-        settings_button.set_action(1, self.__open_settings, types=["unpressed"])
+        settings_button.add_key_event_listener(1, self.__open_settings, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), settings_button)
 
         y_coord += 50
         quit_button = widgets.Button(button_size, color=(100, 100, 100), text="QUIT", font_size=30)
-        quit_button.set_action(1, self.__quit, types=["unpressed"])
+        quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
     def scene_event_handling(self, consume=False):
@@ -171,22 +171,22 @@ class SettingsScene(Scene):
         button_size = util.Size(100, 40)
         y_coord = 200
         play_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
-        play_button.set_action(1, self.__start_game, types=["unpressed"])
+        play_button.add_key_event_listener(1, self.__start_game, types=["unpressed"])
         self.settings_menu_frame.add_widget(("center", y_coord), play_button)
 
         y_coord += 50
         load_button = widgets.Button(button_size, color=(100, 100, 100), text="LOAD", font_size=30)
-        load_button.set_action(1, self.__load_game, types=["unpressed"])
+        load_button.add_key_event_listener(1, self.__load_game, types=["unpressed"])
         self.settings_menu_frame.add_widget(("center", y_coord), load_button)
 
         y_coord += 50
         settings_button = widgets.Button(button_size, color=(100, 100, 100), text="SETTINGS", font_size=30)
-        settings_button.set_action(1, self.__open_settings, types=["unpressed"])
+        settings_button.add_key_event_listener(1, self.__open_settings, types=["unpressed"])
         self.settings_menu_frame.add_widget(("center", y_coord), settings_button)
 
         y_coord += 50
         quit_button = widgets.Button(button_size, color=(100, 100, 100), text="QUIT", font_size=30)
-        quit_button.set_action(1, self.__quit, types=["unpressed"])
+        quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
         self.settings_menu_frame.add_widget(("center", y_coord), quit_button)
 
     def scene_event_handling(self, consume=False):

@@ -13,6 +13,8 @@ import interfaces.interface_utility as interface_util
 class BaseEvent(ABC):
     ALLOWED_STATES: ClassVar[List[str]]
 
+    states: Dict[str, Union[None, List[Callable, List]]]
+
     def __init__(
         self,
         function: Callable,
@@ -29,7 +31,7 @@ class BaseEvent(ABC):
         types: List = None
     ) -> None:
         """Add an action for one of the 2 states"""
-        types = types if types else ["pressed", "unpressed"]
+        types = types if types else self.ALLOWED_STATES
         values = values if values else []
         for _type in types:
             if _type not in types:
@@ -65,6 +67,9 @@ class KeyEvent(BaseEvent):
 class HoverEvent(BaseEvent):
     ALLOWED_STATES: ClassVar[List[str]] = ["hover", "unhover"]
 
+    __prev_hover_state: str
+    __continious: bool
+
     def __init__(
         self,
         function: Callable,
@@ -90,23 +95,39 @@ class HoverEvent(BaseEvent):
 
 
 class SelectionGroup:
-    def __init__(self, multiple=False):
+    """A collection of widgets to control selection of the widgets"""
+    multi_mode: bool
+    __widgets: Set
+
+    def __init__(
+        self,
+        multiple: bool = False
+    ):
         self.multi_mode = multiple
         self.__widgets = set()
 
-    def add(self, widget):
+    def add(
+        self,
+        widget
+    ) -> None:
         self.__widgets.add(widget)
 
-    def select(self, widget, *args):
+    def select(
+        self,
+        widget,
+        *args
+    ) -> None:
         if not self.multi_mode:
             for w in self.__widgets:
                 w.set_selected(False)
         widget.set_selected(True, *args)
 
-    def off(self):
+    def off(self) -> None:
+        """Turn all widgets off"""
         [w.set_selected(False) for w in self.__widgets]
 
-    def on(self):
+    def on(self) -> None:
+        """Turn all widgets on"""
         if self.multi_mode:
             [w.set_selected(True) for w in self.__widgets]
 
@@ -115,72 +136,94 @@ class Widget(event_handlers.EventHandler, ABC):
     """
     Basic widget class
     """
-    def __init__(self, size, selectable=True, recordable_keys=[], **kwargs):
+    __listened_for_events: Dict[int, KeyEvent]
+    selectable: bool
+    selected: bool
+    rect: pygame.Rect
+    visible: bool
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        selectable: bool = True,
+        recordable_keys: List = None,
+        **kwargs
+    ):
+        recordable_keys = recordable_keys if recordable_keys else None
         super().__init__(recordable_keys)
-        self.action_functions = {}
+        self.__listened_for_events = {}
+        # are allowed to select
         self.selectable = selectable
+        # state of selection
         self.selected = False
 
-        #innitial position is 0, 0
-        self.rect = pygame.Rect((0, 0, *size))
+        # innitial position is 0, 0
+        self.rect = pygame.Rect((0, 0, size[0], size[1]))
         self.visible = True
 
     def wupdate(self):
         """
-        A funtion that allows updating a widget each frame
+        A function that allows updating a widget each frame
         """
         pass
 
-    def action(self, key, type):
-        """
-        Activates an action function bound to a certain key.
+    def action(
+        self,
+        key: int,
+        _type: str
+    ) -> Any:
+        """Activates an action function bound to a certain key."""
+        self.__listened_for_events[key](_type)
 
-        :param key: the key where the action function is bound to
-        """
-        self.action_functions[key](type)
-
-    def set_action(self, key, action_function, values=[], types=["pressed", "unpressed"]):
-        """
-        Binds a certain key to an action function. Optional values can be
-        supplied that are then added as args.
-
-        :param key: the keyboard key that the function should be activated by
-        :param action_function: the function that should trigger when the key
-        is used and the mouse is over the widget
-        :param values: a list of values
-        :param: types: a list of event types that should trigger the action
-        function
-        """
-        if key in self.action_functions:
-            self.action_functions[key].add_action(action_function, values, types)
+    def add_key_event_listener(
+        self,
+        key: int,
+        action_function: Callable,
+        values: List = None,
+        types: List = None
+    ) -> None:
+        """Link functions to key events and trigger when appropriate"""
+        if key in self.__listened_for_events:
+            self.__listened_for_events[key].add_action(action_function, values, types)
         else:
-            self.action_functions[key] = KeyEvent(action_function, values, types)
+            self.__listened_for_events[key] = KeyEvent(action_function, values, types)
             self.add_recordable_key(key)
 
-    def add_hover(self, hover_action_function, unhover_action_function, hover_values=None, unhover_values=None):
-        self.set_action(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"])
-        self.set_action(con.BTN_UNHOVER, unhover_action_function, values=unhover_values, types=["unpressed"])
+    def add_hover_event_listener(
+        self,
+        hover_action_function: Callable,
+        unhover_action_function: Callable,
+        hover_values: List = None,
+        unhover_values: List = None
+    ) -> None:
+        """Link functions to hover events and trigger when appropriate"""
+        self.add_key_event_listener(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"])
+        self.add_key_event_listener(con.BTN_UNHOVER, unhover_action_function, values=unhover_values,
+                                    types=["unpressed"])
         self.add_recordable_key(con.BTN_HOVER)
         self.add_recordable_key(con.BTN_UNHOVER)
 
-    def handle_events(self, events, consume=True):
+    def handle_events(
+        self,
+        events: List,
+        consume: bool = True
+    ) -> List[pygame.event.Event]:
         leftover_events = super().handle_events(events, consume)
 
         pressed = self.get_all_pressed()
         unpressed = self.get_all_unpressed()
         keys = [*zip(pressed, ["pressed"] * len(pressed)),
                 *zip(unpressed, ["unpressed"] * len(unpressed))]
-        for key, type in keys:
-            if key.name in self.action_functions:
-                self.action(key.name, type)
+        for key, _type in keys:
+            if key.name in self.__listened_for_events:
+                self.action(key.name, _type)
         return leftover_events
 
-    def set_selected(self, selected):
-        """
-        Set a widget as selected. Allowing a highlight for instance
-
-        :param selected: a boolean telling the state of selection
-        """
+    def set_selected(
+        self,
+        selected: bool
+    ) -> None:
+        """Set a widget as selected. Allowing a highlight for instance"""
         # make sure that you only select when allowed
         if self.selectable:
             self.selected = selected
@@ -190,7 +233,8 @@ class Label(Widget):
     """
     Bsically a widget that allows image manipulation
     """
-    SELECTED_COLOR = (255, 255, 255)
+    SELECTED_COLOR: ClassVar[Union[Tuple[int, int, int], List[int]]] = (255, 255, 255)
+
     def __init__(self, size, color = (255,255,255), **kwargs):
         Widget.__init__(self, size, **kwargs)
         self.image = self._create_image(size, color, **kwargs)
@@ -314,7 +358,7 @@ class Button(Label):
     def __init__(self, size, **kwargs):
         super().__init__(size, **kwargs)
         self._hover_image = self._create_hover_image(**kwargs)
-        self.add_hover(self.set_image, self.set_image, hover_values=[self._hover_image], unhover_values=[None])
+        self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[self._hover_image], unhover_values=[None])
 
     def _create_hover_image(self, hover_image=None, **kwargs):
         if hover_image:
@@ -444,11 +488,11 @@ class Frame(entities.ZoomableEntity, Pane):
         Pane.__init__(self, size, **kwargs)
         entities.ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
-        self.set_action(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
-        self.set_action(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
-        self.set_action(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
-        self.set_action(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
-        self.set_action(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
+        self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
+        self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
+        self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
+        self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
+        self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
 
     def update(self, *args):
         """
@@ -568,8 +612,8 @@ class ScrollPane(Pane):
 
         self.__total_offset_y = 0
 
-        self.set_action(4, self.scroll_y, [self.SCROLL_SPEED])
-        self.set_action(5, self.scroll_y, [-self.SCROLL_SPEED])
+        self.add_key_event_listener(4, self.scroll_y, [self.SCROLL_SPEED])
+        self.add_key_event_listener(5, self.scroll_y, [-self.SCROLL_SPEED])
 
     def add_widget(self, pos, widget):
         """

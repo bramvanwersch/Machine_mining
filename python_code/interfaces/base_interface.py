@@ -38,7 +38,7 @@ class Window(widgets.Frame):
         Window.ID += 1
 
         #make closable with escape
-        self.set_action(K_ESCAPE, self._close_window, types=["unpressed"])
+        self.add_key_event_listener(K_ESCAPE, self._close_window, types=["unpressed"])
         self.__add_top_border(size, title)
 
     def update(self, *args):
@@ -53,15 +53,15 @@ class Window(widgets.Frame):
         top_label = widgets.Label(util.Size(size.width - self.EXIT_BUTTON_SIZE.width, self.TOP_SIZE.height),
                           color=self.TOP_BAR_COLOR, selectable=False)
         if self.static:
-            top_label.set_action(1, self.__top_label_action, values=[True], types=["pressed"])
-            top_label.set_action(1, self.__top_label_action, values=[False], types=["unpressed"])
+            top_label.add_key_event_listener(1, self.__top_label_action, values=[True], types=["pressed"])
+            top_label.add_key_event_listener(1, self.__top_label_action, values=[False], types=["unpressed"])
         self.add_widget((0,0), top_label, adjust=False)
         if title != None:
             top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25, add=True)
         button_image = image_handlers.image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE)
         hover_image = image_handlers.image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE)
         exit_button = widgets.Button(self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image, selectable=False)
-        exit_button.set_action(1, self._close_window, types=["unpressed"])
+        exit_button.add_key_event_listener(1, self._close_window, types=["unpressed"])
         self.add_widget((size.width - self.EXIT_BUTTON_SIZE.width, 0), exit_button, adjust=False)
 
     def add_widget(self, pos, widget, adjust=True):
