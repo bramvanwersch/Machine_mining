@@ -157,7 +157,13 @@ class ColorDefinition:
         """Create surfaces of a single color for all colors in self.__colors"""
         if len(self.__images) == 0:
             for color in self.__colors:
-                image = pygame.Surface(self.__surface_size.size)
+                if len(color) == 3:
+                    image = pygame.Surface(self.__surface_size.size).convert()
+                elif len(color) == 4:
+                    image = pygame.Surface(self.__surface_size.size).convert_alpha()
+                else:
+                    raise util.GameException("Color argument {} is invalid should have lenght 3 or 4 not {}"
+                                             .format(color, len(color)))
                 image.fill(color)
                 if con.SHOW_BLOCK_BORDER and self.__border_allowed:
                     pygame.draw.rect(image, self.__configure_border_color(color),
@@ -212,7 +218,7 @@ class Air(ColorMaterial):
     HARDNESS: ClassVar[int] = 0
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 1
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.Block
-    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition(con.INVISIBLE_COLOR[:-1], more_colors=False,
+    COLOR_DEFINITIONS: ClassVar[ColorDefinition] = ColorDefinition(con.INVISIBLE_COLOR, more_colors=False,
                                                                    border=False)
 
 
@@ -239,7 +245,7 @@ class ImageDefinition:
         self,
         sheet_name: str,
         image_location: Tuple[int, int],
-        color_key: Tuple[int, int, int] = None,
+        color_key: Tuple[int, int, int] = con.INVISIBLE_COLOR,
         flip: bool = False,
         image_size: util.Size = con.BLOCK_SIZE,
         size: util.Size = con.BLOCK_SIZE

@@ -39,7 +39,7 @@ class Spritesheet:
         self.sheet = load_image(filename)
         self.image_size = size
 
-    def image_at(self, coord, size = None, color_key=con.INVISIBLE_COLOR[:-1]):
+    def image_at(self, coord, size = None, color_key=con.INVISIBLE_COLOR):
         if size is None:
             size = self.image_size
         rect = pygame.Rect(*coord, *size)

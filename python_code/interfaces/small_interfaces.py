@@ -63,7 +63,7 @@ class BuildingWindow(base_interfaces.Window):
         for item in self.__inventory.items:
             if item.name() not in covered_items and item.material.buildable:
                 # remove the alpha channel
-                lbl = widgets.ItemLabel((42, 42), item, color=self.COLOR[:-1])
+                lbl = widgets.ItemDisplay((42, 42), item, color=self.COLOR[:-1])
 
                 def set_selected(self, selected):
                     self.set_selected(selected)
@@ -148,7 +148,7 @@ class TerminalWindow(base_interfaces.Window):
         for item in self.__terminal_inv.items:
             if item.name() not in covered_items:
                 # remove the alpha channel
-                lbl = widgets.ItemLabel((42, 42), item, color=(173, 94, 29))
+                lbl = widgets.ItemDisplay((42, 42), item, color=(173, 94, 29))
 
                 self.__inventory_pane.add_widget((0, 0), lbl)
 

@@ -185,9 +185,11 @@ class BoardImage(entities.ZoomableEntity):
         """
         block_matrix = kwargs["block_matrix"]
         offset = kwargs["offset"]
-        image = pygame.Surface(size)
+        image = pygame.Surface(size).convert()
         image.set_colorkey(con.INVISIBLE_COLOR, con.RLEACCEL)
-        image = image.convert()
+        # make sure that surfaces that have alpha channels are blittet as transparant because the background
+        # is transparant
+        image.fill(con.INVISIBLE_COLOR)
         for row in block_matrix:
             for block in row:
                 block_rect = (block.rect.left - offset[0] * con.CHUNK_SIZE.width, block.rect.top - offset[1] * con.CHUNK_SIZE.height, *block.rect.size)

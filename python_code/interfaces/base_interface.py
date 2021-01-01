@@ -57,7 +57,7 @@ class Window(widgets.Frame):
             top_label.add_key_event_listener(1, self.__top_label_action, values=[False], types=["unpressed"])
         self.add_widget((0,0), top_label, adjust=False)
         if title != None:
-            top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25, add=True)
+            top_label.set_text(title, (10,5), self.TEXT_COLOR, font_size=25)
         button_image = image_handlers.image_sheets["general"].image_at((20,0),self.EXIT_BUTTON_SIZE)
         hover_image = image_handlers.image_sheets["general"].image_at((45, 0), self.EXIT_BUTTON_SIZE)
         exit_button = widgets.Button(self.EXIT_BUTTON_SIZE, image=button_image, hover_image=hover_image, selectable=False)

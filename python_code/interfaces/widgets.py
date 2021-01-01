@@ -13,7 +13,7 @@ import interfaces.interface_utility as interface_util
 class BaseEvent(ABC):
     ALLOWED_STATES: ClassVar[List[str]]
 
-    states: Dict[str, Union[None, List[Callable, List]]]
+    states: Dict[str, Union[None, Tuple[Callable, List]]]
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class BaseEvent(ABC):
             if _type not in types:
                 raise util.GameException("State {} is not allowed for {} use one of {}".format(_type, type(self),
                                                                                                self.ALLOWED_STATES))
-            self.states[_type] = [function, values]
+            self.states[_type] = (function, values)
 
     # noinspection PyPep8Naming
     @property
@@ -224,7 +224,6 @@ class Widget(event_handlers.EventHandler, ABC):
         selected: bool
     ) -> None:
         """Set a widget as selected. Allowing a highlight for instance"""
-        # make sure that you only select when allowed
         if self.selectable:
             self.selected = selected
 
@@ -235,137 +234,154 @@ class Label(Widget):
     """
     SELECTED_COLOR: ClassVar[Union[Tuple[int, int, int], List[int]]] = (255, 255, 255)
 
-    def __init__(self, size, color = (255,255,255), **kwargs):
-        Widget.__init__(self, size, **kwargs)
-        self.image = self._create_image(size, color, **kwargs)
-        self.orig_image = self.image.copy()
+    surface: Union[None, pygame.Surface]
+    orig_surface: Union[None, pygame.Surface]
+    color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List]
+    changed_image: bool
+    text_image: Union[None, pygame.Surface]
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List] = (255, 255, 255),
+        border: bool = False,
+        border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        image: pygame.Surface = None,
+        image_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        image_size: Union[util.Size, Tuple[int, int], List[int]] = None,
+        text: str = None,
+        text_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        font_size: int = 15,
+        **kwargs
+    ):
+        super().__init__(size, **kwargs)
         self.color = color
-        #parameter that tells the container widget containing this widget to
-        #reblit it onto its surface.
-        #always reblit at the start
+        self.surface = self._create_background(size, self.color, border, border_color)
+        self.orig_surface = self.surface.copy()
+
+        # variables for saving the values used for creation of the surface
+        self.image_specifications = None
+        self.text_specifications = None
+        self.selection_specifications = None
+        self.create_surface(image, image_pos, image_size, text, text_pos, text_color, font_size)
+
+        # parameter that tells the container widget containing this widget to reblit it onto its surface.
         self.changed_image = True
-        self.text_image = None
 
-    def _create_image(self, size, color, image=None, border=None, border_color=(0,0,0),
-                      text=None, font_size=15, text_color=(0,0,0), text_pos="center", **kwargs):
-        """
-        Create an image using a size and color
+    def create_surface(
+        self,
+        image: pygame.Surface = None,
+        image_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        image_size: Union[util.Size, Tuple[int, int], List[int]] = None,
+        text: str = None,
+        text_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        font_size: int = 15,
+    ) -> None:
+        if image is not None:
+            self.set_image(image, image_pos, image_size)
+        if text is not None:
+            self.set_text(text, text_pos, text_color, font_size)
 
-        :param size: a Size object or tuple of lenght 2
-        :param color: a rgb color as tuple of lenght 2 or 3
-        :param kwargs: additional named arguments
-        :return: a pygame Surface object
-        """
-        if image:
-            return image
+    def _create_background(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List],
+        border: bool = False,
+        border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0)
+    ) -> pygame.Surface:
+        """Create the innitial image. This image will be tracked using the orig_image attribute"""
         if len(color) == 3:
-            image = pygame.Surface(size).convert()
+            lbl_surface = pygame.Surface(size).convert()
         # included alpha channel
         elif len(color) == 4:
-            image = pygame.Surface(size).convert_alpha()
-        image.fill(color)
-        image.set_colorkey(con.INVISIBLE_COLOR, con.RLEACCEL)
+            lbl_surface = pygame.Surface(size).convert_alpha()
+        else:
+            raise util.GameException("Color argument {} is invalid should have lenght 3 or 4 not {}"
+                                     .format(color, len(color)))
+        lbl_surface.fill(color)
         if border:
-            pygame.draw.rect(image, border_color, (0,0,*self.rect.size), 4)
-        #add text when defined
-        if text:
-            text = con.FONTS[font_size].render(text, True, text_color)
-            text_rect = text.get_rect()
-            if text_pos == "center":
-                text_pos = (self.rect.width / 2 - text_rect.width / 2, self.rect.height / 2 - text_rect.height / 2)
-            image.blit(text, text_pos)
-        return image
+            pygame.draw.rect(lbl_surface, border_color, (0, 0, size[0], size[1]), 4)
+        return lbl_surface
 
     def set_selected(self, selected, color=None):
-        """
-        Add a border around the outside of a widget when it is selected
-        :See: Widget.set_selected()
-        """
         super().set_selected(selected)
-        if color == None:
+        self.selection_specifications = [selected, color]
+        if color is None:
             color = self.SELECTED_COLOR
         if self.selected:
-            pygame.draw.rect(self.image, color, self.image.get_rect(), 3)
+            pygame.draw.rect(self.surface, color, self.surface.get_rect(), 3)
         else:
-            self._clean_image(text = False)
+            self.clean_image(text=False, image=False)
 
         self.changed_image = True
 
-    def set_image(self, image, pos = "center", size=None):
-        """
-        Change the full image of a widget or change it back to the orig_image
-        by setting image to None
-
-        :param image: a Surface Object or None
-        :Note: resetting the image does not work if the original is transparant
-        """
-        if image == None:
-            self.image = self.orig_image.copy()
-        else:
-            if size != None:
-                image = pygame.transform.scale(image, size)
-            rect = image.get_rect()
-            if pos == "center":
-                pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
-            self.image.blit(image, pos)
-        self.changed_image = True
-
-    def set_text(self, text, pos, color = (0,0,0), font_size = 15, add = False):
-        """
-        Place some text on the widget
-
-        :param text: A String to display
-        :param pos: The position of the topleft corner
-        :param color: the Color of the text default is black
-        :param font_size: the size of the font. Can choose a range between 12 and 35
-        :param add: if the text should be added to the current image or to the
-        orig_image
-        """
-        if not add:
-            self._clean_image()
-        s = con.FONTS[font_size].render(str(text), True, color)
-        rect = s.get_rect()
+    def set_image(self, image, pos="center", size=None, cleaning=False):
+        if not cleaning:
+            self.clean_image(text=False, selected=False)
+        self.image_specifications = [image.copy(), pos, size]
+        if size is not None:
+            image = pygame.transform.scale(image, size)
+        rect = image.get_rect()
         if pos == "center":
             pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
-        self.image.blit(s, pos)
-        self.text_image = self.image.copy()
+        self.surface.blit(image, pos)
+        # make sure that the selection rectangle is shown
         if self.selected:
             self.set_selected(True)
         self.changed_image = True
 
-    def _clean_image(self, text = True, selected = True):
-        """
-        Controlled cleaning of the image. You can specify to clean the text and
-        or the border by setting text or selected to True
+    def set_text(self, text, pos, color=(0, 0, 0), font_size=15, cleaning=False):
+        if not cleaning:
+            self.clean_image(image=False, selected=False)
+        self.text_specifications = [text, pos, color, font_size]
+        s = con.FONTS[font_size].render(str(text), True, color)
+        rect = s.get_rect()
+        if pos == "center":
+            pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
+        self.surface.blit(s, pos)
+        self.text_image = self.surface.copy()
+        # make sure that the selection rectangle is shown
+        if self.selected:
+            self.set_selected(True)
+        self.changed_image = True
 
-        :param text: a boolean that is True when the text should be cleaned
-        False if not
-        :param selected: a boolean that is True when selected border should be
-        cleaned False if not
-        """
-        if self.text_image and not text:
-            self.image = self.text_image.copy()
-        else:
-            self.image = self.orig_image.copy()
-            self.text_image = None
-        if self.selected and not selected:
-            #draw selected
-            pygame.draw.rect(self.image, self.SELECTED_COLOR, self.image.get_rect(), 3)
+    def clean_image(self, text=True, selected=True, image=True):
+        # reset the surface and readd anything that should not have been cleared
+        self.surface = self.orig_surface.copy()
+        if not image and self.image_specifications:
+            self.set_image(*self.image_specifications, cleaning=True)
+        if not text and self.text_specifications:
+            self.set_text(*self.text_specifications, cleaning=True)
+        if not selected and self.selected:
+            self.set_selected(*self.selection_specifications)
 
 
 class Button(Label):
     COLOR_CHANGE = 75
-    def __init__(self, size, **kwargs):
+    def __init__(self, size, hover_image=None, **kwargs):
         super().__init__(size, **kwargs)
-        self._hover_image = self._create_hover_image(**kwargs)
-        self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[self._hover_image], unhover_values=[None])
+        if hover_image is not None:
+            self._hover_surface = hover_image
+            self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[self._hover_surface],
+                                          unhover_values=[self.surface])
+        else:
+            self._hover_surface = self.create_hover_surface()
+            self.add_hover_event_listener(self.set_image, self.clean_image, hover_values=[self._hover_surface],
+                                          unhover_values=[False, False, True])
 
-    def _create_hover_image(self, hover_image=None, **kwargs):
-        if hover_image:
-            return hover_image
-        kwargs["color"] = self.__hover_color()
-        hover_image = self._create_image(self.image.get_size(), **kwargs)
-        return hover_image
+    def create_hover_surface(self):
+        """Fill all pixels of color self.color with a new color. Carfull do not call to much"""
+        w, h = self.surface.get_size()
+        hover_color = self.__hover_color()
+        hover_surface = self.surface.copy()
+        for x in range(w):
+            for y in range(h):
+                present_color = self.surface.get_at((x, y))
+                if present_color == self.color:
+                    hover_surface.set_at((x, y), hover_color)
+        return hover_surface
 
     def __hover_color(self):
         new_color = []
@@ -402,8 +418,8 @@ class Pane(Label):
             pos = (rect.left + pos[0], rect.top + pos[1])
         widget.rect = pygame.Rect((*pos, *rect.size))
         self.widgets.append(widget)
-        self.orig_image.blit(widget.image, pos)
-        self.image = self.orig_image.copy()
+        self.orig_surface.blit(widget.surface, pos)
+        self.surface = self.orig_surface.copy()
 
     def wupdate(self, *args):
         """
@@ -464,19 +480,19 @@ class Pane(Label):
         Sets the self.changed_image flag to True to forse potential containers
         that contain this container to redraw this container
         """
-        self.orig_image.blit(widget.image, dest=widget.rect, area=(0,0,*widget.rect.size))
-        self.image = self.orig_image.copy()
+        self.orig_surface.blit(widget.surface, dest=widget.rect, area=(0, 0, *widget.rect.size))
+        self.surface = self.orig_surface.copy()
         self.changed_image = True
 
     def add_border(self, widget, color=(0,0,0)):
         """
-        add a border around a specified widget. The widget should be in the frame
+        add a border around a specified widget. The widget should be in the pane
         :param widget:
         :return:
         """
         rect = widget.rect.inflate(4, 4)
-        pygame.draw.rect(self.orig_image, color, rect, 3)
-        self.image = self.orig_image.copy()
+        pygame.draw.rect(self.orig_surface, color, rect, 3)
+        self.surface = self.orig_surface.copy()
 
 
 class Frame(entities.ZoomableEntity, Pane):
@@ -505,6 +521,14 @@ class Frame(entities.ZoomableEntity, Pane):
 
     def zoom(self, zoom):
         self._zoom = zoom
+
+    @property
+    def image(self):
+        return self.surface
+
+    @image.setter
+    def image(self, v):
+        self.surface = v
 
 #need to be here otherwise rects are not properly chnaged
     @property
@@ -638,7 +662,7 @@ class ScrollPane(Pane):
                 self.next_widget_topleft = self.widgets[-1].rect.topright
         self.widgets.append(widget)
         widget.rect.topleft = self.next_widget_topleft
-        self.orig_image.blit(widget.image, widget.rect)
+        self.orig_surface.blit(widget.surface, widget.rect)
 
     def scroll_y(self, offset_y):
         """
@@ -653,10 +677,10 @@ class ScrollPane(Pane):
             return
 
         #to make sure not to scroll when it is not needed
-        width, height = self.orig_image.get_size()
+        width, height = self.orig_surface.get_size()
         self.__total_offset_y += offset_y
-        self.orig_image.fill(self.color)
-        self.orig_image.scroll(0, offset_y)
+        self.orig_surface.fill(self.color)
+        self.orig_surface.scroll(0, offset_y)
 
         #make sure the location of the widgets contained is moved accordingly
         for widget in self.widgets:
@@ -665,81 +689,56 @@ class ScrollPane(Pane):
 
     def __extend_scroll_image(self, amnt):
         """
-        Extend the current orig_image and total_rect to hold more image.
+        Extend the current orig_surface and total_rect to hold more image.
 
         :param amnt: the amount of pixels to extend the image by in the y
         direction
 
         """
         self.total_rect.height += amnt
-        orig_copy = self.orig_image.copy()
-        self.orig_image = pygame.Surface(self.total_rect.size).convert()
-        self.orig_image.fill(self.color)
-        self.orig_image.blit(orig_copy, (0,self.__total_offset_y))
+        orig_copy = self.orig_surface.copy()
+        self.orig_surface = pygame.Surface(self.total_rect.size).convert()
+        self.orig_surface.fill(self.color)
+        self.orig_surface.blit(orig_copy, (0,self.__total_offset_y))
 
 
-class ItemLabel(Label):
-    """
-    Specialized label specifically for displaying items
-    """
+class ItemDisplay(Label):
 
-    def __init__(self, size, item, border = True, **kwargs):
+    def __init__(self, size: util.Size, item=None, border=True, **kwargs):
+        super().__init__(size, **kwargs)
         self.item = item
-        #is set when innitailising label, just to make sure
-        self.item_image = None
         self.__border = border
-        Label.__init__(self, size, **kwargs)
-        if self.item != None:
-            self.previous_total = self.item.quantity
-            # when innitiating make sure the number is displayed
-            self.set_text(str(self.previous_total), (6,6),
-                          color=self.item.TEXT_COLOR)
+        self.previous_total = 0
+        if self.item:
+            self.add_item(item)
 
     def add_item(self, item):
         self.item = item
-        self.image = self._create_image(self.rect.size, self.color)
-        self.orig_image = self.image.copy()
-        if self.item != None:
-            self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (6,6),
-                          color=self.item.TEXT_COLOR)
-
+        self.__add_item_image()
+        self.__add_quantity_text()
+        if self.__border:
+            rect = self.rect
+            rect.inflate_ip(-4, -4)
+            pygame.draw.rect(self.surface, (0, 0, 0), rect, 3)
         self.changed_image = True
 
-    def _create_image(self, size, color, **kwargs):
-        """
-        Customized image which is an image containing a block and a border
+    def __add_item_image(self):
+        item_size = util.Size(*self.rect.size) - (10, 10)
+        item_image = self.item.material.full_surface
+        item_image = pygame.transform.scale(item_image, item_size)
+        self.set_image(item_image)
 
-        :See: Label._create_image()
-        :return: pygame Surface object
-        """
-        size = util.Size(*size)
-        item_size = size - (10, 10)
-        # create a background surface
-        image = pygame.Surface(size)
-        image.fill(color)
-
-        if self.item is not None:
-            # get the item image and place it in the center
-            item_image = self.item.material.full_surface
-            self.item_image = pygame.transform.scale(item_image, item_size)
-            image.blit(self.item_image, (size.width / 2 - item_size.width / 2,
-                                size.height / 2 - item_size.height / 2))
-
-            # draw rectangle slightly smaller then image
-            if self.__border:
-                rect = image.get_rect()
-                rect.inflate_ip(-4, -4)
-                pygame.draw.rect(image, (0, 0, 0), rect, 3)
-        return image
+    def __add_quantity_text(self):
+        self.previous_total = self.item.quantity
+        self.set_text(str(self.previous_total), (5, 0), color=self.item.TEXT_COLOR)
 
     def wupdate(self):
         """
         Make sure to update the amount whenever it changes.
         """
-        if self.item != None and self.previous_total != self.item.quantity:
-            self.previous_total = self.item.quantity
-            self.set_text(str(self.previous_total), (6,6), color=self.item.TEXT_COLOR)
+        super().wupdate()
+        if self.item is not None and self.previous_total != self.item.quantity:
+            self.__add_quantity_text()
 
 
 class ProgressArrow(Label):

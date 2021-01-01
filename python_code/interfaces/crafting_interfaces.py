@@ -126,7 +126,7 @@ class FactoryWindow(CraftingWindow):
         self.add_widget((10, 10), self.grid_pane)
 
         #add label to display the possible item image
-        self._craftable_item_lbl = widgets.ItemLabel((50, 50), None, border=False, color=self.COLOR[:-1], selectable=False)
+        self._craftable_item_lbl = widgets.ItemDisplay((50, 50), None, border=False, color=self.COLOR[:-1], selectable=False)
         self.add_widget((200, 50), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl)
 
@@ -192,7 +192,7 @@ class FurnaceWindow(CraftingWindow):
         a_lbl = ProgressArrow((50, 50), self._crafting_time, color=con.INVISIBLE_COLOR)
         self.add_widget((110, 35), a_lbl)
 
-        self._craftable_item_lbl = widgets.ItemLabel((50, 50), None, border=False, color=(150, 150, 150), selectable=False)
+        self._craftable_item_lbl = widgets.ItemDisplay((50, 50), None, border=False, color=(150, 150, 150), selectable=False)
         self.add_widget((170, 32), self._craftable_item_lbl)
         self.add_border(self._craftable_item_lbl, color=(75, 75, 75))
 
@@ -248,7 +248,7 @@ class CraftingGrid(widgets.Pane):
         for row_i, row in enumerate(self._recipe_grid):
             for col_i, name_image in enumerate(row):
                 name, image = name_image
-                if image != None:
+                if image is not None:
                     self._crafting_grid[row_i][col_i].set_item(image)
 
     def add_present_material_indicator(self):
@@ -287,10 +287,12 @@ class GridLabel(widgets.Label):
         self.__item_image = None
 
     def set_item(self, item_image):
-        if item_image != None:
+        if item_image is not None:
             item_image = pygame.transform.scale(item_image, util.Size(*self.rect.size) - (4, 4))
+            self.set_image(item_image)
+        else:
+            self.clean_image()
         self.__item_image = item_image
-        self.set_image(self.__item_image)
 
     def set_present(self, value):
         if value == self.__item_present:

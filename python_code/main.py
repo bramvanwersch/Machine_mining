@@ -54,7 +54,6 @@ class Main:
             else:
                 pygame.display.update(active_scene.board_update_rectangles)
             con.GAME_TIME.tick(200)
-
         pygame.quit()
 
     # def draw_air_rectangles(self):
