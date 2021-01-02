@@ -5,7 +5,6 @@ from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar, TYPE_
 import entities
 import utility.constants as con
 import utility.utilities as util
-import utility.image_handling as image_handlers
 import utility.event_handling as event_handlers
 import interfaces.interface_utility as interface_util
 if TYPE_CHECKING:
@@ -651,6 +650,8 @@ class Frame(entities.ZoomableEntity, Pane):
         leftover_events = super().handle_events(events, consume_events)
         pos = pygame.mouse.get_pos()
         if self.static:
+            # the group 0 is always a CameraAwareLayerUpdates spritegroup
+            # noinspection PyUnresolvedReferences
             pos = interface_util.screen_to_board_coordinate(pos, self.groups()[0].target, 1)
         hovered, unhovered = self._find_hovered_widgets(pos)
 
@@ -676,6 +677,10 @@ class ScrollPane(Pane):
     # space between the outside of the crafting window and the closest label
     BORDER_SPACE: ClassVar[int] = 3  # pixels
 
+    __next_widget_topleft: Union[Tuple[int, int], List[int]]
+    __total_rect: pygame.Rect
+    __total_offset: int
+
     def __init__(
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
@@ -684,8 +689,9 @@ class ScrollPane(Pane):
         super().__init__(size, **kwargs)
         self.__next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
         # the rectangle of the surface, can be bigger then the rect that displays the information
-        self.total_rect = pygame.Rect(0, 0, self.rect.width, self.rect.height)
+        self.__total_rect = pygame.Rect(0, 0, self.rect.width, self.rect.height)
 
+        # can only be negative
         self.__total_offset_y = 0
 
         self.add_key_event_listener(4, self.scroll_y, [self.SCROLL_SPEED])
@@ -698,11 +704,11 @@ class ScrollPane(Pane):
         # configure the position of the next
         if len(self.widgets) > 0:
             # when the widget does not fit on the current line go a line down
-            if self.widgets[-1].rect.right + widget.rect.width + self.BORDER_SPACE > self.total_rect.width:
+            if self.widgets[-1].rect.right + widget.rect.width + self.BORDER_SPACE > self.__total_rect.width:
                 # when the total rect is to small extend it.
-                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE > self.total_rect.height:
+                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE > self.__total_rect.height:
                     extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE) - \
-                                 self.total_rect.height
+                                 self.__total_rect.height
                     self.__extend_scroll_image(extra_room)
                 self.__next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
             else:
@@ -711,17 +717,15 @@ class ScrollPane(Pane):
         widget.rect.topleft = self.__next_widget_topleft
         self.orig_surface.blit(widget.surface, widget.rect)
 
-    def scroll_y(self, offset_y):
-        """
-        Scroll down the main image of the pane
-
-        :param offset_y: an integer tnat is the amount the image should be
-        scrolled in the y direction
-        """
+    def scroll_y(
+        self,
+        offset_y: int
+    ) -> None:
+        """Scroll the main image of the pane"""
         # for cases with negative offset
-        if self.total_rect.height - self.rect.height + offset_y + self.__total_offset_y < 0:
+        if self.__total_rect.height - self.rect.height + offset_y + self.__total_offset_y < 0:
             # both offsets are negative at this point
-            offset_y = - self.SCROLL_SPEED - (self.total_rect.height - self.rect.height + offset_y +
+            offset_y = - self.SCROLL_SPEED - (self.__total_rect.height - self.rect.height + offset_y +
                                               self.__total_offset_y)
         # for cases with positive offset
         elif self.__total_offset_y + offset_y > 0:
@@ -730,22 +734,19 @@ class ScrollPane(Pane):
         self.orig_surface.fill(self.color)
         self.orig_surface.scroll(0, offset_y)
 
-        #make sure the location of the widgets contained is moved accordingly
+        # make sure the location of the widgets contained is moved accordingly
         for widget in self.widgets:
             widget.rect.move_ip(0, offset_y)
             widget.changed_image = True
 
-    def __extend_scroll_image(self, amnt):
-        """
-        Extend the current orig_surface and total_rect to hold more image.
-
-        :param amnt: the amount of pixels to extend the image by in the y
-        direction
-
-        """
-        self.total_rect.height += amnt
+    def __extend_scroll_image(
+        self,
+        amnt: int
+    ) -> None:
+        """Extend the current orig_surface and total_rect to hold more image"""
+        self.__total_rect.height += amnt
         orig_copy = self.orig_surface.copy()
-        self.orig_surface = pygame.Surface(self.total_rect.size).convert()
+        self.orig_surface = pygame.Surface(self.__total_rect.size).convert()
         self.orig_surface.fill(self.color)
         self.orig_surface.blit(orig_copy, (0, self.__total_offset_y))
 
@@ -766,162 +767,30 @@ class ItemDisplay(Label):
         if self.item:
             self.add_item(item)
 
-    def add_item(self, item):
+    def add_item(
+        self,
+        item: "inventories.Item"
+    ) -> None:
+        """Add or change the item displayed"""
         self.item = item
         self.__add_item_image()
         self.__add_quantity_text()
         self.changed_image = True
 
-    def __add_item_image(self):
+    def __add_item_image(self) -> None:
+        """Add the image of the item in the correct size"""
         item_size = util.Size(*self.rect.size) - (10, 10)
         item_image = self.item.material.full_surface
         item_image = pygame.transform.scale(item_image, item_size)
         self.set_image(item_image)
 
-    def __add_quantity_text(self):
+    def __add_quantity_text(self) -> None:
+        """Add the quantity text"""
         self.previous_total = self.item.quantity
         self.set_text(str(self.previous_total), (5, 5), color=self.item.TEXT_COLOR)
 
     def wupdate(self):
-        """
-        Make sure to update the amount whenever it changes.
-        """
+        """Make sure to update the amount whenever it changes"""
         super().wupdate()
         if self.item is not None and self.previous_total != self.item.quantity:
             self.__add_quantity_text()
-
-
-class ProgressArrow(Label):
-    def __init__(self, pos, size, **kwargs):
-        super().__init__(pos, size, **kwargs)
-        arrow_image = image_handlers.image_sheets["general"].image_at((0, 0), size=(20, 20))
-        arrow_image = pygame.transform.scale(arrow_image, (50,50))
-        a_lbl = Label((140, 50), (50, 50), color=con.INVISIBLE_COLOR)
-        a_lbl.set_image(arrow_image)
-
-### ALL OLD STUFF ### could come in handy later
-
-
-# class TextLog:
-#     def __init__(self):
-#         self.user_log = {}
-#         self.warning_log = {}
-#         self.location = 0
-#
-#     def __getitem__(self, key):
-#         return self.user_log[len(self.user_log) - key]
-#
-#     def __len__(self):
-#         return len(self.user_log)
-#
-#     def __iter__(self):
-#         combined_keys = list(self.user_log.keys()) + list(
-#             self.warning_log.keys())
-#         combined_keys.sort()
-#         combined = {**self.user_log, **self.warning_log}
-#         sorted_lines = reversed(list(combined[key] for key in combined_keys))
-#         return iter(sorted_lines)
-#
-#     def append(self, value):
-#         self.user_log[len(self.user_log) + len(self.warning_log)] = value
-#         value.rendered_str = value.rendered_str
-#
-#     def append_um(self, value):
-#         # append user messages like warnings and conformations
-#         self.warning_log[len(self.user_log) + len(self.warning_log)] = value
-#         value.rendered_str = value.rendered_str
-#
-#     def line_up(self):
-#         if not self.user_log:
-#             return Line()
-#         if self.location < len(self.user_log):
-#             self.location += 1
-#         return list(self.user_log.values())[-self.location].copy()
-#
-#     def line_down(self):
-#         if self.location > 0:
-#             self.location -= 1
-#         if self.location == 0:
-#             return Line()
-#         return list(self.user_log.values())[-self.location].copy()
-#
-#
-# class Line:
-#     MAX_LINE_SIZE = 155
-#     BACKGROUND_COLOR = (75, 75, 75)
-#
-#     def __init__(self, text="", color=(0, 255, 0)):
-#         self.color = color
-#         self.text = text
-#         self.line_location = len(self.text)
-#         self.rendered_str = None
-#         self.font18 = pygame.font.Font(
-#             con.DATA_DIR + "//Menu//font//manaspc.ttf", 18)
-#
-#     def __str__(self):
-#         return self.text
-#
-#     def render_str(self, blinker=False, header=""):
-#         if self.rendered_str:
-#             return self.rendered_str
-#         else:
-#             return self.__get_render_str(blinker, header)
-#
-#     def __get_render_str(self, blinker, header):
-#         if blinker:
-#             t = "{}{}_{}".format(header, self.text[:self.line_location],
-#                                  self.text[self.line_location + 1:])
-#         else:
-#             t = "{}{}".format(header, self.text)
-#         # if line is bigger then max of screen seperate the words and put them on separate lines
-#         size = [con.SCREEN_SIZE.size[0], 0]
-#         line_heigth = self.font18.size("k")[1]
-#         if len(t) > self.MAX_LINE_SIZE:
-#             words = t.split(" ")
-#             text = [""]
-#             l = 0
-#             for word in words:
-#                 if l + len(word) < self.MAX_LINE_SIZE:
-#                     text[len(text) - 1] += word + " "
-#                     l += len(word) + 1
-#                 else:
-#                     s = self.font18.size(text[len(text) - 1])
-#                     size[1] += line_heigth
-#                     l = 0
-#                     text.append("")
-#             size[1] += line_heigth
-#         else:
-#             text = [t]
-#             size = self.font18.size(t)
-#         surf = pygame.Surface((size[0] + 2, size[1] + 2))
-#
-#         surf.fill(self.BACKGROUND_COLOR)
-#         for i, line in enumerate(text):
-#             rt = self.font18.render(line, True, self.color)
-#             surf.blit(rt, (0, rt.get_size()[1] * i))
-#         return surf
-#
-#     def __len__(self):
-#         return len(self.text)
-#
-#     def __add__(self, other):
-#         if self.line_location + other <= len(self.text):
-#             self.line_location += other
-#
-#     def __sub__(self, other):
-#         if self.line_location - other >= 0:
-#             self.line_location -= other
-#
-#     def append(self, value):
-#         self.text = self.text[:self.line_location] + value + self.text[
-#                                                              self.line_location:]
-#         self.line_location += len(value)
-#
-#     def delete(self):
-#         if self.line_location > 0:
-#             self.line_location -= 1
-#             self.text = self.text[:self.line_location] + self.text[
-#                                                          self.line_location + 1:]
-#
-#     def copy(self):
-#         return Line(text=self.text, color=self.color)
