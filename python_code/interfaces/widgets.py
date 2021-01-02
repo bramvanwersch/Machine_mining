@@ -439,7 +439,7 @@ class Pane(Label):
 
     def __init__(
         self,
-        size: Union[util.Size, Tuple[int, int, int], List[int]],
+        size: Union[util.Size, Tuple[int, int], List[int]],
         **kwargs
     ):
         Label.__init__(self, size, selectable=False, **kwargs)
@@ -447,7 +447,7 @@ class Pane(Label):
 
     def add_widget(
         self,
-        pos: Union[Tuple[int, int], List],
+        pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]],
         widget: Widget,
         add_topleft: bool = False
     ) -> None:
@@ -527,8 +527,6 @@ class Pane(Label):
         color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0)
     ) -> None:
         """add a border around a specified widget. The widget should be in the pane"""
-        # if widget not in self.widgets:
-        #     raise util.GameException("Cannot add a border for widget {} not in {}.".format(widget, self))
         rect = widget.rect.inflate(4, 4)
         pygame.draw.rect(self.orig_surface, color, rect, 3)
         self.surface = self.orig_surface.copy()
@@ -674,19 +672,19 @@ class ScrollPane(Pane):
     """
     A Pane that can be scrolled
     """
-    SCROLL_SPEED: ClassVar[int] = 20
+    SCROLL_SPEED: ClassVar[int] = 20  # pixels
     # space between the outside of the crafting window and the closest label
-    BORDER_SPACE: ClassVar[int] = 3
+    BORDER_SPACE: ClassVar[int] = 3  # pixels
 
     def __init__(
         self,
-        size: Union[util.Size, Tuple[int, int, int], List[int]],
+        size: Union[util.Size, Tuple[int, int], List[int]],
         **kwargs
     ):
         super().__init__(size, **kwargs)
-        self.next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
-        # the total rectangle
-        self.total_rect = self.rect.copy()
+        self.__next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
+        # the rectangle of the surface, can be bigger then the rect that displays the information
+        self.total_rect = pygame.Rect(0, 0, self.rect.width, self.rect.height)
 
         self.__total_offset_y = 0
 
@@ -699,19 +697,18 @@ class ScrollPane(Pane):
     ) -> None:
         # configure the position of the next
         if len(self.widgets) > 0:
-            # when the widget does not fit on the frame put it on the next line
-            if self.widgets[-1].rect.right + widget.rect.width > self.total_rect.width - self.BORDER_SPACE:
+            # when the widget does not fit on the current line go a line down
+            if self.widgets[-1].rect.right + widget.rect.width + self.BORDER_SPACE > self.total_rect.width:
                 # when the total rect is to small extend it.
-                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE + self.total_rect.top >\
-                        self.total_rect.bottom:
-                    extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE +
-                                  self.total_rect.top) - self.total_rect.bottom
+                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE > self.total_rect.height:
+                    extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE) - \
+                                 self.total_rect.height
                     self.__extend_scroll_image(extra_room)
-                self.next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
+                self.__next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
             else:
-                self.next_widget_topleft = self.widgets[-1].rect.topright
+                self.__next_widget_topleft = self.widgets[-1].rect.topright
         self.widgets.append(widget)
-        widget.rect.topleft = self.next_widget_topleft
+        widget.rect.topleft = self.__next_widget_topleft
         self.orig_surface.blit(widget.surface, widget.rect)
 
     def scroll_y(self, offset_y):
@@ -721,13 +718,14 @@ class ScrollPane(Pane):
         :param offset_y: an integer tnat is the amount the image should be
         scrolled in the y direction
         """
-        # make sure to not scroll out of range
-        if self.total_rect.bottom + self.__total_offset_y + offset_y < self.rect.bottom or \
-                offset_y + self.__total_offset_y > 0:
-            return
-
-        # to make sure not to scroll when it is not needed
-        width, height = self.orig_surface.get_size()
+        # for cases with negative offset
+        if self.total_rect.height - self.rect.height + offset_y + self.__total_offset_y < 0:
+            # both offsets are negative at this point
+            offset_y = - self.SCROLL_SPEED - (self.total_rect.height - self.rect.height + offset_y +
+                                              self.__total_offset_y)
+        # for cases with positive offset
+        elif self.__total_offset_y + offset_y > 0:
+            offset_y -= self.__total_offset_y + offset_y
         self.__total_offset_y += offset_y
         self.orig_surface.fill(self.color)
         self.orig_surface.scroll(0, offset_y)

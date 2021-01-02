@@ -89,7 +89,7 @@ class CraftingWindow(base_interface.Window):
 
             lbl.add_key_event_listener(1, self.recipe_action, values=[recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)
-            inventory_s.add_widget((0, 0), lbl)
+            inventory_s.add_widget(lbl)
 
     def recipe_action(self, recipe, lbl, s1):
         self._crafting = False

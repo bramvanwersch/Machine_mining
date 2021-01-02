@@ -71,7 +71,7 @@ class BuildingWindow(base_interfaces.Window):
                         select_an_item(self)
 
                 lbl.add_key_event_listener(1, set_selected, [lbl, True], ["pressed"])
-                self._inventory_sp.add_widget((0, 0), lbl)
+                self._inventory_sp.add_widget(lbl)
 
     def __initiate_widgets(self):
         # create scrollable inventory
@@ -150,7 +150,7 @@ class TerminalWindow(base_interfaces.Window):
                 # remove the alpha channel
                 lbl = widgets.ItemDisplay((42, 42), item, color=(173, 94, 29))
 
-                self.__inventory_pane.add_widget((0, 0), lbl)
+                self.__inventory_pane.add_widget(lbl)
 
     def __add_widgets(self):
         self.__inventory_pane = widgets.ScrollPane(self.SIZE - (20, 20), color=self.COLOR)
