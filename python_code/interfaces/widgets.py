@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import pygame
-from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar
+from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar, TYPE_CHECKING
 
 import entities
 import utility.constants as con
@@ -8,6 +8,9 @@ import utility.utilities as util
 import utility.image_handling as image_handlers
 import utility.event_handling as event_handlers
 import interfaces.interface_utility as interface_util
+if TYPE_CHECKING:
+    import inventories
+    import board.sprite_groups as sprite_groups
 
 
 class BaseEvent(ABC):
@@ -24,6 +27,12 @@ class BaseEvent(ABC):
         self.states = {state_name: None for state_name in self.ALLOWED_STATES}
         self.add_action(function, values, types)
 
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def ALLOWED_STATES(self) -> List[str]:
+        pass
+
     def add_action(
         self,
         function: Callable,
@@ -38,12 +47,6 @@ class BaseEvent(ABC):
                 raise util.GameException("State {} is not allowed for {} use one of {}".format(_type, type(self),
                                                                                                self.ALLOWED_STATES))
             self.states[_type] = (function, values)
-
-    # noinspection PyPep8Naming
-    @property
-    @abstractmethod
-    def ALLOWED_STATES(self) -> List[str]:
-        pass
 
     def __call__(
         self,
@@ -141,6 +144,8 @@ class Widget(event_handlers.EventHandler, ABC):
     selected: bool
     rect: pygame.Rect
     visible: bool
+    surface: Union[None, pygame.Surface] = NotImplemented
+    orig_surface: Union[None, pygame.Surface] = NotImplemented
 
     def __init__(
         self,
@@ -206,9 +211,9 @@ class Widget(event_handlers.EventHandler, ABC):
     def handle_events(
         self,
         events: List,
-        consume: bool = True
+        consume_events: bool = True
     ) -> List[pygame.event.Event]:
-        leftover_events = super().handle_events(events, consume)
+        leftover_events = super().handle_events(events, consume_events)
 
         pressed = self.get_all_pressed()
         unpressed = self.get_all_unpressed()
@@ -229,16 +234,18 @@ class Widget(event_handlers.EventHandler, ABC):
 
 
 class Label(Widget):
-    """
-    Bsically a widget that allows image manipulation
-    """
+    """Widget that can contain text an image and can be selected"""
     SELECTED_COLOR: ClassVar[Union[Tuple[int, int, int], List[int]]] = (255, 255, 255)
 
+    color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List]
     surface: Union[None, pygame.Surface]
     orig_surface: Union[None, pygame.Surface]
-    color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List]
+
+    __image_specifications: Union[None, List]
+    __text_specifications: Union[None, List]
+    __selection_specifications: Union[None, List]
+
     changed_image: bool
-    text_image: Union[None, pygame.Surface]
 
     def __init__(
         self,
@@ -246,6 +253,7 @@ class Label(Widget):
         color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List] = (255, 255, 255),
         border: bool = False,
         border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        border_shrink: Union[Tuple[int, int], List[int]] = (0, 0),
         image: pygame.Surface = None,
         image_pos: Union[str, Tuple[int, int], List[int]] = "center",
         image_size: Union[util.Size, Tuple[int, int], List[int]] = None,
@@ -257,13 +265,13 @@ class Label(Widget):
     ):
         super().__init__(size, **kwargs)
         self.color = color
-        self.surface = self._create_background(size, self.color, border, border_color)
+        self.surface = self.__create_background(size, self.color, border, border_color, border_shrink)
         self.orig_surface = self.surface.copy()
 
         # variables for saving the values used for creation of the surface
-        self.image_specifications = None
-        self.text_specifications = None
-        self.selection_specifications = None
+        self.__image_specifications = None
+        self.__text_specifications = None
+        self.__selection_specifications = None
         self.create_surface(image, image_pos, image_size, text, text_pos, text_color, font_size)
 
         # parameter that tells the container widget containing this widget to reblit it onto its surface.
@@ -284,14 +292,15 @@ class Label(Widget):
         if text is not None:
             self.set_text(text, text_pos, text_color, font_size)
 
-    def _create_background(
+    def __create_background(
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
         color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List],
         border: bool = False,
-        border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0)
+        border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        border_shrink: Union[Tuple[int, int], List[int]] = (0, 0)
     ) -> pygame.Surface:
-        """Create the innitial image. This image will be tracked using the orig_image attribute"""
+        """Create background image where text highlight and images can be displayed on"""
         if len(color) == 3:
             lbl_surface = pygame.Surface(size).convert()
         # included alpha channel
@@ -302,25 +311,36 @@ class Label(Widget):
                                      .format(color, len(color)))
         lbl_surface.fill(color)
         if border:
-            pygame.draw.rect(lbl_surface, border_color, (0, 0, size[0], size[1]), 4)
+            pygame.draw.rect(lbl_surface, border_color, (int(border_shrink[0] / 2), int(border_shrink[1] / 2),
+                                                         size[0] - border_shrink[0], size[1] - border_shrink[1]), 4)
         return lbl_surface
 
-    def set_selected(self, selected, color=None):
+    def set_selected(
+        self,
+        selected: bool,
+        color: Union[Tuple[int, int, int], List[int]] = None
+    ) -> None:
         super().set_selected(selected)
-        self.selection_specifications = [selected, color]
+        self.__selection_specifications = [selected, color]
         if color is None:
             color = self.SELECTED_COLOR
         if self.selected:
             pygame.draw.rect(self.surface, color, self.surface.get_rect(), 3)
         else:
-            self.clean_image(text=False, image=False)
+            self.clean_image(clean_text=False, clean_image=False)
 
         self.changed_image = True
 
-    def set_image(self, image, pos="center", size=None, cleaning=False):
-        if not cleaning:
-            self.clean_image(text=False, selected=False)
-        self.image_specifications = [image.copy(), pos, size]
+    def set_image(
+        self,
+        image: pygame.Surface,
+        pos: Union[str, Tuple[int, int], List[int]] = "center",
+        size: Union[util.Size, Tuple[int, int], List[int]] = None,
+        is_cleaning_call: bool = False
+    ) -> None:
+        if not is_cleaning_call:
+            self.clean_image(clean_text=False, clean_selected=False)
+        self.__image_specifications = [image.copy(), pos, size]
         if size is not None:
             image = pygame.transform.scale(image, size)
         rect = image.get_rect()
@@ -332,47 +352,65 @@ class Label(Widget):
             self.set_selected(True)
         self.changed_image = True
 
-    def set_text(self, text, pos, color=(0, 0, 0), font_size=15, cleaning=False):
-        if not cleaning:
-            self.clean_image(image=False, selected=False)
-        self.text_specifications = [text, pos, color, font_size]
+    def set_text(
+        self,
+        text: str,
+        pos: Union[Tuple[int, int], List[int]],
+        color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        font_size: int = 15,
+        is_cleaning_call: bool = False
+    ) -> None:
+        if not is_cleaning_call:
+            self.clean_image(clean_image=False, clean_selected=False)
+        self.__text_specifications = [text, pos, color, font_size]
         s = con.FONTS[font_size].render(str(text), True, color)
         rect = s.get_rect()
         if pos == "center":
             pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
         self.surface.blit(s, pos)
-        self.text_image = self.surface.copy()
         # make sure that the selection rectangle is shown
         if self.selected:
             self.set_selected(True)
         self.changed_image = True
 
-    def clean_image(self, text=True, selected=True, image=True):
+    def clean_image(
+        self,
+        clean_text: bool = True,
+        clean_selected: bool = True,
+        clean_image: bool = True
+    ) -> None:
+        """Allow to clean a certain type or multiple of the image"""
         # reset the surface and readd anything that should not have been cleared
         self.surface = self.orig_surface.copy()
-        if not image and self.image_specifications:
-            self.set_image(*self.image_specifications, cleaning=True)
-        if not text and self.text_specifications:
-            self.set_text(*self.text_specifications, cleaning=True)
-        if not selected and self.selected:
-            self.set_selected(*self.selection_specifications)
+        if not clean_image and self.__image_specifications:
+            self.set_image(*self.__image_specifications, is_cleaning_call=True)
+        if not clean_text and self.__text_specifications:
+            self.set_text(*self.__text_specifications, is_cleaning_call=True)
+        if not clean_selected and self.selected:
+            self.set_selected(*self.__selection_specifications)
 
 
 class Button(Label):
-    COLOR_CHANGE = 75
-    def __init__(self, size, hover_image=None, **kwargs):
+    COLOR_CHANGE: ClassVar[int] = 75
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        hover_image: Union[None, pygame.Surface] = None,
+        **kwargs
+    ):
         super().__init__(size, **kwargs)
         if hover_image is not None:
-            self._hover_surface = hover_image
-            self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[self._hover_surface],
+            hover_surface = hover_image
+            self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[hover_surface],
                                           unhover_values=[self.surface])
         else:
-            self._hover_surface = self.create_hover_surface()
-            self.add_hover_event_listener(self.set_image, self.clean_image, hover_values=[self._hover_surface],
+            hover_surface = self.create_hover_surface()
+            self.add_hover_event_listener(self.set_image, self.clean_image, hover_values=[hover_surface],
                                           unhover_values=[False, False, True])
 
-    def create_hover_surface(self):
-        """Fill all pixels of color self.color with a new color. Carfull do not call to much"""
+    def create_hover_surface(self) -> pygame.Surface:
+        """Fill all pixels of color self.color with a new color. Method is relatovely heavy"""
         w, h = self.surface.get_size()
         hover_color = self.__hover_color()
         hover_surface = self.surface.copy()
@@ -383,7 +421,8 @@ class Button(Label):
                     hover_surface.set_at((x, y), hover_color)
         return hover_surface
 
-    def __hover_color(self):
+    def __hover_color(self) -> List[int]:
+        """ Create a hover color. Which is a lighter color"""
         new_color = []
         for channel in self.color:
             if channel + self.COLOR_CHANGE > 255:
@@ -394,19 +433,26 @@ class Button(Label):
 
 
 class Pane(Label):
-    """
-    Container widget that allows selecting and acts as an image for a number
-    of widgets
-    """
-    def __init__(self, size, **kwargs):
-        Label.__init__(self, size, **kwargs)
-        self.widgets = []
-        self.selectable = False
+    """Container widget that allows selecting and acts as an image for a number of widgets. Changes on the pane are
+    handled on widget level as far as possible"""
+    widgets: List[Widget]
 
-    def add_widget(self, pos, widget, add=False):
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int, int], List[int]],
+        **kwargs
+    ):
+        Label.__init__(self, size, selectable=False, **kwargs)
+        self.widgets = []
+
+    def add_widget(
+        self,
+        pos: Union[Tuple[int, int], List],
+        widget: Widget,
+        add_topleft: bool = False
+    ) -> None:
         """
-        Add widgets at the provided rectangle of the widget
-        :See: BaseConstraints.add_widget()
+        Add a widget at the provided position
         """
         rect = widget.rect
         pos = list(pos)
@@ -414,55 +460,49 @@ class Pane(Label):
             pos[0] = self.rect.width / 2 - rect.width / 2
         if pos[1] == "center":
             pos[1] = self.rect.height / 2 - rect.height / 2
-        if add:
+        # create the position relative to the rect of this Pane
+        if add_topleft:
             pos = (rect.left + pos[0], rect.top + pos[1])
-        widget.rect = pygame.Rect((*pos, *rect.size))
+        widget.rect = pygame.Rect((pos[0], pos[1], rect.width, rect.height))
         self.widgets.append(widget)
         self.orig_surface.blit(widget.surface, pos)
         self.surface = self.orig_surface.copy()
 
-    def wupdate(self, *args):
-        """
-        Update all the widgets in this container, and make sure to redraw them
-        when needed
-
-        :param args: optional argumetns
-        """
+    def wupdate(self, *args) -> None:
+        """Update all the widgets in this container based on the changed_image attribute"""
         for widget in self.widgets:
             widget.wupdate()
             if widget.changed_image:
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def _find_hovered_widgets(self, pos):
-        """
-        Recursively traverse all containers in containers to find the widget
-        the user is hovering over. Then activate a potential action function
-
-        :param pos: The position of the mouse relative to the container
-        :return: a list of selected widgets with the bottommost one at the end
-        of the list
-        """
-        selected_widgets = []
-        unselected_widgets = []
+    def _find_hovered_widgets(
+        self,
+        pos: Union[Tuple[int, int], List[int]]
+    ) -> Tuple[List[Widget], List[Widget]]:
+        """Recursively traverse all containers this pane and subsequent panes to find all hovered and unhovered
+         widgets"""
+        hovered_widgets = []
+        unhovered_widgets = []
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
         for widget in self.widgets:
             collide = widget.rect.collidepoint(adjusted_pos)
             if collide:
                 if isinstance(widget, Pane):
-                    selected_widgets.append(widget)
+                    hovered_widgets.append(widget)
                     lower_selected, lower_unselected = widget._find_hovered_widgets(adjusted_pos)
                     if lower_selected:
-                        selected_widgets.extend(lower_selected)
+                        hovered_widgets.extend(lower_selected)
                     elif lower_unselected:
                         lower_unselected.extend(lower_unselected)
                 else:
-                    selected_widgets.append(widget)
+                    hovered_widgets.append(widget)
             else:
-                unselected_widgets.append(widget)
-        return selected_widgets, unselected_widgets
+                unhovered_widgets.append(widget)
+        return hovered_widgets, unhovered_widgets
 
     def _get_selectable_widgets(self):
+        """Recursively find all widgets that are have attribute selectable True"""
         selectable_widgets = []
         for widget in self.widgets:
             if widget.selectable:
@@ -471,36 +511,40 @@ class Pane(Label):
                 selectable_widgets.extend(widget._get_selectable_widgets())
         return selectable_widgets
 
-    def __redraw_widget(self, widget):
-        """
-        Method that redraws a widget in a container.
-
-        :param widget:
-
-        Sets the self.changed_image flag to True to forse potential containers
-        that contain this container to redraw this container
-        """
-        self.orig_surface.blit(widget.surface, dest=widget.rect, area=(0, 0, *widget.rect.size))
+    def __redraw_widget(
+        self,
+        widget: Widget
+    ) -> None:
+        """Method that redraws a widget in this container. No check is performed"""
+        self.orig_surface.blit(widget.surface, dest=widget.rect,
+                               area=pygame.Rect((0, 0, widget.rect.width, widget.rect.height)))
         self.surface = self.orig_surface.copy()
         self.changed_image = True
 
-    def add_border(self, widget, color=(0,0,0)):
-        """
-        add a border around a specified widget. The widget should be in the pane
-        :param widget:
-        :return:
-        """
+    def add_border(
+        self,
+        widget: Widget,
+        color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0)
+    ) -> None:
+        """add a border around a specified widget. The widget should be in the pane"""
+        # if widget not in self.widgets:
+        #     raise util.GameException("Cannot add a border for widget {} not in {}.".format(widget, self))
         rect = widget.rect.inflate(4, 4)
         pygame.draw.rect(self.orig_surface, color, rect, 3)
         self.surface = self.orig_surface.copy()
 
 
 class Frame(entities.ZoomableEntity, Pane):
-    """
-    Container for widgets, that is an entity so it can act as a window. Every
-    gui should have a frame to be able to display and handle updates
-    """
-    def __init__(self, pos, size, *groups, **kwargs):
+    """Pane that belongs to a sprite group thus it is drawn whenever it is visible"""
+    selected_widget: Union[None, Widget]
+
+    def __init__(
+        self,
+        pos: Union[Tuple[int, int], List[int]],
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        *groups: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
+    ):
         Pane.__init__(self, size, **kwargs)
         entities.ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
@@ -511,48 +555,38 @@ class Frame(entities.ZoomableEntity, Pane):
         self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
 
     def update(self, *args):
-        """
-        Entity update method that is used to update all widgets in the frame
-
-        :See: Entity.update()
-        """
+        """Call pane wupdate method in order to update relevant widgets """
         super().update(*args)
         self.wupdate(*args)
 
-    def zoom(self, zoom):
+    def set_zoom(
+        self,
+        zoom: float
+    ) -> None:
         self._zoom = zoom
 
     @property
-    def image(self):
-        return self.surface
-
-    @image.setter
-    def image(self, v):
-        self.surface = v
-
-#need to be here otherwise rects are not properly chnaged
-    @property
     def rect(self):
-        """
-        Returns a rectangle that represents the zoomed version of the
-        self.orig_rect
-
-        :return: a pygame Rect object
-        """
+        """Returns a rectangle that represents the zoomed version of the self.orig_rect"""
         if self._zoom == 1 or not self.static:
             return self.orig_rect
         width, height = self.orig_rect.size
         orig_pos = list(self.orig_rect.center)
         orig_pos[0] = round(orig_pos[0] * self._zoom + 0.5 * (width - width * self._zoom))
         orig_pos[1] = round(orig_pos[1] * self._zoom + 0.5 * (height - height * self._zoom))
-        rect = self.image.get_rect(center = orig_pos)
+        rect = self.image.get_rect(center=orig_pos)
         return rect
 
     @rect.setter
     def rect(self, rect):
         self.orig_rect = rect
 
-    def __select_next_widget(self, direction):
+    def __select_next_widget(
+        self,
+        direction: int
+    ) -> None:
+        """Find the widget that is closest in the correct direction of all the selectable widgets to select that
+        widget instead"""
         selectable_widgets = self._get_selectable_widgets()
 
         if len(selectable_widgets) == 0:
@@ -565,45 +599,58 @@ class Frame(entities.ZoomableEntity, Pane):
         else:
             s_rect = self.selected_widget.rect
             self.selected_widget.set_selected(False)
+        # moving up or down
         if direction == con.K_UP or direction == con.K_DOWN:
             # make sure widgets are partially overlapping in the x-direction
-            elligable_widgets = [w for w in selectable_widgets
-                                if (w.rect.left >= s_rect.left and w.rect.left <= s_rect.right) or
-                                (w.rect.right <= s_rect.right and w.rect.right >= s_rect.left)]
+            elligable_widgets = \
+                [w for w in selectable_widgets if s_rect.left <= w.rect.left <= s_rect.right or
+                 s_rect.right >= w.rect.right >= s_rect.left]
             if direction == con.K_UP:
                 elligable_widgets_above = [w for w in elligable_widgets if w.rect.centery < s_rect.centery]
                 if len(elligable_widgets_above) > 0:
                     # select the closest above the current
-                    self.selected_widget = sorted(elligable_widgets_above, key=lambda x: s_rect.centery - x.rect.centery)[0]
+                    self.selected_widget = sorted(elligable_widgets_above,
+                                                  key=lambda x: s_rect.centery - x.rect.centery)[0]
             else:
                 elligable_widgets_below = [w for w in elligable_widgets if w.rect.centery > s_rect.centery]
                 if len(elligable_widgets_below) > 0:
                     # select the closest bewow the current
-                    self.selected_widget = sorted(elligable_widgets_below, key=lambda x: x.rect.centery - s_rect.centery)[0]
+                    self.selected_widget = sorted(elligable_widgets_below,
+                                                  key=lambda x: x.rect.centery - s_rect.centery)[0]
+        # moving left or right
         if direction == con.K_LEFT or direction == con.K_RIGHT:
             # make sure widgets are partially overlapping in the x-direction
-            elligable_widgets = [w for w in selectable_widgets
-                                if (w.rect.top >= s_rect.top and w.rect.top <= s_rect.bottom) or
-                                (w.rect.bottom <= s_rect.bottom and w.rect.bottom >= s_rect.top)]
+            elligable_widgets = \
+                [w for w in selectable_widgets if s_rect.top <= w.rect.top <= s_rect.bottom or
+                 s_rect.bottom >= w.rect.bottom >= s_rect.top]
             if direction == con.K_LEFT:
                 elligable_widgets_west = [w for w in elligable_widgets if w.rect.centerx < s_rect.centerx]
                 if len(elligable_widgets_west) > 0:
                     # select the closest above the current
-                    self.selected_widget = sorted(elligable_widgets_west, key=lambda x: s_rect.centerx - x.rect.centerx)[0]
+                    self.selected_widget = sorted(elligable_widgets_west,
+                                                  key=lambda x: s_rect.centerx - x.rect.centerx)[0]
             else:
                 elligable_widgets_east = [w for w in elligable_widgets if w.rect.centerx > s_rect.centerx]
                 if len(elligable_widgets_east) > 0:
                     # select the closest bewow the current
-                    self.selected_widget = sorted(elligable_widgets_east, key=lambda x: x.rect.centerx - s_rect.centerx)[0]
+                    self.selected_widget = sorted(elligable_widgets_east,
+                                                  key=lambda x: x.rect.centerx - s_rect.centerx)[0]
         self.selected_widget.set_selected(True)
 
     def __activate_selected_widget(self):
-        if self.selected_widget != None:
+        """perform the action bound to a widget on mouse-1"""
+        if self.selected_widget is not None:
             self.selected_widget.action(1, "unpressed")
 
-    def handle_events(self, events, consume=True):
+    def handle_events(
+        self,
+        events: List[pygame.event.Event],
+        consume_events: bool = True
+    ) -> List[pygame.event.Event]:
+        """Handle events on this frame. First triggering events on the frame itself then from most fron selected widget
+        backwards"""
         # events that are triggered on this frame widget trigger first
-        leftover_events = super().handle_events(events, consume)
+        leftover_events = super().handle_events(events, consume_events)
         pos = pygame.mouse.get_pos()
         if self.static:
             pos = interface_util.screen_to_board_coordinate(pos, self.groups()[0].target, 1)
@@ -611,10 +658,12 @@ class Frame(entities.ZoomableEntity, Pane):
 
         # add a hover event that can be consumed in the same way as normal events.
         leftover_events.append(pygame.event.Event(con.HOVER, button=con.BTN_HOVER))
+        # TODO think about how to handle key events for specific widgets.
         # handle all events from the most front widget to the most back one.
         while hovered is not None and len(hovered) > 0 and len(leftover_events) > 0:
             widget = hovered.pop()
             leftover_events = widget.handle_events(leftover_events)
+        # trigger an unhover event for all widgets not hovered
         unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_UNHOVER)]
         for widget in unhovered:
             widget.handle_events(unhover_event)
@@ -625,13 +674,18 @@ class ScrollPane(Pane):
     """
     A Pane that can be scrolled
     """
-    SCROLL_SPEED = 20
-    #space between the outside of the crafting window and the closest label
-    BORDER_SPACE = 3
-    def __init__(self, size, **kwargs):
+    SCROLL_SPEED: ClassVar[int] = 20
+    # space between the outside of the crafting window and the closest label
+    BORDER_SPACE: ClassVar[int] = 3
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int, int], List[int]],
+        **kwargs
+    ):
         super().__init__(size, **kwargs)
         self.next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
-        #the total rectangle
+        # the total rectangle
         self.total_rect = self.rect.copy()
 
         self.__total_offset_y = 0
@@ -639,23 +693,19 @@ class ScrollPane(Pane):
         self.add_key_event_listener(4, self.scroll_y, [self.SCROLL_SPEED])
         self.add_key_event_listener(5, self.scroll_y, [-self.SCROLL_SPEED])
 
-    def add_widget(self, pos, widget):
-        """
-        Overrides FreeConstriants method and adds widgets automatically so
-        they will fit within the pane. Also makes sure that the offset of the
-        scrolling is taken into account
-
-        Note: pos does not serve a purpoise at the moment
-
-        :See: FreeConstraints.add_widget()
-        """
-        #configure the position of the next
+    def add_widget(
+            self,
+            widget: Widget,
+    ) -> None:
+        # configure the position of the next
         if len(self.widgets) > 0:
-            #when the widget does not fit on the frame put it on the next line
+            # when the widget does not fit on the frame put it on the next line
             if self.widgets[-1].rect.right + widget.rect.width > self.total_rect.width - self.BORDER_SPACE:
-                #when the total rect is to small extend it.
-                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE + self.total_rect.top > self.total_rect.bottom:
-                    extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE + self.total_rect.top) - self.total_rect.bottom
+                # when the total rect is to small extend it.
+                if self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE + self.total_rect.top >\
+                        self.total_rect.bottom:
+                    extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE +
+                                  self.total_rect.top) - self.total_rect.bottom
                     self.__extend_scroll_image(extra_room)
                 self.next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
             else:
@@ -671,12 +721,12 @@ class ScrollPane(Pane):
         :param offset_y: an integer tnat is the amount the image should be
         scrolled in the y direction
         """
-        #make sure to not scroll out of range
-        if self.total_rect.bottom + self.__total_offset_y + offset_y < self.rect.bottom or\
-            offset_y + self.__total_offset_y > 0:
+        # make sure to not scroll out of range
+        if self.total_rect.bottom + self.__total_offset_y + offset_y < self.rect.bottom or \
+                offset_y + self.__total_offset_y > 0:
             return
 
-        #to make sure not to scroll when it is not needed
+        # to make sure not to scroll when it is not needed
         width, height = self.orig_surface.get_size()
         self.__total_offset_y += offset_y
         self.orig_surface.fill(self.color)
@@ -699,15 +749,21 @@ class ScrollPane(Pane):
         orig_copy = self.orig_surface.copy()
         self.orig_surface = pygame.Surface(self.total_rect.size).convert()
         self.orig_surface.fill(self.color)
-        self.orig_surface.blit(orig_copy, (0,self.__total_offset_y))
+        self.orig_surface.blit(orig_copy, (0, self.__total_offset_y))
 
 
 class ItemDisplay(Label):
 
-    def __init__(self, size: util.Size, item=None, border=True, **kwargs):
-        super().__init__(size, **kwargs)
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        item: Union[None, "inventories.Item"] = None,
+        border: bool = True,
+        border_shrink: Union[Tuple[int, int], List[int]] = (3, 3),
+        **kwargs
+    ):
+        super().__init__(size, border=border, border_shrink=border_shrink, **kwargs)
         self.item = item
-        self.__border = border
         self.previous_total = 0
         if self.item:
             self.add_item(item)
@@ -716,10 +772,6 @@ class ItemDisplay(Label):
         self.item = item
         self.__add_item_image()
         self.__add_quantity_text()
-        if self.__border:
-            rect = self.rect
-            rect.inflate_ip(-4, -4)
-            pygame.draw.rect(self.surface, (0, 0, 0), rect, 3)
         self.changed_image = True
 
     def __add_item_image(self):
@@ -730,7 +782,7 @@ class ItemDisplay(Label):
 
     def __add_quantity_text(self):
         self.previous_total = self.item.quantity
-        self.set_text(str(self.previous_total), (5, 0), color=self.item.TEXT_COLOR)
+        self.set_text(str(self.previous_total), (5, 5), color=self.item.TEXT_COLOR)
 
     def wupdate(self):
         """

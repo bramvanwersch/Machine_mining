@@ -39,7 +39,7 @@ class BaseMaterial(ABC):
     def __init__(self, image: pygame.Surface = None, **kwargs):
         self._surface = self._configure_surface(image=image)
 
-        # allow transparant groups to be changed
+        # transparant groups are allowed to be changed
         self.__transparant_group = self._BASE_TRANSPARANT_GROUP
 
     @property

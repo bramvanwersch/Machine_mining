@@ -67,7 +67,7 @@ class Window(widgets.Frame):
     def add_widget(self, pos, widget, adjust=True):
         if adjust:
             widget.rect.move_ip(self.TOP_SIZE)
-        super().add_widget(pos, widget, add=adjust)
+        super().add_widget(pos, widget, add_topleft=adjust)
 
     def __top_label_action(self, value):
         self.__moving_window = value
@@ -91,7 +91,7 @@ class Window(widgets.Frame):
         title = con.FONTS[15].render(title, True, self.TEXTCOLOR)
         tr = title.get_rect()
         #center the title above the widet
-        self.orig_image.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
+        self.orig_surface.blit(title, (int(0.5 * self.rect.width - 0.5 * tr.width), 10))
 
     def _close_window(self):
         """

@@ -24,7 +24,7 @@ class EventHandler(ABC):
         if key not in self.__pressed_keys:
             self.__pressed_keys[key] = Key(key)
 
-    def __record_pressed_keys(self, events, consume=True):
+    def __record_pressed_keys(self, events, consume_events=True):
         """
         Record what buttons are pressed in self.__pressed_keys dictionary
 
@@ -69,7 +69,7 @@ class EventHandler(ABC):
                     leftover_events.append(event)
             else:
                 leftover_events.append(event)
-        if consume:
+        if consume_events:
             return leftover_events
         else:
             return events
@@ -103,13 +103,13 @@ class EventHandler(ABC):
                 unpressed_keys.append(self.__pressed_keys[key])
         return unpressed_keys
 
-    def handle_events(self, events, consume=True):
+    def handle_events(self, events, consume_events=True):
         """
         Handles events for the inheriting class.
         :param events:
         :return:
         """
-        return self.__record_pressed_keys(events, consume)
+        return self.__record_pressed_keys(events, consume_events)
 
 
 class Key:

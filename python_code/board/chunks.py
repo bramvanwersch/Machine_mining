@@ -179,7 +179,7 @@ class BoardImage(entities.ZoomableEntity):
     def __init__(self, pos, **kwargs):
         entities.ZoomableEntity.__init__(self, pos, con.CHUNK_SIZE, **kwargs)
 
-    def _create_image(self, size, color, **kwargs):
+    def _create_surface(self, size, color, **kwargs):
         """
         Overwrites the image creation process in the basic Entity class
         """
@@ -203,9 +203,9 @@ class BoardImage(entities.ZoomableEntity):
 
         :param rect: a pygame rect object
         """
-        pygame.draw.rect(self.orig_image, color, rect, border)
+        pygame.draw.rect(self.orig_surface, color, rect, border)
         zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom), round(rect.width * self._zoom), round(rect.height * self._zoom)))
-        pygame.draw.rect(self.image, color, zoomed_rect, border)
+        pygame.draw.rect(self.surface, color, zoomed_rect, border)
 
     def add_image(self, rect, image):
         """
@@ -214,10 +214,10 @@ class BoardImage(entities.ZoomableEntity):
         :param rect: location of the image as a pygame Rect object
         :param image: a pygame Surface object
         """
-        self.orig_image.blit(image, rect)
+        self.orig_surface.blit(image, rect)
         zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),round(rect.width * self._zoom),round(rect.height * self._zoom)))
         zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
-        self.image.blit(zoomed_image, zoomed_rect)
+        self.surface.blit(zoomed_image, zoomed_rect)
 
 
 class TransparantBoardImage(BoardImage):
@@ -226,7 +226,7 @@ class TransparantBoardImage(BoardImage):
     surface on which selections can be drawn
     """
 
-    def _create_image(self, size, color, **kwargs):
+    def _create_surface(self, size, color, **kwargs):
         """
         Overwrites the image creation process in the basic Entity class
         """

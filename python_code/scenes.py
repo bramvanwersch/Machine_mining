@@ -457,6 +457,6 @@ class Game(Scene, util.Serializer):
         if prev_zoom_level != self._zoom:
             for sprite in self.sprite_group.sprites():
                 if sprite.zoomable:
-                    sprite.zoom(self._zoom)
+                    sprite.set_zoom(self._zoom)
             con.BOARD_SIZE.width = self._zoom * con.ORIGINAL_BOARD_SIZE.width
             con.BOARD_SIZE.height = self._zoom * con.ORIGINAL_BOARD_SIZE.height

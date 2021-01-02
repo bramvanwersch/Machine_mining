@@ -19,9 +19,9 @@ class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
                  visible=True, **kwargs):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
-        self.image = self._create_image(size, color, **kwargs)
-        self.orig_image = self.image
-        self.orig_rect = self.image.get_rect(topleft=pos)
+        self.surface = self._create_surface(size, color, **kwargs)
+        self.orig_surface = self.surface
+        self.orig_rect = self.surface.get_rect(topleft=pos)
         self._visible = visible
         self.zoomable = zoomable
         # should the entity move with the camera or not
@@ -50,7 +50,7 @@ class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
     def is_showing(self):
         return self._visible
 
-    def _create_image(self, size, color, **kwargs):
+    def _create_surface(self, size, color, **kwargs):
         """
         Create an image using a size and color
 
@@ -98,9 +98,9 @@ class ZoomableEntity(Entity):
         # if an entity is created after zooming make sure it is zoomed to the
         # right proportions
         if self._zoom != 1:
-            self.zoom(self._zoom)
+            self.set_zoom(self._zoom)
 
-    def zoom(self, zoom):
+    def set_zoom(self, zoom):
         """
         Safe a zoom value so distance measures know how to change, also change
         the image size to make sure that this is not done every request.
@@ -110,12 +110,12 @@ class ZoomableEntity(Entity):
         """
         self._zoom = zoom
         if self._zoom == 1:
-            self.image = self.orig_image.copy()
+            self.surface = self.orig_surface.copy()
         else:
             orig_rect = self.orig_rect
             new_width = round(orig_rect.width * zoom)
             new_height = round(orig_rect.height * zoom)
-            self.image = pygame.transform.scale(self.orig_image, (int(new_width), int(new_height)))
+            self.surface = pygame.transform.scale(self.orig_surface, (int(new_width), int(new_height)))
 
     @property
     def rect(self):
@@ -130,7 +130,7 @@ class ZoomableEntity(Entity):
         orig_pos = list(self.orig_rect.center)
         orig_pos[0] = round(orig_pos[0] * self._zoom)
         orig_pos[1] = round(orig_pos[1] * self._zoom)
-        rect = self.image.get_rect(center = orig_pos)
+        rect = self.surface.get_rect(center = orig_pos)
         return rect
 
     @rect.setter
@@ -166,13 +166,13 @@ class SelectionRectangle(ZoomableEntity):
         if self.__size.height < 0:
             pos[1] += self.__size.height
             size[1] = -1 * self.__size.height
-        self.image = pygame.Surface(size).convert_alpha()
-        self.image.fill((255,255,255,100))
-        self.orig_rect = self.image.get_rect(topleft = pos)
+        self.surface = pygame.Surface(size).convert_alpha()
+        self.surface.fill((255,255,255,100))
+        self.orig_rect = self.surface.get_rect(topleft = pos)
 
-        self.orig_image = self.image
+        self.orig_surface = self.surface
         # make sure to update the zoomed image aswell
-        self.zoom(self._zoom)
+        self.set_zoom(self._zoom)
 
     def update(self, *args):
         """
@@ -431,7 +431,7 @@ class TextSprite(ZoomableEntity):
                                 text = text, **kwargs)
         self.lifespan = [0,self.TOTAL_LIFE_SPAN]
 
-    def _create_image(self, size, color, **kwargs):
+    def _create_surface(self, size, color, **kwargs):
         """
         Create some tect using a string, font and color
 

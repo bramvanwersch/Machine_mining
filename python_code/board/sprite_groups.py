@@ -53,9 +53,9 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
                 continue
             rec = spritedict[spr]
             if spr.static:
-                newrect = surface_blit(spr.image, spr.rect.move(self.cam))
+                newrect = surface_blit(spr.surface, spr.rect.move(self.cam))
             else:
-                newrect = surface_blit(spr.image, spr.rect)
+                newrect = surface_blit(spr.surface, spr.rect)
             if rec is init_rect:
                 dirty_append(newrect)
             else:
@@ -81,7 +81,7 @@ class ShowToggleLayerUpdates(pygame.sprite.LayeredUpdates):
             if not spr.is_showing():
                 continue
             rec = spritedict[spr]
-            newrect = surface_blit(spr.image, spr.rect)
+            newrect = surface_blit(spr.surface, spr.rect)
             if rec is init_rect:
                 dirty_append(newrect)
             else:
