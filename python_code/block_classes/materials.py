@@ -98,6 +98,10 @@ class BaseMaterial(ABC):
         """test if a material is considered solid or not"""
         return self.__transparant_group == 0
 
+    def tooltip_text(self) -> str:
+        return f"{self.name()} ({'solid' if self.is_solid() else 'transparant'})\n" \
+               f"Wheight: {self.wheight}kg"
+
     @abstractmethod
     def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
         """Configure the surface if the material on instantiation"""

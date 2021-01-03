@@ -85,7 +85,8 @@ class CraftingWindow(base_interface.Window):
             image = pygame.transform.scale(recipe.get_image(), (26, 26))
             background.blit(image, (2, 2, 26, 26))
 
-            lbl = widgets.Label((30, 30), color=color, image=background)
+            tooltip = widgets.Tooltip(self.groups()[0], text=recipe.get_tooltip_text())
+            lbl = widgets.Label((30, 30), color=color, image=background, tooltip=tooltip)
 
             lbl.add_key_event_listener(1, self.recipe_action, values=[recipe, lbl, s1], types=["unpressed"])
             s1.add(lbl)

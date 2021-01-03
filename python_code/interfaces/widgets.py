@@ -115,6 +115,7 @@ class Widget(event_handlers.EventHandler, ABC):
         size: Union[util.Size, Tuple[int, int], List[int]],
         selectable: bool = True,
         recordable_keys: List = None,
+        tooltip: "Tooltip" = None,
         **kwargs
     ):
         recordable_keys = recordable_keys if recordable_keys else None
@@ -128,6 +129,8 @@ class Widget(event_handlers.EventHandler, ABC):
         # innitial position is 0, 0
         self.rect = pygame.Rect((0, 0, size[0], size[1]))
         self.visible = True
+        if tooltip:
+            self.add_tooltip(tooltip)
 
     def wupdate(self):
         """
@@ -144,7 +147,8 @@ class Widget(event_handlers.EventHandler, ABC):
         self.__listened_for_events[key](_type)
 
     def add_tooltip(self, tooltip):
-        self.add_hover_event_listener(tooltip.show, tooltip.show, hover_values=[True], unhover_values=[False])
+        self.add_hover_event_listener(tooltip.show_tooltip, tooltip.show_tooltip, hover_values=[True],
+                                      unhover_values=[False])
 
     def add_key_event_listener(
         self,
@@ -535,7 +539,7 @@ class Frame(entities.ZoomableEntity, Pane):
         orig_pos = list(self.orig_rect.center)
         orig_pos[0] = round(orig_pos[0] * self._zoom + 0.5 * (width - width * self._zoom))
         orig_pos[1] = round(orig_pos[1] * self._zoom + 0.5 * (height - height * self._zoom))
-        rect = self.image.get_rect(center=orig_pos)
+        rect = self.surface.get_rect(center=orig_pos)
         return rect
 
     @rect.setter
@@ -635,20 +639,27 @@ class Frame(entities.ZoomableEntity, Pane):
 class Tooltip(entities.ZoomableEntity):
     """Strict frame containing one or more labels with text"""
 
-    def __init__(self, pos, sprite_group, color=(255, 255, 255), text="", font_size=15):
+    def __init__(self, sprite_group, color=(255, 255, 255), text="", font_size=15):
         self.font = con.FONTS[font_size]
         self.lines = text.split("\n")
         size = self.__get_size()
-        super().__init__(pos, size, sprite_group, color=color, visible=False, layer=con.TOOLTIP_LAYER)
+        # the position is not important because it will be changed when shown
+        super().__init__((0, 0), size, sprite_group, color=color, visible=False, layer=con.TOOLTIP_LAYER, static=False)
+        self.__showing_tooltip = False
 
-    def __get_size(self):
-        longest_line = str(max(self.lines, key=len))
+    def __get_size(self) -> util.Size:
+        longest_line = str(max(self.lines, key=lambda x: self.font.size(x)[0]))
         size = util.Size(*self.font.size(longest_line))
         size.height *= len(self.lines)
         size += (4, 4)
         return size
 
-    def _create_surface(self, size, color, **kwargs):
+    def _create_surface(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List[int]],
+        **kwargs
+    ):
         surface = super()._create_surface(size, color, **kwargs)
         line_height = size[1] / len(self.lines)
         for index, line in enumerate(self.lines):
@@ -657,8 +668,12 @@ class Tooltip(entities.ZoomableEntity):
             surface.blit(rendereded_line, pos)
         return surface
 
-    def show(self, value: bool) -> None:
-        super().show(value)
+    def is_showing(self):
+        return super().is_showing() and self.__showing_tooltip
+
+    def show_tooltip(self, value: bool) -> None:
+        self.show(value)
+        self.__showing_tooltip = value
         if value:
             mouse_pos = pygame.mouse.get_pos()
             self.rect.topleft = mouse_pos
