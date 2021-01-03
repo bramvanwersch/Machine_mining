@@ -397,6 +397,8 @@ class Game(Scene, util.Serializer):
         self.__vision_rectangles = vision_u_rects
 
     def load_unload_sprites(self):
+        """Set which sprites are drawn to the board image. Also allow to force draw sprites by adding theire
+         board rect"""
         c = self.sprite_group.target.rect.center
         if c[0] + con.SCREEN_SIZE.width / 2 - con.BOARD_SIZE.width > 0:
             x = 1 + (c[0] + con.SCREEN_SIZE.width / 2 - con.BOARD_SIZE.width) / (con.SCREEN_SIZE.width / 2)
@@ -416,10 +418,12 @@ class Game(Scene, util.Serializer):
         self._visible_entities = 0
         for sprite in self.sprite_group.sprites():
             if con.NO_LIGHTING or not sprite.static or (sprite.rect.colliderect(visible_rect) and
-                                     sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):
+                                                        sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):
                 sprite.show(True)
-                if sprite.is_showing:
+                if sprite.is_showing():
                     self._visible_entities += 1
+                    if isinstance(sprite, widgets.Tooltip):
+                        self.board_update_rectangles.append(sprite.orig_rect)
             else:
                 sprite.show(False)
 
