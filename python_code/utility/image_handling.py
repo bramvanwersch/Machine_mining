@@ -1,3 +1,5 @@
+from typing import Tuple, List
+
 import pygame
 import os
 
@@ -5,6 +7,8 @@ import utility.constants as con
 import utility.utilities as util
 
 # variable for all image sheets
+from utility import utilities as util, constants as con
+
 image_sheets = {}
 
 
@@ -71,3 +75,56 @@ class Spritesheet:
                 image_row.append(self.image_at((rect[0] + x * self.image_size[0],rect[1] + y *self.image_size[1]), **kwargs))
             images.append(image_row)
         return images
+
+
+class ImageDefinition:
+    """Define an image and make sure that image creation is not done repeatedly"""
+    __slots__ = "__sheet_name", "__image_location", "__color_key", "__flip", "__size", "__image_size", "__images"
+
+    __sheet_name: str
+    __image_location: Tuple[int, int]
+    __color_key: Tuple[int, int, int]
+    __flip: bool
+    # this varaible will save when get_images is called once before te prevent unnecesairy transform an image_at calls
+    __images: List[pygame.Surface]
+    __size: util.Size
+    __image_size: util.Size
+
+    def __init__(
+        self,
+        sheet_name: str,
+        image_location: Tuple[int, int],
+        color_key: Tuple[int, int, int] = con.INVISIBLE_COLOR,
+        flip: bool = False,
+        image_size: util.Size = con.BLOCK_SIZE,
+        size: util.Size = con.BLOCK_SIZE
+    ):
+        self.__sheet_name = sheet_name
+        self.__image_location = image_location
+        self.__color_key = color_key
+        self.__flip = flip
+        self.__size = size
+        self.__image_size = image_size
+        self.__images = []
+
+    def images(self) -> List[pygame.Surface]:
+        """Get/create all images defined by the image definition"""
+        if len(self.__images) > 0:
+            return self.__images
+        return self.__create_images()
+
+    def __create_images(self) -> List[pygame.Surface]:
+        print(self.__image_size)
+        """Get defined images from image sheets and potentially scale and transform when neccesairy"""
+        global image_sheets
+        norm_image = image_sheets[self.__sheet_name].image_at(
+            self.__image_location, color_key=self.__color_key, size=self.__size)
+        norm_size = norm_image.get_size()
+        if norm_size[0] != self.__image_size[0] or norm_size[1] != self.__image_size[1]:
+            norm_image = pygame.transform.scale(norm_image, self.__image_size.size)
+        if self.__flip:
+            flip_image = pygame.transform.flip(norm_image, True, False)
+            self.__images = [norm_image, flip_image]
+        else:
+            self.__images = [norm_image]
+        return self.__images

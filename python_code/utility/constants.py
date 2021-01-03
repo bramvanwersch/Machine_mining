@@ -55,7 +55,7 @@ INTERFACE_LAYER = LIGHT_LAYER + 1
 TOOLTIP_LAYER = INTERFACE_LAYER + 1000
 
 # this is sort of a green screen color, set this as a color key in order to be transparant when blitting
-INVISIBLE_COLOR = (0, 255, 0, 0)
+INVISIBLE_COLOR = (254, 254, 254, 0)
 
 # light varaibles
 MAX_LIGHT = 7

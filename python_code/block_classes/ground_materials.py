@@ -7,6 +7,7 @@ from random import randint
 
 # own imports
 import block_classes.materials as base_materials
+import utility.image_handling
 import utility.utilities as util
 
 
@@ -186,25 +187,25 @@ class Titanium(OreMaterial, base_materials.ColorMaterial):
 
 
 class IronIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (70, 10))
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (70, 10))
 
 
 class GoldIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (80, 10))
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (80, 10))
 
 
 class ZincIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (90, 10))
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (90, 10))
 
 
 class CopperIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (0, 20))
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (0, 20))
 
 
 class TitaniumIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (10, 20))
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (10, 20))

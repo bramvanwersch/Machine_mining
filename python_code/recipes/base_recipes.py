@@ -133,7 +133,7 @@ class BaseRecipe(ABC):
         tooltip_str = f"{self._material.name()}\nRequires:\n"
         for item in self.needed_items:
             tooltip_str += f" -{item.name()}: {item.quantity}\n"
-        return tooltip_str
+        return tooltip_str[:-1]
 
     def get_image_grid(self):
         image_grid = []

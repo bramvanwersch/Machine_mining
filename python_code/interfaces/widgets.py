@@ -1,11 +1,17 @@
+#!/usr/bin/python3
+"""Interface widgets"""
+
+# library imports
 from abc import ABC
 import pygame
 from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar, TYPE_CHECKING
 
+# own imports
 import entities
 import utility.constants as con
 import utility.utilities as util
 import utility.event_handling as event_handlers
+import utility.image_handling as image_handling
 import interfaces.interface_utility as interface_util
 if TYPE_CHECKING:
     import inventories
@@ -224,6 +230,7 @@ class Label(Widget):
         border: bool = False,
         border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         border_shrink: Union[Tuple[int, int], List[int]] = (0, 0),
+        border_width: int = 3,
         image: pygame.Surface = None,
         image_pos: Union[str, Tuple[int, int], List[int]] = "center",
         image_size: Union[util.Size, Tuple[int, int], List[int]] = None,
@@ -235,7 +242,7 @@ class Label(Widget):
     ):
         super().__init__(size, **kwargs)
         self.color = color
-        self.surface = self.__create_background(size, self.color, border, border_color, border_shrink)
+        self.surface = self.__create_background(size, self.color, border, border_color, border_width, border_shrink)
         self.orig_surface = self.surface.copy()
 
         # variables for saving the values used for creation of the surface
@@ -268,6 +275,7 @@ class Label(Widget):
         color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List],
         border: bool = False,
         border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        border_width: int = 3,
         border_shrink: Union[Tuple[int, int], List[int]] = (0, 0)
     ) -> pygame.Surface:
         """Create background image where text highlight and images can be displayed on"""
@@ -282,8 +290,14 @@ class Label(Widget):
         lbl_surface.fill(color)
         if border:
             pygame.draw.rect(lbl_surface, border_color, (int(border_shrink[0] / 2), int(border_shrink[1] / 2),
-                                                         size[0] - border_shrink[0], size[1] - border_shrink[1]), 4)
+                                                         size[0] - border_shrink[0], size[1] - border_shrink[1]),
+                             border_width)
         return lbl_surface
+
+    def get_text(self):
+        if self.__text_specifications:
+            return self.__text_specifications[0]
+        return ""
 
     def set_selected(
         self,
@@ -325,7 +339,7 @@ class Label(Widget):
     def set_text(
         self,
         text: str,
-        pos: Union[Tuple[int, int], List[int]],
+        pos: Union[str, Tuple[int, int], List[int]],
         color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
         is_cleaning_call: bool = False
@@ -350,7 +364,7 @@ class Label(Widget):
         clean_image: bool = True
     ) -> None:
         """Allow to clean a certain type or multiple of the image"""
-        # reset the surface and readd anything that should not have been cleared
+        # reset the surface and reado anything that should not have been cleared
         self.surface = self.orig_surface.copy()
         if not clean_image and self.__image_specifications:
             self.set_image(*self.__image_specifications, is_cleaning_call=True)
@@ -358,6 +372,7 @@ class Label(Widget):
             self.set_text(*self.__text_specifications, is_cleaning_call=True)
         if not clean_selected and self.selected:
             self.set_selected(*self.__selection_specifications)
+        self.changed_image = True
 
 
 class Button(Label):
@@ -497,6 +512,92 @@ class Pane(Label):
         rect = widget.rect.inflate(4, 4)
         pygame.draw.rect(self.orig_surface, color, rect, 3)
         self.surface = self.orig_surface.copy()
+
+
+class SelectionList(Pane):
+    __FONT_SIZE = 20
+    __FONT = con.FONTS[__FONT_SIZE]
+    __LINE_HEIGHT = __FONT.size("T")[1] + 10
+    __EXPAND_BUTTON_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
+        image_handling.ImageDefinition("general", (70, 10), image_size=util.Size(__LINE_HEIGHT, __LINE_HEIGHT))
+    __EXPAND_BUTTON_HOVER_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
+        image_handling.ImageDefinition("general", (80, 10), image_size=util.Size(__LINE_HEIGHT, __LINE_HEIGHT))
+
+    __expanded_options_frame: Union[None, "Frame"]
+    __show_label: Union[None, Label]
+
+    def __init__(
+        self,
+        sprite_group,
+        options: List[str] = None,
+        **kwargs
+    ):
+        self.__options = options if options else ["<placeholder>"]
+        size = self.__get_size()
+        super().__init__(size, **kwargs)
+        self.__show_label = None
+        self.__expand_button = None
+        self.__expanded_options = False
+        self.__expanded_options_frame = None
+        self.__options_selection_group = SelectionGroup()
+        self.__init_widgets(sprite_group)
+
+    def __get_size(self) -> util.Size:
+        longest_line = str(max(self.__options, key=lambda x: self.__FONT.size(x)[0]))
+        size = util.Size(*self.__FONT.size(longest_line))
+        # add extra space for the button
+        size.height += 10
+        size.width += size.height + 10
+        return size
+
+    def __init_widgets(self, sprite_group):
+        line_width = self.rect.width - self.rect.height
+        line_height = self.__LINE_HEIGHT
+        self.__show_label = Label((line_width, line_height), self.color, border=True, text=self.__options[0],
+                                  font_size=self.__FONT_SIZE)
+        self.add_widget((0, 0), self.__show_label)
+        self.__expand_button = Button((line_height, line_height), image=self.__EXPAND_BUTTON_IMAGE.images()[0],
+                                      hover_image=self.__EXPAND_BUTTON_HOVER_IMAGE.images()[0], border=True)
+        self.__expand_button.add_key_event_listener(1, self.__show_expanded_options, types=["unpressed"])
+        self.add_widget((line_width, 0), self.__expand_button)
+
+        # position is determined when the frame is opened
+        self.__expanded_options_frame = Frame((0, 0), (line_width, line_height * len(self.__options)),
+                                              sprite_group, visible=False, color=self.color, static=False)
+        for index, option_text in enumerate(self.__options):
+            option_label = Label((line_width, line_height), text=option_text, font_size=self.__FONT_SIZE, border=True,
+                                 border_width=2, border_shrink=(4, 4), color=self.color)
+            if index == 0:
+                option_label.set_selected(True)
+            self.__options_selection_group.add(option_label)
+            option_label.add_key_event_listener(1, self.__select_expanded_option, values=[option_label],
+                                                types=["unpressed"])
+            self.__expanded_options_frame.add_widget((0, index * line_height), option_label)
+        # make sure that events are captured that could cover the frame containing the options
+        self.rect.height += self.__expanded_options_frame.rect.height
+
+    def __select_expanded_option(self, widget):
+        self.__expanded_options = False
+        self.__options_selection_group.select(widget)
+        self.__expanded_options_frame.show(self.__expanded_options)
+        self.__show_label.set_text(widget.get_text(), "center", font_size=self.__FONT_SIZE)
+
+    def __show_expanded_options(self):
+        self.__expanded_options = not self.__expanded_options
+        self.__expanded_options_frame.rect.topleft = (self.rect.left, self.rect.bottom -
+                                                      self.__expanded_options_frame.rect.height)
+
+        self.__expanded_options_frame.show(self.__expanded_options)
+
+    def handle_events(
+        self,
+        events: List,
+        consume_events: bool = True
+    ) -> List[pygame.event.Event]:
+        leftover_events = super().handle_events(events, consume_events=consume_events)
+        if self.__expanded_options:
+            leftover_events = self.__expanded_options_frame.handle_events(events, consume_events=consume_events)
+        return leftover_events
 
 
 class Frame(entities.ZoomableEntity, Pane):
@@ -639,7 +740,7 @@ class Frame(entities.ZoomableEntity, Pane):
 class Tooltip(entities.ZoomableEntity):
     """Strict frame containing one or more labels with text"""
     # the extra area around the text to make the tooltip feel less cramped
-    __EXTRA_SIZE: ClassVar[Tuple[int, int]] = (6, 6)
+    __EXTRA_SIZE: ClassVar[Tuple[int, int]] = (10, 10)
 
     font: pygame.font.Font
     lines: List[str]
@@ -677,7 +778,9 @@ class Tooltip(entities.ZoomableEntity):
         line_height = size[1] / len(self.lines)
         for index, line in enumerate(self.lines):
             rendereded_line = self.font.render(line, True, (0, 0, 0))
-            pos = (self.__EXTRA_SIZE[0], line_height * index + self.__EXTRA_SIZE[1])
+            pos = [self.__EXTRA_SIZE[0] / 2, line_height * index]
+            if index == 0:
+                pos[1] += self.__EXTRA_SIZE[1] / 2
             surface.blit(rendereded_line, pos)
         pygame.draw.rect(surface, (0, 0, 0), surface.get_rect(), 3)
         return surface

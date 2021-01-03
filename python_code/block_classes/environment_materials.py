@@ -6,6 +6,7 @@ from typing import ClassVar, List, Dict
 
 # own imports
 import block_classes.materials as base_materials
+import utility.image_handling
 import utility.utilities as util
 
 
@@ -26,46 +27,46 @@ class EnvironmentMaterial(ABC):
 class Fern(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (30, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (30, 20), flip=True)
 
 
 class Reed(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (40, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (40, 20), flip=True)
 
 
 class Moss(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(40, 10)
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (90, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (90, 20), flip=True)
 
 
 class BrownShroom(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (50, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (50, 20), flip=True)
 
 
 class BrownShroomers(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (70, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (70, 20), flip=True)
 
 
 class RedShroom(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (80, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (80, 20), flip=True)
 
 
 class RedShroomers(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (60, 20), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (60, 20), flip=True)
 
 
 class ShroomCollection(base_materials.MaterialCollection):
@@ -77,15 +78,15 @@ class ShroomCollection(base_materials.MaterialCollection):
 class Icicle(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
     START_DIRECTION: ClassVar[int] = 0
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (20, 30), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (20, 30), flip=True)
 
 
 class SnowLayer(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
     START_DIRECTION: ClassVar[int] = 2
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        base_materials.ImageDefinition("materials", (30, 30), flip=True)
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (30, 30), flip=True)
 
 
 class MultiFloraMaterial(EnvironmentMaterial, ABC):
@@ -101,7 +102,7 @@ class Vine(MultiFloraMaterial, base_materials.DepthMaterial, base_materials.Mult
     START_DIRECTION: ClassVar[int] = 0
     CONTINUATION_DIRECTION: ClassVar[int] = 2
     # -1 key is reserved for the starting image, 0-3 for the direction of addition
-    IMAGE_DEFINITIONS: ClassVar[List[base_materials.ImageDefinition]] = \
-        {-1: base_materials.ImageDefinition("materials", (0, 30), flip=True),
-         2: base_materials.ImageDefinition("materials", (10, 30), flip=True)}
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        {-1: utility.image_handling.ImageDefinition("materials", (0, 30), flip=True),
+         2: utility.image_handling.ImageDefinition("materials", (10, 30), flip=True)}
     GROW_CHANCE: ClassVar[float] = 0.1

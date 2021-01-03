@@ -129,14 +129,13 @@ class MainMenu(Scene):
         quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
-        # y_coord += 50
-        # test_scroll_pane = widgets.ScrollPane((110, 62))
-        # for i in range(3):
-        #     ml = widgets.Label((50, 50), color=(20 * i, 20 * i, 20 * i))
-        #     tt = widgets.Tooltip((200, 200), self.sprite_group, text="test\nwith enter")
-        #     ml.add_tooltip(tt)
-        #     test_scroll_pane.add_widget(ml)
-        # self.main_menu_frame.add_widget(("center", y_coord), test_scroll_pane)
+        y_coord += 50
+        test_list = widgets.SelectionList(self.sprite_group, options=["test", "longer_test"], color=(150, 150, 150))
+        self.main_menu_frame.add_widget(("center", y_coord), test_list)
+
+        y_coord += 50
+        test_list = widgets.SelectionList(self.sprite_group, options=["test2", "longer_test2"], color=(150, 150, 150))
+        self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling(consume=consume)
