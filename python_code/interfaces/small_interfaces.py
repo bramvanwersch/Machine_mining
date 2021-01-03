@@ -87,7 +87,6 @@ class PauseWindow(base_interfaces.Window):
         self.__init_widgets()
 
     def __init_widgets(self):
-
         button_size = util.Size(120, 40)
         y_coord = 150
 
@@ -122,11 +121,11 @@ class TerminalWindow(base_interfaces.Window):
         fr = self.__terminal.rect
         location = fr.bottomleft
         super().__init__(location, self.SIZE,
-                        *groups, layer=con.INTERFACE_LAYER, title="TERMINAL",
-                        allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
+                         *groups, layer=con.INTERFACE_LAYER, title="TERMINAL",
+                         allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
         self.__add_widgets()
         self.__prev_no_items = self.__terminal_inv.number_of_items
-    
+
     def update(self, *args):
         """
         Entity update method, add labels to the scroll pane when needed.

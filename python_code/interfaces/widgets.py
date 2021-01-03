@@ -638,8 +638,20 @@ class Frame(entities.ZoomableEntity, Pane):
 
 class Tooltip(entities.ZoomableEntity):
     """Strict frame containing one or more labels with text"""
+    # the extra area around the text to make the tooltip feel less cramped
+    __EXTRA_SIZE: ClassVar[Tuple[int, int]] = (6, 6)
 
-    def __init__(self, sprite_group, color=(255, 255, 255), text="", font_size=15):
+    font: pygame.font.Font
+    lines: List[str]
+    __showing_tooltip: bool
+
+    def __init__(
+        self,
+        sprite_group: pygame.sprite.AbstractGroup,
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List[int]] = (150, 150, 150),
+        text: str = "",
+        font_size: int = 15
+    ):
         self.font = con.FONTS[font_size]
         self.lines = text.split("\n")
         size = self.__get_size()
@@ -651,7 +663,7 @@ class Tooltip(entities.ZoomableEntity):
         longest_line = str(max(self.lines, key=lambda x: self.font.size(x)[0]))
         size = util.Size(*self.font.size(longest_line))
         size.height *= len(self.lines)
-        size += (4, 4)
+        size += self.__EXTRA_SIZE
         return size
 
     def _create_surface(
@@ -660,18 +672,23 @@ class Tooltip(entities.ZoomableEntity):
         color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List[int]],
         **kwargs
     ):
+        """Add the lines and a border to the default rendered """
         surface = super()._create_surface(size, color, **kwargs)
         line_height = size[1] / len(self.lines)
         for index, line in enumerate(self.lines):
             rendereded_line = self.font.render(line, True, (0, 0, 0))
-            pos = (2, line_height * index + 2)
+            pos = (self.__EXTRA_SIZE[0], line_height * index + self.__EXTRA_SIZE[1])
             surface.blit(rendereded_line, pos)
+        pygame.draw.rect(surface, (0, 0, 0), surface.get_rect(), 3)
         return surface
 
-    def is_showing(self):
+    def is_showing(self) -> bool:
         return super().is_showing() and self.__showing_tooltip
 
-    def show_tooltip(self, value: bool) -> None:
+    def show_tooltip(
+        self,
+        value: bool
+    ) -> None:
         self.show(value)
         self.__showing_tooltip = value
         if value:
@@ -789,7 +806,7 @@ class ItemDisplay(Label):
 
     def __add_item_image(self) -> None:
         """Add the image of the item in the correct size"""
-        item_size = util.Size(*self.rect.size) - (10, 10)
+        item_size = util.Size(*self.rect.size) - (12, 12)
         item_image = self.item.material.full_surface
         item_image = pygame.transform.scale(item_image, item_size)
         self.set_image(item_image)
