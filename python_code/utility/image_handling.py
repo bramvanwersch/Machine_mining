@@ -3,9 +3,6 @@ from typing import Tuple, List
 import pygame
 import os
 
-import utility.constants as con
-import utility.utilities as util
-
 # variable for all image sheets
 from utility import utilities as util, constants as con
 
@@ -114,7 +111,6 @@ class ImageDefinition:
         return self.__create_images()
 
     def __create_images(self) -> List[pygame.Surface]:
-        print(self.__image_size)
         """Get defined images from image sheets and potentially scale and transform when neccesairy"""
         global image_sheets
         norm_image = image_sheets[self.__sheet_name].image_at(
