@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 import pygame
 from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar, TYPE_CHECKING
 
@@ -12,25 +12,24 @@ if TYPE_CHECKING:
     import board.sprite_groups as sprite_groups
 
 
-class BaseEvent(ABC):
-    ALLOWED_STATES: ClassVar[List[str]]
+class Event(ABC):
+    ALLOWED_STATES: ClassVar[List[str]] = ["pressed", "unpressed"]
 
     states: Dict[str, Union[None, Tuple[Callable, List]]]
+    __prev_state: str
+    __no_repeat: bool
 
     def __init__(
         self,
         function: Callable,
         values: List = None,
-        types: List = None
+        types: List = None,
+        no_repeat: bool = False
     ):
         self.states = {state_name: None for state_name in self.ALLOWED_STATES}
         self.add_action(function, values, types)
-
-    # noinspection PyPep8Naming
-    @property
-    @abstractmethod
-    def ALLOWED_STATES(self) -> List[str]:
-        pass
+        self.__prev_state = "unpressed"
+        self.__no_repeat = no_repeat
 
     def add_action(
         self,
@@ -54,46 +53,11 @@ class BaseEvent(ABC):
     ) -> Any:
         """Allows the class to act like a function"""
         if self.states[args[0]] is not None:
+            if self.__no_repeat and self.__prev_state == args[0]:
+                return
             function, values = self.states[args[0]]
             function(*values)
-
-
-class KeyEvent(BaseEvent):
-    """
-    Action function for defining actions for widgets. Can be called like a
-    function
-    """
-    ALLOWED_STATES: ClassVar[List[str]] = ["pressed", "unpressed"]
-
-
-class HoverEvent(BaseEvent):
-    ALLOWED_STATES: ClassVar[List[str]] = ["hover", "unhover"]
-
-    __prev_hover_state: str
-    __continious: bool
-
-    def __init__(
-        self,
-        function: Callable,
-        values: List = None,
-        types: List = None,
-        continious: bool = False
-    ):
-        super().__init__(function, values, types)
-        self.__prev_hover_state = "unhover"
-        self.__continious = continious
-
-    def __call__(
-        self,
-        *args,
-        **kwargs
-    ) -> Any:
-        """Make sure that hover events are not triggered every time if the hover state did not change unless forced
-        by __continious flag"""
-        if args[0] != self.__prev_hover_state or self.__continious:
-            self.__prev_hover_state = args[0]
-            function, values = self.states[args[0]]
-            function(*values)
+        self.__prev_state = args[0]
 
 
 class SelectionGroup:
@@ -138,7 +102,7 @@ class Widget(event_handlers.EventHandler, ABC):
     """
     Basic widget class
     """
-    __listened_for_events: Dict[int, KeyEvent]
+    __listened_for_events: Dict[int, Event]
     selectable: bool
     selected: bool
     rect: pygame.Rect
@@ -179,18 +143,22 @@ class Widget(event_handlers.EventHandler, ABC):
         """Activates an action function bound to a certain key."""
         self.__listened_for_events[key](_type)
 
+    def add_tooltip(self, tooltip):
+        self.add_hover_event_listener(tooltip.show, tooltip.show, hover_values=[True], unhover_values=[False])
+
     def add_key_event_listener(
         self,
         key: int,
         action_function: Callable,
         values: List = None,
-        types: List = None
+        types: List = None,
+        no_repeat: bool = False
     ) -> None:
         """Link functions to key events and trigger when appropriate"""
         if key in self.__listened_for_events:
             self.__listened_for_events[key].add_action(action_function, values, types)
         else:
-            self.__listened_for_events[key] = KeyEvent(action_function, values, types)
+            self.__listened_for_events[key] = Event(action_function, values, types, no_repeat)
             self.add_recordable_key(key)
 
     def add_hover_event_listener(
@@ -201,11 +169,10 @@ class Widget(event_handlers.EventHandler, ABC):
         unhover_values: List = None
     ) -> None:
         """Link functions to hover events and trigger when appropriate"""
-        self.add_key_event_listener(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"])
-        self.add_key_event_listener(con.BTN_UNHOVER, unhover_action_function, values=unhover_values,
-                                    types=["unpressed"])
-        self.add_recordable_key(con.BTN_HOVER)
-        self.add_recordable_key(con.BTN_UNHOVER)
+        self.add_key_event_listener(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"],
+                                    no_repeat=True)
+        self.add_key_event_listener(con.BTN_HOVER, unhover_action_function, values=unhover_values, types=["unpressed"],
+                                    no_repeat=True)
 
     def handle_events(
         self,
@@ -484,20 +451,17 @@ class Pane(Label):
         hovered_widgets = []
         unhovered_widgets = []
         adjusted_pos = (pos[0] - self.rect.left, pos[1] - self.rect.top)
+        adjusted_own_rect = pygame.Rect((0, 0, self.rect.width, self.rect.height))
         for widget in self.widgets:
-            collide = widget.rect.collidepoint(adjusted_pos)
+            collide = widget.rect.collidepoint(adjusted_pos) and adjusted_own_rect.collidepoint(adjusted_pos)
             if collide:
-                if isinstance(widget, Pane):
-                    hovered_widgets.append(widget)
-                    lower_selected, lower_unselected = widget._find_hovered_widgets(adjusted_pos)
-                    if lower_selected:
-                        hovered_widgets.extend(lower_selected)
-                    elif lower_unselected:
-                        lower_unselected.extend(lower_unselected)
-                else:
-                    hovered_widgets.append(widget)
+                hovered_widgets.append(widget)
             else:
                 unhovered_widgets.append(widget)
+            if isinstance(widget, Pane):
+                lower_selected, lower_unselected = widget._find_hovered_widgets(adjusted_pos)
+                hovered_widgets.extend(lower_selected)
+                unhovered_widgets.extend(lower_unselected)
         return hovered_widgets, unhovered_widgets
 
     def _get_selectable_widgets(self):
@@ -654,7 +618,6 @@ class Frame(entities.ZoomableEntity, Pane):
             # noinspection PyUnresolvedReferences
             pos = interface_util.screen_to_board_coordinate(pos, self.groups()[0].target, 1)
         hovered, unhovered = self._find_hovered_widgets(pos)
-
         # add a hover event that can be consumed in the same way as normal events.
         leftover_events.append(pygame.event.Event(con.HOVER, button=con.BTN_HOVER))
         # TODO think about how to handle key events for specific widgets.
@@ -663,10 +626,42 @@ class Frame(entities.ZoomableEntity, Pane):
             widget = hovered.pop()
             leftover_events = widget.handle_events(leftover_events)
         # trigger an unhover event for all widgets not hovered
-        unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_UNHOVER)]
+        unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_HOVER)]
         for widget in unhovered:
             widget.handle_events(unhover_event)
         return leftover_events
+
+
+class Tooltip(entities.ZoomableEntity):
+    """Strict frame containing one or more labels with text"""
+
+    def __init__(self, pos, sprite_group, color=(255, 255, 255), text="", font_size=15):
+        self.font = con.FONTS[font_size]
+        self.lines = text.split("\n")
+        size = self.__get_size()
+        super().__init__(pos, size, sprite_group, color=color, visible=False, layer=con.TOOLTIP_LAYER)
+
+    def __get_size(self):
+        longest_line = str(max(self.lines, key=len))
+        size = util.Size(*self.font.size(longest_line))
+        size.height *= len(self.lines)
+        size += (4, 4)
+        return size
+
+    def _create_surface(self, size, color, **kwargs):
+        surface = super()._create_surface(size, color, **kwargs)
+        line_height = size[1] / len(self.lines)
+        for index, line in enumerate(self.lines):
+            rendereded_line = self.font.render(line, True, (0, 0, 0))
+            pos = (2, line_height * index + 2)
+            surface.blit(rendereded_line, pos)
+        return surface
+
+    def show(self, value: bool) -> None:
+        super().show(value)
+        if value:
+            mouse_pos = pygame.mouse.get_pos()
+            self.rect.topleft = mouse_pos
 
 
 class ScrollPane(Pane):
