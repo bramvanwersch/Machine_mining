@@ -182,15 +182,25 @@ class GameSettingsScene(Scene):
         frame_rect = self.settings_menu_frame.rect
 
         widget_size = util.Size(100, 40)
+        color = (173, 94, 29)
         y_coord = 100
 
-        generation_values_pane = widgets.Pane((frame_rect.width - 100, 300), border=True, border_width=4)
+        generation_values_pane = widgets.Pane((frame_rect.width - 100, 300), border=True, border_width=4,
+                                              color=color)
         self.settings_menu_frame.add_widget(("center", y_coord), generation_values_pane)
 
         local_y = 10
-        biome_size_selection_list = widgets.SelectionList(self.sprite_group,
+
+        local_x = int((generation_values_pane.rect.width / 2) + 5)
+        biome_size_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
                                                           options=list(generation.BoardGenerator.BIOME_SIZES.keys()))
-        generation_values_pane.add_widget(("center", local_y), biome_size_selection_list)
+        biome_size_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), biome_size_selection_list)
+
+        biome_size_label = widgets.Label((100, biome_size_selection_list.LINE_HEIGHT), color=color, text="Biome Size:",
+                                         font_size=22)
+        local_x = int((generation_values_pane.rect.width / 2) - biome_size_label.rect.width - 5)
+        generation_values_pane.add_widget((local_x, local_y), biome_size_label)
 
 
         y_coord += generation_values_pane.rect.height + 20

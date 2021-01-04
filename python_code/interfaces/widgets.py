@@ -532,11 +532,11 @@ class Pane(Label):
 class SelectionList(Pane):
     __FONT_SIZE = 20
     __FONT = con.FONTS[__FONT_SIZE]
-    __LINE_HEIGHT = __FONT.size("T")[1] + 10
+    LINE_HEIGHT = __FONT.size("T")[1] + 10
     __EXPAND_BUTTON_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
-        image_handling.ImageDefinition("general", (70, 10), image_size=util.Size(__LINE_HEIGHT, __LINE_HEIGHT))
+        image_handling.ImageDefinition("general", (70, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT))
     __EXPAND_BUTTON_HOVER_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
-        image_handling.ImageDefinition("general", (80, 10), image_size=util.Size(__LINE_HEIGHT, __LINE_HEIGHT))
+        image_handling.ImageDefinition("general", (80, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT))
 
     __expanded_options_frame: Union[None, "Frame"]
     __show_label: Union[None, Label]
@@ -570,7 +570,7 @@ class SelectionList(Pane):
         sprite_group: pygame.sprite.AbstractGroup
     ) -> None:
         line_width = self.rect.width - self.rect.height
-        line_height = self.__LINE_HEIGHT
+        line_height = self.LINE_HEIGHT
         self.__show_label = Label((line_width, line_height), self.color, border=True, text=self.__options[0],
                                   font_size=self.__FONT_SIZE)
         self.add_widget((0, 0), self.__show_label)
@@ -594,6 +594,12 @@ class SelectionList(Pane):
         # make sure that events are captured that could cover the frame containing the options
         self.rect.height += self.__expanded_options_frame.rect.height
 
+    def select_option(self, option_str: str) -> None:
+        for label in self.__expanded_options_frame.widgets:
+            if label.get_text() == option_str:
+                self.__select_expanded_option(label)
+                break
+
     def __select_expanded_option(
         self,
         widget: Label
@@ -605,7 +611,8 @@ class SelectionList(Pane):
 
     def __show_expanded_options(self):
         self.__expanded_options = not self.__expanded_options
-        self.__expanded_options_frame.rect.topleft = self.board_position
+        self.__expanded_options_frame.rect.topleft = (self.board_position[0],
+                                                      self.board_position[1] + self.__show_label.rect.height)
 
         self.__expanded_options_frame.show(self.__expanded_options)
 
