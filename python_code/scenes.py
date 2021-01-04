@@ -14,6 +14,7 @@ from board import sprite_groups as sprite_groups, chunks as chunks
 from interfaces import widgets as widgets, interface_utility as interface_util, small_interfaces as small_interfaces, \
     managers as window_managers
 from utility import constants as con, utilities as util, event_handling
+import board_generation.generation as generation
 
 # defined below SceneManager
 scenes: "SceneManager"
@@ -22,22 +23,28 @@ scenes: "SceneManager"
 class SceneManager:
     def __init__(self):
         # the drawing destination surface
-        self.scenes = {}
+        self.__scenes = {}
         self.active_scene = None
 
     def set_active_scene(self, name):
         if self.active_scene:
             self.active_scene.exit()
-        self.active_scene = self.scenes[name]
+        self.active_scene = self.__scenes[name]
+
+    def __contains__(
+        self,
+        item: str
+    ) -> bool:
+        return item in self.__scenes
 
     def __getitem__(self, item):
-        return self.scenes[item]
+        return self.__scenes[item]
 
     def __setitem__(self, key, value):
-        self.scenes[key] = value
+        self.__scenes[key] = value
 
     def __delitem__(self, key):
-        del self.scenes[key]
+        del self.__scenes[key]
 
     def is_scene_alive(self):
         return self.active_scene.going
@@ -110,9 +117,9 @@ class MainMenu(Scene):
 
         button_size = util.Size(100, 40)
         y_coord = 200
-        play_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
-        play_button.add_key_event_listener(1, self.__start_game, types=["unpressed"])
-        self.main_menu_frame.add_widget(("center", y_coord), play_button)
+        new_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
+        new_button.add_key_event_listener(1, self.__open_game_settings, types=["unpressed"])
+        self.main_menu_frame.add_widget(("center", y_coord), new_button)
 
         y_coord += 50
         load_button = widgets.Button(button_size, color=(100, 100, 100), text="LOAD", font_size=30)
@@ -141,13 +148,10 @@ class MainMenu(Scene):
         events = super().scene_event_handling(consume=consume)
         self.main_menu_frame.handle_events(events)
 
-    def __start_game(self):
+    def __open_game_settings(self):
         global scenes
-        game = Game(self.screen)
-        executor = interface_util.ThreadPoolExecutorStackTraced()
-        future = executor.submit(game.start)
-        scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
-        scenes.set_active_scene(LoadingScreen.name())
+        scenes[GameSettingsScene.name()] = GameSettingsScene(self.screen)
+        scenes.set_active_scene(GameSettingsScene.name())
 
     def __load_game(self):
         global scenes
@@ -163,7 +167,7 @@ class MainMenu(Scene):
         self.going = False
 
 
-class SettingsScene(Scene):
+class GameSettingsScene(Scene):
     def __init__(self, screen):
         sprite_group = sprite_groups.ShowToggleLayerUpdates()
         super().__init__(screen, sprite_group)
@@ -175,27 +179,44 @@ class SettingsScene(Scene):
     def __init_widgets(self):
         self.settings_menu_frame = widgets.Frame((0, 0), util.Size(*self.rect.size), self.sprite_group,
                                                  color=(173, 94, 29), static=False)
+        frame_rect = self.settings_menu_frame.rect
 
-        button_size = util.Size(100, 40)
-        y_coord = 200
-        play_button = widgets.Button(button_size, color=(100, 100, 100), text="NEW", font_size=30)
-        play_button.add_key_event_listener(1, self.__start_game, types=["unpressed"])
-        self.settings_menu_frame.add_widget(("center", y_coord), play_button)
+        widget_size = util.Size(100, 40)
+        y_coord = 100
 
-        y_coord += 50
-        load_button = widgets.Button(button_size, color=(100, 100, 100), text="LOAD", font_size=30)
-        load_button.add_key_event_listener(1, self.__load_game, types=["unpressed"])
-        self.settings_menu_frame.add_widget(("center", y_coord), load_button)
+        generation_values_pane = widgets.Pane((frame_rect.width - 100, 300), border=True, border_width=4)
+        self.settings_menu_frame.add_widget(("center", y_coord), generation_values_pane)
 
-        y_coord += 50
-        settings_button = widgets.Button(button_size, color=(100, 100, 100), text="SETTINGS", font_size=30)
-        settings_button.add_key_event_listener(1, self.__open_settings, types=["unpressed"])
-        self.settings_menu_frame.add_widget(("center", y_coord), settings_button)
+        local_y = 10
+        biome_size_selection_list = widgets.SelectionList(self.sprite_group,
+                                                          options=list(generation.BoardGenerator.BIOME_SIZES.keys()))
+        generation_values_pane.add_widget(("center", local_y), biome_size_selection_list)
 
-        y_coord += 50
-        quit_button = widgets.Button(button_size, color=(100, 100, 100), text="QUIT", font_size=30)
-        quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
-        self.settings_menu_frame.add_widget(("center", y_coord), quit_button)
+
+        y_coord += generation_values_pane.rect.height + 20
+        x_coord = (frame_rect.width / 2) - widget_size.width - 5
+        start_game_btn = widgets.Button(widget_size, color=(100, 100, 100), text="START", font_size=30)
+        start_game_btn.add_key_event_listener(1, self.__start_game)
+        self.settings_menu_frame.add_widget((x_coord, y_coord), start_game_btn)
+
+        x_coord = (frame_rect.width / 2) + 5
+        back_btn = widgets.Button(widget_size, color=(100, 100, 100), text="BACK", font_size=30)
+        back_btn.add_key_event_listener(1, self.__back_to_main)
+        self.settings_menu_frame.add_widget((x_coord, y_coord), back_btn)
+
+    def __start_game(self):
+        global scenes
+        game = Game(self.screen)
+        executor = interface_util.ThreadPoolExecutorStackTraced()
+        future = executor.submit(game.start)
+        scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
+        scenes.set_active_scene(LoadingScreen.name())
+
+    def __back_to_main(self):
+        global scenes
+        if MainMenu.name() not in scenes:
+            scenes[MainMenu.name()] = MainMenu(self.screen)
+        scenes.set_active_scene(MainMenu.name())
 
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling(consume=consume)

@@ -15,7 +15,6 @@ import utility.image_handling as image_handling
 import interfaces.interface_utility as interface_util
 if TYPE_CHECKING:
     import inventories
-    import board.sprite_groups as sprite_groups
 
 
 class Event(ABC):
@@ -113,6 +112,7 @@ class Widget(event_handlers.EventHandler, ABC):
     selected: bool
     rect: pygame.Rect
     visible: bool
+    board_position: Union[Tuple[int, int], List[int]]
     surface: Union[None, pygame.Surface] = NotImplemented
     orig_surface: Union[None, pygame.Surface] = NotImplemented
 
@@ -122,6 +122,7 @@ class Widget(event_handlers.EventHandler, ABC):
         selectable: bool = True,
         recordable_keys: List = None,
         tooltip: "Tooltip" = None,
+        board_pos: Union[Tuple[int, int], List[int]] = (0, 0),
         **kwargs
     ):
         recordable_keys = recordable_keys if recordable_keys else None
@@ -135,6 +136,7 @@ class Widget(event_handlers.EventHandler, ABC):
         # innitial position is 0, 0
         self.rect = pygame.Rect((0, 0, size[0], size[1]))
         self.visible = True
+        self.board_position = list(board_pos)
         if tooltip:
             self.add_tooltip(tooltip)
 
@@ -143,6 +145,13 @@ class Widget(event_handlers.EventHandler, ABC):
         A function that allows updating a widget each frame
         """
         pass
+
+    def move(
+        self,
+        offset: Union[Tuple[int, int], List[int]]
+    ) -> None:
+        self.board_position[0] += offset[0]
+        self.board_position[1] += offset[1]
 
     def action(
         self,
@@ -449,6 +458,7 @@ class Pane(Label):
         if add_topleft:
             pos = (rect.left + pos[0], rect.top + pos[1])
         widget.rect = pygame.Rect((pos[0], pos[1], rect.width, rect.height))
+        widget.board_position = [self.board_position[0] + pos[0], self.board_position[1] + pos[1]]
         self.widgets.append(widget)
         self.orig_surface.blit(widget.surface, pos)
         self.surface = self.orig_surface.copy()
@@ -460,6 +470,11 @@ class Pane(Label):
             if widget.changed_image:
                 self.__redraw_widget(widget)
                 widget.changed_image = False
+
+    def move(self, offset: Union[Tuple[int, int], List[int]]) -> None:
+        super().move(offset)
+        for widget in self.widgets:
+            widget.move(offset)
 
     def _find_hovered_widgets(
         self,
@@ -550,7 +565,10 @@ class SelectionList(Pane):
         size.width += size.height + 10
         return size
 
-    def __init_widgets(self, sprite_group):
+    def __init_widgets(
+        self,
+        sprite_group: pygame.sprite.AbstractGroup
+    ) -> None:
         line_width = self.rect.width - self.rect.height
         line_height = self.__LINE_HEIGHT
         self.__show_label = Label((line_width, line_height), self.color, border=True, text=self.__options[0],
@@ -576,7 +594,10 @@ class SelectionList(Pane):
         # make sure that events are captured that could cover the frame containing the options
         self.rect.height += self.__expanded_options_frame.rect.height
 
-    def __select_expanded_option(self, widget):
+    def __select_expanded_option(
+        self,
+        widget: Label
+    ):
         self.__expanded_options = False
         self.__options_selection_group.select(widget)
         self.__expanded_options_frame.show(self.__expanded_options)
@@ -584,8 +605,7 @@ class SelectionList(Pane):
 
     def __show_expanded_options(self):
         self.__expanded_options = not self.__expanded_options
-        self.__expanded_options_frame.rect.topleft = (self.rect.left, self.rect.bottom -
-                                                      self.__expanded_options_frame.rect.height)
+        self.__expanded_options_frame.rect.topleft = self.board_position
 
         self.__expanded_options_frame.show(self.__expanded_options)
 
@@ -608,12 +628,13 @@ class Frame(entities.ZoomableEntity, Pane):
         self,
         pos: Union[Tuple[int, int], List[int]],
         size: Union[util.Size, Tuple[int, int], List[int]],
-        *groups: "sprite_groups.CameraAwareLayeredUpdates",
+        *groups: pygame.sprite.AbstractGroup,
         **kwargs
     ):
-        Pane.__init__(self, size, **kwargs)
+        Pane.__init__(self, size, board_pos=pos, **kwargs)
         entities.ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
+        self.__previous_board_pos = self.board_position
         self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
         self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
         self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
@@ -623,6 +644,9 @@ class Frame(entities.ZoomableEntity, Pane):
     def update(self, *args):
         """Call pane wupdate method in order to update relevant widgets """
         super().update(*args)
+        if self.__previous_board_pos != self.rect.topleft:
+            self.move([self.__previous_board_pos[0] - self.rect.left, self.__previous_board_pos[1] - self.rect.top])
+            self.__previous_board_pos = self.rect.topleft
         self.wupdate(*args)
 
     def set_zoom(
@@ -644,7 +668,10 @@ class Frame(entities.ZoomableEntity, Pane):
         return rect
 
     @rect.setter
-    def rect(self, rect):
+    def rect(
+        self,
+        rect: pygame.Rect
+    ) -> None:
         self.orig_rect = rect
 
     def __select_next_widget(
@@ -703,7 +730,7 @@ class Frame(entities.ZoomableEntity, Pane):
                                                   key=lambda x: x.rect.centerx - s_rect.centerx)[0]
         self.selected_widget.set_selected(True)
 
-    def __activate_selected_widget(self):
+    def __activate_selected_widget(self) -> None:
         """perform the action bound to a widget on mouse-1"""
         if self.selected_widget is not None:
             self.selected_widget.action(1, "unpressed")
