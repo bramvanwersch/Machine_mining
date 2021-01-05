@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     import inventories
 
 
-class Event(ABC):
+class WidgetEvent(ABC):
     ALLOWED_STATES: ClassVar[List[str]] = ["pressed", "unpressed"]
 
     states: Dict[str, Union[None, Tuple[Callable, List]]]
@@ -103,11 +103,70 @@ class SelectionGroup:
             [w.set_selected(True) for w in self.__widgets]
 
 
+class WidgetPosition:
+    """Configure a toplet position of the inner rect in such a way that the rect is placed in a desired way inside
+    the outer rect based on the position value"""
+    def __init__(
+        self,
+        pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]],
+        inner_rect: pygame.Rect,
+        outer_rect: pygame.Rect
+    ):
+        self.__inner_rect = inner_rect
+        self.__outer_rect = outer_rect
+        self.position = self.__convert_location(pos)
+
+    def __convert_location(self, pos) -> List[int]:
+        pos = list(pos)
+        if type(pos[0]) in [float, int]:
+            pos[0] = round(pos[0])
+        elif pos[0] in ["center", "C"]:
+            pos[0] = self.__centerx()
+        elif pos[0] in ["west", "W"]:
+            pos[0] = self.__west()
+        elif pos[0] in ["east", "E"]:
+            pos[0] = self.__east()
+
+        if type(pos[1]) in [float, int]:
+            pos[1] = round(pos[1])
+        if pos[1] in ["center", "C"]:
+            pos[1] = self.__centery()
+        elif pos[1] in ["north", "N"]:
+            pos[1] = self.__north()
+        elif pos[1] in ["south", "S"]:
+            pos[1] = self.__south()
+        return pos
+
+    def __centerx(self) -> int:
+        return round(self.__outer_rect.width / 2 - self.__inner_rect.width / 2)
+
+    def __centery(self) -> int:
+        return round(self.__outer_rect.height / 2 - self.__inner_rect.height / 2)
+
+    def __west(self) -> int:
+        return self.__outer_rect.left
+
+    def __east(self) -> int:
+        return self.__outer_rect.right - self.__inner_rect.width
+
+    def __north(self) -> int:
+        return self.__outer_rect.top
+
+    def __south(self) -> int:
+        return self.__outer_rect.bottom - self.__inner_rect.height
+
+    def __getitem__(self, item):
+        return self.position[item]
+
+    def __len__(self):
+        return len(self.position)
+
+
 class Widget(event_handlers.EventHandler, ABC):
     """
     Basic widget class
     """
-    __listened_for_events: Dict[int, Event]
+    __listened_for_events: Dict[int, WidgetEvent]
     selectable: bool
     selected: bool
     rect: pygame.Rect
@@ -177,7 +236,7 @@ class Widget(event_handlers.EventHandler, ABC):
         if key in self.__listened_for_events:
             self.__listened_for_events[key].add_action(action_function, values, types)
         else:
-            self.__listened_for_events[key] = Event(action_function, values, types, no_repeat)
+            self.__listened_for_events[key] = WidgetEvent(action_function, values, types, no_repeat)
             self.add_recordable_key(key)
 
     def add_hover_event_listener(
@@ -241,10 +300,10 @@ class Label(Widget):
         border_shrink: Union[Tuple[int, int], List[int]] = (0, 0),
         border_width: int = 3,
         image: pygame.Surface = None,
-        image_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        image_pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         image_size: Union[util.Size, Tuple[int, int], List[int]] = None,
         text: str = None,
-        text_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        text_pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
         **kwargs
@@ -266,10 +325,10 @@ class Label(Widget):
     def create_surface(
         self,
         image: pygame.Surface = None,
-        image_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        image_pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         image_size: Union[util.Size, Tuple[int, int], List[int]] = None,
         text: str = None,
-        text_pos: Union[str, Tuple[int, int], List[int]] = "center",
+        text_pos: Union[Tuple[Union[int, str], Union[str, int]], List[int]] = ("center", "center"),
         text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
     ) -> None:
@@ -327,7 +386,7 @@ class Label(Widget):
     def set_image(
         self,
         image: pygame.Surface,
-        pos: Union[str, Tuple[int, int], List[int]] = "center",
+        pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         size: Union[util.Size, Tuple[int, int], List[int]] = None,
         is_cleaning_call: bool = False
     ) -> None:
@@ -337,9 +396,8 @@ class Label(Widget):
         if size is not None:
             image = pygame.transform.scale(image, size)
         rect = image.get_rect()
-        if pos == "center":
-            pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
-        self.surface.blit(image, pos)
+        pos = WidgetPosition(pos, rect, self.rect)
+        self.surface.blit(image, pos.position)
         # make sure that the selection rectangle is shown
         if self.selected:
             self.set_selected(True)
@@ -348,7 +406,7 @@ class Label(Widget):
     def set_text(
         self,
         text: str,
-        pos: Union[str, Tuple[int, int], List[int]],
+        pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
         is_cleaning_call: bool = False
@@ -358,9 +416,9 @@ class Label(Widget):
         self.__text_specifications = [text, pos, color, font_size]
         s = con.FONTS[font_size].render(str(text), True, color)
         rect = s.get_rect()
-        if pos == "center":
-            pos = (self.rect.width / 2 - rect.width / 2, self.rect.height / 2 - rect.height / 2)
-        self.surface.blit(s, pos)
+        pos = WidgetPosition(pos, rect, self.rect)
+
+        self.surface.blit(s, pos.position)
         # make sure that the selection rectangle is shown
         if self.selected:
             self.set_selected(True)
@@ -449,11 +507,7 @@ class Pane(Label):
         Add a widget at the provided position
         """
         rect = widget.rect
-        pos = list(pos)
-        if pos[0] == "center":
-            pos[0] = self.rect.width / 2 - rect.width / 2
-        if pos[1] == "center":
-            pos[1] = self.rect.height / 2 - rect.height / 2
+        pos = WidgetPosition(pos, rect, self.rect)
         # create the position relative to the rect of this Pane
         if add_topleft:
             pos = (rect.left + pos[0], rect.top + pos[1])
@@ -595,7 +649,9 @@ class SelectionList(Pane):
         self.rect.height += self.__expanded_options_frame.rect.height
 
     def select_option(self, option_str: str) -> None:
+        # these only contain labels
         for label in self.__expanded_options_frame.widgets:
+            label: Label
             if label.get_text() == option_str:
                 self.__select_expanded_option(label)
                 break
@@ -607,7 +663,7 @@ class SelectionList(Pane):
         self.__expanded_options = False
         self.__options_selection_group.select(widget)
         self.__expanded_options_frame.show(self.__expanded_options)
-        self.__show_label.set_text(widget.get_text(), "center", font_size=self.__FONT_SIZE)
+        self.__show_label.set_text(widget.get_text(), ("center", "center"), font_size=self.__FONT_SIZE)
 
     def __show_expanded_options(self):
         self.__expanded_options = not self.__expanded_options
@@ -651,7 +707,7 @@ class Frame(entities.ZoomableEntity, Pane):
     def update(self, *args):
         """Call pane wupdate method in order to update relevant widgets """
         super().update(*args)
-        if self.__previous_board_pos != self.rect.topleft:
+        if self.is_showing() and self.__previous_board_pos != self.rect.topleft:
             self.move([self.__previous_board_pos[0] - self.rect.left, self.__previous_board_pos[1] - self.rect.top])
             self.__previous_board_pos = self.rect.topleft
         self.wupdate(*args)
@@ -771,7 +827,7 @@ class Frame(entities.ZoomableEntity, Pane):
         return leftover_events
 
 
-class Tooltip(entities.ZoomableEntity):
+class Tooltip(entities.Entity):
     """Strict frame containing one or more labels with text"""
     # the extra area around the text to make the tooltip feel less cramped
     __EXTRA_SIZE: ClassVar[Tuple[int, int]] = (10, 10)
