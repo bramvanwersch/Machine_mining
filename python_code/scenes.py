@@ -189,8 +189,8 @@ class GameSettingsScene(Scene):
                                               color=color)
         self.settings_menu_frame.add_widget(("center", y_coord), generation_values_pane)
 
+        # Biome size selection
         local_y = 10
-
         local_x = int((generation_values_pane.rect.width / 2) + 5)
         biome_size_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
                                                           options=list(generation.BoardGenerator.BIOME_SIZES.keys()))
@@ -198,11 +198,78 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), biome_size_selection_list)
 
         biome_size_label = widgets.Label((100, biome_size_selection_list.LINE_HEIGHT), color=color, text="Biome Size:",
-                                         font_size=22)
-        local_x = int((generation_values_pane.rect.width / 2) - biome_size_label.rect.width - 5)
+                                         font_size=22, text_pos=("W", "C"))
+        biome_size_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150), text="Average size of biomes")
+        biome_size_label.add_tooltip(biome_size_tooltip)
+        local_x = int((generation_values_pane.rect.width / 2) - 135)
         generation_values_pane.add_widget((local_x, local_y), biome_size_label)
 
+        # Biome blend selection
+        local_y += biome_size_selection_list.LINE_HEIGHT + 10
+        local_x = int((generation_values_pane.rect.width / 2) + 5)
+        biome_blend_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                                           options=list(generation.BoardGenerator.BIOME_BLEND.keys()))
+        biome_blend_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), biome_blend_selection_list)
 
+        biome_blend_label = widgets.Label((100, biome_blend_selection_list.LINE_HEIGHT), color=color,
+                                          text="Biome Blend:", font_size=22, text_pos=("W", "C"))
+        biome_blend_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
+                                              text="The level to which biomes\ncan blend trough one another")
+        biome_blend_label.add_tooltip(biome_blend_tooltip)
+        local_x = int((generation_values_pane.rect.width / 2) - 135)
+        generation_values_pane.add_widget((local_x, local_y), biome_blend_label)
+
+        # Max Caves selection
+        local_y += biome_blend_selection_list.LINE_HEIGHT + 10
+        local_x = int((generation_values_pane.rect.width / 2) + 5)
+        max_caves_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                                         options=list(generation.BoardGenerator.MAX_CAVES.keys()))
+        max_caves_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), max_caves_selection_list)
+
+        max_caves_label = widgets.Label((140, max_caves_selection_list.LINE_HEIGHT), color=color,
+                                        text="Number of Caves:", font_size=22, text_pos=("W", "C"))
+        max_caves_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
+                                            text="The amount of caves present on the map")
+        max_caves_label.add_tooltip(max_caves_tooltip)
+        local_x = int((generation_values_pane.rect.width / 2) - 135)
+        generation_values_pane.add_widget((local_x, local_y), max_caves_label)
+
+        # Cave length selection
+        local_y += max_caves_selection_list.LINE_HEIGHT + 10
+        local_x = int((generation_values_pane.rect.width / 2) + 5)
+        cave_length_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                                           options=list(generation.BoardGenerator.CAVE_LENGTH.keys()))
+        cave_length_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), cave_length_selection_list)
+
+        cave_length_label = widgets.Label((140, cave_length_selection_list.LINE_HEIGHT), color=color,
+                                          text="Length of Caves:", font_size=22, text_pos=("W", "C"))
+        cave_length_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
+                                              text="The lenght of the caves")
+        cave_length_label.add_tooltip(cave_length_tooltip)
+        local_x = int((generation_values_pane.rect.width / 2) - 135)
+        generation_values_pane.add_widget((local_x, local_y), cave_length_label)
+
+        # Cave width selection
+        local_y += max_caves_selection_list.LINE_HEIGHT + 10
+        local_x = int((generation_values_pane.rect.width / 2) + 5)
+        cave_width_selection_list = \
+            widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                  options=list(generation.BoardGenerator.CAVE_STOP_SPREAD_CHANCE.keys()))
+        cave_width_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), cave_width_selection_list)
+
+        cave_width_label = widgets.Label((140, cave_width_selection_list.LINE_HEIGHT), color=color,
+                                         text="Width of Caves:", font_size=22, text_pos=("W", "C"))
+        cave_width_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
+                                             text="How wide a cave is")
+        cave_width_label.add_tooltip(cave_width_tooltip)
+        local_x = int((generation_values_pane.rect.width / 2) - 135)
+        generation_values_pane.add_widget((local_x, local_y), cave_width_label)
+
+        # general buttons
         y_coord += generation_values_pane.rect.height + 20
         x_coord = (frame_rect.width / 2) - widget_size.width - 5
         start_game_btn = widgets.Button(widget_size, color=(100, 100, 100), text="START", font_size=30)
@@ -255,7 +322,7 @@ class LoadingScreen(Scene):
         global scenes
         super().scene_updates()
         if hasattr(self.loading_scene, "progress"):
-            self.__progress_label.set_text(self.loading_scene.progress, "center", font_size=30)
+            self.__progress_label.set_text(self.loading_scene.progress, ("center", "center"), font_size=30)
         if self.future.done():
             if self.future.exception():
                 print(self.future.exception())

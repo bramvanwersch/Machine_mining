@@ -27,11 +27,12 @@ class BoardGenerator:
     # the size of quadrants where a new biome is chosen
     BIOME_SIZES: ClassVar[Dict[str, util.Size]] = \
         {"tiny": util.Size(100, 100), "small": util.Size(200, 200), "normal": util.Size(500, 500),
-         "big": util.Size(750, 7500), "massive": util.Size(1000, 1000), "huge": util.Size(1500, 1500)}  # in blocks
+         "big": util.Size(750, 7500), "massive": util.Size(1000, 1000), "huge": util.Size(1500, 1500),
+         "just one pls": util.Size(3000, 3000)}  # in blocks
 
     # determines the standard deviation of the biomes, high values means very broad distributions
     BIOME_BLEND: ClassVar[Dict[str, int]] = \
-        {"tiny": 1, "small": 5, "normal": 15, "severe": 30, "extreme": 50}
+        {"very low": 1, "low": 5, "normal": 15, "severe": 30, "extreme": 50, "what are biomes?": 100}
 
     # CAVE values
     MAX_CAVES: ClassVar[Dict[str, int]] = \
@@ -42,8 +43,8 @@ class BoardGenerator:
     CAVE_LENGTH: ClassVar[Dict[str, int]] = \
         {"short": 25, "normal": 50, "long": 100, "very long": 200, "when does it stop?": 500}
     # the chance for a cave to stop extending around its core. Do not go lower then 0.0005 --> takes a long time
-    CAVE_STOP_SPREAD_CHANCE: ClassVar[Dict[str, int]] =\
-        {"very large": 0.1, "large": 0.8, "normal": 0.05, "low": 0.01, "very low": 0.005}
+    CAVE_STOP_SPREAD_CHANCE: ClassVar[Dict[str, int]] = \
+        {"very thin": 0.1, "thin": 0.8, "normal": 0.05, "wide": 0.01, "very wide": 0.005}
 
     # BORDER values
     BORDER_SPREAD_LIKELYHOOD: ClassVar[util.Gaussian] = util.Gaussian(0, 2)
