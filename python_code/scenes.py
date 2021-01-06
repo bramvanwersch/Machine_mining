@@ -54,8 +54,8 @@ scenes: "SceneManager" = SceneManager()
 
 
 class Scene(event_handling.EventHandler, ABC):
-    def __init__(self, screen, sprite_group, recorder_events="ALL"):
-        event_handling.EventHandler.__init__(self, recorder_events)
+    def __init__(self, screen, sprite_group, recorder_events=None):
+        event_handling.EventHandler.__init__(self, recorder_events if recorder_events else [])
         self.screen = screen
         self.rect = self.screen.get_rect()
 
@@ -72,15 +72,16 @@ class Scene(event_handling.EventHandler, ABC):
         self.sprite_group.update()
         self.draw()
 
-    def scene_event_handling(self, consume=False):
+    def get_events(self):
         """Starting point for event handling"""
         if len(pygame.event.get(con.QUIT)) > 0:
             self.going = False
             return []
         events = pygame.event.get()
-        # record all pressed events for this scene but do not consume them
-        leftovers = self.handle_events(events, consume)
-        return leftovers
+        return events
+
+    def scene_event_handling(self):
+        return self.get_events()
 
     def set_update_rectangles(self):
         # default is the full screen least efficient
@@ -141,11 +142,11 @@ class MainMenu(Scene):
         self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):
-        events = super().scene_event_handling(consume=consume)
+        events = super().scene_event_handling()
         mouse_events = []
         other_events = []
         for event in events:
-            if event.type in (con.MOUSEBUTTONDOWN, con.MOUSEBUTTONUP):
+            if event.type in (con.MOUSEBUTTONDOWN, con.MOUSEBUTTONUP, con.MOUSEMOTION):
                 mouse_events.append(event)
             else:
                 other_events.append(event)
@@ -300,7 +301,7 @@ class GameSettingsScene(Scene):
         scenes.set_active_scene(MainMenu.name())
 
     def scene_event_handling(self, consume=False):
-        events = super().scene_event_handling(consume=consume)
+        events = super().scene_event_handling()
         mouse_events = []
         other_events = []
         for event in events:
@@ -359,7 +360,7 @@ class Game(Scene, util.Serializer):
         # TODO make the size 0,0
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
-        super().__init__(screen, sprite_group)
+        super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE])
         # update rectangles
         self.__vision_rectangles = []
         self.__debug_rectangle = (0, 0, 0, 0)
@@ -377,6 +378,7 @@ class Game(Scene, util.Serializer):
         self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                   self.sprite_group) if self.board else None
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
+        self.add_recordable_key(4)
 
     def start(self):
         # function for setting up a Game
@@ -451,15 +453,13 @@ class Game(Scene, util.Serializer):
         # this means that events going to the camera center can not be used by any other window/scene
         leftover_events = self.camera_center.handle_events(events)
         leftover_events = self.window_manager.handle_events(leftover_events)
-
-        # this means that events where pushed to the board TODO make sure to change when moving opening to board
-        if len(self.window_manager.windows) == 0:
-            if self.pressed(4) or self.unpressed(4):
-                self.__zoom_entities(0.1)
-            if self.pressed(5) or self.unpressed(5):
-                self.__zoom_entities(-0.1)
-            if self.unpressed(con.K_ESCAPE):
-                self.window_manager.add(self.pause_window)
+        super().handle_events(leftover_events, consume_events=consume)
+        if self.pressed(4) or self.unpressed(4):
+            self.__zoom_entities(0.1)
+        if self.pressed(5) or self.unpressed(5):
+            self.__zoom_entities(-0.1)
+        if self.unpressed(con.K_ESCAPE):
+            self.window_manager.add(self.pause_window)
         self.board.handle_events(leftover_events)
 
     def set_update_rectangles(self):
