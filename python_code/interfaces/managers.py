@@ -79,7 +79,7 @@ class WindowManager:
         if len(self.windows) == 0:
             return events
         hovered_window = self.__find_hovered_window(pygame.mouse.get_pos())
-        window_normal_events = []
+        window_other_events = []
         window_mouse_events = []
         ignored_events = []
         #select a window when the user clicks it and collect all mouse events (and others)
@@ -97,11 +97,11 @@ class WindowManager:
                 else:
                     ignored_events.append(event)
             else:
-                window_normal_events.append(event)
+                window_other_events.append(event)
         leftover_events = []
         if len(self.window_order) > 0:
             event_handling_window = self.window_order[-1]
-            leftover_events = event_handling_window.handle_events(window_normal_events, type_="other")
+            leftover_events = event_handling_window.handle_other_events(window_other_events)
         if hovered_window:
-            leftover_events.extend(hovered_window.handle_events(window_mouse_events, type_="mouse"))
+            leftover_events.extend(hovered_window.handle_mouse_events(window_mouse_events))
         return leftover_events + ignored_events

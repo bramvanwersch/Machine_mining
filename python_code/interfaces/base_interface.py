@@ -118,17 +118,24 @@ class Window(widgets.Frame):
         if value == False:
             self.__moving_window = False
 
-    def handle_window_events(
+    def handle_mouse_events(
         self,
         events: List[pygame.event.Event],
-        type_: str,
         consume_events: bool = True
-    ) -> List[pygame.event.Event]:
+    ):
         if self.is_showing():
-            if type_ == "mouse":
-                leftovers = self.handle_mouse_events(events, consume_events=consume_events)
-            elif type_ == "other":
-                leftovers = self.handle_other_events(events, consume_events=consume_events)
+            leftovers = super().handle_mouse_events(events, consume_events=consume_events)
+            return leftovers
+        else:
+            return events
+
+    def handle_other_events(
+        self,
+        events: List[pygame.event.Event],
+        consume_events: bool = True
+    ):
+        if self.is_showing():
+            leftovers = super().handle_other_events(events, consume_events=consume_events)
             return leftovers
         else:
             return events
