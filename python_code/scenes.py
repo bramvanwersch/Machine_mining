@@ -137,11 +137,7 @@ class MainMenu(Scene):
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
         # y_coord += 50
-        # test_list = widgets.SelectionList(self.sprite_group, options=["test", "longer_test"], color=(150, 150, 150))
-        # self.main_menu_frame.add_widget(("center", y_coord), test_list)
-        #
-        # y_coord += 50
-        # test_list = widgets.SelectionList(self.sprite_group, options=["test2", "longer_test2"], color=(150, 150, 150))
+        # test_list = widgets.TextLine(50)
         # self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):

@@ -106,6 +106,11 @@ class SelectionGroup:
 class WidgetPosition:
     """Configure a toplet position of the inner rect in such a way that the rect is placed in a desired way inside
     the outer rect based on the position value"""
+
+    __inner_rect: pygame.Rect
+    __outer_rect: pygame.Rect
+    position: Union[Tuple[int, int], List[int]]
+
     def __init__(
         self,
         pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]],
@@ -198,6 +203,8 @@ class Widget(event_handlers.EventHandler, ABC):
         self.board_position = list(board_pos)
         if tooltip:
             self.add_tooltip(tooltip)
+        if self.selectable:
+            self.add_key_event_listener(1, self.set_selected, values=[True], types=["unpressed"])
 
     def wupdate(self):
         """
@@ -278,7 +285,12 @@ class Widget(event_handlers.EventHandler, ABC):
 
 
 class Label(Widget):
-    """Widget that can contain text an image and can be selected"""
+    """
+    Widget that can contain text an image and can be selected
+
+    A Label has 3 layers that can be present an image a text and a selection rectangle on the outside. The order of
+    drawing is always image then text then selection.
+    """
     SELECTED_COLOR: ClassVar[Union[Tuple[int, int, int], List[int]]] = (255, 255, 255)
 
     color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List]
@@ -367,40 +379,27 @@ class Label(Widget):
             return self.__text_specifications[0]
         return ""
 
-    def set_selected(
-        self,
-        selected: bool,
-        color: Union[Tuple[int, int, int], List[int]] = None
-    ) -> None:
-        super().set_selected(selected)
-        self.__selection_specifications = [selected, color]
-        if color is None:
-            color = self.SELECTED_COLOR
-        if self.selected:
-            pygame.draw.rect(self.surface, color, self.surface.get_rect(), 3)
-        else:
-            self.clean_image(clean_text=False, clean_image=False)
-
-        self.changed_image = True
-
     def set_image(
         self,
         image: pygame.Surface,
         pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         size: Union[util.Size, Tuple[int, int], List[int]] = None,
-        is_cleaning_call: bool = False
+        redraw: bool = True
     ) -> None:
-        if not is_cleaning_call:
-            self.clean_image(clean_text=False, clean_selected=False)
-        self.__image_specifications = [image.copy(), pos, size]
+        if redraw:
+            self.clean_surface()
         if size is not None:
             image = pygame.transform.scale(image, size)
         rect = image.get_rect()
         pos = WidgetPosition(pos, rect, self.rect)
+        # make sure transform is not reopeaditly triggered
+        self.__image_specifications = [image.copy(), pos, None]
         self.surface.blit(image, pos.position)
-        # make sure that the selection rectangle is shown
-        if self.selected:
-            self.set_selected(True)
+        if redraw:
+            if self.__text_specifications:
+                self.set_text(*self.__text_specifications, redraw=False)
+            if self.__selection_specifications:
+                self.set_selected(*self.__selection_specifications, redraw=False)
         self.changed_image = True
 
     def set_text(
@@ -409,22 +408,43 @@ class Label(Widget):
         pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
-        is_cleaning_call: bool = False
+        redraw: bool = True
     ) -> None:
-        if not is_cleaning_call:
-            self.clean_image(clean_image=False, clean_selected=False)
-        self.__text_specifications = [text, pos, color, font_size]
+
         s = con.FONTS[font_size].render(str(text), True, color)
         rect = s.get_rect()
         pos = WidgetPosition(pos, rect, self.rect)
+        self.__text_specifications = [text, pos, color, font_size]
 
+        if redraw:
+            self.clean_surface(clean_image=False)
         self.surface.blit(s, pos.position)
         # make sure that the selection rectangle is shown
-        if self.selected:
-            self.set_selected(True)
+        if redraw:
+            if self.__selection_specifications:
+                self.set_selected(*self.__selection_specifications, redraw=False)
         self.changed_image = True
 
-    def clean_image(
+    def set_selected(
+        self,
+        selected: bool,
+        color: Union[Tuple[int, int, int], List[int]] = None,
+        redraw: bool = True
+    ) -> None:
+        super().set_selected(selected)
+        if not self.selectable:
+            return
+        self.__selection_specifications = [selected, color]
+        if redraw:
+            self.clean_surface(clean_text=False, clean_image=False)
+        if color is None:
+            color = self.SELECTED_COLOR
+        if self.selected:
+            pygame.draw.rect(self.surface, color, self.surface.get_rect(), 3)
+
+        self.changed_image = True
+
+    def clean_surface(
         self,
         clean_text: bool = True,
         clean_selected: bool = True,
@@ -434,11 +454,11 @@ class Label(Widget):
         # reset the surface and reado anything that should not have been cleared
         self.surface = self.orig_surface.copy()
         if not clean_image and self.__image_specifications:
-            self.set_image(*self.__image_specifications, is_cleaning_call=True)
+            self.set_image(*self.__image_specifications, redraw=False)
         if not clean_text and self.__text_specifications:
-            self.set_text(*self.__text_specifications, is_cleaning_call=True)
-        if not clean_selected and self.selected:
-            self.set_selected(*self.__selection_specifications)
+            self.set_text(*self.__text_specifications, redraw=False)
+        if not clean_selected and self.__selection_specifications:
+            self.set_selected(*self.__selection_specifications, redraw=False)
         self.changed_image = True
 
 
@@ -454,12 +474,10 @@ class Button(Label):
         super().__init__(size, **kwargs)
         if hover_image is not None:
             hover_surface = hover_image
-            self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[hover_surface],
-                                          unhover_values=[self.surface])
         else:
             hover_surface = self.create_hover_surface()
-            self.add_hover_event_listener(self.set_image, self.clean_image, hover_values=[hover_surface],
-                                          unhover_values=[False, False, True])
+        self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[hover_surface],
+                                      unhover_values=[self.surface])
 
     def create_hover_surface(self) -> pygame.Surface:
         """Fill all pixels of color self.color with a new color. Method is relatovely heavy"""
@@ -626,7 +644,7 @@ class SelectionList(Pane):
         line_width = self.rect.width - self.rect.height
         line_height = self.LINE_HEIGHT
         self.__show_label = Label((line_width, line_height), self.color, border=True, text=self.__options[0],
-                                  font_size=self.__FONT_SIZE)
+                                  font_size=self.__FONT_SIZE, selectable=False)
         self.add_widget((0, 0), self.__show_label)
         self.__expand_button = Button((line_height, line_height), image=self.__EXPAND_BUTTON_IMAGE.images()[0],
                                       hover_image=self.__EXPAND_BUTTON_HOVER_IMAGE.images()[0], border=True)
@@ -820,6 +838,8 @@ class Frame(entities.ZoomableEntity, Pane):
         while hovered is not None and len(hovered) > 0 and len(leftover_events) > 0:
             widget = hovered.pop()
             leftover_events = widget.handle_events(leftover_events)
+        # handle all leftovers for the selected widget
+
         # trigger an unhover event for all widgets not hovered
         unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_HOVER)]
         for widget in unhovered:
@@ -1014,3 +1034,133 @@ class ItemDisplay(Label):
         super().wupdate()
         if self.item is not None and self.previous_total != self.item.quantity:
             self.__add_quantity_text()
+
+
+# class TextBox(ScrollPane):
+#     INNITIAL_KEY_REPEAT_SPEED = 180
+#     KEY_REPEAT_SPEED = 15
+#
+#     def __init__(self, size, **kwargs):
+#         super().__init__(size, **kwargs)
+#         self.text_log = TextLog()
+#         self.current_line = Line()
+#         self.blinker_speed = 500
+#         self.blinker_visible = [True, self.blinker_speed]
+#         self.processed = True
+#         self.process_line = self.current_line
+#         self.command_tree = None
+#         # innitial, actual
+#         self.key_repeat_speed = [0, 0]
+#
+#     def wupdate(self, *args):
+#         super().wupdate(*args)
+#         self.blinker_visible[1] -= con.GAME_TIME.get_time()
+#         if self.blinker_visible[1] <= 0:
+#             self.blinker_visible = [not self.blinker_visible[0], self.blinker_speed]
+#         for event in self.events:
+#             if event.type == KEYDOWN:
+#                 self.pressed_keys[event.key] = True
+#                 if len(event.unicode) == 1:
+#                     self.active_key = event.unicode
+#                 self.key_repeat_speed = [self.INNITIAL_KEY_REPEAT_SPEED, 0]
+#             if event.type == KEYUP:
+#                 unpressed_char = self.pressed_keys[event.key]
+#                 self.active_key = None
+#                 self.pressed_keys[event.key] = False
+#         if self.key_repeat_speed[1] <= 0:
+#             self.key_repeat_speed[1] = self.KEY_REPEAT_SPEED
+#             if self.pressed_keys[K_BACKSPACE]:
+#                 if len(self.current_line) > 0:
+#                     self.current_line.delete()
+#             elif self.pressed_keys[K_RETURN]:
+#                 self.text_log.append(self.current_line)
+#                 self.process_line = self.current_line
+#                 self.processed = False
+#                 self.current_line = Line()
+#                 self.text_log.location = 0
+#             elif self.pressed_keys[K_UP]:
+#                 self.current_line = self.text_log.line_up()
+#             elif self.pressed_keys[K_DOWN]:
+#                 self.current_line = self.text_log.line_down()
+#             elif self.pressed_keys[K_LEFT]:
+#                 self.current_line - 1
+#             elif self.pressed_keys[K_RIGHT]:
+#                 self.current_line + 1
+#             elif self.pressed_keys[K_TAB]:
+#                 self.__create_tab_information()
+#             else:
+#                 if self.active_key:
+#                     self.current_line.append(self.active_key)
+#         else:
+#             if self.key_repeat_speed[0] > 0:
+#                 self.key_repeat_speed[0] -= con.GAME_TIME.get_time()
+#             elif self.key_repeat_speed[1] > 0:
+#                 self.key_repeat_speed[1] -= con.GAME_TIME.get_time()
+#
+#     def _get_image(self):
+#         image = super()._get_image()
+#         text = self.current_line.render_str(blinker = self.blinker_visible[0], header = ">:")
+#         image.blit(text, (10, self.rect.height - text.get_size()[1]))
+#         prev_line_heigth = text.get_size()[1]
+#         for i, line in enumerate(iter(self.text_log)):
+#             if self.rect.height - prev_line_heigth < 0:
+#                 break
+#             text = line.render_str()
+#             prev_line_heigth += text.get_size()[1]
+#             image.blit(text, (10, self.rect.height - prev_line_heigth))
+#         return image.convert()
+#
+#     def add_error_message(self, text):
+#         message = "ERROR: "
+#         self.text_log.append_um(Line(text = message + text, color = (163, 28, 23)))
+#
+#     def add_conformation_message(self, text):
+#         self.text_log.append_um(Line(text = text, color = (25, 118, 168)))
+
+
+class TextLine(Label):
+    __BLINKER_SPEED = 500
+
+    def __init__(self, width, text="", text_font=20, text_color=(0, 0, 0), **kwargs):
+        self.__text_font = text_font
+        self.__font = con.FONTS[text_font]
+        self.__text_color = text_color
+        size = (width, self.__font.size("T")[1] + 10)
+        super().__init__(size, **kwargs)
+
+        self.text = text
+        self.__blinker_timer = 0
+        self.__blinker_active = False
+        self.line_location = len(self.text)
+
+    def wupdate(self):
+        super().wupdate()
+        self.__blinker_timer += con.GAME_TIME.get_time()
+        if self.__blinker_timer > self.__BLINKER_SPEED:
+            self.__blinker_timer = 0
+            self.__blinker_active = not self.__blinker_active
+
+    def render(self, blinker=False, header=""):
+        if blinker:
+            text = "{}{}|{}".format(header, self.text[:self.line_location], self.text[self.line_location:])
+        else:
+            text = "{}{}".format(header, self.text)
+        self.set_text(text, (0, "C"), self.__text_color, self.__text_font)
+
+    def __len__(self):
+        return len(self.text)
+
+    def move_line_location(self, value):
+        if value > 0 and self.line_location + value <= len(self.text):
+            self.line_location += value
+        elif value < 0 and self.line_location + value >= 0:
+            self.line_location += value
+
+    def append(self, value):
+        self.text = self.text[:self.line_location] + value + self.text[self.line_location:]
+        self.line_location += len(value)
+
+    def delete(self):
+        if self.line_location > 0:
+            self.line_location -= 1
+            self.text = self.text[:self.line_location] + self.text[self.line_location + 1:]

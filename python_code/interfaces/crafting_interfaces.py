@@ -292,7 +292,7 @@ class GridLabel(widgets.Label):
             item_image = pygame.transform.scale(item_image, util.Size(*self.rect.size) - (4, 4))
             self.set_image(item_image)
         else:
-            self.clean_image()
+            self.clean_surface()
         self.__item_image = item_image
 
     def set_present(self, value):
