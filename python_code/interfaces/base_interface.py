@@ -1,5 +1,6 @@
 import pygame
 from pygame.locals import *
+from typing import List
 
 import interfaces.managers as window_managers
 import interfaces.interface_utility as interfacer_util
@@ -117,22 +118,20 @@ class Window(widgets.Frame):
         if value == False:
             self.__moving_window = False
 
-    def handle_events(self, events):
-        """
-        Handle events issued by the user not consumed by the Main module. This
-        function can also be used as an update method for all things that only
-        need updates with new inputs.
-
-        Note: this will trager quite often considering that moving the mouse is
-        also considered an event.
-
-        :param events: a list of events
-        """
+    def handle_window_events(
+        self,
+        events: List[pygame.event.Event],
+        type_: str,
+        consume_events: bool = True
+    ) -> List[pygame.event.Event]:
         if self.is_showing():
-            leftovers = super().handle_events(events)
+            if type_ == "mouse":
+                leftovers = self.handle_mouse_events(events, consume_events=consume_events)
+            elif type_ == "other":
+                leftovers = self.handle_other_events(events, consume_events=consume_events)
+            return leftovers
         else:
-            leftovers = events
-        return leftovers
+            return events
 
     @classmethod
     def name(self):

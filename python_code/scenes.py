@@ -136,13 +136,21 @@ class MainMenu(Scene):
         quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
-        # y_coord += 50
-        # test_list = widgets.TextLine(50)
-        # self.main_menu_frame.add_widget(("center", y_coord), test_list)
+        y_coord += 50
+        test_list = widgets.TextLine(50)
+        self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling(consume=consume)
-        self.main_menu_frame.handle_events(events)
+        mouse_events = []
+        other_events = []
+        for event in events:
+            if event.type in (con.MOUSEBUTTONDOWN, con.MOUSEBUTTONUP):
+                mouse_events.append(event)
+            else:
+                other_events.append(event)
+        self.main_menu_frame.handle_mouse_events(mouse_events, consume_events=consume)
+        self.main_menu_frame.handle_other_events(other_events, consume_events=consume)
 
     def __open_game_settings(self):
         global scenes
@@ -293,7 +301,15 @@ class GameSettingsScene(Scene):
 
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling(consume=consume)
-        self.settings_menu_frame.handle_events(events)
+        mouse_events = []
+        other_events = []
+        for event in events:
+            if event.type in (con.MOUSEBUTTONDOWN, con.MOUSEBUTTONUP):
+                mouse_events.append(event)
+            else:
+                other_events.append(event)
+        self.settings_menu_frame.handle_mouse_events(mouse_events, consume_events=consume)
+        self.settings_menu_frame.handle_other_events(other_events, consume_events=consume)
 
 
 class LoadingScreen(Scene):

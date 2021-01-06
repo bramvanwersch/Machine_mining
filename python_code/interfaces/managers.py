@@ -101,7 +101,7 @@ class WindowManager:
         leftover_events = []
         if len(self.window_order) > 0:
             event_handling_window = self.window_order[-1]
-            leftover_events = event_handling_window.handle_events(window_normal_events)
+            leftover_events = event_handling_window.handle_events(window_normal_events, type_="other")
         if hovered_window:
-            leftover_events.extend(hovered_window.handle_events(window_mouse_events))
+            leftover_events.extend(hovered_window.handle_events(window_mouse_events, type_="mouse"))
         return leftover_events + ignored_events

@@ -203,8 +203,6 @@ class Widget(event_handlers.EventHandler, ABC):
         self.board_position = list(board_pos)
         if tooltip:
             self.add_tooltip(tooltip)
-        if self.selectable:
-            self.add_key_event_listener(1, self.set_selected, values=[True], types=["unpressed"])
 
     def wupdate(self):
         """
@@ -704,6 +702,7 @@ class SelectionList(Pane):
 class Frame(entities.ZoomableEntity, Pane):
     """Pane that belongs to a sprite group thus it is drawn whenever it is visible"""
     selected_widget: Union[None, Widget]
+    __select_top_widget_flag: bool
 
     def __init__(
         self,
@@ -715,12 +714,15 @@ class Frame(entities.ZoomableEntity, Pane):
         Pane.__init__(self, size, board_pos=pos, **kwargs)
         entities.ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
+        self.__select_top_widget_flag = False
         self.__previous_board_pos = self.board_position
+        # frame events are not consumed when triggered
         self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
         self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
         self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
         self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
         self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
+        self.add_key_event_listener(1, self.__select_top_widget, types=["unpressed"])
 
     def update(self, *args):
         """Call pane wupdate method in order to update relevant widgets """
@@ -729,6 +731,9 @@ class Frame(entities.ZoomableEntity, Pane):
             self.move([self.__previous_board_pos[0] - self.rect.left, self.__previous_board_pos[1] - self.rect.top])
             self.__previous_board_pos = self.rect.topleft
         self.wupdate(*args)
+
+    def __select_top_widget(self):
+        self.__select_top_widget_flag = True
 
     def set_zoom(
         self,
@@ -816,15 +821,13 @@ class Frame(entities.ZoomableEntity, Pane):
         if self.selected_widget is not None:
             self.selected_widget.action(1, "unpressed")
 
-    def handle_events(
-        self,
-        events: List[pygame.event.Event],
-        consume_events: bool = True
-    ) -> List[pygame.event.Event]:
-        """Handle events on this frame. First triggering events on the frame itself then from most fron selected widget
-        backwards"""
+    def handle_mouse_events(
+            self,
+            events: List[pygame.event.Event],
+            consume_events: bool = True
+    ):
         # events that are triggered on this frame widget trigger first
-        leftover_events = super().handle_events(events, consume_events)
+        leftover_events = self.handle_events(events, consume_events=False)
         pos = pygame.mouse.get_pos()
         if self.static:
             # the group 0 is always a CameraAwareLayerUpdates spritegroup
@@ -833,17 +836,34 @@ class Frame(entities.ZoomableEntity, Pane):
         hovered, unhovered = self._find_hovered_widgets(pos)
         # add a hover event that can be consumed in the same way as normal events.
         leftover_events.append(pygame.event.Event(con.HOVER, button=con.BTN_HOVER))
-        # TODO think about how to handle key events for specific widgets.
-        # handle all events from the most front widget to the most back one.
-        while hovered is not None and len(hovered) > 0 and len(leftover_events) > 0:
-            widget = hovered.pop()
-            leftover_events = widget.handle_events(leftover_events)
-        # handle all leftovers for the selected widget
-
+        # handle all events from the most front widget to the most back one. --> this should be mouse events
+        if hovered is not None:
+            while len(hovered) > 0 and len(leftover_events) > 0:
+                widget = hovered.pop()
+                if self.__select_top_widget_flag is True and widget.selectable:
+                    self.__select_top_widget_flag = False
+                    if self.selected_widget:
+                        self.selected_widget.set_selected(False)
+                    self.selected_widget = widget
+                    self.selected_widget.set_selected(True)
+                leftover_events = widget.handle_events(leftover_events, consume_events=consume_events)
+        # make sure the flag is false at the end
+        self.__select_top_widget_flag = False
         # trigger an unhover event for all widgets not hovered
         unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_HOVER)]
         for widget in unhovered:
             widget.handle_events(unhover_event)
+        return leftover_events
+
+    def handle_other_events(
+            self,
+            events: List[pygame.event.Event],
+            consume_events: bool = True
+    ):
+        """Handle all events but key events for the widget that is selected"""
+        leftover_events = self.handle_events(events, consume_events=consume_events)
+        if self.selected_widget:
+            leftover_events = self.selected_widget.handle_events(leftover_events)
         return leftover_events
 
 
