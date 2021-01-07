@@ -171,7 +171,7 @@ class Widget(event_handlers.EventHandler, ABC):
     """
     Basic widget class
     """
-    __listened_for_events: Dict[int, WidgetEvent]
+    _listened_for_events: Dict[int, WidgetEvent]
     selectable: bool
     selected: bool
     rect: pygame.Rect
@@ -191,7 +191,7 @@ class Widget(event_handlers.EventHandler, ABC):
     ):
         recordable_keys = recordable_keys if recordable_keys else None
         super().__init__(recordable_keys)
-        self.__listened_for_events = {}
+        self._listened_for_events = {}
         # are allowed to select
         self.selectable = selectable
         # state of selection
@@ -219,13 +219,16 @@ class Widget(event_handlers.EventHandler, ABC):
 
     def action(
         self,
-        key: int,
+        key: event_handlers.Key,
         _type: str
     ) -> Any:
         """Activates an action function bound to a certain key."""
-        self.__listened_for_events[key](_type)
+        self._listened_for_events[key.name](_type)
 
-    def add_tooltip(self, tooltip):
+    def add_tooltip(
+        self,
+        tooltip: "Tooltip"
+    ) -> None:
         self.add_hover_event_listener(tooltip.show_tooltip, tooltip.show_tooltip, hover_values=[True],
                                       unhover_values=[False])
 
@@ -238,10 +241,10 @@ class Widget(event_handlers.EventHandler, ABC):
         no_repeat: bool = False
     ) -> None:
         """Link functions to key events and trigger when appropriate"""
-        if key in self.__listened_for_events:
-            self.__listened_for_events[key].add_action(action_function, values, types)
+        if key in self._listened_for_events:
+            self._listened_for_events[key].add_action(action_function, values, types)
         else:
-            self.__listened_for_events[key] = WidgetEvent(action_function, values, types, no_repeat)
+            self._listened_for_events[key] = WidgetEvent(action_function, values, types, no_repeat)
             self.add_recordable_key(key)
 
     def add_hover_event_listener(
@@ -260,6 +263,7 @@ class Widget(event_handlers.EventHandler, ABC):
     def handle_events(
         self,
         events: List,
+        type_: str = None,
         consume_events: bool = True
     ) -> List[pygame.event.Event]:
         leftover_events = super().handle_events(events, consume_events)
@@ -269,8 +273,7 @@ class Widget(event_handlers.EventHandler, ABC):
         keys = [*zip(pressed, ["pressed"] * len(pressed)),
                 *zip(unpressed, ["unpressed"] * len(unpressed))]
         for key, _type in keys:
-            if key.name in self.__listened_for_events:
-                self.action(key.name, _type)
+            self.action(key, _type)
         return leftover_events
 
     def set_selected(
@@ -691,11 +694,17 @@ class SelectionList(Pane):
     def handle_events(
         self,
         events: List,
+        type_: str = None,
         consume_events: bool = True
     ) -> List[pygame.event.Event]:
-        leftover_events = super().handle_events(events, consume_events=consume_events)
+        leftover_events = super().handle_events(events, type_=type_, consume_events=consume_events)
         if self.__expanded_options:
-            leftover_events = self.__expanded_options_frame.handle_events(events, consume_events=consume_events)
+            if type_ == "mouse":
+                leftover_events = self.__expanded_options_frame.handle_mouse_events(leftover_events,
+                                                                                    consume_events=consume_events)
+            elif type_ == "other":
+                leftover_events = self.__expanded_options_frame.handle_other_events(leftover_events,
+                                                                                    consume_events=consume_events)
         return leftover_events
 
 
@@ -819,7 +828,7 @@ class Frame(entities.ZoomableEntity, Pane):
     def __activate_selected_widget(self) -> None:
         """perform the action bound to a widget on mouse-1"""
         if self.selected_widget is not None:
-            self.selected_widget.action(1, "unpressed")
+            self.selected_widget.action(event_handlers.Key(1), "unpressed")
 
     def handle_mouse_events(
             self,
@@ -827,7 +836,7 @@ class Frame(entities.ZoomableEntity, Pane):
             consume_events: bool = True
     ):
         # events that are triggered on this frame widget trigger first
-        leftover_events = self.handle_events(events, consume_events=False)
+        leftover_events = self.handle_events(events, type_="mouse", consume_events=False)
         pos = pygame.mouse.get_pos()
         if self.static:
             # the group 0 is always a CameraAwareLayerUpdates spritegroup
@@ -846,13 +855,13 @@ class Frame(entities.ZoomableEntity, Pane):
                         self.selected_widget.set_selected(False)
                     self.selected_widget = widget
                     self.selected_widget.set_selected(True)
-                leftover_events = widget.handle_events(leftover_events, consume_events=consume_events)
+                leftover_events = widget.handle_events(leftover_events, type_="mouse", consume_events=consume_events)
         # make sure the flag is false at the end
         self.__select_top_widget_flag = False
         # trigger an unhover event for all widgets not hovered
         unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_HOVER)]
         for widget in unhovered:
-            widget.handle_events(unhover_event)
+            widget.handle_events(unhover_event, type_="mouse")
         return leftover_events
 
     def handle_other_events(
@@ -861,9 +870,11 @@ class Frame(entities.ZoomableEntity, Pane):
             consume_events: bool = True
     ):
         """Handle all events but key events for the widget that is selected"""
-        leftover_events = self.handle_events(events, consume_events=consume_events)
+        leftover_events = self.handle_events(events, type_="other", consume_events=consume_events)
+
         if self.selected_widget:
-            leftover_events = self.selected_widget.handle_events(leftover_events)
+            leftover_events = self.selected_widget.handle_events(leftover_events, type_="other",
+                                                                 consume_events=consume_events)
         return leftover_events
 
 
@@ -1146,7 +1157,7 @@ class TextLine(Label):
         self.__font = con.FONTS[text_font]
         self.__text_color = text_color
         size = (width, self.__font.size("T")[1] + 10)
-        super().__init__(size, **kwargs)
+        super().__init__(size, color=(100, 100, 100), **kwargs, recordable_keys=con.KEY_KEYS)
 
         self.text = text
         self.__blinker_timer = 0
@@ -1160,15 +1171,22 @@ class TextLine(Label):
             self.__blinker_timer = 0
             self.__blinker_active = not self.__blinker_active
 
+    def action(
+        self,
+        key: event_handlers.Key,
+        _type: str
+    ) -> Any:
+        self.add_letter()
+
+    def add_letter(self, key):
+        print(pygame.key.name(key))
+
     def render(self, blinker=False, header=""):
         if blinker:
             text = "{}{}|{}".format(header, self.text[:self.line_location], self.text[self.line_location:])
         else:
             text = "{}{}".format(header, self.text)
         self.set_text(text, (0, "C"), self.__text_color, self.__text_font)
-
-    def __len__(self):
-        return len(self.text)
 
     def move_line_location(self, value):
         if value > 0 and self.line_location + value <= len(self.text):
