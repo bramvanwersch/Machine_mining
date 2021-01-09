@@ -138,7 +138,7 @@ class MainMenu(Scene):
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
         y_coord += 50
-        test_list = widgets.TextLine(50)
+        test_list = widgets.MultilineTextBox((500, 200))
         self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):

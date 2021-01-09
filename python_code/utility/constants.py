@@ -76,6 +76,16 @@ KEYBOARD_KEYS = \
      K_UNDERSCORE, K_UNKNOWN, K_UP, K_a, K_b, K_c, K_d, K_e, K_f, K_g, K_h, K_i, K_j, K_k, K_l, K_m, K_n, K_o,
      K_p, K_q, K_r, K_s, K_t, K_u, K_v, K_w, K_x, K_y, K_z, 1, 2, 3, 4, 5]
 
+KEY_KEYS = \
+    [K_0, K_1, K_2, K_3, K_4, K_5, K_6, K_7, K_8, K_9, K_AMPERSAND,
+     K_ASTERISK, K_AT, K_BACKQUOTE, K_BACKSLASH, K_BACKSPACE, K_BREAK, K_CARET, K_COLON, K_COMMA, K_DELETE, K_DOLLAR,
+     K_DOWN, K_END, K_EQUALS, K_EURO, K_EXCLAIM, K_GREATER, K_HASH, K_HELP, K_HOME, K_INSERT, K_KP0, K_KP1, K_KP2,
+     K_KP3, K_KP4, K_KP5, K_KP6, K_KP7, K_KP8, K_KP9, K_KP_DIVIDE, K_KP_ENTER, K_KP_EQUALS, K_KP_MINUS, K_KP_MULTIPLY,
+     K_KP_PERIOD, K_KP_PLUS, K_LEFT, K_LEFTBRACKET, K_LEFTPAREN, K_LESS, K_MINUS, K_PERIOD, K_PLUS, K_QUESTION,
+     K_RIGHT, K_RIGHTBRACKET, K_RIGHTPAREN, K_RSHIFT, K_SEMICOLON, K_SLASH, K_SPACE, K_TAB, K_UNDERSCORE, K_UP, K_a,
+     K_b, K_c, K_d, K_e, K_f, K_g, K_h, K_i, K_j, K_k, K_l, K_m, K_n, K_o, K_p, K_q, K_r, K_s, K_t, K_u, K_v, K_w, K_x,
+     K_y, K_z, K_RETURN]
+
 # 2 different hover types
 HOVER = USEREVENT + 1
 UNHOVER = USEREVENT + 2

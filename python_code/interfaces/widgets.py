@@ -5,6 +5,7 @@
 from abc import ABC
 import pygame
 from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar, TYPE_CHECKING
+import pyperclip
 
 # own imports
 import entities
@@ -171,7 +172,7 @@ class Widget(event_handlers.EventHandler, ABC):
     """
     Basic widget class
     """
-    _listened_for_events: Dict[int, WidgetEvent]
+    __listened_for_events: Dict[int, WidgetEvent]
     selectable: bool
     selected: bool
     rect: pygame.Rect
@@ -191,7 +192,7 @@ class Widget(event_handlers.EventHandler, ABC):
     ):
         recordable_keys = recordable_keys if recordable_keys else None
         super().__init__(recordable_keys)
-        self._listened_for_events = {}
+        self.__listened_for_events = {}
         # are allowed to select
         self.selectable = selectable
         # state of selection
@@ -223,7 +224,7 @@ class Widget(event_handlers.EventHandler, ABC):
         _type: str
     ) -> Any:
         """Activates an action function bound to a certain key."""
-        self._listened_for_events[key.name](_type)
+        self.__listened_for_events[key.name](_type)
 
     def add_tooltip(
         self,
@@ -241,24 +242,26 @@ class Widget(event_handlers.EventHandler, ABC):
         no_repeat: bool = False
     ) -> None:
         """Link functions to key events and trigger when appropriate"""
-        if key in self._listened_for_events:
-            self._listened_for_events[key].add_action(action_function, values, types)
+        if key in self.__listened_for_events:
+            self.__listened_for_events[key].add_action(action_function, values, types)
         else:
-            self._listened_for_events[key] = WidgetEvent(action_function, values, types, no_repeat)
+            self.__listened_for_events[key] = WidgetEvent(action_function, values, types, no_repeat)
             self.add_recordable_key(key)
 
     def add_hover_event_listener(
         self,
-        hover_action_function: Callable,
-        unhover_action_function: Callable,
+        hover_action_function: Callable = None,
+        unhover_action_function: Callable = None,
         hover_values: List = None,
         unhover_values: List = None
     ) -> None:
         """Link functions to hover events and trigger when appropriate"""
-        self.add_key_event_listener(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"],
-                                    no_repeat=True)
-        self.add_key_event_listener(con.BTN_HOVER, unhover_action_function, values=unhover_values, types=["unpressed"],
-                                    no_repeat=True)
+        if hover_action_function:
+            self.add_key_event_listener(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"],
+                                        no_repeat=True)
+        if unhover_action_function:
+            self.add_key_event_listener(con.BTN_HOVER, unhover_action_function, values=unhover_values,
+                                        types=["unpressed"], no_repeat=True)
 
     def handle_events(
         self,
@@ -273,8 +276,15 @@ class Widget(event_handlers.EventHandler, ABC):
         keys = [*zip(pressed, ["pressed"] * len(pressed)),
                 *zip(unpressed, ["unpressed"] * len(unpressed))]
         for key, _type in keys:
-            self.action(key, _type)
+            if key.name in self.__listened_for_events:
+                self.action(key, _type)
         return leftover_events
+
+    def add_events(
+        self,
+        events: List[pygame.event.Event]
+    ):
+        super().handle_events(events)
 
     def set_selected(
         self,
@@ -511,9 +521,10 @@ class Pane(Label):
     def __init__(
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
+        selectable: bool = False,
         **kwargs
     ):
-        Label.__init__(self, size, selectable=False, **kwargs)
+        Label.__init__(self, size, selectable=selectable, **kwargs)
         self.widgets = []
 
     def add_widget(
@@ -535,6 +546,14 @@ class Pane(Label):
         self.widgets.append(widget)
         self.orig_surface.blit(widget.surface, pos)
         self.surface = self.orig_surface.copy()
+
+    def remove_widget(self, widget):
+        self.widgets.remove(widget)
+        cover_surface = pygame.Surface(widget.rect.size)
+        cover_surface.fill(self.color)
+        self.orig_surface.blit(cover_surface, widget.rect.topleft)
+        self.surface = self.orig_surface.copy()
+        self.changed_image = True
 
     def wupdate(self, *args) -> None:
         """Update all the widgets in this container based on the changed_image attribute"""
@@ -726,12 +745,12 @@ class Frame(entities.ZoomableEntity, Pane):
         self.__select_top_widget_flag = False
         self.__previous_board_pos = self.board_position
         # frame events are not consumed when triggered
-        self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
-        self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
-        self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
-        self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
-        self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
-        self.add_key_event_listener(1, self.__select_top_widget, types=["unpressed"])
+        # self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
+        # self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
+        # self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
+        # self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
+        # self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
+        self.add_key_event_listener(1, self.__select_top_widget, types=["pressed", "unpressed"])
 
     def update(self, *args):
         """Call pane wupdate method in order to update relevant widgets """
@@ -827,7 +846,8 @@ class Frame(entities.ZoomableEntity, Pane):
 
     def __activate_selected_widget(self) -> None:
         """perform the action bound to a widget on mouse-1"""
-        if self.selected_widget is not None:
+        # make sure an action is bound
+        if self.selected_widget is not None and self.get_key(1) is not None:
             self.selected_widget.action(event_handlers.Key(1), "unpressed")
 
     def handle_mouse_events(
@@ -856,8 +876,12 @@ class Frame(entities.ZoomableEntity, Pane):
                     self.selected_widget = widget
                     self.selected_widget.set_selected(True)
                 leftover_events = widget.handle_events(leftover_events, type_="mouse", consume_events=consume_events)
-        # make sure the flag is false at the end
-        self.__select_top_widget_flag = False
+        # if clicked but no selectable widget was found the user clicked outside them to deselect
+        if self.__select_top_widget_flag is True:
+            self.__select_top_widget_flag = False
+            if self.selected_widget:
+                self.selected_widget.set_selected(False)
+                self.selected_widget = None
         # trigger an unhover event for all widgets not hovered
         unhover_event = [pygame.event.Event(con.UNHOVER, button=con.BTN_HOVER)]
         for widget in unhovered:
@@ -1067,138 +1091,340 @@ class ItemDisplay(Label):
             self.__add_quantity_text()
 
 
-# class TextBox(ScrollPane):
-#     INNITIAL_KEY_REPEAT_SPEED = 180
-#     KEY_REPEAT_SPEED = 15
-#
-#     def __init__(self, size, **kwargs):
-#         super().__init__(size, **kwargs)
-#         self.text_log = TextLog()
-#         self.current_line = Line()
-#         self.blinker_speed = 500
-#         self.blinker_visible = [True, self.blinker_speed]
-#         self.processed = True
-#         self.process_line = self.current_line
-#         self.command_tree = None
-#         # innitial, actual
-#         self.key_repeat_speed = [0, 0]
-#
-#     def wupdate(self, *args):
-#         super().wupdate(*args)
-#         self.blinker_visible[1] -= con.GAME_TIME.get_time()
-#         if self.blinker_visible[1] <= 0:
-#             self.blinker_visible = [not self.blinker_visible[0], self.blinker_speed]
-#         for event in self.events:
-#             if event.type == KEYDOWN:
-#                 self.pressed_keys[event.key] = True
-#                 if len(event.unicode) == 1:
-#                     self.active_key = event.unicode
-#                 self.key_repeat_speed = [self.INNITIAL_KEY_REPEAT_SPEED, 0]
-#             if event.type == KEYUP:
-#                 unpressed_char = self.pressed_keys[event.key]
-#                 self.active_key = None
-#                 self.pressed_keys[event.key] = False
-#         if self.key_repeat_speed[1] <= 0:
-#             self.key_repeat_speed[1] = self.KEY_REPEAT_SPEED
-#             if self.pressed_keys[K_BACKSPACE]:
-#                 if len(self.current_line) > 0:
-#                     self.current_line.delete()
-#             elif self.pressed_keys[K_RETURN]:
-#                 self.text_log.append(self.current_line)
-#                 self.process_line = self.current_line
-#                 self.processed = False
-#                 self.current_line = Line()
-#                 self.text_log.location = 0
-#             elif self.pressed_keys[K_UP]:
-#                 self.current_line = self.text_log.line_up()
-#             elif self.pressed_keys[K_DOWN]:
-#                 self.current_line = self.text_log.line_down()
-#             elif self.pressed_keys[K_LEFT]:
-#                 self.current_line - 1
-#             elif self.pressed_keys[K_RIGHT]:
-#                 self.current_line + 1
-#             elif self.pressed_keys[K_TAB]:
-#                 self.__create_tab_information()
-#             else:
-#                 if self.active_key:
-#                     self.current_line.append(self.active_key)
-#         else:
-#             if self.key_repeat_speed[0] > 0:
-#                 self.key_repeat_speed[0] -= con.GAME_TIME.get_time()
-#             elif self.key_repeat_speed[1] > 0:
-#                 self.key_repeat_speed[1] -= con.GAME_TIME.get_time()
-#
-#     def _get_image(self):
-#         image = super()._get_image()
-#         text = self.current_line.render_str(blinker = self.blinker_visible[0], header = ">:")
-#         image.blit(text, (10, self.rect.height - text.get_size()[1]))
-#         prev_line_heigth = text.get_size()[1]
-#         for i, line in enumerate(iter(self.text_log)):
-#             if self.rect.height - prev_line_heigth < 0:
-#                 break
-#             text = line.render_str()
-#             prev_line_heigth += text.get_size()[1]
-#             image.blit(text, (10, self.rect.height - prev_line_heigth))
-#         return image.convert()
-#
-#     def add_error_message(self, text):
-#         message = "ERROR: "
-#         self.text_log.append_um(Line(text = message + text, color = (163, 28, 23)))
-#
-#     def add_conformation_message(self, text):
-#         self.text_log.append_um(Line(text = text, color = (25, 118, 168)))
+class MultilineTextBox(Pane):
+    __SELECTION_COLOR = (0, 255, 0, 100)
+    __BORDER_SPACING = 3
+    __INNITIAL_KEY_REPEAT_SPEED = 250
+    __KEY_REPEAT_SPEED = 25
+
+    __lines: List["_TextLine"]
+
+    def __init__(self, size, font_size=20, text_color=(0, 0, 0), lines=None, **kwargs):
+        self.__font_size = font_size
+        self.__text_color = text_color
+        super().__init__(size, color=(255, 255, 255), selectable=True, **kwargs)
+        self.__lines = []
+        self.__selected_line_index = 0
+        self.__init_widgets()
+        self.__clicked_mouse_location = None
+        self.__line_height = self.__lines[0].rect.height
+        self.__max_lines = lines if lines else max(1, int(self.rect.height / self.__line_height) - 1)
+
+        self.pressed_key_code = None
+        self.next_key_repeat = self.__INNITIAL_KEY_REPEAT_SPEED
+
+        [self.add_key_event_listener(key, self.__add_letter, values=[key], types=["pressed"]) for key in con.KEY_KEYS]
+        [self.add_key_event_listener(key, self.unpress_key, values=[key], types=["unpressed"]) for key in con.KEY_KEYS]
+        # TODO add at some point
+        # self.add_key_event_listener(1, self.__save_clicked_mouse_location, values=[1], types=["pressed"])
+        # self.add_key_event_listener(1, self.__forget_clicked_mouse_location, types=["unpressed"])
+
+    def wupdate(self, *args) -> None:
+        super().wupdate(*args)
+        if self.__clicked_mouse_location:
+            self.draw_selection()
+        if self.pressed_key_code is not None:
+            if self.next_key_repeat <= 0:
+                self.__add_letter(self.pressed_key_code, reset_repeat=False)
+                self.next_key_repeat = self.__KEY_REPEAT_SPEED
+            else:
+                self.next_key_repeat -= con.GAME_TIME.get_time()
+            self.__lines[self.__selected_line_index].render()
+
+    def __init_widgets(self):
+        new_line = _TextLine(self.rect.width, font_size=self.__font_size)
+        self.add_widget((self.__BORDER_SPACING, self.__BORDER_SPACING), new_line)
+        self.__lines.append(new_line)
+
+    def __add_letter(self, key_code: int, reset_repeat: bool = True):
+        self.pressed_key_code = key_code
+        active_line = self.__lines[self.__selected_line_index]
+        # have the blinker always active when putting in letters
+        active_line.set_blinker(True)
+        if reset_repeat:
+            self.next_key_repeat = self.__INNITIAL_KEY_REPEAT_SPEED
+        key = self.get_key(self.pressed_key_code)
+        letter = key.event.unicode
+        modifier = key.event.mod
+        if key_code == con.K_BACKSPACE:
+            self.backspace()
+
+        elif key_code == con.K_RETURN:
+            self.add_line()
+        elif key_code == con.K_DELETE:
+            active_line.delete()
+            # if len(active_line.text) == 1:
+            #     self.remove_line()
+        elif key_code == con.K_LEFT:
+            self.move_line_location(-1)
+        elif key_code == con.K_RIGHT:
+            self.move_line_location(1)
+        elif key_code == con.K_UP:
+            self.move_line(-1)
+        elif key_code == con.K_DOWN:
+            self.move_line(1)
+        elif key_code == con.K_HOME:
+            active_line.move_line_location(-len(active_line.text))
+        elif key_code == con.K_END:
+            active_line.move_line_location(len(active_line.text))
+        else:
+            if modifier in [con.KMOD_CAPS, con.KMOD_LSHIFT, con.KMOD_RSHIFT]:
+                letter = letter.upper()
+
+            if modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_v:
+                active_line.add_text(pyperclip.paste())
+            elif modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_c:
+                # TODO changed to selected text
+                pyperclip.copy(active_line.text)
+            else:
+                if not active_line.can_append(letter):
+                    self.add_line(False)
+                    active_line = self.__lines[self.__selected_line_index]
+                active_line.append(letter)
+
+    def unpress_key(self, key_code: int):
+        if key_code == self.pressed_key_code:
+            self.pressed_key_code = None
+            self.next_key_repeat = self.__INNITIAL_KEY_REPEAT_SPEED
+
+    def add_line(self, add_newline: bool = True):
+        if len(self.__lines) > self.__max_lines:
+            return
+        old_line = self.__lines[self.__selected_line_index]
+        prev_line_text = old_line.cut(old_line.line_location, len(old_line.text))
+        old_line.set_selected(False)
+        old_line.newline = add_newline
+        self.__move_line_index(1)
+        # shift all lines down
+        for line in self.__lines[self.__selected_line_index:]:
+            copy_text = line.text
+            line.set_line_text(prev_line_text)
+            prev_line_text = copy_text
+
+        new_line = _TextLine(self.rect.width, text=prev_line_text, font_size=self.__font_size)
+        self.add_widget((self.__BORDER_SPACING, self.__line_height *
+                         len(self.__lines) + self.__BORDER_SPACING), new_line)
+        self.__lines.append(new_line)
+        self.__lines[self.__selected_line_index].set_selected(True)
+        self.__lines[self.__selected_line_index].set_line_location(0)
+        if self.__selected_line_index != len(self.__lines) - 1:
+            self.__lines[-1].set_blinker(False)
+        new_line.render()
+
+    def backspace(self):
+        active_line = self.__lines[self.__selected_line_index]
+        if not active_line.line_location == 0:
+            active_line.backspace()
+            # when active line is full and has no newline
+            if not active_line.newline and self.__selected_line_index + 1 < len(self.__lines):
+                self.merge_lines(active_line, self.__selected_line_index + 1)
+            return
+        # never remove the last line
+        if self.__selected_line_index == 0:
+            return
+        before_active_line = self.__lines[self.__selected_line_index - 1]
+        before_active_line.set_line_location(len(before_active_line.text))
+        before_active_line.backspace()
+
+        self.merge_lines(before_active_line, self.__selected_line_index)
+        active_line.set_selected(False)
+
+        self.__move_line_index(-1)
+        before_active_line.set_selected(True)
+
+    def remove_line(self, remove_index):
+        for index, line in enumerate(self.__lines[remove_index + 1:]):
+            previous_line = self.__lines[remove_index + index]
+            previous_line.set_line_text(line.text)
+        last_line = self.__lines.pop(-1)
+        self.remove_widget(last_line)
+        self.__lines[-1].set_blinker(False)
+
+    def merge_lines(self, target_line, other_line_index):
+        other_line = self.__lines[other_line_index]
+        index = 0
+        start_line_location = target_line.line_location
+        for index, letter in enumerate(other_line.text):
+            if target_line.can_append(letter):
+                target_line.append(letter)
+            else:
+                break
+        target_line.line_location = start_line_location
+        other_line.cut(0, index)
+        if len(other_line.text) == 0:
+            self.remove_line(other_line_index)
+        else:
+            other_line.render()
+
+    def move_line(self, value, location=None):
+        old_selected_line_index = self.__selected_line_index
+        self.__selected_line_index = max(0, min(len(self.__lines) - 1, self.__selected_line_index + value))
+        if old_selected_line_index != self.__selected_line_index:
+            old_line = self.__lines[old_selected_line_index]
+            new_line = self.__lines[self.__selected_line_index]
+            old_line.set_selected(False)
+            new_line.set_line_location(location if location is not None else old_line.line_location)
+            new_line.set_selected(True)
+        # move to end of line when last line
+        elif self.__selected_line_index == len(self.__lines) - 1:
+            last_line = self.__lines[self.__selected_line_index]
+            last_line.set_line_location(len(last_line.text))
+        elif self.__selected_line_index == 0:
+            first_line = self.__lines[self.__selected_line_index]
+            first_line.set_line_location(0)
+
+    def move_line_location(self, value):
+        active_line = self.__lines[self.__selected_line_index]
+        old_location = active_line.line_location
+        active_line.move_line_location(value)
+        if old_location == active_line.line_location:
+            if old_location == len(active_line.text) and value == 1 and self.__selected_line_index < self.__max_lines:
+                self.move_line(1, 0)
+            elif old_location == 0 and value == -1 and self.__selected_line_index > 0:
+                self.move_line(-1, len(self.__lines[self.__selected_line_index - 1].text))
+
+    def __move_line_index(self, value):
+        self.__selected_line_index = max(0, min(self.__max_lines, self.__selected_line_index + value))
+
+    def __save_clicked_mouse_location(self, key_code):
+        self.clean_surface(clean_image=False, clean_text=False)
+        key = self.get_key(key_code)
+        self.__clicked_mouse_location = key.event.pos
+
+    def __forget_clicked_mouse_location(self):
+        self.__clicked_mouse_location = None
+
+    def draw_selection(self):
+        self.clean_surface(clean_image=False, clean_text=False)
+        other_pos = pygame.mouse.get_pos()
+        pos = (min(other_pos[0], self.__clicked_mouse_location[0]) - self.board_position[0], 0)
+        size = (abs(other_pos[0] - self.__clicked_mouse_location[0]), self.rect.height)
+        selection_rect = pygame.Surface(size)
+        selection_rect.fill(self.__SELECTION_COLOR)
+        self.set_image(selection_rect, pos)
+
+    def set_selected(
+        self,
+        selected: bool,
+        **kwargs
+    ) -> None:
+        self.selected = selected
+        # it the this is selected then the user did not click on an internal text box so select the lowest one
+        # available
+        self.__lines[-1].set_selected(selected)
+        if not selected:
+            self.__clicked_mouse_location = None
+
+    def handle_events(
+        self,
+        events: List,
+        **kwargs
+    ) -> List[pygame.event.Event]:
+        leftovers = super().handle_events(events, **kwargs)
+        if not self.__clicked_mouse_location:
+            leftovers = self.__lines[self.__selected_line_index].handle_events(leftovers, **kwargs)
+        return leftovers
 
 
-class TextLine(Label):
+class _TextLine(Label):
     __BLINKER_SPEED = 500
 
-    def __init__(self, width, text="", text_font=20, text_color=(0, 0, 0), **kwargs):
-        self.__text_font = text_font
-        self.__font = con.FONTS[text_font]
+    def __init__(self, width, text="", font_size=20, text_color=(0, 0, 0), **kwargs):
+        self.__font_size = font_size
+        self.__font = con.FONTS[font_size]
         self.__text_color = text_color
-        size = (width, self.__font.size("T")[1] + 10)
-        super().__init__(size, color=(100, 100, 100), **kwargs, recordable_keys=con.KEY_KEYS)
+        size = (width, self.__font.size("T")[1])
+        super().__init__(size, color=(255, 255, 255), **kwargs)
 
+        self.__blinker_image =\
+            image_handling.ImageDefinition("general", (90, 10),
+                                           image_size=util.Size(self.rect.height, self.rect.height)).images()[0]
         self.text = text
         self.__blinker_timer = 0
-        self.__blinker_active = False
+        self.__blinker_active = True
         self.line_location = len(self.text)
+        # track if there is a newline at the end of the line
+        self.newline = False
 
     def wupdate(self):
         super().wupdate()
+        if not self.selected:
+            return
         self.__blinker_timer += con.GAME_TIME.get_time()
         if self.__blinker_timer > self.__BLINKER_SPEED:
             self.__blinker_timer = 0
             self.__blinker_active = not self.__blinker_active
+            self.render()
 
-    def action(
+    def set_blinker(self, value: bool):
+        self.__blinker_active = value
+        self.__blinker_timer = 0
+
+    def set_selected(
         self,
-        key: event_handlers.Key,
-        _type: str
-    ) -> Any:
-        self.add_letter()
-
-    def add_letter(self, key):
-        print(pygame.key.name(key))
-
-    def render(self, blinker=False, header=""):
-        if blinker:
-            text = "{}{}|{}".format(header, self.text[:self.line_location], self.text[self.line_location:])
+        selected: bool,
+        color: Union[Tuple[int, int, int], List[int]] = None,
+        redraw: bool = True
+    ) -> None:
+        """Do not add the highligth"""
+        self.selected = selected
+        if not selected:
+            self.__blinker_active = False
         else:
-            text = "{}{}".format(header, self.text)
-        self.set_text(text, (0, "C"), self.__text_color, self.__text_font)
+            self.__blinker_active = True
+        self.render()
+
+    def add_text(self, text: str):
+        for letter in text:
+            self.append(letter)
+
+    def set_line_text(self, text: str):
+        self.text = text
+        self.render()
+
+    def render(self):
+        self.set_text(self.text, (0, "C"), self.__text_color, self.__font_size)
+        if self.__blinker_active:
+            blinker_position = (int(self.__font.size(self.text[:self.line_location])[0] -
+                                (self.__blinker_image.get_size()[0] / 2) + 1), 0)
+            self.set_image(self.__blinker_image, blinker_position)
+        else:
+            self.clean_surface(clean_text=False)
+
+    def cut(self, start, stop):
+        if start > stop:
+            return
+        cut_text = self.text[start: stop]
+        self.text = self.text[:start] + self.text[stop + 1:]
+        if self.line_location > start:
+            self.move_line_location(len(cut_text))
+        return cut_text
+
+    def __repr__(self):
+        return f"<_TextLine object with: location: {self.line_location}, text: '{self.text}'>"
+
+    def set_line_location(self, value):
+        self.move_line_location(value - self.line_location)
 
     def move_line_location(self, value):
-        if value > 0 and self.line_location + value <= len(self.text):
-            self.line_location += value
-        elif value < 0 and self.line_location + value >= 0:
-            self.line_location += value
+        self.line_location = max(0, min(len(self.text), self.line_location + value))
+
+    def can_append(self, value):
+        return self.__font.size(self.text + value)[0] <= self.rect.width - 5
 
     def append(self, value):
+        if not self.can_append(value):
+            return
         self.text = self.text[:self.line_location] + value + self.text[self.line_location:]
-        self.line_location += len(value)
+        self.move_line_location(len(value))
+
+    def backspace(self):
+        if self.line_location > 0:
+            if self.line_location == len(self.text) and self.newline:
+                self.newline = False
+            else:
+                self.text = self.text[:self.line_location - 1] + self.text[self.line_location:]
+                self.move_line_location(-1)
 
     def delete(self):
-        if self.line_location > 0:
-            self.line_location -= 1
-            self.text = self.text[:self.line_location] + self.text[self.line_location + 1:]
+        self.text = self.text[:self.line_location] + self.text[self.line_location + 1:]
