@@ -1129,7 +1129,7 @@ class MultilineTextBox(Pane):
                 self.next_key_repeat = self.__KEY_REPEAT_SPEED
             else:
                 self.next_key_repeat -= con.GAME_TIME.get_time()
-            self.__lines[self.__selected_line_index].render()
+            self.__lines[self.__selected_line_index].text_changed = True
 
     def __init_widgets(self):
         new_line = _TextLine(self.rect.width, font_size=self.__font_size)
@@ -1209,7 +1209,7 @@ class MultilineTextBox(Pane):
         self.__lines[self.__selected_line_index].set_line_location(0)
         if self.__selected_line_index != len(self.__lines) - 1:
             self.__lines[-1].set_blinker(False)
-        new_line.render()
+        new_line.text_changed = True
 
     def backspace(self):
         active_line = self.__lines[self.__selected_line_index]
@@ -1254,7 +1254,7 @@ class MultilineTextBox(Pane):
         if len(other_line.text) == 0:
             self.remove_line(other_line_index)
         else:
-            other_line.render()
+            other_line.text_changed = True
 
     def move_line(self, value, location=None):
         old_selected_line_index = self.__selected_line_index
@@ -1345,16 +1345,20 @@ class _TextLine(Label):
         self.line_location = len(self.text)
         # track if there is a newline at the end of the line
         self.newline = False
+        self.text_changed = False
 
     def wupdate(self):
         super().wupdate()
+        if self.text_changed:
+            self.__render()
+            self.text_changed = False
         if not self.selected:
             return
         self.__blinker_timer += con.GAME_TIME.get_time()
         if self.__blinker_timer > self.__BLINKER_SPEED:
             self.__blinker_timer = 0
             self.__blinker_active = not self.__blinker_active
-            self.render()
+            self.text_changed = True
 
     def set_blinker(self, value: bool):
         self.__blinker_active = value
@@ -1372,17 +1376,25 @@ class _TextLine(Label):
             self.__blinker_active = False
         else:
             self.__blinker_active = True
-        self.render()
+        self.text_changed = True
 
-    def add_text(self, text: str):
+    def add_text(
+        self,
+        text: str
+    ) -> None:
+        """Add some text at the end of the line"""
         for letter in text:
             self.append(letter)
 
-    def set_line_text(self, text: str):
-        self.text = text
-        self.render()
+    def set_line_text(
+        self,
+        text: str
+    ) -> None:
+        """Replace the text with text"""
+        self.text = ""
+        self.add_text(text)
 
-    def render(self):
+    def __render(self):
         self.set_text(self.text, (0, "C"), self.__text_color, self.__font_size)
         if self.__blinker_active:
             blinker_position = (int(self.__font.size(self.text[:self.line_location])[0] -
