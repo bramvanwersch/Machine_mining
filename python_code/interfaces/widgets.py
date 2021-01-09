@@ -1177,9 +1177,6 @@ class MultilineTextBox(Pane):
                 # TODO changed to selected text
                 pyperclip.copy(active_line.text)
             else:
-                if not active_line.can_append(letter):
-                    self.add_line(False)
-                    active_line = self.__lines[self.__selected_line_index]
                 active_line.append(letter)
 
     def unpress_key(self, key_code: int):
@@ -1248,6 +1245,7 @@ class MultilineTextBox(Pane):
             if target_line.can_append(letter):
                 target_line.append(letter)
             else:
+                index -= 1
                 break
         target_line.line_location = start_line_location
         other_line.cut(0, index)
