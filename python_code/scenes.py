@@ -137,9 +137,9 @@ class MainMenu(Scene):
         quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
 
-        y_coord += 50
-        test_list = widgets.MultilineTextBox((500, 200))
-        self.main_menu_frame.add_widget(("center", y_coord), test_list)
+        # y_coord += 50
+        # test_list = widgets.MultilineTextBox((500, 200))
+        # self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling()
@@ -190,6 +190,22 @@ class GameSettingsScene(Scene):
         color = (173, 94, 29)
         y_coord = 100
 
+        # GENERAL OPTIONS
+        generel_options_pane = widgets.Pane((frame_rect.width - 100, 100), border=True, border_width=4,
+                                            color=color)
+        self.settings_menu_frame.add_widget(("center", y_coord), generel_options_pane)
+        local_y = 10
+        local_x = int((generel_options_pane.rect.width / 2) + 5)
+        game_name_textbox = widgets.MultilineTextBox((200, con.FONTS[22].get_linesize() + 6), font_size=22, lines=1)
+        generel_options_pane.add_widget((local_x, local_y), game_name_textbox)
+
+        local_x = int((generel_options_pane.rect.width / 2) - 135)
+        game_name_label = widgets.Label((140, con.FONTS[22].get_linesize()), color=color, text="Name:", font_size=22,
+                                        text_pos=("W", "C"))
+        generel_options_pane.add_widget((local_x, local_y), game_name_label)
+
+        # GENERATION OPTIONS
+        y_coord += generel_options_pane.rect.height + 10
         generation_values_pane = widgets.Pane((frame_rect.width - 100, 300), border=True, border_width=4,
                                               color=color)
         self.settings_menu_frame.add_widget(("center", y_coord), generation_values_pane)
@@ -286,6 +302,10 @@ class GameSettingsScene(Scene):
         back_btn.add_key_event_listener(1, self.__back_to_main)
         self.settings_menu_frame.add_widget((x_coord, y_coord), back_btn)
 
+    def get_options(self):
+        # implement after the break
+        pass
+
     def __start_game(self):
         global scenes
         game = Game(self.screen)
@@ -355,7 +375,7 @@ class LoadingScreen(Scene):
 
 
 class Game(Scene, util.Serializer):
-    def __init__(self, screen, camera_center=None, board_=None, task_control=None):
+    def __init__(self, screen, options, camera_center=None, board_=None, task_control=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))

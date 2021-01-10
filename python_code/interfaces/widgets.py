@@ -1102,7 +1102,7 @@ class MultilineTextBox(Pane):
     def __init__(
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
-        font_size: int = 20,
+        font_size: int = 15,
         text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         lines: int = None,
         **kwargs
@@ -1206,7 +1206,7 @@ class MultilineTextBox(Pane):
         add_newline: bool = True
     ) -> None:
         """Add an additional line if possible"""
-        if len(self.__lines) > self.__max_lines:
+        if len(self.__lines) >= self.__max_lines:
             return
         old_line = self.__lines[self.__selected_line_index]
         prev_line_text = old_line.cut(old_line.line_location, len(old_line.text))
