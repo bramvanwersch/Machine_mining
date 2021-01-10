@@ -1099,7 +1099,14 @@ class MultilineTextBox(Pane):
 
     __lines: List["_TextLine"]
 
-    def __init__(self, size, font_size=20, text_color=(0, 0, 0), lines=None, **kwargs):
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        font_size: int = 20,
+        text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        lines: int = None,
+        **kwargs
+    ) -> None:
         self.__font_size = font_size
         self.__text_color = text_color
         super().__init__(size, color=(255, 255, 255), selectable=True, **kwargs)
@@ -1121,8 +1128,8 @@ class MultilineTextBox(Pane):
 
     def wupdate(self, *args) -> None:
         super().wupdate(*args)
-        if self.__clicked_mouse_location:
-            self.draw_selection()
+        # if self.__clicked_mouse_location:
+        #     self.draw_selection()
         if self.pressed_key_code is not None:
             if self.next_key_repeat <= 0:
                 self.__add_letter(self.pressed_key_code, reset_repeat=False)
@@ -1131,12 +1138,18 @@ class MultilineTextBox(Pane):
                 self.next_key_repeat -= con.GAME_TIME.get_time()
             self.__lines[self.__selected_line_index].text_changed = True
 
-    def __init_widgets(self):
+    def __init_widgets(self) -> None:
+        """Innitialize the first line"""
         new_line = _TextLine(self.rect.width, font_size=self.__font_size)
         self.add_widget((self.__BORDER_SPACING, self.__BORDER_SPACING), new_line)
         self.__lines.append(new_line)
 
-    def __add_letter(self, key_code: int, reset_repeat: bool = True):
+    def __add_letter(
+        self,
+        key_code: int,
+        reset_repeat: bool = True
+    ) -> None:
+        """Add a letter to the selected line"""
         self.pressed_key_code = key_code
         active_line = self.__lines[self.__selected_line_index]
         # have the blinker always active when putting in letters
@@ -1150,7 +1163,7 @@ class MultilineTextBox(Pane):
             self.backspace()
 
         elif key_code == con.K_RETURN:
-            self.add_line()
+            self.enter()
         elif key_code == con.K_DELETE:
             active_line.delete()
             # if len(active_line.text) == 1:
@@ -1171,44 +1184,61 @@ class MultilineTextBox(Pane):
             if modifier in [con.KMOD_CAPS, con.KMOD_LSHIFT, con.KMOD_RSHIFT]:
                 letter = letter.upper()
 
-            if modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_v:
-                active_line.add_text(pyperclip.paste())
-            elif modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_c:
-                # TODO changed to selected text
-                pyperclip.copy(active_line.text)
-            else:
-                active_line.append(letter)
+            # TODO add when feel like it
+            # if modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_v:
+            #     active_line.add_text(pyperclip.paste())
+            # elif modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_c:
+            #     pyperclip.copy(active_line.text)
+            # else:
+            active_line.append(letter)
 
-    def unpress_key(self, key_code: int):
+    def unpress_key(
+        self,
+        key_code: int
+    ) -> None:
+        """when a key is let go"""
         if key_code == self.pressed_key_code:
             self.pressed_key_code = None
             self.next_key_repeat = self.__INNITIAL_KEY_REPEAT_SPEED
 
-    def add_line(self, add_newline: bool = True):
+    def enter(
+        self,
+        add_newline: bool = True
+    ) -> None:
+        """Add an additional line if possible"""
         if len(self.__lines) > self.__max_lines:
             return
         old_line = self.__lines[self.__selected_line_index]
         prev_line_text = old_line.cut(old_line.line_location, len(old_line.text))
         old_line.set_selected(False)
         old_line.newline = add_newline
+        self.add_line(prev_line_text)
         self.__move_line_index(1)
-        # shift all lines down
-        for line in self.__lines[self.__selected_line_index:]:
-            copy_text = line.text
-            line.set_line_text(prev_line_text)
-            prev_line_text = copy_text
 
-        new_line = _TextLine(self.rect.width, text=prev_line_text, font_size=self.__font_size)
-        self.add_widget((self.__BORDER_SPACING, self.__line_height *
-                         len(self.__lines) + self.__BORDER_SPACING), new_line)
-        self.__lines.append(new_line)
         self.__lines[self.__selected_line_index].set_selected(True)
         self.__lines[self.__selected_line_index].set_line_location(0)
         if self.__selected_line_index != len(self.__lines) - 1:
             self.__lines[-1].set_blinker(False)
-        new_line.text_changed = True
 
-    def backspace(self):
+    def add_line(
+        self,
+        text=""
+    ) -> None:
+        # shift all lines down
+        for line in self.__lines[self.__selected_line_index + 1:]:
+            copy_text = line.text
+            line.set_line_text(text)
+            line.text_changed = True
+            text = copy_text
+
+        new_line = _TextLine(self.rect.width, text=text, font_size=self.__font_size)
+        new_line.text_changed = True
+        self.add_widget((self.__BORDER_SPACING, self.__line_height *
+                         len(self.__lines) + self.__BORDER_SPACING), new_line)
+        self.__lines.append(new_line)
+
+    def backspace(self) -> None:
+        """Backspace over multiple lines"""
         active_line = self.__lines[self.__selected_line_index]
         if not active_line.line_location == 0:
             active_line.backspace()
@@ -1229,15 +1259,24 @@ class MultilineTextBox(Pane):
         self.__move_line_index(-1)
         before_active_line.set_selected(True)
 
-    def remove_line(self, remove_index):
+    def remove_line(
+        self,
+        remove_index: int
+    ):
+        """Remove a line from the text and shift all lower lines up"""
         for index, line in enumerate(self.__lines[remove_index + 1:]):
             previous_line = self.__lines[remove_index + index]
             previous_line.set_line_text(line.text)
+            previous_line.text_changed = True
         last_line = self.__lines.pop(-1)
         self.remove_widget(last_line)
         self.__lines[-1].set_blinker(False)
 
-    def merge_lines(self, target_line, other_line_index):
+    def merge_lines(
+        self,
+        target_line: "_TextLine",
+        other_line_index: int
+    ) -> None:
         other_line = self.__lines[other_line_index]
         index = 0
         start_line_location = target_line.line_location
@@ -1249,12 +1288,17 @@ class MultilineTextBox(Pane):
                 break
         target_line.line_location = start_line_location
         other_line.cut(0, index)
+        target_line.newline = target_line.newline or other_line.newline
         if len(other_line.text) == 0:
             self.remove_line(other_line_index)
         else:
             other_line.text_changed = True
 
-    def move_line(self, value, location=None):
+    def move_line(
+        self,
+        value: int,
+        location: int = None
+    ) -> None:
         old_selected_line_index = self.__selected_line_index
         self.__selected_line_index = max(0, min(len(self.__lines) - 1, self.__selected_line_index + value))
         if old_selected_line_index != self.__selected_line_index:
@@ -1271,35 +1315,42 @@ class MultilineTextBox(Pane):
             first_line = self.__lines[self.__selected_line_index]
             first_line.set_line_location(0)
 
-    def move_line_location(self, value):
+    def move_line_location(
+        self,
+        value: int
+    ):
+        """Move line location over lines"""
         active_line = self.__lines[self.__selected_line_index]
         old_location = active_line.line_location
         active_line.move_line_location(value)
         if old_location == active_line.line_location:
-            if old_location == len(active_line.text) and value == 1 and self.__selected_line_index < self.__max_lines:
+            if old_location == len(active_line.text) and value > 1 and self.__selected_line_index < self.__max_lines:
                 self.move_line(1, 0)
-            elif old_location == 0 and value == -1 and self.__selected_line_index > 0:
+            elif old_location == 0 and value < 0 and self.__selected_line_index > 0:
                 self.move_line(-1, len(self.__lines[self.__selected_line_index - 1].text))
 
-    def __move_line_index(self, value):
+    def __move_line_index(
+        self,
+        value: int
+    ):
         self.__selected_line_index = max(0, min(self.__max_lines, self.__selected_line_index + value))
 
-    def __save_clicked_mouse_location(self, key_code):
-        self.clean_surface(clean_image=False, clean_text=False)
-        key = self.get_key(key_code)
-        self.__clicked_mouse_location = key.event.pos
-
-    def __forget_clicked_mouse_location(self):
-        self.__clicked_mouse_location = None
-
-    def draw_selection(self):
-        self.clean_surface(clean_image=False, clean_text=False)
-        other_pos = pygame.mouse.get_pos()
-        pos = (min(other_pos[0], self.__clicked_mouse_location[0]) - self.board_position[0], 0)
-        size = (abs(other_pos[0] - self.__clicked_mouse_location[0]), self.rect.height)
-        selection_rect = pygame.Surface(size)
-        selection_rect.fill(self.__SELECTION_COLOR)
-        self.set_image(selection_rect, pos)
+    # def __save_clicked_mouse_location(self, key_code):
+    #     self.clean_surface(clean_image=False, clean_text=False)
+    #     key = self.get_key(key_code)
+    #     self.__clicked_mouse_location = key.event.pos
+    #
+    # def __forget_clicked_mouse_location(self):
+    #     self.__clicked_mouse_location = None
+    #
+    # def draw_selection(self):
+    #     self.clean_surface(clean_image=False, clean_text=False)
+    #     other_pos = pygame.mouse.get_pos()
+    #     pos = (min(other_pos[0], self.__clicked_mouse_location[0]) - self.board_position[0], 0)
+    #     size = (abs(other_pos[0] - self.__clicked_mouse_location[0]), self.rect.height)
+    #     selection_rect = pygame.Surface(size)
+    #     selection_rect.fill(self.__SELECTION_COLOR)
+    #     self.set_image(selection_rect, pos)
 
     def set_selected(
         self,
@@ -1327,12 +1378,19 @@ class MultilineTextBox(Pane):
 class _TextLine(Label):
     __BLINKER_SPEED = 500
 
-    def __init__(self, width, text="", font_size=20, text_color=(0, 0, 0), **kwargs):
+    def __init__(
+        self,
+        width: int,
+        text: str = "",
+        font_size: int = 20,
+        text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        **kwargs
+    ):
         self.__font_size = font_size
         self.__font = con.FONTS[font_size]
         self.__text_color = text_color
         size = (width, self.__font.size("T")[1])
-        super().__init__(size, color=(255, 255, 255), **kwargs)
+        super().__init__(size, color=(255, 255, 255), selectable=False, **kwargs)
 
         self.__blinker_image =\
             image_handling.ImageDefinition("general", (90, 10),
@@ -1358,7 +1416,10 @@ class _TextLine(Label):
             self.__blinker_active = not self.__blinker_active
             self.text_changed = True
 
-    def set_blinker(self, value: bool):
+    def set_blinker(
+        self,
+        value: bool
+    ) -> None:
         self.__blinker_active = value
         self.__blinker_timer = 0
 
@@ -1392,7 +1453,8 @@ class _TextLine(Label):
         self.text = ""
         self.add_text(text)
 
-    def __render(self):
+    def __render(self) -> None:
+        """Render the text and the blinker"""
         self.set_text(self.text, (0, "C"), self.__text_color, self.__font_size)
         if self.__blinker_active:
             blinker_position = (int(self.__font.size(self.text[:self.line_location])[0] -
@@ -1401,9 +1463,13 @@ class _TextLine(Label):
         else:
             self.clean_surface(clean_text=False)
 
-    def cut(self, start, stop):
+    def cut(
+        self,
+        start: int,
+        stop: int
+    ) -> Union[str, None]:
         if start > stop:
-            return
+            return None
         cut_text = self.text[start: stop]
         self.text = self.text[:start] + self.text[stop + 1:]
         if self.line_location > start:
@@ -1413,22 +1479,37 @@ class _TextLine(Label):
     def __repr__(self):
         return f"<_TextLine object with: location: {self.line_location}, text: '{self.text}'>"
 
-    def set_line_location(self, value):
+    def set_line_location(
+        self,
+        value: int
+    ) -> None:
+        """Set the line location within the allowed bounds"""
         self.move_line_location(value - self.line_location)
 
-    def move_line_location(self, value):
+    def move_line_location(
+        self,
+        value
+    ) -> None:
+        """Move the line location within the allowed bounds"""
         self.line_location = max(0, min(len(self.text), self.line_location + value))
 
-    def can_append(self, value):
+    def can_append(
+        self,
+        value: str
+    ) -> bool:
         return self.__font.size(self.text + value)[0] <= self.rect.width - 5
 
-    def append(self, value):
+    def append(
+        self,
+        value: str
+    ) -> None:
         if not self.can_append(value):
             return
         self.text = self.text[:self.line_location] + value + self.text[self.line_location:]
         self.move_line_location(len(value))
+        self.text_changed = True
 
-    def backspace(self):
+    def backspace(self) -> None:
         if self.line_location > 0:
             if self.line_location == len(self.text) and self.newline:
                 self.newline = False
@@ -1436,5 +1517,5 @@ class _TextLine(Label):
                 self.text = self.text[:self.line_location - 1] + self.text[self.line_location:]
                 self.move_line_location(-1)
 
-    def delete(self):
+    def delete(self) -> None:
         self.text = self.text[:self.line_location] + self.text[self.line_location + 1:]
