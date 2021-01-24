@@ -11,6 +11,7 @@ class PathFinder:
     of rectangles and finding paths using that network
     """
     DIRECTIONS = ["N", "E", "S", "W"]
+
     def __init__(self):
         self.pathfinding_tree = PathfindingTree()
 
@@ -27,12 +28,12 @@ class PathFinder:
         :return: a list of coordinates that constitutes a path
         """
         start_rect = None
-        #find start rectangle
+        # find start rectangle
         direction_index = interface_util.relative_closest_direction(start.center)
         found = False
         for key in self.pathfinding_tree.rectangle_network[direction_index]:
             if (direction_index == 0 and key < start.centery) or (direction_index == 1 and key > start.centerx) or\
-                (direction_index == 2 and key > start.centery) or (direction_index == 3 and key < start.centerx):
+                    (direction_index == 2 and key > start.centery) or (direction_index == 3 and key < start.centerx):
                 adjacent_rects = self.pathfinding_tree.rectangle_network[direction_index][key]
             else:
                 continue
@@ -43,20 +44,20 @@ class PathFinder:
                     break
             if found:
                 break
-        if start_rect == None:
+        if start_rect is None:
             return None
 
-        #check if there is a rectangle next to the end rectangle
+        # heck if there is a rectangle next to the end rectangle
         can_find = False
         for index, direction_size in enumerate((end_rect.top, end_rect.right, end_rect.bottom, end_rect.left)):
             if direction_size in self.pathfinding_tree.rectangle_network[index - 2]:
                 for rect in self.pathfinding_tree.rectangle_network[index - 2][direction_size]:
-                    if util.side_by_side(end_rect, rect) != None:
+                    if util.side_by_side(end_rect, rect) is not None:
                         can_find = True
                         break
                 if can_find:
                     break
-        #there is no rectangle adjacent that could find a path
+        # there is no rectangle adjacent that could find a path
         if not can_find:
             return None
         end_node = self.pathfind(start_rect, end_rect)
@@ -89,9 +90,8 @@ class PathFinder:
                     y = node.rect.top
                 else:
                     y = node.rect.bottom - con.BLOCK_SIZE.height
-                left_distance = right_distance= 0
-                #first check if the target should allign with the left or right
-                #side
+                # first check if the target should allign with the left or right
+                # side
                 if prev_node.rect.left > node.rect.left:
                     left_distance = abs(prev_node.rect.left - target_location[0])
                 else:
@@ -101,7 +101,7 @@ class PathFinder:
                 else:
                     right_distance = abs(node.rect.right - target_location[0])
 
-                #configure x
+                # configure x
                 if left_distance < right_distance:
                     x = max(prev_node.rect.left, node.rect.left)
                 else:
@@ -111,7 +111,6 @@ class PathFinder:
                     x = node.rect.right - con.BLOCK_SIZE.width
                 else:
                     x = node.rect.left
-                top_distance = bottom_distance = 0
                 if prev_node.rect.top > node.rect.top:
                     top_distance = abs(node.rect.top - target_location[1])
                 else:
@@ -126,7 +125,9 @@ class PathFinder:
                     y = max(prev_node.rect.top, node.rect.top)
                 else:
                     y = min(prev_node.rect.bottom, node.rect.bottom) - con.BLOCK_SIZE[1]
-            path.append((x,y))
+            else:
+                raise util.GameException("Invalid direction")
+            path.append((x, y))
             prev_node = node
             node = node.parent
             target_location = (x, y)
@@ -143,8 +144,7 @@ class PathFinder:
         start_node.g = start_node.f = 0
         end_node = Node(None, end, None)
         end_node.g = end_node.h = end_node.f = 0
-        start_node.h = util.manhattan_distance(start_node.position,
-                                          end_node.position)
+        start_node.h = util.manhattan_distance(start_node.position, end_node.position)
         if start == end:
             return end_node
         # Initialize both open and closed list
@@ -220,10 +220,10 @@ class Path:
 
     def append(self, item):
         self.__coordinates.append(item)
-        #distance will be zero for the first addition
+        # distance will be zero for the first addition
         self.__lenght += util.manhattan_distance(item, self.__coordinates[-1])
 
-    def pop(self, index = -1):
+    def pop(self, index=-1):
         return self.__coordinates.pop(index)
 
     def __getitem__(self, item):
@@ -251,10 +251,10 @@ class Node:
         self.parent = parent
         # in order y, x
         self.rect = rect
-        #value that tells the direction between the parent node en this node
+        # value that tells the direction between the parent node en this node
         self.direction_index = direction_index
 
-        #used for the A* algorithm calculation of distance
+        # used for the A* algorithm calculation of distance
         self.g = 0
         self.h = 0
         self.f = 0
@@ -285,10 +285,7 @@ class PathfindingTree:
     Note: the self.rectangles could be a more efficient format then a list
     """
     def __init__(self):
-        """
-        :param matrix: a matrix over which changes are made.
-        """
-        #shared dictionary that acts as the tree of connections between rectangles in the chunks
+        # shared dictionary that acts as the tree of connections between rectangles in the chunks
         self.rectangle_network = [{}, {}, {}, {}]
         self.pathfinding_chunks = []
 
@@ -302,7 +299,7 @@ class PathfindingChunk:
         self.matrix = matrix
         self.rectangle_network = None
 
-        #rectangles only present in this chunk
+        # rectangles only present in this chunk
         self.__local_rectangles = set()
         self.added_rects = []
         self.removed_rects = []
@@ -312,15 +309,16 @@ class PathfindingChunk:
         self.rectangle_network = rectangles
         covered_coordinates = [[False for _ in range(len(self.matrix[0]))] for _ in range(len(self.matrix))]
 
-        #innitial configuration
+        # innitial configuration
         self.get_air_rectangles(self.matrix, covered_coordinates)
 
     def update(self):
         self.__times_passed[0] += con.GAME_TIME.get_time()
-        #fix mistakes in the fast updating
-        if self.__times_passed[0] > self.__times_passed[1] and (len(self.removed_rects) > 0 or len(self.added_rects) > 0):
-            #TODO make this a less temporary fix, is kind of crude right now --> works pretty good
-            self.__times_passed[0] == 0
+        # fix mistakes in the fast updating
+        if self.__times_passed[0] > self.__times_passed[1] and \
+                (len(self.removed_rects) > 0 or len(self.added_rects) > 0):
+            # TODO make this a less temporary fix, is kind of crude right now --> works pretty good
+            self.__times_passed[0] = 0
             for rect in self.__local_rectangles.copy():
                 self.__remove_rectangle(rect)
             covered_coordinates = [[False for _ in range(len(self.matrix[0]))] for _ in range(len(self.matrix))]
@@ -350,12 +348,12 @@ class PathfindingChunk:
         all_found = False
         for key in self.rectangle_network[direction_index]:
             if (direction_index == 0 and key < rect.centery) or (direction_index == 1 and key > rect.centerx) or\
-                (direction_index == 2 and key > rect.centery) or (direction_index == 3 and key < rect.centerx):
+                    (direction_index == 2 and key > rect.centery) or (direction_index == 3 and key < rect.centerx):
                 adjacent_rects = self.rectangle_network[direction_index][key].copy()
             else:
                 continue
             for adj_rect in adjacent_rects:
-                #rectangles in different chunks do not take the matrix
+                # rectangles in different chunks do not take the matrix
                 if interface_util.p_to_cp(adj_rect.topleft) != interface_util.p_to_cp(rect.topleft):
                     continue
                 if adj_rect.colliderect(rect):
@@ -380,14 +378,14 @@ class PathfindingChunk:
     def __find_removal_sub_matrix(self, rect):
         adjacent_rectangles = []
 
-        #find all adacent rectangles and the box that ontains them all
+        # find all adacent rectangles and the box that contains them all
         corners = [rect.left, rect.top,
                    rect.bottom, rect.right]
         for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
             if direction_size not in self.rectangle_network[index - 2]:
                 continue
             for adj_rect in self.rectangle_network[index - 2][direction_size].copy():
-                #rectangles in different chunks do not take the matrix
+                # rectangles in different chunks do not take the matrix
                 if interface_util.p_to_cp(adj_rect.topleft) != interface_util.p_to_cp(rect.topleft):
                     continue
                 if util.side_by_side(rect, adj_rect) is not None:
@@ -402,12 +400,13 @@ class PathfindingChunk:
                     adjacent_rectangles.append(adj_rect)
                     self.__remove_rectangle(adj_rect)
 
-        #get the sub matrix and all coordinates that are transaparant but do not need recalculation
+        # get the sub matrix and all coordinates that are transaparant but do not need recalculation
         all_rectangles = [rect] + adjacent_rectangles
         return self.__sub_matrix_from_corners(corners, all_rectangles)
 
     def __sub_matrix_from_corners(self, corners, all_rectangles):
-        start_column, start_row = (int((corners[0] % con.CHUNK_SIZE.width) / con.BLOCK_SIZE.width), int((corners[1] % con.CHUNK_SIZE.height) / con.BLOCK_SIZE.height))
+        start_column, start_row = (int((corners[0] % con.CHUNK_SIZE.width) / con.BLOCK_SIZE.width),
+                                   int((corners[1] % con.CHUNK_SIZE.height) / con.BLOCK_SIZE.height))
         row_lenght = interface_util.p_to_r(corners[3] - corners[0])
         column_lenght = interface_util.p_to_c(corners[2] - corners[1])
         sub_matrix = []
@@ -416,7 +415,7 @@ class PathfindingChunk:
             row = self.matrix[start_row + row_index][start_column:start_column + row_lenght]
             sub_matrix.append(row)
             for col_index, block in enumerate(row):
-                #if transparant block in sub matrix but not adjacent pre ignore it.
+                # if transparant block in sub matrix but not adjacent pre ignore it.
                 if block.transparant_group != 0 and block.rect.collidelist(all_rectangles) == -1:
                     covered_coordinates[row_index][col_index] = True
         return sub_matrix, covered_coordinates
@@ -427,11 +426,11 @@ class PathfindingChunk:
             if direction_size in self.rectangle_network[index]:
                 self.rectangle_network[index][direction_size].add(rect)
             else:
-                self.rectangle_network[index][direction_size] = set([rect])
+                self.rectangle_network[index][direction_size] = {rect}
             # add connections
             if direction_size in self.rectangle_network[index - 2]:
                 for adj_rect in self.rectangle_network[index - 2][direction_size]:
-                    if util.side_by_side(rect, adj_rect) != None:
+                    if util.side_by_side(rect, adj_rect) is not None:
                         rect.connecting_rects[index].add(adj_rect)
                         adj_rect.connecting_rects[index - 2].add(rect)
 
@@ -445,7 +444,7 @@ class PathfindingChunk:
                 self.rectangle_network[i][direction_sizes[i]].remove(rect)
 
     def get_air_rectangles(self, blocks, covered_coordinates):
-        #covered coordinates is a matrix with the same amount of rows and column coords for all checked coords.
+        # covered coordinates is a matrix with the same amount of rows and column coords for all checked coords.
 
         # find all rectangles in the block matrix
         for n_row, row in enumerate(blocks):
@@ -460,7 +459,6 @@ class PathfindingChunk:
                     if covered_coordinates[n_row][n_col + index]:
                         break
                     end_n_col = n_col + index
-
 
                 sub_matrix = [sub_row[n_col:end_n_col + 1] for sub_row in blocks[n_row:]]
                 sub_covered_matrix = [sub_row[n_col:end_n_col + 1] for sub_row in covered_coordinates[n_row:]]
@@ -521,7 +519,7 @@ class AirRectangle:
         self.connecting_rects = [set() for _ in range(4)]
 
     def delete(self):
-        #delete any reference from connectiing rectangles
+        # delete any reference from connectiing rectangles
         for direction_index in range(len(self.connecting_rects)):
             for connection in self.connecting_rects[direction_index]:
                 connection.connecting_rects[direction_index - 2].remove(self)
