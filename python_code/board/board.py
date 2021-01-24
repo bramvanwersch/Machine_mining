@@ -27,22 +27,23 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
-    def __init__(self, main_sprite_group, chunk_matrix=None, pipe_network=None, grow_update_time=0):
+    def __init__(self, board_generator, main_sprite_group, progress_var, chunk_matrix=None, pipe_network=None, grow_update_time=0):
         event_handling.BoardEventHandler.__init__(self, [1, 2, 3, 4, con.MINING, con.CANCEL, con.BUILDING, con.SELECTING])
         self.inventorie_blocks = []
         self.main_sprite_group = main_sprite_group
 
         # setup the board
+        progress_var[0] = "Innitialising pathfinding..."
         self.pf = pathfinding.PathFinder()
 
-        self.board_generator = generator.BoardGenerator()
+        self.board_generator = board_generator
         self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
                              for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
         self.loaded_chunks = set()
         # chunks that are currently loading to make sure that no double chunks are generated
         self._loading_chunks = set()
         self.main_sprite_group = main_sprite_group
-        self.generate_chunks(*con.START_LOAD_AREA, thread_it=False)
+        self.generate_chunks(*con.START_LOAD_AREA, thread_it=False, progress_var=progress_var)
 
         self.task_control = None
 
@@ -52,6 +53,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         self.__highlight_rectangle = None
 
         # pipe network
+        progress_var[0] = "Innitialising pipe network..."
         self.pipe_network = network.Network(self.task_control)
 
         self.__buildings = {}
@@ -116,17 +118,20 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 if new_blocks is not None:
                     self.add_blocks(*new_blocks)
 
-    def generate_chunks(self, col_coords_load, row_coords_load, thread_it=True):
-        for row_i in row_coords_load:
-            for col_i in col_coords_load:
-                if self.chunk_matrix[row_i][col_i] is not None or (col_i, row_i) in self._loading_chunks:
+    def generate_chunks(self, col_coords_load, row_coords_load, thread_it=True, progress_var=None):
+        for row_li, row_gi in enumerate(row_coords_load):
+            for col_li, col_gi in enumerate(col_coords_load):
+                if progress_var:
+                    current_chunk = (row_li * len(con.START_LOAD_AREA[1])) + col_li + 1
+                    progress_var[0] = f"Generating chunk {current_chunk} out of {con.TOTAL_START_CHUNKS}..."
+                # make sure 2 threads are not working on the same thing
+                if self.chunk_matrix[row_gi][col_gi] is not None or (col_gi, row_gi) in self._loading_chunks:
                     continue
-                self._loading_chunks.add((col_i, row_i))
+                self._loading_chunks.add((col_gi, row_gi))
                 if thread_it:
-                    # make sure 2 threads are not working on the same thing
-                    Thread(target=self.generate_chunk, args=(row_i, col_i)).start()
+                    Thread(target=self.generate_chunk, args=(row_gi, col_gi)).start()
                 else:
-                    self.generate_chunk(row_i, col_i)
+                    self.generate_chunk(row_gi, col_gi)
 
     def generate_chunk(self, row_i, col_i):
         point_pos = (col_i * con.CHUNK_SIZE.width, row_i * con.CHUNK_SIZE.height)

@@ -33,8 +33,8 @@ BOARD_SIZE = util.Size(100_000, 5000)
 ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 # the center of the board
 START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
-START_LOAD_AREA = [range(START_CHUNK_POS[0] - 2, START_CHUNK_POS[0] + 3),
-                   range(START_CHUNK_POS[1] - 2, START_CHUNK_POS[1] + 3)]  # always consecutive
+START_LOAD_AREA = [list(range(START_CHUNK_POS[0] - 2, START_CHUNK_POS[0] + 3)),
+                   list(range(START_CHUNK_POS[1] - 2, START_CHUNK_POS[1] + 3))]  # always consecutive
 TOTAL_START_CHUNKS = ((START_CHUNK_POS[0] + 3) - (START_CHUNK_POS[0] - 2)) * \
                      ((START_CHUNK_POS[1] + 3) - (START_CHUNK_POS[1] - 2))
 

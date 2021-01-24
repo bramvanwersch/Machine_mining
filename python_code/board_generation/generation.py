@@ -72,7 +72,8 @@ class BoardGenerator:
         biome_blend: Union[str, int] = "normal",
         nr_caves: Union[str, int] = "normal",
         cave_length: Union[str, int] = "normal",
-        cave_broadness: Union[str, float] = "normal"
+        cave_broadness: Union[str, float] = "normal",
+        progress_var: Union[None, List[str]] = None
     ):
         self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
 
@@ -110,8 +111,8 @@ class BoardGenerator:
         self.__biome_matrix = [[None for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.width / self.__biome_size.width))]
                                for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.height / self.__biome_size.height))]
 
-        self.__generate_biomes(self.__generation_rect)
-        self.__generate_structures(self.__generation_rect)
+        self.__generate_biomes(self.__generation_rect, progress_var)
+        self.__generate_structures(self.__generation_rect, progress_var)
 
     def generate_chunk(
         self,
@@ -202,14 +203,19 @@ class BoardGenerator:
 
     def __generate_biomes(
         self,
-        rect: Rect
+        rect: Rect,
+        progress_var: Union[None, List[str]] = None
     ) -> None:
         """Fill the biome matrix within within the given rect with biome classes based using the __biome_definition"""
         row_start = int(rect.top / self.__biome_size.height)
         col_start = int(rect.left / self.__biome_size.width)
-        # make sure that even partial areas of the board are covered by a biome
+
+        total_biomes = int(rect.height / self.__biome_size.height) * int(rect.width / self.__biome_size.width)
         for row_i in range(int(rect.height / self.__biome_size.height)):
             for col_i in range(int(rect.width / self.__biome_size.width)):
+                if progress_var:
+                    current_biome_nr = (row_i * int(rect.width / self.__biome_size.width)) + col_i
+                    progress_var[0] = f"Generating biome {current_biome_nr} out of {total_biomes}..."
                 row_i += row_start
                 col_i += col_start
                 # allow the shapes of the distributions to be a bit different (more oval)
@@ -228,13 +234,19 @@ class BoardGenerator:
 
     def __generate_structures(
         self,
-        rect: Rect
+        rect: Rect,
+        progress_var: Union[None, List[str]] = None
     ) -> None:
         """Generate caves and structures within a given rectangle and save them in a PredefinedBlocks structure"""
         row_start = int(rect.top / self.__cave_quadrant_size.height)
         col_start = int(rect.left / self.__cave_quadrant_size.width)
+        total_caves = int(rect.height / self.__cave_quadrant_size.height) * \
+                      int(rect.width / self.__cave_quadrant_size.width) # noqa
         for row_i in range(int(rect.height / self.__cave_quadrant_size.height)):
             for col_i in range(int(rect.width / self.__cave_quadrant_size.width)):
+                if progress_var:
+                    current_cave_nr = (row_i * int(rect.width / self.__cave_quadrant_size.width)) + col_i
+                    progress_var[0] = f"Carving out cave {current_cave_nr} out of {total_caves}..."
                 row_i += row_start
                 col_i += col_start
                 x_coord = randint(int(col_i * self.__cave_quadrant_size.height),

@@ -442,11 +442,13 @@ class Game(Scene, util.Serializer):
             cave_broadness=self.__selected_options["cave_width"],
             nr_caves=self.__selected_options["max_caves"],
             biome_size=self.__selected_options["biome_size"],
-            biome_blend=self.__selected_options["biome_blend"]
+            biome_blend=self.__selected_options["biome_blend"],
+            progress_var=self.progress_var
         )
 
         self.progress_var[0] = "Generating board..."
         self.board = board.board.Board(board_generator, self.sprite_group, self.progress_var)
+        self.progress_var[0] = "Running some innitial update cycles..."
         self.board.setup_board()
 
         # tasks
