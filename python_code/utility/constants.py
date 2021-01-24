@@ -35,6 +35,8 @@ ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
 START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
 START_LOAD_AREA = [range(START_CHUNK_POS[0] - 2, START_CHUNK_POS[0] + 3),
                    range(START_CHUNK_POS[1] - 2, START_CHUNK_POS[1] + 3)]  # always consecutive
+TOTAL_START_CHUNKS = ((START_CHUNK_POS[0] + 3) - (START_CHUNK_POS[0] - 2)) * \
+                     ((START_CHUNK_POS[1] + 3) - (START_CHUNK_POS[1] - 2))
 
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks

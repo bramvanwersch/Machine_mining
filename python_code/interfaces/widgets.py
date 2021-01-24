@@ -70,6 +70,7 @@ class SelectionGroup:
     """A collection of widgets to control selection of the widgets"""
     multi_mode: bool
     __widgets: Set
+    selected_widgets: Union[None, List[Union["Widget", "Label", "Button"]]]
 
     def __init__(
         self,
@@ -77,31 +78,39 @@ class SelectionGroup:
     ):
         self.multi_mode = multiple
         self.__widgets = set()
+        self.selected_widgets = None
 
     def add(
         self,
-        widget
+        widget: "Widget"
     ) -> None:
         self.__widgets.add(widget)
 
     def select(
         self,
-        widget,
-        *args
+        widget: "Widget",
+        **kwargs
     ) -> None:
         if not self.multi_mode:
             for w in self.__widgets:
                 w.set_selected(False)
-        widget.set_selected(True, *args)
+            self.selected_widgets = None
+        widget.set_selected(True, **kwargs)
+        if self.selected_widgets is None:
+            self.selected_widgets = [widget]
+        else:
+            self.selected_widgets.append(widget)
 
     def off(self) -> None:
         """Turn all widgets off"""
+        self.selected_widgets = None
         [w.set_selected(False) for w in self.__widgets]
 
     def on(self) -> None:
         """Turn all widgets on"""
         if self.multi_mode:
             [w.set_selected(True) for w in self.__widgets]
+            self.selected_widgets = list(self.__widgets)
 
 
 class WidgetPosition:
@@ -122,7 +131,10 @@ class WidgetPosition:
         self.__outer_rect = outer_rect
         self.position = self.__convert_location(pos)
 
-    def __convert_location(self, pos) -> List[int]:
+    def __convert_location(
+        self,
+        pos: Union[List[Union[str, int, float]], Tuple[Union[str, int, float],Union[str, int, float]]]
+    ) -> List[int]:
         pos = list(pos)
         if type(pos[0]) in [float, int]:
             pos[0] = round(pos[0])
@@ -288,7 +300,8 @@ class Widget(event_handlers.EventHandler, ABC):
 
     def set_selected(
         self,
-        selected: bool
+        selected: bool,
+        **kwargs
     ) -> None:
         """Set a widget as selected. Allowing a highlight for instance"""
         if self.selectable:
@@ -630,8 +643,11 @@ class SelectionList(Pane):
     __EXPAND_BUTTON_HOVER_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
         image_handling.ImageDefinition("general", (80, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT))
 
-    __expanded_options_frame: Union[None, "Frame"]
     __show_label: Union[None, Label]
+    __expand_button: Union[None, Button]
+    __expanded_options: bool
+    __expanded_options_frame: Union[None, "Frame"]
+    __options_selection_group: SelectionGroup
 
     def __init__(
         self,
@@ -694,6 +710,11 @@ class SelectionList(Pane):
                 self.__select_expanded_option(label)
                 break
 
+    def get_selected_text(self) -> str:
+        if self.__options_selection_group.selected_widgets[0] is not None:
+            return self.__options_selection_group.selected_widgets[0].get_text()
+        return ""
+
     def __select_expanded_option(
         self,
         widget: Label
@@ -729,7 +750,7 @@ class SelectionList(Pane):
 
 class Frame(entities.ZoomableEntity, Pane):
     """Pane that belongs to a sprite group thus it is drawn whenever it is visible"""
-    selected_widget: Union[None, Widget]
+    selected_widget: Union[None, Widget, Label, Button, Pane]
     __select_top_widget_flag: bool
 
     def __init__(
@@ -744,12 +765,13 @@ class Frame(entities.ZoomableEntity, Pane):
         self.selected_widget = None
         self.__select_top_widget_flag = False
         self.__previous_board_pos = self.board_position
+
         # frame events are not consumed when triggered
-        # self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
-        # self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
-        # self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
-        # self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
-        # self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
+        self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
+        self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
+        self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
+        self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
+        self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
         self.add_key_event_listener(1, self.__select_top_widget, types=["pressed", "unpressed"])
 
     def update(self, *args):
@@ -851,10 +873,10 @@ class Frame(entities.ZoomableEntity, Pane):
             self.selected_widget.action(event_handlers.Key(1), "unpressed")
 
     def handle_mouse_events(
-            self,
-            events: List[pygame.event.Event],
-            consume_events: bool = True
-    ):
+        self,
+        events: List[pygame.event.Event],
+        consume_events: bool = True
+    ) -> List[pygame.event.Event]:
         # events that are triggered on this frame widget trigger first
         leftover_events = self.handle_events(events, type_="mouse", consume_events=False)
         pos = pygame.mouse.get_pos()
@@ -892,7 +914,7 @@ class Frame(entities.ZoomableEntity, Pane):
             self,
             events: List[pygame.event.Event],
             consume_events: bool = True
-    ):
+    ) -> List[pygame.event.Event]:
         """Handle all events but key events for the widget that is selected"""
         leftover_events = self.handle_events(events, type_="other", consume_events=consume_events)
 
@@ -1126,6 +1148,12 @@ class MultilineTextBox(Pane):
         # self.add_key_event_listener(1, self.__save_clicked_mouse_location, values=[1], types=["pressed"])
         # self.add_key_event_listener(1, self.__forget_clicked_mouse_location, types=["unpressed"])
 
+    def get_text(self) -> str:
+        all_text = ""
+        for line in self.__lines:
+            all_text += line.text + "\n"
+        return all_text
+
     def wupdate(self, *args) -> None:
         super().wupdate(*args)
         # if self.__clicked_mouse_location:
@@ -1262,7 +1290,7 @@ class MultilineTextBox(Pane):
     def remove_line(
         self,
         remove_index: int
-    ):
+    ) -> None:
         """Remove a line from the text and shift all lower lines up"""
         for index, line in enumerate(self.__lines[remove_index + 1:]):
             previous_line = self.__lines[remove_index + index]
@@ -1318,7 +1346,7 @@ class MultilineTextBox(Pane):
     def move_line_location(
         self,
         value: int
-    ):
+    ) -> None:
         """Move line location over lines"""
         active_line = self.__lines[self.__selected_line_index]
         old_location = active_line.line_location

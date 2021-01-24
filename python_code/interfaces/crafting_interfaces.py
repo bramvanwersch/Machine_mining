@@ -95,7 +95,7 @@ class CraftingWindow(base_interface.Window):
     def recipe_action(self, recipe, lbl, s1):
         self._crafting = False
         self._craftable_item_recipe = recipe
-        s1.select(lbl, (0, 0, 0))
+        s1.select(lbl, color=(0, 0, 0))
         self.grid_pane.add_recipe(recipe)
         self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_items])
         self._craft_building.inventory.out_filter.set_whitelist(recipe._material.name())

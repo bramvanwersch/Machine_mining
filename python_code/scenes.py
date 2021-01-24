@@ -5,6 +5,7 @@ import os
 import warnings
 from abc import ABC
 import pygame
+from typing import Union
 
 # own imports
 import board.board
@@ -173,12 +174,25 @@ class MainMenu(Scene):
 
 
 class GameSettingsScene(Scene):
+    __game_name_textbox: Union[None, widgets.MultilineTextBox]
+    __cave_length_selection_list: Union[None, widgets.SelectionList]
+    __cave_width_selection_list: Union[None, widgets.SelectionList]
+    __max_caves_selection_list: Union[None, widgets.SelectionList]
+    __biome_size_selection_list: Union[None, widgets.SelectionList]
+    __biome_blend_selection_list: Union[None, widgets.SelectionList]
+
     def __init__(self, screen):
         sprite_group = sprite_groups.ShowToggleLayerUpdates()
         super().__init__(screen, sprite_group)
 
         # all the available menu frames
         self.settings_menu_frame = None
+        self.__game_name_textbox = None
+        self.__cave_length_selection_list = None
+        self.__cave_width_selection_list = None
+        self.__max_caves_selection_list = None
+        self.__biome_size_selection_list = None
+        self.__biome_blend_selection_list = None
         self.__init_widgets()
 
     def __init_widgets(self):
@@ -196,8 +210,9 @@ class GameSettingsScene(Scene):
         self.settings_menu_frame.add_widget(("center", y_coord), generel_options_pane)
         local_y = 10
         local_x = int((generel_options_pane.rect.width / 2) + 5)
-        game_name_textbox = widgets.MultilineTextBox((200, con.FONTS[22].get_linesize() + 6), font_size=22, lines=1)
-        generel_options_pane.add_widget((local_x, local_y), game_name_textbox)
+        self.__game_name_textbox = widgets.MultilineTextBox((200, con.FONTS[22].get_linesize() + 6), font_size=22,
+                                                            lines=1)
+        generel_options_pane.add_widget((local_x, local_y), self.__game_name_textbox)
 
         local_x = int((generel_options_pane.rect.width / 2) - 135)
         game_name_label = widgets.Label((140, con.FONTS[22].get_linesize()), color=color, text="Name:", font_size=22,
@@ -213,27 +228,29 @@ class GameSettingsScene(Scene):
         # Biome size selection
         local_y = 10
         local_x = int((generation_values_pane.rect.width / 2) + 5)
-        biome_size_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
-                                                          options=list(generation.BoardGenerator.BIOME_SIZES.keys()))
-        biome_size_selection_list.select_option("normal")
-        generation_values_pane.add_widget((local_x, local_y), biome_size_selection_list)
+        self.__biome_size_selection_list =\
+            widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                  options=list(generation.BoardGenerator.BIOME_SIZES.keys()))
+        self.__biome_size_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), self.__biome_size_selection_list)
 
-        biome_size_label = widgets.Label((100, biome_size_selection_list.LINE_HEIGHT), color=color, text="Biome Size:",
-                                         font_size=22, text_pos=("W", "C"))
+        biome_size_label = widgets.Label((100, self.__biome_size_selection_list.LINE_HEIGHT), color=color,
+                                         text="Biome Size:", font_size=22, text_pos=("W", "C"))
         biome_size_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150), text="Average size of biomes")
         biome_size_label.add_tooltip(biome_size_tooltip)
         local_x = int((generation_values_pane.rect.width / 2) - 135)
         generation_values_pane.add_widget((local_x, local_y), biome_size_label)
 
         # Biome blend selection
-        local_y += biome_size_selection_list.LINE_HEIGHT + 10
+        local_y += self.__biome_size_selection_list.LINE_HEIGHT + 10
         local_x = int((generation_values_pane.rect.width / 2) + 5)
-        biome_blend_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
-                                                           options=list(generation.BoardGenerator.BIOME_BLEND.keys()))
-        biome_blend_selection_list.select_option("normal")
-        generation_values_pane.add_widget((local_x, local_y), biome_blend_selection_list)
+        self.__biome_blend_selection_list = \
+            widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                  options=list(generation.BoardGenerator.BIOME_BLEND.keys()))
+        self.__biome_blend_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), self.__biome_blend_selection_list)
 
-        biome_blend_label = widgets.Label((100, biome_blend_selection_list.LINE_HEIGHT), color=color,
+        biome_blend_label = widgets.Label((100, self.__biome_blend_selection_list.LINE_HEIGHT), color=color,
                                           text="Biome Blend:", font_size=22, text_pos=("W", "C"))
         biome_blend_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                               text="The level to which biomes\ncan blend trough one another")
@@ -242,14 +259,15 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), biome_blend_label)
 
         # Max Caves selection
-        local_y += biome_blend_selection_list.LINE_HEIGHT + 10
+        local_y += self.__biome_blend_selection_list.LINE_HEIGHT + 10
         local_x = int((generation_values_pane.rect.width / 2) + 5)
-        max_caves_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
-                                                         options=list(generation.BoardGenerator.MAX_CAVES.keys()))
-        max_caves_selection_list.select_option("normal")
-        generation_values_pane.add_widget((local_x, local_y), max_caves_selection_list)
+        self.__max_caves_selection_list = \
+            widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                  options=list(generation.BoardGenerator.MAX_CAVES.keys()))
+        self.__max_caves_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), self.__max_caves_selection_list)
 
-        max_caves_label = widgets.Label((140, max_caves_selection_list.LINE_HEIGHT), color=color,
+        max_caves_label = widgets.Label((140, self.__max_caves_selection_list.LINE_HEIGHT), color=color,
                                         text="Number of Caves:", font_size=22, text_pos=("W", "C"))
         max_caves_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                             text="The amount of caves present on the map")
@@ -258,14 +276,15 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), max_caves_label)
 
         # Cave length selection
-        local_y += max_caves_selection_list.LINE_HEIGHT + 10
+        local_y += self.__max_caves_selection_list.LINE_HEIGHT + 10
         local_x = int((generation_values_pane.rect.width / 2) + 5)
-        cave_length_selection_list = widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
-                                                           options=list(generation.BoardGenerator.CAVE_LENGTH.keys()))
-        cave_length_selection_list.select_option("normal")
-        generation_values_pane.add_widget((local_x, local_y), cave_length_selection_list)
+        self.__cave_length_selection_list =\
+            widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
+                                  options=list(generation.BoardGenerator.CAVE_LENGTH.keys()))
+        self.__cave_length_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), self.__cave_length_selection_list)
 
-        cave_length_label = widgets.Label((140, cave_length_selection_list.LINE_HEIGHT), color=color,
+        cave_length_label = widgets.Label((140, self.__cave_length_selection_list.LINE_HEIGHT), color=color,
                                           text="Length of Caves:", font_size=22, text_pos=("W", "C"))
         cave_length_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                               text="The lenght of the caves")
@@ -274,15 +293,15 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), cave_length_label)
 
         # Cave width selection
-        local_y += max_caves_selection_list.LINE_HEIGHT + 10
+        local_y += self.__max_caves_selection_list.LINE_HEIGHT + 10
         local_x = int((generation_values_pane.rect.width / 2) + 5)
-        cave_width_selection_list = \
+        self.__cave_width_selection_list = \
             widgets.SelectionList(self.sprite_group, color=(150, 150, 150),
                                   options=list(generation.BoardGenerator.CAVE_STOP_SPREAD_CHANCE.keys()))
-        cave_width_selection_list.select_option("normal")
-        generation_values_pane.add_widget((local_x, local_y), cave_width_selection_list)
+        self.__cave_width_selection_list.select_option("normal")
+        generation_values_pane.add_widget((local_x, local_y), self.__cave_width_selection_list)
 
-        cave_width_label = widgets.Label((140, cave_width_selection_list.LINE_HEIGHT), color=color,
+        cave_width_label = widgets.Label((140, self.__cave_width_selection_list.LINE_HEIGHT), color=color,
                                          text="Width of Caves:", font_size=22, text_pos=("W", "C"))
         cave_width_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                              text="How wide a cave is")
@@ -302,13 +321,20 @@ class GameSettingsScene(Scene):
         back_btn.add_key_event_listener(1, self.__back_to_main)
         self.settings_menu_frame.add_widget((x_coord, y_coord), back_btn)
 
-    def get_options(self):
-        # implement after the break
-        pass
+    def get_options(self) -> dict:
+        options = dict(
+            name=self.__game_name_textbox.get_text(),
+            cave_length=self.__cave_length_selection_list.get_selected_text(),
+            cave_width=self.__cave_width_selection_list.get_selected_text(),
+            max_caves=self.__max_caves_selection_list.get_selected_text(),
+            biome_size=self.__biome_size_selection_list.get_selected_text(),
+            biome_blend=self.__biome_blend_selection_list.get_selected_text(),
+        )
+        return options
 
     def __start_game(self):
         global scenes
-        game = Game(self.screen)
+        game = Game(self.screen, self.get_options())
         executor = interface_util.ThreadPoolExecutorStackTraced()
         future = executor.submit(game.start)
         scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
@@ -354,8 +380,8 @@ class LoadingScreen(Scene):
     def scene_updates(self):
         global scenes
         super().scene_updates()
-        if hasattr(self.loading_scene, "progress"):
-            self.__progress_label.set_text(self.loading_scene.progress, ("center", "center"), font_size=30)
+        if hasattr(self.loading_scene, "progress_var"):
+            self.__progress_label.set_text(self.loading_scene.progress_var[0], ("center", "center"), font_size=30)
         if self.future.done():
             if self.future.exception():
                 print(self.future.exception())
@@ -378,6 +404,7 @@ class Game(Scene, util.Serializer):
     def __init__(self, screen, options, camera_center=None, board_=None, task_control=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
+        self.__selected_options = options
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
         super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE])
@@ -389,7 +416,7 @@ class Game(Scene, util.Serializer):
 
         # zoom variables
         self._zoom = 1.0
-        self.progress = ""
+        self.progress_var = [""]
         self.board = board_
         self.task_control = task_control
 
@@ -402,24 +429,33 @@ class Game(Scene, util.Serializer):
 
     def start(self):
         # function for setting up a Game
-        self.progress = "Started loading..."
+        self.progress_var[0] = "Started loading..."
         # load a window manager to manage window events
-        self.progress = "Adding windows..."
+        self.progress_var[0] = "Adding windows..."
         window_managers.create_window_managers(self.camera_center)
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
 
-        self.progress = "Generating board..."
-        self.board = board.board.Board(self.sprite_group)
+        self.progress_var[0] = "configuring board generation..."
+        board_generator = generation.BoardGenerator(
+            cave_length=self.__selected_options["cave_length"],
+            cave_broadness=self.__selected_options["cave_width"],
+            nr_caves=self.__selected_options["max_caves"],
+            biome_size=self.__selected_options["biome_size"],
+            biome_blend=self.__selected_options["biome_blend"]
+        )
+
+        self.progress_var[0] = "Generating board..."
+        self.board = board.board.Board(board_generator, self.sprite_group, self.progress_var)
         self.board.setup_board()
 
         # tasks
-        self.progress = "Making tasks..."
+        self.progress_var[0] = "Making tasks..."
         self.task_control = tasks.TaskControl(self.board)
         self.board.set_task_control(self.task_control)
 
         # for some more elaborate setting up of variables
-        self.progress = "Populating with miners..."
+        self.progress_var[0] = "Populating with miners..."
         start_chunk = self.board.get_start_chunk()
         appropriate_location = \
             (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width +
