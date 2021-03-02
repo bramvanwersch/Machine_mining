@@ -115,36 +115,36 @@ def side_by_side(rect1, rect2):
     :param rect1: pygame rect 1
     :param rect2:  pygame rect 2
     :return: a number giving a direction index that coresponds to the list
-    [N, E, S, W]
+    [N, E, S, W] or None if not side by side
     """
 
     if rect1.bottom == rect2.top:
-        if (rect1.left <= rect2.left and rect1.right > rect2.left) or\
-            (rect1.left < rect2.right and rect1.right >= rect2.right):
+        if (rect1.left <= rect2.left < rect1.right) or\
+                (rect1.left < rect2.right <= rect1.right):
             return 2
-        elif (rect2.left <= rect1.left and rect2.right > rect1.left) or \
-            (rect2.left < rect1.right and rect2.right >= rect1.right):
+        elif (rect2.left <= rect1.left < rect2.right) or \
+                (rect2.left < rect1.right <= rect2.right):
             return 2
     elif rect1.top == rect2.bottom:
-        if (rect1.left <= rect2.left and rect1.right > rect2.left) or\
-            (rect1.left < rect2.right and rect1.right >= rect2.right):
+        if (rect1.left <= rect2.left < rect1.right) or\
+                (rect1.left < rect2.right <= rect1.right):
             return 0
-        elif (rect2.left <= rect1.left and rect2.right > rect1.left) or \
-            (rect2.left < rect1.right and rect2.right >= rect1.right):
+        elif (rect2.left <= rect1.left < rect2.right) or \
+                (rect2.left < rect1.right <= rect2.right):
             return 0
     elif rect1.right == rect2.left:
-        if (rect1.top <= rect2.top and rect1.bottom > rect2.top) or \
-            (rect1.top < rect2.bottom and rect1.bottom >= rect2.bottom):
+        if (rect1.top <= rect2.top < rect1.bottom) or \
+                (rect1.top < rect2.bottom <= rect1.bottom):
             return 1
-        elif (rect2.top <= rect1.top and rect2.bottom > rect1.top) or \
-            (rect2.top < rect1.bottom and rect2.bottom >= rect1.bottom):
+        elif (rect2.top <= rect1.top < rect2.bottom) or \
+                (rect2.top < rect1.bottom <= rect2.bottom):
             return 1
     elif rect1.left == rect2.right:
-        if (rect1.top <= rect2.top and rect1.bottom > rect2.top) or \
-            (rect1.top < rect2.bottom and rect1.bottom >= rect2.bottom):
+        if (rect1.top <= rect2.top < rect1.bottom) or \
+                (rect1.top < rect2.bottom <= rect1.bottom):
             return 3
-        elif (rect2.top <= rect1.top and rect2.bottom > rect1.top) or \
-            (rect2.top < rect1.bottom and rect2.bottom >= rect1.bottom):
+        elif (rect2.top <= rect1.top < rect2.bottom) or \
+                (rect2.top < rect1.bottom <= rect2.bottom):
             return 3
     else:
         return None

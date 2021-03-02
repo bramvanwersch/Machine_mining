@@ -379,26 +379,29 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         for block in self.changed_light_blocks:
             chunk = self.__chunk_from_point(block.rect.topleft)
             alpha = 255 - block.light_level * int(255 / con.MAX_LIGHT)
-            chunk.add_rectangle(block.rect, (0,0,0, alpha), layer=0)
+            chunk.add_rectangle(block.rect, (0, 0, 0, alpha), layer=0)
 
     def closest_inventory(self, start, *item_names, deposit=True):
         """
         """
         #any distance should be shorter possible on the board
-        shortest_distance = 10000000000000
+        shortest_distance = con.BOARD_SIZE.width * con.BOARD_SIZE.height
         closest_block = None
-        for block in self.inventorie_blocks:
-            if (deposit == False and all([block.inventory.check_item_get(name) for name in item_names])):
+        for building in self.__buildings.values():
+            if not building.has_inventory():
+                continue
+            inventory = building.blocks[0][0].inventory
+            if (deposit == False and all([inventory.check_item_get(name) for name in item_names])):
                 pass
-            elif (deposit == True and all([block.inventory.check_item_deposit(name) for name in item_names])):
+            elif (deposit == True and all([inventory.check_item_deposit(name) for name in item_names])):
                 pass
             else:
                 continue
 
-            distance = util.manhattan_distance(start.center, block.rect.center)
+            distance = util.manhattan_distance(start.center, building.rect.center)
             if distance < shortest_distance:
                 shortest_distance = distance
-                closest_block = block
+                closest_block = building
         return closest_block
 
     def add_rectangle(self, rect, color, layer=2, border=0):

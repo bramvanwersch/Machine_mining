@@ -462,7 +462,7 @@ class Game(Scene, util.Serializer):
         appropriate_location = \
             (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width +
              start_chunk.rect.left, + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
-        for _ in range(5):
+        for _ in range(con.STARTING_ENTITIES):
             entities.Worker(appropriate_location, self.sprite_group, board=self.board, task_control=self.task_control)
         # add one of the imventories of the terminal
         if self.building_interface is None:
@@ -499,7 +499,13 @@ class Game(Scene, util.Serializer):
         super().scene_updates()
         self.load_unload_sprites()
 
+        # self.draw_air_rectangles()
         self.board.update_board()
+
+    def draw_air_rectangles(self):
+        for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
+            for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
+                self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
 
     def draw(self):
         super().draw()

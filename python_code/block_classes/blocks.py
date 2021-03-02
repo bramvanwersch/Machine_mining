@@ -65,6 +65,10 @@ class Block(ABC):
         """Check if the material allows a task to be performed"""
         return task_type in self.material.allowed_tasks
 
+    def is_solid(self) -> bool:
+        """Convenience method to test if a block is solid"""
+        return self.transparant_group == 0
+
     def name(self) -> str:
         """name of material"""
         return self.material.name()

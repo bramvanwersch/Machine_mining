@@ -36,7 +36,7 @@ class BoardGenerator:
 
     # CAVE values
     MAX_CAVES: ClassVar[Dict[str, int]] = \
-        {"no_caves": 0, "low": 5, "normal": 15, "lots": 30, "I WANT CAVES!!!": 50}  # per 100_000 blocks
+        {"one_caves": 1, "low": 5, "normal": 15, "lots": 30, "I WANT CAVES!!!": 50}  # per 100_000 blocks
     # the fraction of the distance between points based on the shortest side of the board
     MAX_POINT_DISTANCE: ClassVar[int] = 100
     # number of points a cave consists of
@@ -571,7 +571,7 @@ class PredefinedBlocks:
         if coord[1] in self.__internal_tree:
             self.__internal_tree[coord[1]][coord[0]] = value
         # do not overwrite if requested
-        elif not overwrite and coord[0] in self.__internal_tree[coord[1]]:
+        elif not overwrite and coord[1] in self.__internal_tree and coord[0] in self.__internal_tree[coord[1]]:
             return
         else:
             if coord[1] > con.MAX_DEPTH:

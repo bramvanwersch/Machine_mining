@@ -52,6 +52,16 @@ class Building(block_classes.MultiBlock, ABC):
         """
         pass
 
+    def has_inventory(self) -> bool:
+        """
+        Check on the fly if any of the bocks of the building are a container block
+        """
+        for row in self.blocks:
+            for block in row:
+                if isinstance(block, block_classes.ContainerBlock):
+                    return True
+        return False
+
 
 class InterfaceBuilding(Building, ABC):
     """abstraction level of buidlings with interfaces and inventory"""

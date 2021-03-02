@@ -1,4 +1,7 @@
 import random
+from typing import List, Dict, Union, ClassVar, Set, TYPE_CHECKING
+if TYPE_CHECKING:
+    from block_classes import blocks
 
 import utility.constants as con
 import utility.utilities as util
@@ -82,7 +85,7 @@ class PathFinder:
         path = Path(start)
         prev_node = node
         node = node.parent
-        target_location = prev_node.rect.topleft
+        target_location = prev_node.rect.center
         while node is not None:
             direction = self.DIRECTIONS[prev_node.direction_index]
             if direction in ["N", "S"]:
@@ -284,6 +287,8 @@ class PathfindingTree:
 
     Note: the self.rectangles could be a more efficient format then a list
     """
+    rectangle_network: List[Dict]
+
     def __init__(self):
         # shared dictionary that acts as the tree of connections between rectangles in the chunks
         self.rectangle_network = [{}, {}, {}, {}]
@@ -295,7 +300,11 @@ class PathfindingTree:
 
 
 class PathfindingChunk:
-    def __init__(self, matrix):
+    matrix: List[List["blocks.Block"]]
+    rectangle_network: Union[None, List[Dict]]
+
+    def __init__(self, matrix: List[List["blocks.Block"]]):
+        # matrix of a chunk
         self.matrix = matrix
         self.rectangle_network = None
 
@@ -443,25 +452,22 @@ class PathfindingChunk:
             for i in range(4):
                 self.rectangle_network[i][direction_sizes[i]].remove(rect)
 
-    def get_air_rectangles(self, blocks, covered_coordinates):
+    def get_air_rectangles(
+        self,
+        block_matrix: List[List["blocks.Block"]],
+        covered_coordinates: List[List[bool]]
+    ):
         # covered coordinates is a matrix with the same amount of rows and column coords for all checked coords.
 
         # find all rectangles in the block matrix
-        for n_row, row in enumerate(blocks):
+        for n_row, row in enumerate(block_matrix):
             for n_col, block in enumerate(row):
-                if block.transparant_group == 0 or covered_coordinates[n_row][n_col]:
+                # find solid block
+                if block.is_solid() or covered_coordinates[n_row][n_col]:
                     continue
 
-                # calculate the maximum lenght of a rectangle based on already
-                # established ones
-                end_n_col = n_col
-                for index, r_block in enumerate(row[n_col:]):
-                    if covered_coordinates[n_row][n_col + index]:
-                        break
-                    end_n_col = n_col + index
-
-                sub_matrix = [sub_row[n_col:end_n_col + 1] for sub_row in blocks[n_row:]]
-                sub_covered_matrix = [sub_row[n_col:end_n_col + 1] for sub_row in covered_coordinates[n_row:]]
+                sub_matrix = [sub_row[n_col:] for sub_row in block_matrix[n_row:]]
+                sub_covered_matrix = [sub_row[n_col:] for sub_row in covered_coordinates[n_row:]]
                 lm_coord = self.__find_air_rectangle(sub_matrix, sub_covered_matrix)
 
                 # add newly covered coordinates
@@ -471,22 +477,19 @@ class PathfindingChunk:
 
                 # add the air rectangle to the list of rectangles
                 air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in
-                              blocks[n_row:n_row + lm_coord[1] + 1]]
+                              block_matrix[n_row:n_row + lm_coord[1] + 1]]
                 rect = AirRectangle(util.rect_from_block_matrix(air_matrix))
                 self.__add_rectangle(rect)
 
-    def __find_air_rectangle(self, blocks, covered_coordinates):
+    def __find_air_rectangle(self, block_matrix, covered_coordinates):
         """
-        Find starting from an air block all the air block_classes in a rectangle
-
-        :param blocks: a selection of block_classes in a matrix
-        :return: the matrix coordinate of the local block_classes matrix in form
-        (column, row) that is the bottom right of the air rectangle
+        Find starting from a transparant block all the same transparant  block_classes in a rectangle given
+         a certain matrix
         """
         # first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
-        group = blocks[0][0].transparant_group
-        for n_col, block in enumerate(blocks[0][1:]):
+        group = block_matrix[0][0].transparant_group
+        for n_col, block in enumerate(block_matrix[0][1:]):
             if block.transparant_group != group or covered_coordinates[0][n_col + 1]:
                 break
             x_size += 1
@@ -494,7 +497,7 @@ class PathfindingChunk:
 
         # skip the first row since this was checked already
         block = None
-        for n_row, row in enumerate(blocks[1:]):
+        for n_row, row in enumerate(block_matrix[1:]):
             for n_col, block in enumerate(row[:x_size + 1]):
                 if block.transparant_group != group or covered_coordinates[n_row][n_col]:
                     break
