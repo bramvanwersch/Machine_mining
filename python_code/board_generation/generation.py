@@ -211,8 +211,8 @@ class BoardGenerator:
         col_start = int(rect.left / self.__biome_size.width)
 
         total_biomes = int(rect.height / self.__biome_size.height) * int(rect.width / self.__biome_size.width)
-        for row_i in range(int(rect.height / self.__biome_size.height)):
-            for col_i in range(int(rect.width / self.__biome_size.width)):
+        for row_i in range(ceil(rect.height / self.__biome_size.height)):
+            for col_i in range(ceil(rect.width / self.__biome_size.width)):
                 if progress_var:
                     current_biome_nr = (row_i * int(rect.width / self.__biome_size.width)) + col_i
                     progress_var[0] = f"Generating biome {current_biome_nr} out of {total_biomes}..."
@@ -337,8 +337,10 @@ class BoardGenerator:
     ) -> None:
         """Add blocks that span accros chunks but are not bigger then a chunk"""
         # check in a 3 * 3 around the chunk_coord if there is still special blocks to generate
-        for chunk_row in range(max(0, chunk_coord[1] - 1), chunk_coord[1] + 2):
-            for chunk_col in range(max(0, chunk_coord[0] - 1), chunk_coord[0] + 2):
+        for chunk_row in range(max(0, chunk_coord[1] - 1),
+                               min(chunk_coord[1] + 2, ceil(con.BOARD_SIZE.height / con.CHUNK_SIZE.height) - 1)):
+            for chunk_col in range(max(0, chunk_coord[0] - 1),
+                                   min(chunk_coord[0] + 2, ceil(con.BOARD_SIZE.width / con.CHUNK_SIZE.width) - 1)):
                 if self.__generated_chunks_matrix[chunk_row][chunk_col] != 0:
                     continue
                 rect = Rect((chunk_col * con.CHUNK_SIZE.width, chunk_row * con.CHUNK_SIZE.height,
@@ -532,7 +534,8 @@ class BoardGenerator:
                     or surrounding_coord[1] >= len(self.__biome_matrix) - 1 or surrounding_coord[1] < 0:
                 continue
             surrounding_biomes.append(self.__biome_matrix[surrounding_coord[1]][surrounding_coord[0]])
-        wheights = util.normalize([b.get_likelyhood_at_coord(x, y) for b in surrounding_biomes if b is not None])
+        surrounding_biomes = [b for b in surrounding_biomes if b is not None]
+        wheights = util.normalize([b.get_likelyhood_at_coord(x, y) for b in surrounding_biomes])
         biome_likelyhoods = {biome: wheights[index] for index, biome in enumerate(surrounding_biomes)}
         return biome_likelyhoods
 

@@ -9,6 +9,19 @@ from pygame.locals import *
 # own imports
 import utility.utilities as util
 
+
+# debug controls
+SHOW_BLOCK_BORDER = True
+FPS = True
+ENTITY_NMBR = True
+AIR_RECTANGLES = False
+WARNINGS = True
+SHOW_ZOOM = True
+NO_LIGHTING = True
+SHOW_THREADS = True
+TEST_BAORD = True
+
+
 # innitialize fonts to pre load a font
 pygame.font.init()
 FONTS: Dict[int, pygame.font.Font] = {i: pygame.font.SysFont("roboto", i) for i in range(12, 35)}
@@ -28,15 +41,25 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)  # pixels
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-BOARD_SIZE = util.Size(100_000, 5000)
-# preserve the board size
-ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
-# the center of the board
-START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
-START_LOAD_AREA = [list(range(START_CHUNK_POS[0] - 2, START_CHUNK_POS[0] + 3)),
-                   list(range(START_CHUNK_POS[1] - 2, START_CHUNK_POS[1] + 3))]  # always consecutive
-TOTAL_START_CHUNKS = ((START_CHUNK_POS[0] + 3) - (START_CHUNK_POS[0] - 2)) * \
-                     ((START_CHUNK_POS[1] + 3) - (START_CHUNK_POS[1] - 2))
+if TEST_BAORD:
+    BOARD_SIZE = util.Size(1000, 1000)  # board size should always be bigger then the SCREEN_SIZE
+    # preserve the board size
+    ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
+    # the center of the board
+    START_CHUNK_POS = (1, 1)
+    START_LOAD_AREA = [list(range(START_CHUNK_POS[0] - 1, START_CHUNK_POS[0] + 2)),
+                       list(range(START_CHUNK_POS[1] - 1, START_CHUNK_POS[1] + 2))]  # always consecutive
+    TOTAL_START_CHUNKS = 9
+else:
+    BOARD_SIZE = util.Size(100_000, 5000)  # board size should always be bigger then the SCREEN_SIZE
+    # preserve the board size
+    ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
+    # the center of the board
+    START_CHUNK_POS = (int(round(BOARD_SIZE.width / CHUNK_SIZE.width) / 2), 2)
+    START_LOAD_AREA = [list(range(START_CHUNK_POS[0] - 2, START_CHUNK_POS[0] + 3)),
+                       list(range(START_CHUNK_POS[1] - 2, START_CHUNK_POS[1] + 3))]  # always consecutive
+    TOTAL_START_CHUNKS = ((START_CHUNK_POS[0] + 3) - (START_CHUNK_POS[0] - 2)) * \
+                         ((START_CHUNK_POS[1] + 3) - (START_CHUNK_POS[1] - 2))
 
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
@@ -150,12 +173,3 @@ MULTI_TASKS = \
      "Selecting": TaskConstants(False), "Empty inventory": TaskConstants(True), "Fetch": TaskConstants(True),
      "Request": TaskConstants(True), "Deliver": TaskConstants(True)}
 
-# debug controls
-SHOW_BLOCK_BORDER = True
-FPS = True
-ENTITY_NMBR = True
-AIR_RECTANGLES = False
-WARNINGS = True
-SHOW_ZOOM = True
-NO_LIGHTING = True
-SHOW_THREADS = True
