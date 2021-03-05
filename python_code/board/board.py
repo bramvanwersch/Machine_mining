@@ -89,8 +89,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             if not chunk.changed[1] and chunk.changed[0]:
                 chunk.changed[1] = True
                 chunk_coord = interface_util.p_to_cp(chunk.rect.topleft)
-                self.generate_chunks(range(chunk_coord[0] - 1, chunk_coord[0] + 2),
-                                     range(chunk_coord[1] - 1, chunk_coord[1] + 2))
+                self.generate_chunks(list(range(chunk_coord[0] - 1, chunk_coord[0] + 2)),
+                                     list(range(chunk_coord[1] - 1, chunk_coord[1] + 2)))
 
     def to_dict(self):
         return {
@@ -118,14 +118,25 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 if new_blocks is not None:
                     self.add_blocks(*new_blocks)
 
-    def generate_chunks(self, col_coords_load, row_coords_load, thread_it=True, progress_var=None):
+    def generate_chunks(
+        self,
+        col_coords_load: List,
+        row_coords_load: List,
+        thread_it: bool = True,
+        progress_var: Union[List[str], None] = None
+    ):
+        print(progress_var)
         for row_li, row_gi in enumerate(row_coords_load):
             for col_li, col_gi in enumerate(col_coords_load):
                 if progress_var:
                     current_chunk = (row_li * len(con.START_LOAD_AREA[1])) + col_li + 1
                     progress_var[0] = f"Generating chunk {current_chunk} out of {con.TOTAL_START_CHUNKS}..."
-                # make sure 2 threads are not working on the same thing
-                if self.chunk_matrix[row_gi][col_gi] is not None or (col_gi, row_gi) in self._loading_chunks:
+                # make sure to not generate chunks outside the board
+                try:
+                    # make sure 2 threads are not working on the same thing
+                    if self.chunk_matrix[row_gi][col_gi] is not None or (col_gi, row_gi) in self._loading_chunks:
+                        continue
+                except IndexError:
                     continue
                 self._loading_chunks.add((col_gi, row_gi))
                 if thread_it:
