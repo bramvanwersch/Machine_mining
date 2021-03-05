@@ -466,7 +466,7 @@ class BoardGenerator:
             self.__add_directional_border(matrix, "north")
         elif topleft[1] + con.CHUNK_SIZE.height >= con.ORIGINAL_BOARD_SIZE.height:
             self.__add_directional_border(matrix, "south")
-        elif topleft[0] <= 0:
+        if topleft[0] <= 0:
             self.__add_directional_border(matrix, "west")
         elif topleft[0] + con.CHUNK_SIZE.width >= con.ORIGINAL_BOARD_SIZE.width:
             self.__add_directional_border(matrix, "east")
@@ -491,13 +491,13 @@ class BoardGenerator:
                 for col_i in range(len(matrix[row_i])):
                     if uniform(0, 1) < border_block_chance:
                         matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
-        elif direction == "east":
+        elif direction == "west":
             for row_i in range(len(matrix)):
                 for col_i in range(len(matrix[row_i][0:self.MAX_BORDER_SPREAD_DISTANCE])):
                     border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
                     if uniform(0, 1) < border_block_chance:
                         matrix[row_i][col_i] = "BorderMaterial"
-        elif direction == "west":
+        elif direction == "east":
             for row_i in range(len(matrix)):
                 for col_i in range(len(matrix[row_i][- (self.MAX_BORDER_SPREAD_DISTANCE + 1):-1])):
                     border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
