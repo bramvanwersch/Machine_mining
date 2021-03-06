@@ -125,7 +125,6 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         thread_it: bool = True,
         progress_var: Union[List[str], None] = None
     ):
-        print(progress_var)
         for row_li, row_gi in enumerate(row_coords_load):
             for col_li, col_gi in enumerate(col_coords_load):
                 if progress_var:
@@ -163,7 +162,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
     def __get_chunks_from_rect(self, rect):
         affected_chunks = []
         tl_column, tl_row = interface_util.p_to_cp(rect.topleft)
-        br_column, br_row = interface_util.p_to_cp(rect.bottomright)
+        br_column, br_row = interface_util.p_to_cp(pygame.Vector2(rect.bottomright) - pygame.Vector2(1, 1))
         top = rect.top
         for row in range((br_row - tl_row) + 1):
             if row == 0:
@@ -438,6 +437,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         return False
 
     def __chunk_from_point(self, point):
+        print(point)
         column, row = interface_util.p_to_cp(point)
         return self.chunk_matrix[row][column]
 
@@ -445,7 +445,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         chunk = self.__chunk_from_point(point)
         return chunk.get_block(point)
 
-    def add_selection_rectangle(self, pos, keep = False):
+    def add_selection_rectangle(self, pos, keep=False):
         """
         Add a rectangle that shows what the user is currently selecting
 
@@ -500,7 +500,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         """
         Handle mouse events issued by the user.
         """
-        #mousebutton1
+        # mousebutton1
         if self.pressed(1):
             if self._mode.name in ["Mining", "Cancel", "Selecting"]:
                 keep = False
@@ -521,7 +521,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             if self._mode.name == "Selecting":
                 # bit retarded
                 zoom = self.get_start_chunk().layers[0]._zoom
-                board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos, self.main_sprite_group.target, zoom)
+                board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos,
+                                                                        self.main_sprite_group.target, zoom)
                 chunk = self.__chunk_from_point(board_coord)
                 if chunk is None:
                     return
@@ -652,7 +653,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
                 return
             #make sure the plant is allowed to grow at the given place
-            if isinstance(small_interface.get_selected_item().material, environment_materials.MultiFloraMaterial) and not self.__can_add_flora(block, small_interface.get_selected_item().material):
+            if isinstance(small_interface.get_selected_item().material, environment_materials.MultiFloraMaterial) and \
+                    not self.__can_add_flora(block, small_interface.get_selected_item().material):
                 self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
                 return
             #the first block of the selection is the start block of the material
