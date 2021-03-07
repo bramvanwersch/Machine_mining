@@ -1,7 +1,7 @@
 from random import uniform
 import pygame
 from math import ceil
-from typing import List, Union
+from typing import List, Union, Tuple
 from threading import Thread
 
 import utility.utilities as util
@@ -348,43 +348,75 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             update_blocks = [block for block in update_blocks if not isinstance(block, block_classes.ContainerBlock)]
             self.add_blocks(*update_blocks)
 
-    def adjust_lighting(self, point, radius, point_light):
-        #extend in a circle around a center point and assign new light values based on the light point
+    def adjust_lighting(
+        self,
+        point: Union[Tuple[int, int], List],
+        radius: int,
+        point_light: int
+    ):
+        # extend in a diamond around a center point and assign new light values based on the light point
         point_light = min(point_light, con.MAX_LIGHT)
 
-        adjusted_blocks = []
         start_block = self.__block_from_point(point)
+        if start_block is None:
+            return
         if start_block.light_level < point_light:
             start_block.light_level = point_light
             self.changed_light_blocks.add(start_block)
-        col_blocks = int(radius / con.BLOCK_SIZE.width)
-        row_blocks = int(radius / con.BLOCK_SIZE.height)
+        total_column_blocks = int(radius / con.BLOCK_SIZE.width)
+        total_row_blocks = int(radius / con.BLOCK_SIZE.height)
 
-        row_end_extend = [False, False]
-        for row_i in range(row_blocks):
+        light_level = [point_light, point_light]
+        for row_i in range(total_row_blocks):
             for row_s_i, sign in enumerate((-1, 1)):
-                if row_end_extend[row_s_i]:
+                if light_level[row_s_i] <= 0:
                     continue
-                if all(row_end_extend):
+                if light_level[0] <= 0 and light_level[1] <= 0:
                     break
                 new_block_y = point[1] + sign * row_i * con.BLOCK_SIZE.height
                 next_block = self.__block_from_point((point[0], new_block_y))
-                if next_block.light_level < int(point_light - row_i * con.DECREASE_SPEED):
-                    next_block.light_level = int(point_light - row_i * con.DECREASE_SPEED)
-                    self.changed_light_blocks.add(next_block)
-                col_end_extend = [False, False]
-                for col_i in range(1, col_blocks + 1 - (row_i)):
-                    for col_s_i, sign in enumerate((-1, 1)):
-                        #positive x direction
-                        if col_end_extend[col_s_i]:
-                            continue
-                        if all(col_end_extend):
-                            break
-                        new_block_x = point[0] + sign * col_i * con.BLOCK_SIZE.width
-                        next_block = self.__block_from_point((new_block_x, new_block_y))
-                        if next_block.light_level < int(point_light - col_i * con.DECREASE_SPEED - row_i * con.DECREASE_SPEED):
-                            next_block.light_level = int(point_light - col_i * con.DECREASE_SPEED - row_i * con.DECREASE_SPEED)
-                            self.changed_light_blocks.add(next_block)
+                if next_block is None:
+                    continue
+                self.__select_col_light_blocks(total_column_blocks + 1 - row_i, [point[0], new_block_y],
+                                               light_level[row_s_i], sign)
+                change = con.DECREASE_SPEED_SOLID if next_block.is_solid() else con.DECREASE_SPEED
+                light_level[row_s_i] -= change
+
+    def __select_col_light_blocks(
+        self,
+        extend_total: int,
+        point: Union[Tuple[int, int], List],
+        point_light: int,
+        row_sign: int
+    ):
+        light_level = [point_light, point_light]
+        for col_i in range(extend_total):
+            for col_s_i, sign in enumerate((-1, 1)):
+                if light_level[col_s_i] <= 0:
+                    continue
+                if light_level[0] <= 0 and light_level[1] <= 0:
+                    break
+                new_block_x = point[0] + sign * col_i * con.BLOCK_SIZE.width
+                next_block = self.__block_from_point((new_block_x, point[1]))
+                adjacent_block = self.__block_from_point((new_block_x, point[1] +
+                                                          (row_sign * - 1) * con.BLOCK_SIZE.height))
+                if next_block is None:
+                    continue
+                self.__change_block_light_level(light_level[col_s_i], next_block)
+                change = con.DECREASE_SPEED_SOLID if next_block.is_solid() else con.DECREASE_SPEED
+                if adjacent_block is not None and adjacent_block.light_level > light_level[col_s_i]:
+                    light_level[col_s_i] = adjacent_block.light_level - change
+                else:
+                    light_level[col_s_i] -= change
+
+    def __change_block_light_level(
+        self,
+        light_level: int,
+        block: block_classes.Block
+    ):
+        if block is not None and block.light_level < light_level:
+            block.light_level = light_level
+            self.changed_light_blocks.add(block)
 
     def change_light_levels(self):
         for block in self.changed_light_blocks:
@@ -430,20 +462,35 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         for chunk, rect in chunk_rectangles:
             chunk.add_rectangle(rect, color, layer, border)
 
-    def transparant_collide(self, point):
-        chunk = self.__chunk_from_point(point)
-        block = chunk.get_block(point)
-        if block.transparant_group != 0:
-            return True
-        return False
+    def transparant_collide(
+        self,
+        point: Union[List, Tuple[int, int]]
+    ) -> bool:
+        """Check if a point collides with a block that is considered transparant (transparant group != 0). If the point
+        is outside the board False is returned"""
+        block = self.__block_from_point(point)
+        return block is not None and block.transparant_group != 0
 
-    def __chunk_from_point(self, point):
+    def __chunk_from_point(
+        self,
+        point: Union[List, Tuple[int, int]]
+    ) -> Union[chunks.Chunk, None]:
+        """Get a chunk on the board given a point in pixels. Coordinates outside the board return None"""
         column, row = interface_util.p_to_cp(point)
-        return self.chunk_matrix[row][column]
+        try:
+            return self.chunk_matrix[row][column]
+        except IndexError:
+            return None
 
-    def __block_from_point(self, point):
+    def __block_from_point(
+        self,
+        point: Union[List, Tuple[int, int]]
+    ) -> Union[block_classes.Block, None]:
+        """Get the block at a given pixel point. None is returned when the block is not available."""
         chunk = self.__chunk_from_point(point)
-        return chunk.get_block(point)
+        if chunk is not None:
+            return chunk.get_block(point)
+        return None
 
     def add_selection_rectangle(self, pos, keep=False):
         """
