@@ -15,7 +15,7 @@ import board.flora as flora
 class Chunk(util.Serializer):
 
     def __init__(self, pos, foreground, background, main_sprite_group, first_time=False):
-        #chunk with sizes in pixels lowest value should 0,0
+        # chunk with sizes in pixels lowest value should 0,0
         self.rect = pygame.Rect((*pos, *con.CHUNK_SIZE))
 
         self.plants = {}

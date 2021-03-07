@@ -1,5 +1,6 @@
 from random import uniform
 import pygame
+from math import ceil
 from typing import List, Union
 from threading import Thread
 
@@ -131,11 +132,11 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                     current_chunk = (row_li * len(con.START_LOAD_AREA[1])) + col_li + 1
                     progress_var[0] = f"Generating chunk {current_chunk} out of {con.TOTAL_START_CHUNKS}..."
                 # make sure to not generate chunks outside the board
-                try:
-                    # make sure 2 threads are not working on the same thing
-                    if self.chunk_matrix[row_gi][col_gi] is not None or (col_gi, row_gi) in self._loading_chunks:
-                        continue
-                except IndexError:
+                if row_gi < 0 or row_gi > ceil(con.BOARD_SIZE.height / con.CHUNK_SIZE.height) - 1 or \
+                        col_gi < 0 or col_gi > ceil(con.BOARD_SIZE.width / con.CHUNK_SIZE.width) - 1:
+                    continue
+                # make sure 2 threads are not working on the same thing
+                if self.chunk_matrix[row_gi][col_gi] is not None or (col_gi, row_gi) in self._loading_chunks:
                     continue
                 self._loading_chunks.add((col_gi, row_gi))
                 if thread_it:
@@ -437,7 +438,6 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         return False
 
     def __chunk_from_point(self, point):
-        print(point)
         column, row = interface_util.p_to_cp(point)
         return self.chunk_matrix[row][column]
 
