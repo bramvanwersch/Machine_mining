@@ -89,6 +89,7 @@ class Scene(event_handling.EventHandler, ABC):
         self.board_update_rectangles = self.rect
 
     def scene_updates(self):
+        # TODO make this how it was intended using the build in method
         for sprite in self.sprite_group.sprites():
             self.sprite_group.change_layer(sprite, sprite._layer)
         self.set_update_rectangles()
@@ -137,10 +138,6 @@ class MainMenu(Scene):
         quit_button = widgets.Button(button_size, color=(100, 100, 100), text="QUIT", font_size=30)
         quit_button.add_key_event_listener(1, self.__quit, types=["unpressed"])
         self.main_menu_frame.add_widget(("center", y_coord), quit_button)
-
-        # y_coord += 50
-        # test_list = widgets.MultilineTextBox((500, 200))
-        # self.main_menu_frame.add_widget(("center", y_coord), test_list)
 
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling()
@@ -407,7 +404,7 @@ class Game(Scene, util.Serializer):
         self.__selected_options = options
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
-        super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE])
+        super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE, con.K_b])
         # update rectangles
         self.__vision_rectangles = []
         self.__debug_rectangle = (0, 0, 0, 0)
@@ -425,7 +422,6 @@ class Game(Scene, util.Serializer):
         self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                   self.sprite_group) if self.board else None
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.add_recordable_key(4)
 
     def start(self):
         # function for setting up a Game
@@ -514,7 +510,7 @@ class Game(Scene, util.Serializer):
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling()
         self.__handle_interface_selection_events()
-        # this means that events going to the camera center can not be used by any other window/scene
+
         leftover_events = self.camera_center.handle_events(events)
         leftover_events = self.window_manager.handle_events(leftover_events)
         super().handle_events(leftover_events, consume_events=consume)
@@ -524,6 +520,8 @@ class Game(Scene, util.Serializer):
             self.__zoom_entities(-0.1)
         if self.unpressed(con.K_ESCAPE):
             self.window_manager.add(self.pause_window)
+        if self.unpressed(con.K_b):
+            self.window_manager.add(self.building_interface)
         self.board.handle_events(leftover_events)
 
     def set_update_rectangles(self):

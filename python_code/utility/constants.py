@@ -64,11 +64,6 @@ else:
 BLOCK_SIZE = util.Size(10, 10)
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
 
-# windows
-INTERFACE_WINDOW_SIZE = util.Size(500, 700)
-DYNAMIC_INTERFACE_WINDOW_POS = (int((SCREEN_SIZE.width - INTERFACE_WINDOW_SIZE.width) / 2),
-                                int((SCREEN_SIZE.height - INTERFACE_WINDOW_SIZE.height) / 2))
-
 # layers
 BOTTOM_LAYER = 0
 BACKGROUND_LAYER = BOTTOM_LAYER + 1

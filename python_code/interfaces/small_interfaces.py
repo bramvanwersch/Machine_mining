@@ -1,4 +1,5 @@
 import pygame
+from typing import List, Union, Tuple
 
 import interfaces.widgets as widgets
 import utility.constants as con
@@ -30,9 +31,12 @@ def get_selected_item():
 
 class BuildingWindow(base_interfaces.Window):
     CLOSE_LIST = ["CraftingWindow"]
+    WINDOW_SIZE: util.Size = util.Size(400, 300)
+    WINDOW_POS: Union[Tuple[int, int], List] = (int((con.SCREEN_SIZE.width - WINDOW_SIZE.width) / 2),
+                                                int((con.SCREEN_SIZE.height - WINDOW_SIZE.height) / 2))
 
     def __init__(self, terminal_inventory, *groups):
-        super().__init__(con.DYNAMIC_INTERFACE_WINDOW_POS, con.INTERFACE_WINDOW_SIZE,
+        super().__init__(self.WINDOW_POS, self.WINDOW_SIZE,
                          *groups, layer=con.INTERFACE_LAYER, title="PICK AN ITEM TO BUILD:",
                          allowed_events=[1, con.K_ESCAPE])
         self.__inventory = terminal_inventory
@@ -76,14 +80,18 @@ class BuildingWindow(base_interfaces.Window):
 
     def __initiate_widgets(self):
         # create scrollable inventory
-        self._inventory_sp = widgets.ScrollPane((650, 625), color=self.COLOR[:-1])
-        self.add_widget((25, 50), self._inventory_sp)
+        self._inventory_sp = widgets.ScrollPane(self.WINDOW_SIZE - (50, 50), color=self.COLOR[:-1])
+        self.add_widget((25, 25), self._inventory_sp)
         self.add_border(self._inventory_sp)
 
 
 class PauseWindow(base_interfaces.Window):
+    WINDOW_SIZE = util.Size(400, 500)
+    WINDOW_POS = (int((con.SCREEN_SIZE.width - WINDOW_SIZE.width) / 2),
+                  int((con.SCREEN_SIZE.height - WINDOW_SIZE.height) / 2))
+
     def __init__(self, sprite_group):
-        super().__init__(con.DYNAMIC_INTERFACE_WINDOW_POS, con.INTERFACE_WINDOW_SIZE, sprite_group, title="PAUSED")
+        super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, title="PAUSED")
         self.__init_widgets()
 
     def __init_widgets(self):
