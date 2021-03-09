@@ -7,7 +7,7 @@ import interfaces.interface_utility as interfacer_util
 import utility.utilities as util
 import utility.constants as con
 import interfaces.widgets as widgets
-import utility.image_handling as image_handlers
+from utility import image_handling as image_handlers, event_handling
 
 
 class Window(widgets.Frame):
@@ -98,11 +98,21 @@ class Window(widgets.Frame):
         """
         Press the escape key to close the window
         """
-        if self.window_manager == None:
+        if self.window_manager is None:
             self.window_manager = window_managers.game_window_manager
         self.window_manager.remove(self)
+        mock_key = event_handling.Key(con.BTN_HOVER)
+        self.__reset_hovers(self.widgets, mock_key)
 
-    def set_focus(self, value:bool):
+    def __reset_hovers(self, widgets_, mock_key):
+        for widget in widgets_:
+            if isinstance(widget, widgets.Pane):
+                self.__reset_hovers(widget.widgets, mock_key)
+            elif widget.has_hover():
+                mock_key.unpress(None)
+                widget.action(mock_key, "unpressed")
+
+    def set_focus(self, value: bool):
         #things called when losing focus of the window
         self.__focussed = value
         if value == False:

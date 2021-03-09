@@ -5,7 +5,6 @@
 from abc import ABC
 import pygame
 from typing import List, Tuple, Union, Set, Dict, Callable, Any, ClassVar, TYPE_CHECKING
-import pyperclip
 
 # own imports
 import entities
@@ -237,6 +236,9 @@ class Widget(event_handlers.EventHandler, ABC):
     ) -> Any:
         """Activates an action function bound to a certain key."""
         self.__listened_for_events[key.name](_type)
+
+    def has_hover(self) -> bool:
+        return con.BTN_HOVER in self.__listened_for_events
 
     def add_tooltip(
         self,
