@@ -685,7 +685,8 @@ class SelectionList(Pane):
                                   font_size=self.__FONT_SIZE, selectable=False)
         self.add_widget((0, 0), self.__show_label)
         self.__expand_button = Button((line_height, line_height), image=self.__EXPAND_BUTTON_IMAGE.images()[0],
-                                      hover_image=self.__EXPAND_BUTTON_HOVER_IMAGE.images()[0], border=True)
+                                      hover_image=self.__EXPAND_BUTTON_HOVER_IMAGE.images()[0], border=True,
+                                      selectable=False)
         self.__expand_button.add_key_event_listener(1, self.__show_expanded_options, types=["unpressed"])
         self.add_widget((line_width, 0), self.__expand_button)
 
@@ -769,11 +770,6 @@ class Frame(entities.ZoomableEntity, Pane):
         self.__previous_board_pos = self.board_position
 
         # frame events are not consumed when triggered
-        self.add_key_event_listener(con.K_UP, self.__select_next_widget, values=[con.K_UP], types=["pressed"])
-        self.add_key_event_listener(con.K_DOWN, self.__select_next_widget, values=[con.K_DOWN], types=["pressed"])
-        self.add_key_event_listener(con.K_LEFT, self.__select_next_widget, values=[con.K_LEFT], types=["pressed"])
-        self.add_key_event_listener(con.K_RIGHT, self.__select_next_widget, values=[con.K_RIGHT], types=["pressed"])
-        self.add_key_event_listener(con.K_RETURN, self.__activate_selected_widget, types=["pressed"])
         self.add_key_event_listener(1, self.__select_top_widget, types=["pressed", "unpressed"])
 
     def update(self, *args):
@@ -811,68 +807,6 @@ class Frame(entities.ZoomableEntity, Pane):
         rect: pygame.Rect
     ) -> None:
         self.orig_rect = rect
-
-    def __select_next_widget(
-        self,
-        direction: int
-    ) -> None:
-        """Find the widget that is closest in the correct direction of all the selectable widgets to select that
-        widget instead"""
-        selectable_widgets = self._get_selectable_widgets()
-
-        if len(selectable_widgets) == 0:
-            return
-        # if no selected take top most widget
-        if self.selected_widget is None:
-            self.selected_widget = sorted(self.widgets, key=lambda x: (x.rect.centery, x.rect.centerx))[0]
-            self.selected_widget.set_selected(True)
-            return
-        else:
-            s_rect = self.selected_widget.rect
-            self.selected_widget.set_selected(False)
-        # moving up or down
-        if direction == con.K_UP or direction == con.K_DOWN:
-            # make sure widgets are partially overlapping in the x-direction
-            elligable_widgets = \
-                [w for w in selectable_widgets if s_rect.left <= w.rect.left <= s_rect.right or
-                 s_rect.right >= w.rect.right >= s_rect.left]
-            if direction == con.K_UP:
-                elligable_widgets_above = [w for w in elligable_widgets if w.rect.centery < s_rect.centery]
-                if len(elligable_widgets_above) > 0:
-                    # select the closest above the current
-                    self.selected_widget = sorted(elligable_widgets_above,
-                                                  key=lambda x: s_rect.centery - x.rect.centery)[0]
-            else:
-                elligable_widgets_below = [w for w in elligable_widgets if w.rect.centery > s_rect.centery]
-                if len(elligable_widgets_below) > 0:
-                    # select the closest bewow the current
-                    self.selected_widget = sorted(elligable_widgets_below,
-                                                  key=lambda x: x.rect.centery - s_rect.centery)[0]
-        # moving left or right
-        if direction == con.K_LEFT or direction == con.K_RIGHT:
-            # make sure widgets are partially overlapping in the x-direction
-            elligable_widgets = \
-                [w for w in selectable_widgets if s_rect.top <= w.rect.top <= s_rect.bottom or
-                 s_rect.bottom >= w.rect.bottom >= s_rect.top]
-            if direction == con.K_LEFT:
-                elligable_widgets_west = [w for w in elligable_widgets if w.rect.centerx < s_rect.centerx]
-                if len(elligable_widgets_west) > 0:
-                    # select the closest above the current
-                    self.selected_widget = sorted(elligable_widgets_west,
-                                                  key=lambda x: s_rect.centerx - x.rect.centerx)[0]
-            else:
-                elligable_widgets_east = [w for w in elligable_widgets if w.rect.centerx > s_rect.centerx]
-                if len(elligable_widgets_east) > 0:
-                    # select the closest bewow the current
-                    self.selected_widget = sorted(elligable_widgets_east,
-                                                  key=lambda x: x.rect.centerx - s_rect.centerx)[0]
-        self.selected_widget.set_selected(True)
-
-    def __activate_selected_widget(self) -> None:
-        """perform the action bound to a widget on mouse-1"""
-        # make sure an action is bound
-        if self.selected_widget is not None and self.get_key(1) is not None:
-            self.selected_widget.action(event_handlers.Key(1), "unpressed")
 
     def handle_mouse_events(
         self,
@@ -1121,7 +1055,12 @@ class MultilineTextBox(Pane):
     __INNITIAL_KEY_REPEAT_SPEED = 250
     __KEY_REPEAT_SPEED = 25
 
+    __font_size: int
+    __text_color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]]
     __lines: List["_TextLine"]
+    __selected_line_index: int
+    __line_height: int
+    __max_lines: int
 
     def __init__(
         self,
@@ -1137,7 +1076,6 @@ class MultilineTextBox(Pane):
         self.__lines = []
         self.__selected_line_index = 0
         self.__init_widgets()
-        self.__clicked_mouse_location = None
         self.__line_height = self.__lines[0].rect.height
         self.__max_lines = lines if lines else max(1, int(self.rect.height / self.__line_height) - 1)
 
@@ -1146,9 +1084,6 @@ class MultilineTextBox(Pane):
 
         [self.add_key_event_listener(key, self.__add_letter, values=[key], types=["pressed"]) for key in con.KEY_KEYS]
         [self.add_key_event_listener(key, self.unpress_key, values=[key], types=["unpressed"]) for key in con.KEY_KEYS]
-        # TODO add at some point
-        # self.add_key_event_listener(1, self.__save_clicked_mouse_location, values=[1], types=["pressed"])
-        # self.add_key_event_listener(1, self.__forget_clicked_mouse_location, types=["unpressed"])
 
     def get_text(self) -> str:
         all_text = ""
@@ -1158,8 +1093,6 @@ class MultilineTextBox(Pane):
 
     def wupdate(self, *args) -> None:
         super().wupdate(*args)
-        # if self.__clicked_mouse_location:
-        #     self.draw_selection()
         if self.pressed_key_code is not None:
             if self.next_key_repeat <= 0:
                 self.__add_letter(self.pressed_key_code, reset_repeat=False)
@@ -1196,8 +1129,6 @@ class MultilineTextBox(Pane):
             self.enter()
         elif key_code == con.K_DELETE:
             active_line.delete()
-            # if len(active_line.text) == 1:
-            #     self.remove_line()
         elif key_code == con.K_LEFT:
             self.move_line_location(-1)
         elif key_code == con.K_RIGHT:
@@ -1213,13 +1144,6 @@ class MultilineTextBox(Pane):
         else:
             if modifier in [con.KMOD_CAPS, con.KMOD_LSHIFT, con.KMOD_RSHIFT]:
                 letter = letter.upper()
-
-            # TODO add when feel like it
-            # if modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_v:
-            #     active_line.add_text(pyperclip.paste())
-            # elif modifier in [con.KMOD_LCTRL, con.KMOD_RCTRL] and key_code == con.K_c:
-            #     pyperclip.copy(active_line.text)
-            # else:
             active_line.append(letter)
 
     def unpress_key(
@@ -1365,34 +1289,13 @@ class MultilineTextBox(Pane):
     ):
         self.__selected_line_index = max(0, min(self.__max_lines, self.__selected_line_index + value))
 
-    # def __save_clicked_mouse_location(self, key_code):
-    #     self.clean_surface(clean_image=False, clean_text=False)
-    #     key = self.get_key(key_code)
-    #     self.__clicked_mouse_location = key.event.pos
-    #
-    # def __forget_clicked_mouse_location(self):
-    #     self.__clicked_mouse_location = None
-    #
-    # def draw_selection(self):
-    #     self.clean_surface(clean_image=False, clean_text=False)
-    #     other_pos = pygame.mouse.get_pos()
-    #     pos = (min(other_pos[0], self.__clicked_mouse_location[0]) - self.board_position[0], 0)
-    #     size = (abs(other_pos[0] - self.__clicked_mouse_location[0]), self.rect.height)
-    #     selection_rect = pygame.Surface(size)
-    #     selection_rect.fill(self.__SELECTION_COLOR)
-    #     self.set_image(selection_rect, pos)
-
     def set_selected(
         self,
         selected: bool,
         **kwargs
     ) -> None:
         self.selected = selected
-        # it the this is selected then the user did not click on an internal text box so select the lowest one
-        # available
         self.__lines[-1].set_selected(selected)
-        if not selected:
-            self.__clicked_mouse_location = None
 
     def handle_events(
         self,
@@ -1400,8 +1303,7 @@ class MultilineTextBox(Pane):
         **kwargs
     ) -> List[pygame.event.Event]:
         leftovers = super().handle_events(events, **kwargs)
-        if not self.__clicked_mouse_location:
-            leftovers = self.__lines[self.__selected_line_index].handle_events(leftovers, **kwargs)
+        leftovers = self.__lines[self.__selected_line_index].handle_events(leftovers, **kwargs)
         return leftovers
 
 
