@@ -247,6 +247,9 @@ class Widget(event_handlers.EventHandler, ABC):
         self.add_hover_event_listener(tooltip.show_tooltip, tooltip.show_tooltip, hover_values=[True],
                                       unhover_values=[False])
 
+    def listened_for_keys(self) -> List[int]:
+        return list(self.__listened_for_events.keys())
+
     def add_key_event_listener(
         self,
         key: int,
@@ -255,12 +258,26 @@ class Widget(event_handlers.EventHandler, ABC):
         types: List = None,
         no_repeat: bool = False
     ) -> None:
-        """Link functions to key events and trigger when appropriate"""
+        """Link functions to key events"""
         if key in self.__listened_for_events:
             self.__listened_for_events[key].add_action(action_function, values, types)
         else:
             self.__listened_for_events[key] = WidgetEvent(action_function, values, types, no_repeat)
             self.add_recordable_key(key)
+
+    def remove_key_event_listener(
+        self,
+        key: int,
+        types: Union[List[str], None] = None
+    ):
+        types = ["pressed", "unpressed"] if types is None else types
+        if key not in self.__listened_for_events:
+            return
+        for type_ in types:
+            self.__listened_for_events[key].states[type_] = None
+        if self.__listened_for_events[key].states["pressed"] is None and \
+                self.__listened_for_events[key].states["unpressed"] is None:
+            del self.__listened_for_events[key]
 
     def add_hover_event_listener(
         self,
@@ -1090,6 +1107,16 @@ class MultilineTextBox(Pane):
         for line in self.__lines:
             all_text += line.text + "\n"
         return all_text
+
+    def delete_text(self):
+        for line in self.__lines:
+            line.text = ""
+
+    def set_text_at_line(self, line_index, text):
+        self.__lines[line_index].set_line_text(text)
+
+    def add_text_at_line(self, line_index, text):
+        self.__lines[line_index].add_text(text)
 
     def wupdate(self, *args) -> None:
         super().wupdate(*args)

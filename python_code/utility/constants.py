@@ -11,16 +11,20 @@ import utility.utilities as util
 
 
 # debug controls
-SHOW_BLOCK_BORDER = True
-FPS = True
-ENTITY_NMBR = True
-AIR_RECTANGLES = False
-WARNINGS = True
-SHOW_ZOOM = True
-NO_LIGHTING = False
-SHOW_THREADS = True
-TEST_BAORD = True
+class DebugValues(util.ConsoleReadable):
+    def __init__(self):
+        self.SHOW_BLOCK_BORDER = True
+        self.FPS = True
+        self.ENTITY_NMBR = True
+        self.AIR_RECTANGLES = False
+        self.WARNINGS = True
+        self.SHOW_ZOOM = True
+        self.NO_LIGHTING = False
+        self.SHOW_THREADS = True
+        self.TEST_BAORD = True
 
+
+DEBUG = DebugValues()
 
 # innitialize fonts to pre load a font
 pygame.font.init()
@@ -36,12 +40,13 @@ MINING_SPEED_PER_HARDNESS = 100   # ms
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0].rsplit(os.sep, 2)[0]
 IMAGE_DIR = "{}{}images".format(MAIN_DIR, os.sep)
 SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
+DATA_DIR = "{}{}data".format(MAIN_DIR, os.sep)
 
 # sizes
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)  # pixels
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-if TEST_BAORD:
+if DEBUG.TEST_BAORD:
     BOARD_SIZE = util.Size(1000, 1000)  # board size should always be bigger then the SCREEN_SIZE
     # preserve the board size
     ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()

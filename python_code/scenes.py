@@ -13,9 +13,10 @@ import entities
 import tasks
 from board import sprite_groups as sprite_groups, chunks as chunks
 from interfaces import widgets as widgets, interface_utility as interface_util, small_interfaces as small_interfaces, \
-    managers as window_managers
+    managers as window_managers, console
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
+
 
 # defined below SceneManager
 scenes: "SceneManager"
@@ -213,7 +214,7 @@ class GameSettingsScene(Scene):
 
         local_x = int((generel_options_pane.rect.width / 2) - 135)
         game_name_label = widgets.Label((140, con.FONTS[22].get_linesize()), color=color, text="Name:", font_size=22,
-                                        text_pos=("W", "C"))
+                                        text_pos=("W", "C"), selectable=False)
         generel_options_pane.add_widget((local_x, local_y), game_name_label)
 
         # GENERATION OPTIONS
@@ -232,7 +233,7 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), self.__biome_size_selection_list)
 
         biome_size_label = widgets.Label((100, self.__biome_size_selection_list.LINE_HEIGHT), color=color,
-                                         text="Biome Size:", font_size=22, text_pos=("W", "C"))
+                                         text="Biome Size:", font_size=22, text_pos=("W", "C"), selectable=False)
         biome_size_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150), text="Average size of biomes")
         biome_size_label.add_tooltip(biome_size_tooltip)
         local_x = int((generation_values_pane.rect.width / 2) - 135)
@@ -248,7 +249,7 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), self.__biome_blend_selection_list)
 
         biome_blend_label = widgets.Label((100, self.__biome_blend_selection_list.LINE_HEIGHT), color=color,
-                                          text="Biome Blend:", font_size=22, text_pos=("W", "C"))
+                                          text="Biome Blend:", font_size=22, text_pos=("W", "C"), selectable=False)
         biome_blend_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                               text="The level to which biomes\ncan blend trough one another")
         biome_blend_label.add_tooltip(biome_blend_tooltip)
@@ -265,7 +266,7 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), self.__max_caves_selection_list)
 
         max_caves_label = widgets.Label((140, self.__max_caves_selection_list.LINE_HEIGHT), color=color,
-                                        text="Number of Caves:", font_size=22, text_pos=("W", "C"))
+                                        text="Number of Caves:", font_size=22, text_pos=("W", "C"), selectable=False)
         max_caves_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                             text="The amount of caves present on the map")
         max_caves_label.add_tooltip(max_caves_tooltip)
@@ -282,7 +283,7 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), self.__cave_length_selection_list)
 
         cave_length_label = widgets.Label((140, self.__cave_length_selection_list.LINE_HEIGHT), color=color,
-                                          text="Length of Caves:", font_size=22, text_pos=("W", "C"))
+                                          text="Length of Caves:", font_size=22, text_pos=("W", "C"), selectable=False)
         cave_length_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                               text="The lenght of the caves")
         cave_length_label.add_tooltip(cave_length_tooltip)
@@ -299,7 +300,7 @@ class GameSettingsScene(Scene):
         generation_values_pane.add_widget((local_x, local_y), self.__cave_width_selection_list)
 
         cave_width_label = widgets.Label((140, self.__cave_width_selection_list.LINE_HEIGHT), color=color,
-                                         text="Width of Caves:", font_size=22, text_pos=("W", "C"))
+                                         text="Width of Caves:", font_size=22, text_pos=("W", "C"), selectable=False)
         cave_width_tooltip = widgets.Tooltip(self.sprite_group, color=(150, 150, 150),
                                              text="How wide a cave is")
         cave_width_label.add_tooltip(cave_width_tooltip)
@@ -404,7 +405,7 @@ class Game(Scene, util.Serializer):
         self.__selected_options = options
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
-        super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE, con.K_b])
+        super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
         # update rectangles
         self.__vision_rectangles = []
         self.__debug_rectangle = (0, 0, 0, 0)
@@ -422,6 +423,7 @@ class Game(Scene, util.Serializer):
         self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                   self.sprite_group) if self.board else None
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
+        self.console_window = console.ConsoleWindow(sprite_group)
 
     def start(self):
         # function for setting up a Game
@@ -511,8 +513,8 @@ class Game(Scene, util.Serializer):
         events = super().scene_event_handling()
         self.__handle_interface_selection_events()
 
-        leftover_events = self.camera_center.handle_events(events)
-        leftover_events = self.window_manager.handle_events(leftover_events)
+        leftover_events = self.window_manager.handle_events(events)
+        leftover_events = self.camera_center.handle_events(leftover_events)
         super().handle_events(leftover_events, consume_events=consume)
         if self.pressed(4) or self.unpressed(4):
             self.__zoom_entities(0.1)
@@ -520,8 +522,8 @@ class Game(Scene, util.Serializer):
             self.__zoom_entities(-0.1)
         if self.unpressed(con.K_ESCAPE):
             self.window_manager.add(self.pause_window)
-        if self.unpressed(con.K_b):
-            self.window_manager.add(self.building_interface)
+        if self.unpressed(con.K_COMMA):
+            self.window_manager.add(self.console_window)
         self.board.handle_events(leftover_events)
 
     def set_update_rectangles(self):
@@ -588,7 +590,7 @@ class Game(Scene, util.Serializer):
 
         self._visible_entities = 0
         for sprite in self.sprite_group.sprites():
-            if con.NO_LIGHTING or not sprite.static or (sprite.rect.colliderect(visible_rect) and
+            if con.DEBUG.NO_LIGHTING or not sprite.static or (sprite.rect.colliderect(visible_rect) and
                                                         sprite.orig_rect.collidelist(self.__vision_rectangles) != -1):
                 sprite.show(True)
                 if sprite.is_showing():
@@ -605,20 +607,20 @@ class Game(Scene, util.Serializer):
 
         y_coord = 5
         debug_topleft = (x_coord, y_coord)
-        if con.FPS:
+        if con.DEBUG.FPS:
             fps = con.FONTS[18].render("fps: {}".format(int(con.GAME_TIME.get_fps())), True, pygame.Color('white'))
             self.screen.blit(fps, (x_coord, y_coord))
             y_coord += line_distance
-        if con.ENTITY_NMBR:
+        if con.DEBUG.ENTITY_NMBR:
             en = con.FONTS[18].render("e: {}/{}".format(self._visible_entities, len(self.sprite_group.sprites())), True,
                                       pygame.Color('white'))
             self.screen.blit(en, (x_coord, y_coord))
             y_coord += line_distance
-        if con.SHOW_ZOOM:
+        if con.DEBUG.SHOW_ZOOM:
             z = con.FONTS[18].render("zoom: {}x".format(self._zoom), True, pygame.Color('white'))
             self.screen.blit(z, (x_coord, y_coord))
             y_coord += line_distance
-        if con.SHOW_THREADS:
+        if con.DEBUG.SHOW_THREADS:
             st = con.FONTS[18].render("threads: {}".format(len(self.board._loading_chunks)),
                                       True, pygame.Color('white'))
             self.screen.blit(st, (x_coord, y_coord))

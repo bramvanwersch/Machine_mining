@@ -49,7 +49,7 @@ class Main:
             self.screen.fill((0, 0, 0))
             active_scene = scenes.scenes.active_scene
             active_scene.update()
-            if con.NO_LIGHTING:
+            if con.DEBUG.NO_LIGHTING:
                 pygame.display.flip()
             else:
                 pygame.display.update(active_scene.board_update_rectangles)

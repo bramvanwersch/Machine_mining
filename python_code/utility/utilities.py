@@ -1,4 +1,5 @@
 from pygame import Rect
+from typing import List, Union, Iterable
 from math import pi, e, sqrt, erfc, pow
 from abc import ABC, abstractmethod
 import json
@@ -63,6 +64,18 @@ class Serializer(ABC):
         else:
             d = json.load(js)
         return cls.from_dict(**d)
+
+
+class ConsoleReadable(ABC):
+    """Methods that a class that is usable for certain console commands has"""
+
+    def printables(self) -> List[str]:
+        """Return a list of variable names that are allowed printable, default is all public varaible names"""
+        return [key for key in self.__dict__.keys() if not key.startswith("_")]
+
+    def setables(self):
+        """Return a list of varaible names that are allowed to be changed"""
+        return []
 
 
 def normalize(values, scale=1):

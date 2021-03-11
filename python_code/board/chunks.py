@@ -27,7 +27,7 @@ class Chunk(util.Serializer):
         offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
         foreground_image = BoardImage(self.rect.topleft, block_matrix = self.__matrix, layer = con.BOARD_LAYER, offset=offset)
         background_image = BoardImage(self.rect.topleft, block_matrix = self.__back_matrix, layer = con.BACKGROUND_LAYER, offset=offset)
-        light_image = LightImage(self.rect.topleft, layer = con.LIGHT_LAYER, color=con.INVISIBLE_COLOR if con.NO_LIGHTING else (0, 0, 0, 255))
+        light_image = LightImage(self.rect.topleft, layer = con.LIGHT_LAYER, color=con.INVISIBLE_COLOR if con.DEBUG.NO_LIGHTING else (0, 0, 0, 255))
         selection_image = TransparantBoardImage(self.rect.topleft, layer = con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
 
         self.layers = [light_image, selection_image, foreground_image, background_image]
