@@ -45,9 +45,9 @@ class ConsoleWindow(Window):
             self.add_executed_command_message(self.__input_line.process_line)
             message, is_error = self.__console.process_command_line_text(self.__input_line.process_line)
             if is_error:
-                self.add_error_message(message)
+                [self.add_error_message(m) for m in message.split("\n")]
             else:
-                self.add_conformation_message(message)
+                [self.add_conformation_message(m) for m in message.split("\n")]
             self.__input_line.process_line = None
 
     def __create_tab_information(self, current_line: widgets.MultilineTextBox):
@@ -337,7 +337,8 @@ class Console:
             if arguments[0] == "print":
                 return self.__process_print(arguments), False
             elif arguments[0] == "scripts":
-                return self.process_command_line_text(self.command_tree["scripts"][arguments[1]])
+
+                return self.__process_script_call(arguments)
 
 
             #     return self.__process(commands)
@@ -354,16 +355,31 @@ class Console:
             #     else:
             #         return "No script known by name {}".format(commands[1]), True
             else:
-                return "{} is not a valid command. Choose one of the following: set, delete," \
-                       " create, print.".format(arguments[0]), True
+                return "{} is not a valid command. Choose one of the following: {}."\
+                    .format(arguments[0], ", ".join(self.command_tree.keys())), True
 
-    def __process_print(self, commands):
-        target = globals()[commands[1]]
+    def __process_print(self, arguments):
+        target = globals()[arguments[1]]
         index = 2
-        while index < len(commands):
-            target = getattr(target, commands[index])
+        while index < len(arguments):
+            target = getattr(target, arguments[index])
             index += 1
-        return "Value of {} is {}".format(".".join(commands[1:]), str(target))
+        return "Value of {} is {}".format(".".join(arguments[1:]), str(target))
+
+    def __process_script_call(
+        self,
+        arguments: List[str]
+    ) -> Tuple[str, bool]:
+        """Process a script call by taking the called script and calling all script lines that are provided by ;
+        separation"""
+        command_line = self.command_tree["scripts"][arguments[1]]
+        total_message = ""
+        all_return_code = True
+        for line in command_line.split(";"):
+            message, return_code = self.process_command_line_text(line)
+            all_return_code = return_code and all_return_code
+            total_message += message + "\n"
+        return total_message[:-1], all_return_code
 
     def __text_to_commands(self, text):
         text = text.strip()
