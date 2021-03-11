@@ -2,7 +2,8 @@
 
 import pygame
 import re
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Dict, Any
+import os
 
 from interfaces.base_interface import Window
 import utility.utilities as util
@@ -286,14 +287,16 @@ class Console:
 
     def __innitialise_command_tree(self):
         self.command_tree["print"] = self.__create_print_tree()
+        self.command_tree["scripts"] = self.__create_script_tree()
 
-    def __create_print_tree(self):
+    def __create_print_tree(self) -> Dict[str, Any]:
         tree = dict()
         tree["DEBUG"] = self.__create_attribute_tree(DEBUG, "printables")
         return tree
 
-    def __create_script_tree(self):
-        partsfile = os.path.join(DATA_DIR, "scripts.sf")
+    def __create_script_tree(self) -> Dict[str, Any]:
+        """Scrips are read from a file that contain a name, ':' and then a oneliner to be executed"""
+        partsfile = os.path.join(con.DATA_DIR, "scripts.txt")
         f = open(partsfile, "r")
         lines = f.readlines()
         f.close()
@@ -302,20 +305,14 @@ class Console:
             name, command_line = line.split(":")
             tree[name] = command_line
         return tree
-    #
-    # def __get_class_variables(self, *modules):
-    #     ent_dict = {}
-    #     for module in modules:
-    #         for name in inspect.getmembers(module, inspect.isclass):
-    #             class_varaibles = {}
-    #             for val in dir(name[1]):
-    #                 if val.isupper() and not val.startswith("_"):
-    #                     class_varaibles[val] = False
-    #             if len(class_varaibles) > 0:
-    #                 ent_dict[name[0]] = class_varaibles
-    #     return ent_dict
 
-    def __create_attribute_tree(self, target: util.ConsoleReadable, function: str):
+    def __create_attribute_tree(
+        self,
+        target: util.ConsoleReadable,
+        function: str
+    ) -> Dict[str, Any]:
+        """Starting from a ConsoleReadable collect all relevant values at a certain provided function and check if
+        those are console readable. If that os the case recursively continue"""
         tree = {}
         target_function = getattr(target, function)
         attributes = target_function()
@@ -327,7 +324,10 @@ class Console:
                 tree[str_atr] = False
         return tree
 
-    def process_command_line_text(self, text):
+    def process_command_line_text(
+        self,
+        text: str
+    ):
         try:
             commands_list = self.__text_to_commands(text)
         except ValueError as e:
@@ -336,6 +336,8 @@ class Console:
             arguments = arguments.strip().split(" ")
             if arguments[0] == "print":
                 return self.__process_print(arguments), False
+            elif arguments[0] == "scripts":
+                return self.process_command_line_text(self.command_tree["scripts"][arguments[1]])
 
 
             #     return self.__process(commands)

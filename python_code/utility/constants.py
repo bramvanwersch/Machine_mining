@@ -21,7 +21,7 @@ class DebugValues(util.ConsoleReadable):
         self.SHOW_ZOOM = True
         self.NO_LIGHTING = False
         self.SHOW_THREADS = True
-        self.TEST_BAORD = True
+        self.TEST_BOARD = True
 
 
 DEBUG = DebugValues()
@@ -46,7 +46,7 @@ DATA_DIR = "{}{}data".format(MAIN_DIR, os.sep)
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)  # pixels
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-if DEBUG.TEST_BAORD:
+if DEBUG.TEST_BOARD:
     BOARD_SIZE = util.Size(1000, 1000)  # board size should always be bigger then the SCREEN_SIZE
     # preserve the board size
     ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
@@ -174,4 +174,3 @@ MULTI_TASKS = \
     {"Mining": TaskConstants(False), "Building": TaskConstants(False), "Cancel": TaskConstants(False),
      "Selecting": TaskConstants(False), "Empty inventory": TaskConstants(True), "Fetch": TaskConstants(True),
      "Request": TaskConstants(True), "Deliver": TaskConstants(True)}
-
