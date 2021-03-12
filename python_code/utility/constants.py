@@ -19,7 +19,7 @@ class DebugValues(util.ConsoleReadable):
         self.AIR_RECTANGLES = False
         self.WARNINGS = True
         self.SHOW_ZOOM = True
-        self.NO_LIGHTING = False
+        self.NO_LIGHTING = True
         self.SHOW_THREADS = True
         self.TEST_BOARD = True
 

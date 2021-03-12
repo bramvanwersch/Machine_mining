@@ -23,7 +23,7 @@ class Main:
         self.screen = pygame.display.set_mode(con.SCREEN_SIZE, con.DOUBLEBUF)  # | FULLSCREEN)
         self.screen.set_alpha(None)
 
-        pygame.display.set_caption("MINING!!")
+        pygame.display.set_caption("MACHINE MINING!!")
         pygame.mouse.set_visible(True)
 
         self.__innitialize_game_varaibles()

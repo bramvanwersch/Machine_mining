@@ -16,6 +16,7 @@ from interfaces import widgets as widgets, interface_utility as interface_util, 
     managers as window_managers, console
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
+import director
 
 
 # defined below SceneManager
@@ -417,6 +418,7 @@ class Game(Scene, util.Serializer):
         self.progress_var = [""]
         self.board = board_
         self.task_control = task_control
+        self.director = None
 
         # ready made windows
         self.window_manager = None
@@ -449,24 +451,14 @@ class Game(Scene, util.Serializer):
         self.progress_var[0] = "Running some innitial update cycles..."
         self.board.setup_board()
 
-        # tasks
-        self.progress_var[0] = "Making tasks..."
-        self.task_control = tasks.TaskControl(self.board)
-        self.board.set_task_control(self.task_control)
+        self.director = director.Director(self.board, self.progress_var, self.sprite_group)
 
-        # for some more elaborate setting up of variables
-        self.progress_var[0] = "Populating with miners..."
-        start_chunk = self.board.get_start_chunk()
-        appropriate_location = \
-            (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width +
-             start_chunk.rect.left, + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
-        for _ in range(con.STARTING_ENTITIES):
-            entities.Worker(appropriate_location, self.sprite_group, board=self.board, task_control=self.task_control)
         # add one of the imventories of the terminal
         if self.building_interface is None:
             self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                       self.sprite_group)
-        self.camera_center.rect.center = start_chunk.rect.center
+
+        self.camera_center.rect.center = self.board.get_start_chunk().rect.center
 
     def to_dict(self):
         return {
@@ -524,7 +516,7 @@ class Game(Scene, util.Serializer):
             self.window_manager.add(self.pause_window)
         if self.unpressed(con.K_COMMA):
             self.window_manager.add(self.console_window)
-        self.board.handle_events(leftover_events)
+        self.director.handle_events(leftover_events)
 
     def set_update_rectangles(self):
         # get a number of rectangles that encompass the changed board state

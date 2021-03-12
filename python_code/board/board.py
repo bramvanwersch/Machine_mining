@@ -6,7 +6,6 @@ from threading import Thread
 
 import utility.utilities as util
 import utility.constants as con
-import utility.event_handling as event_handling
 import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
@@ -20,7 +19,7 @@ from utility import inventories
 import entities
 
 
-class Board(event_handling.BoardEventHandler, util.Serializer):
+class Board(util.Serializer):
 
     START_RECTANGLE = pygame.Rect((con.BOARD_SIZE.width / 2 - 125, 0, 250, 50))
     BLOCK_PER_CLUSRTER = 500
@@ -28,7 +27,6 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
     def __init__(self, board_generator, main_sprite_group, progress_var, chunk_matrix=None, pipe_network=None, grow_update_time=0):
-        event_handling.BoardEventHandler.__init__(self, [1, 2, 3, 4, con.MINING, con.CANCEL, con.BUILDING, con.SELECTING])
         self.inventorie_blocks = []
         self.main_sprite_group = main_sprite_group
 
@@ -45,16 +43,12 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         self.main_sprite_group = main_sprite_group
         self.generate_chunks(*con.START_LOAD_AREA, thread_it=False, progress_var=progress_var)
 
-        self.task_control = None
-
-        # the current SelectionRectangle object that shows
-        self.selection_rectangle = None
         # last placed highlighted rectangle
         self.__highlight_rectangle = None
 
         # pipe network
         progress_var[0] = "Innitialising pipe network..."
-        self.pipe_network = network.Network(self.task_control)
+        self.pipe_network = network.Network(None)
 
         self.__buildings = {}
         self.changed_light_blocks = set()
@@ -159,7 +153,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
     def get_start_chunk(self):
         return self.chunk_matrix[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]]
 
-    def __get_chunks_from_rect(self, rect):
+    def get_chunks_from_rect(self, rect):
         affected_chunks = []
         tl_column, tl_row = interface_util.p_to_cp(rect.topleft)
         br_column, br_row = interface_util.p_to_cp(pygame.Vector2(rect.bottomright) - pygame.Vector2(1, 1))
@@ -181,25 +175,21 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                     width = con.CHUNK_SIZE.width
                 topleft = (left, top)
                 new_rect = pygame.Rect((*topleft, width, height))
-                chunk = self.__chunk_from_point(topleft)
+                chunk = self.chunk_from_point(topleft)
                 if chunk is not None:
                     affected_chunks.append([chunk, new_rect])
                 left += width
             top += height
         return affected_chunks
 
-    def __get_blocks_from_rect(self, rect):
+    def get_blocks_from_rect(self, rect):
         blocks = []
-        for chunk, rect in self.__get_chunks_from_rect(rect):
+        for chunk, rect in self.get_chunks_from_rect(rect):
             for y_coord in range(rect.top, rect.bottom, con.BLOCK_SIZE.height):
                 for x_coord in range(rect.left, rect.right, con.BLOCK_SIZE.width):
                     point = (x_coord, y_coord)
                     blocks.append(chunk.get_block(point))
         return blocks
-
-    def set_task_control(self, task_control):
-        self.task_control = task_control
-        self.pipe_network.task_control = task_control
 
     def surrounding_blocks(self, block):
         """
@@ -219,7 +209,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 surrounding_pos[1] > con.BOARD_SIZE.height or \
                 surrounding_pos[1] < 0:
                 continue
-            chunk = self.__chunk_from_point(surrounding_pos)
+            chunk = self.chunk_from_point(surrounding_pos)
             if chunk:
                 surrounding_block = chunk.get_block(surrounding_pos)
                 blocks[index] = surrounding_block
@@ -235,7 +225,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                 surrounding_pos[1] > con.BOARD_SIZE.height or \
                 surrounding_pos[1] < 0:
                 continue
-            surrounding_chunk = self.__chunk_from_point(surrounding_pos)
+            surrounding_chunk = self.chunk_from_point(surrounding_pos)
             chunks[index] = surrounding_chunk
         return chunks
 
@@ -247,7 +237,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             else:
-                chunk = self.__chunk_from_point(block.rect.topleft)
+                chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
             if isinstance(block, block_classes.NetworkEdgeBlock):
@@ -267,7 +257,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def remove_plant(self, block):
         removed_items = []
-        chunk = self.__chunk_from_point(block.rect.topleft)
+        chunk = self.chunk_from_point(block.rect.topleft)
         possible_chunks = self.surrounding_chunks(chunk) + [chunk]
         plant = None
         for chunk in possible_chunks:
@@ -278,7 +268,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         removed_blocks = plant.remove_block(block)
 
         for block in removed_blocks:
-            chunk = self.__chunk_from_point(block.rect.topleft)
+            chunk = self.chunk_from_point(block.rect.topleft)
             removed_items.extend(chunk.remove_blocks(block))
         if plant._size() == 0:
             chunk.plants.pop(block.id)
@@ -296,8 +286,8 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         blocks = building_instance.blocks
         for row in blocks:
             for block in row:
-                self.task_control.cancel_tasks(block, remove=True)
-                chunk = self.__chunk_from_point(block.rect.topleft)
+                # self.task_control.cancel_tasks(block, remove=True)
+                chunk = self.chunk_from_point(block.rect.topleft)
                 chunk.remove_blocks(block)
         return inventories.Item(block.material, 1)
 
@@ -317,7 +307,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
                     update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update))
                     if update:
                         self.pipe_network.add_pipe(block)
-                chunk = self.__chunk_from_point(block.coord)
+                chunk = self.chunk_from_point(block.coord)
                 chunk.add_blocks(block)
         if len(update_blocks) > 0:
             self.add_blocks(*update_blocks)
@@ -338,7 +328,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
             self.pipe_network.add_node(building_instance)
         for row in building_instance.blocks:
             for block in row:
-                chunk = self.__chunk_from_point(block.coord)
+                chunk = self.chunk_from_point(block.coord)
                 chunk.add_blocks(block)
                 if isinstance(block, block_classes.ContainerBlock):
                     self.inventorie_blocks.append(block)
@@ -419,7 +409,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
 
     def change_light_levels(self):
         for block in self.changed_light_blocks:
-            chunk = self.__chunk_from_point(block.rect.topleft)
+            chunk = self.chunk_from_point(block.rect.topleft)
             alpha = 255 - block.light_level * int(255 / con.MAX_LIGHT)
             chunk.add_rectangle(block.rect, (0, 0, 0, alpha), layer=0)
 
@@ -447,17 +437,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         return closest_block
 
     def add_rectangle(self, rect, color, layer=2, border=0):
-        """
-        Add a rectangle on to one of the layers.
-
-        :param color: the color of the rectangle. Use INVISIBLE_COLOR to make
-        rectangles dissapear
-        :param layer: an integer that between 1 and 3 that tells at what layer
-        the rectangle should be added
-
-        This can be used to remove parts of the image or add something to it
-        """
-        chunk_rectangles = self.__get_chunks_from_rect(rect)
+        chunk_rectangles = self.get_chunks_from_rect(rect)
         for chunk, rect in chunk_rectangles:
             chunk.add_rectangle(rect, color, layer, border)
 
@@ -470,7 +450,7 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         block = self.__block_from_point(point)
         return block is not None and block.transparant_group != 0
 
-    def __chunk_from_point(
+    def chunk_from_point(
         self,
         point: Union[List, Tuple[int, int]]
     ) -> Union[chunks.Chunk, None]:
@@ -486,268 +466,17 @@ class Board(event_handling.BoardEventHandler, util.Serializer):
         point: Union[List, Tuple[int, int]]
     ) -> Union[block_classes.Block, None]:
         """Get the block at a given pixel point. None is returned when the block is not available."""
-        chunk = self.__chunk_from_point(point)
+        chunk = self.chunk_from_point(point)
         if chunk is not None:
             return chunk.get_block(point)
         return None
 
-    def add_selection_rectangle(self, pos, keep=False):
-        """
-        Add a rectangle that shows what the user is currently selecting
-
-        :param pos: the event.pos of the rectangle
-        :param keep: if the previous highlight should be kept
-        """
-        #bit retarded
-        zoom = self.get_start_chunk().layers[0]._zoom
-        mouse_pos = interface_util.screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
-        # should the highlighted area stay when a new one is selected
-        if not keep and self.__highlight_rectangle:
-            self.add_rectangle(self.__highlight_rectangle.rect, con.INVISIBLE_COLOR, layer=1)
-        self.selection_rectangle = entities.SelectionRectangle(mouse_pos, (0, 0), pos,
-                                                      self.main_sprite_group,zoom=zoom)
-
-    def add_building_rectangle(self, pos, size=(10, 10)):
-        # bit retarded
-        zoom = self.get_start_chunk().layers[0]._zoom
-        mouse_pos = interface_util.screen_to_board_coordinate(pos, self.main_sprite_group.target, zoom)
-        self.selection_rectangle = entities.ZoomableEntity(mouse_pos, size - con.BLOCK_SIZE,
-                                                  self.main_sprite_group, zoom=zoom, color=con.INVISIBLE_COLOR)
-
-    def remove_selection(self):
-        """
-        Safely remove the selection rectangle
-        """
-        if self.selection_rectangle:
-            self.selection_rectangle.kill()
-            self.selection_rectangle = None
-
-    def reset_selection_and_highlight(self, keep):
-        """
-        Reset the selection of the selection layer and the highlight rectangle
-
-        :param keep: if the highlight rectangle should be saved or not
-        """
-        if not keep and self.__highlight_rectangle:
-            self.add_rectangle(self.__highlight_rectangle, con.INVISIBLE_COLOR, layer=1)
-        self.__highlight_rectangle = None
-        self.remove_selection()
-
-    def add_highlight_rectangle(self, rect, color):
-        """
-        Add a rectangle to this image that functions as highlight from the
-        current selection
-        :param color: the color of the highlight
-        """
-        self.__highlight_rectangle = rect
-        self.add_rectangle(rect, color, layer=1)
-
-    def _handle_mouse_events(self):
-        """
-        Handle mouse events issued by the user.
-        """
-        # mousebutton1
-        if self.pressed(1):
-            if self._mode.name in ["Mining", "Cancel", "Selecting"]:
-                keep = False
-                if self._mode.name == "Mining":
-                    keep = True
-                self.reset_selection_and_highlight(keep)
-                self.add_selection_rectangle(self.get_key(1).event.pos, self._mode.persistent_highlight)
-
-            elif self._mode.name == "Building":
-                item = small_interface.get_selected_item()
-                # if no item is selected dont do anything
-                if item is None:
-                    return
-                material = small_interface.get_selected_item().material
-                building_block_i = material.block_type
-                self.add_building_rectangle(self.get_key(1).event.pos, size=building_block_i.SIZE)
-        elif self.unpressed(1):
-            if self._mode.name == "Selecting":
-                # bit retarded
-                zoom = self.get_start_chunk().layers[0]._zoom
-                board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos,
-                                                                        self.main_sprite_group.target, zoom)
-                chunk = self.__chunk_from_point(board_coord)
-                if chunk is None:
-                    return
-                chunk.get_block(board_coord).action()
-            self.__process_selection()
-            self.remove_selection()
-
-    def __process_selection(self):
-
-        if self.selection_rectangle is None:
-            return
-        chunks_rectangles = self.__get_chunks_from_rect(self.selection_rectangle.orig_rect)
-        if len(chunks_rectangles) == 0:
-            return
-        first_chunk = chunks_rectangles[0][0]
-        selection_matrix = first_chunk.overlapping_blocks(chunks_rectangles[0][1])
-        for chunk, rect in chunks_rectangles[1:]:
-            blocks = chunk.overlapping_blocks(rect)
-            #extending horizontal
-            if chunk.coord[0] > first_chunk.coord[0]:
-                extra_rows = len(selection_matrix) - len(blocks)
-                for row_i, row in enumerate(blocks):
-                    selection_matrix[extra_rows + row_i].extend(row)
-            #extending vertical
-            else:
-                for row_i, row in enumerate(blocks):
-                    selection_matrix.append(row)
-        # the user is selecting block_classes
-        if len(selection_matrix) > 0:
-            self._assign_tasks(selection_matrix)
-
-    def _get_task_rectangles(self, blocks, task_type=None, dissallowed_block_types=[]):
-        """
-        Get all spaces of a certain block type, task or both
-
-        :param blocks: a matrix of block_classes
-        :return: a list of rectangles
-        """
-        rectangles = []
-        approved_blocks = []
-
-        #save covered coordinates in a same lenght matrix for faster checking
-        covered_coordinates = [[] for row in blocks]
-
-        #find all rectangles in the block matrix
-        for n_row, row in enumerate(blocks):
-            for n_col, block in enumerate(row):
-                if block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types and block.light_level > 0) or n_col in covered_coordinates[n_row]:
-                    if n_col not in covered_coordinates[n_row]:
-                        approved_blocks.append(block)
-                    continue
-
-                #calculate the maximum lenght of a rectangle based on already
-                #established ones
-                end_n_col = n_col
-                for n in range(n_col, len(row)):
-                    end_n_col = n
-                    if end_n_col in covered_coordinates[n_row]:
-                        break
-
-                #find all air rectangles in a sub matrix
-                sub_matrix = [sub_row[n_col:end_n_col] for sub_row in blocks[n_row:]]
-                lm_coord = self.__find_task_rectangle(sub_matrix, task_type, dissallowed_block_types)
-
-                # add newly covered coordinates
-                for x in range(lm_coord[0]+ 1):
-                    for y in range(lm_coord[1] + 1):
-                        covered_coordinates[n_row + y].append(n_col + x)
-
-                # add the air rectangle to the list of rectangles
-                air_matrix = [sub_row[n_col:n_col + lm_coord[0] + 1] for sub_row in blocks[n_row:n_row + lm_coord[1] + 1]]
-                rect = util.rect_from_block_matrix(air_matrix)
-                rectangles.append(rect)
-        return rectangles, approved_blocks
-
-    def __find_task_rectangle(self, blocks, task_type, dissallowed_block_types):
-        """
-        Find in a matrix of block_classes all block_classes of a certain task type
-
-        :param blocks: a matrix of block_classes
-        :param task_type: the string name of a certain type of task
-        :return:
-        """
-        #first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
-        x_size = 0
-        for block in blocks[0][1:]:
-            if block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types and block.light_level > 0):
-                break
-            x_size += 1
-        matrix_coordinate = [x_size, 0]
-
-        #skip the first row since this was checked already
-        block = None
-        for n_row, row in enumerate(blocks[1:]):
-            for n_col, block in enumerate(row[:x_size + 1]):
-                if block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types):
-                    break
-            if block == None or block.is_task_allowded(task_type) and (block.name() not in dissallowed_block_types):
-                break
-            matrix_coordinate[1] += 1
-        return matrix_coordinate
-
-    def __can_add_flora(self, block, flora):
+    def can_add_flora(self, block, flora):
         sur_blocks = self.surrounding_blocks(block)
-
-        if sur_blocks[flora.CONTINUATION_DIRECTION  - 2] != None and\
+        if sur_blocks[flora.CONTINUATION_DIRECTION  - 2] != None and \
                 sur_blocks[flora.CONTINUATION_DIRECTION - 2].transparant_group == 0:
             return True
         return False
-
-    def _assign_tasks(self, blocks):
-        rect = util.rect_from_block_matrix(blocks)
-
-        #remove all tasks present
-        for row in blocks:
-            for block in row:
-                self.task_control.cancel_tasks(block, remove=True)
-
-        #select the full area
-        self.add_highlight_rectangle(rect, self._mode.color)
-
-        #assign tasks to all block_classes elligable
-        if self._mode.name == "Building":
-            no_highlight_block = small_interface.get_selected_item().name()
-            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name, [no_highlight_block])
-            #if not the full image was selected dont add tasks
-            if len(no_task_rectangles) > 0:
-                self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
-                return
-            #make sure the plant is allowed to grow at the given place
-            if isinstance(small_interface.get_selected_item().material, environment_materials.MultiFloraMaterial) and \
-                    not self.__can_add_flora(block, small_interface.get_selected_item().material):
-                self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
-                return
-            #the first block of the selection is the start block of the material
-            approved_blocks = [blocks[0][0]]
-        elif self._mode.name == "Cancel":
-            # remove highlight
-            self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
-            return
-        else:
-            no_task_rectangles, approved_blocks = self._get_task_rectangles(blocks, self._mode.name)
-
-        for rect in no_task_rectangles:
-            self.add_rectangle(rect, con.INVISIBLE_COLOR, layer=1)
-        self._add_tasks(approved_blocks)
-
-    # task management
-    def _add_tasks(self, blocks):
-        """
-        Add tasks of the _mode.name type, tasks are added to the task control
-        when they need to be assigned to workers or directly resolved otherwise
-
-        :param blocks: a list of block_classes
-        """
-        if self._mode.name == "Mining":
-            self.task_control.add(self._mode.name, *blocks)
-        elif self._mode.name == "Building":
-            #this should always be 1 block
-            block = blocks[0]
-            material = small_interface.get_selected_item().material
-            building_block_i = material.block_type
-            group = block.transparant_group
-            if group != 0:
-                block.transparant_group = util.unique_id()
-                chunk = self.__chunk_from_point(block.coord)
-                chunk.update_blocks(block)
-            if issubclass(building_block_i, buildings.InterfaceBuilding):
-                finish_block = building_block_i(block.rect.topleft, self.main_sprite_group, material=material)
-            else:
-                finish_block = building_block_i(block.rect.topleft, material=material)
-            if isinstance(finish_block, buildings.Building):
-                overlap_rect = pygame.Rect((*finish_block.rect.topleft, finish_block.rect.width - 1, finish_block.rect.height - 1))
-                overlap_blocks = self.__get_blocks_from_rect(overlap_rect)
-            else:
-                overlap_blocks = [block]
-            self.task_control.add(self._mode.name, block, finish_block = finish_block, original_group=group, removed_blocks=overlap_blocks)
-
-
 
     def __add_starter_buildings(self):
         """
