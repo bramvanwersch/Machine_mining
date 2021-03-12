@@ -6,7 +6,7 @@ import utility.constants as con
 import utility.utilities as util
 import utility.image_handling as image_handlers
 import block_classes.block_utility as block_util
-import inventories
+from utility import inventories
 
 
 class CraftingWindow(base_interface.Window):

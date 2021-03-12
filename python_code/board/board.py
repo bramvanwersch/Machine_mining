@@ -5,7 +5,6 @@ from typing import List, Union, Tuple
 from threading import Thread
 
 import utility.utilities as util
-import board_generation.generation as generator
 import utility.constants as con
 import utility.event_handling as event_handling
 import block_classes.blocks as block_classes
@@ -17,7 +16,7 @@ import network.pipes as network
 import interfaces.small_interfaces as small_interface
 import interfaces.interface_utility as interface_util
 import board.chunks as chunks
-import inventories
+from utility import inventories
 import entities
 
 

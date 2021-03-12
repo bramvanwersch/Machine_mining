@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 
 import block_classes.materials as base_materials
 import utility.utilities as util
-import inventories
+from utility import inventories
 
 
 class RecipeGrid:

@@ -14,7 +14,7 @@ import utility.event_handling as event_handlers
 import utility.image_handling as image_handling
 import interfaces.interface_utility as interface_util
 if TYPE_CHECKING:
-    import inventories
+    from utility import inventories
 
 
 class WidgetEvent(ABC):

@@ -6,7 +6,7 @@ import block_classes.block_utility as block_util
 import utility.constants as con
 import utility.utilities as util
 import entities
-import inventories
+from utility import inventories
 import interfaces.interface_utility as interface_util
 import board.pathfinding as pathfinding
 import board.flora as flora

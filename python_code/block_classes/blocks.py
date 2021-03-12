@@ -10,7 +10,7 @@ import utility.constants as con
 import utility.utilities as util
 if TYPE_CHECKING:
     import block_classes.materials as base_materials
-    import inventories
+    from utility import inventories
 
 
 class Block(ABC):

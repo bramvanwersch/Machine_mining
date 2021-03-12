@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import utility.utilities as util
 import utility.constants as con
-import inventories
+from utility import inventories
 
 
 class EdgeTaskQueue(util.Serializer):

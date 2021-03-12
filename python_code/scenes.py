@@ -56,8 +56,8 @@ scenes: "SceneManager" = SceneManager()
 
 
 class Scene(event_handling.EventHandler, ABC):
-    def __init__(self, screen, sprite_group, recorder_events=None):
-        event_handling.EventHandler.__init__(self, recorder_events if recorder_events else [])
+    def __init__(self, screen, sprite_group, recordable_keys=None):
+        event_handling.EventHandler.__init__(self, recordable_keys if recordable_keys else [])
         self.screen = screen
         self.rect = self.screen.get_rect()
 
@@ -405,7 +405,7 @@ class Game(Scene, util.Serializer):
         self.__selected_options = options
         self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
-        super().__init__(screen, sprite_group, recorder_events=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
+        super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
         # update rectangles
         self.__vision_rectangles = []
         self.__debug_rectangle = (0, 0, 0, 0)
@@ -423,7 +423,7 @@ class Game(Scene, util.Serializer):
         self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                   self.sprite_group) if self.board else None
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console.ConsoleWindow(sprite_group)
+        self.console_window = console.ConsoleWindow(sprite_group, self.board)
 
     def start(self):
         # function for setting up a Game

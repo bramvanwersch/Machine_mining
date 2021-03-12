@@ -4,7 +4,7 @@ import pygame
 
 import utility.constants as con
 import utility.utilities as util
-import inventories
+from utility import inventories
 import tasks
 import utility.event_handling as event_handling
 

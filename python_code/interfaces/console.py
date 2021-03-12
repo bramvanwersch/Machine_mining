@@ -12,6 +12,7 @@ from utility.constants import DEBUG
 import interfaces.widgets as widgets
 if TYPE_CHECKING:
     from board.sprite_groups import CameraAwareLayeredUpdates
+    from board.board import Board
 
 
 class ConsoleWindow(Window):
@@ -26,13 +27,14 @@ class ConsoleWindow(Window):
 
     def __init__(
         self,
-        sprite_group: "CameraAwareLayeredUpdates"
+        sprite_group: "CameraAwareLayeredUpdates",
+        board: "Board"
     ):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, static=False, title="CONSOLE")
         self.__input_line = None
         self.__text_log_label = None
         self.__log = TextLog()
-        self.__console = Console()
+        self.__console = Console(board)
 
         self.__init_widgets()
         self.add_key_event_listener(con.K_TAB, self.__create_tab_information, values=[self.__input_line],
@@ -292,8 +294,12 @@ class Line:
 
 
 class Console:
-    def __init__(self):
+    def __init__(
+        self,
+        board: "Board"
+    ):
         self.command_tree = {}
+        self.__board = board
         self.__innitialise_command_tree()
 
     def __innitialise_command_tree(self):
@@ -302,7 +308,7 @@ class Console:
 
     def __create_print_tree(self) -> Dict[str, Any]:
         tree = dict()
-        tree["DEBUG"] = self.__create_attribute_tree(DEBUG, "printables")
+        tree["debug"] = self.__create_attribute_tree(DEBUG, "printables")
         return tree
 
     def __create_script_tree(self) -> Dict[str, Any]:
@@ -370,7 +376,10 @@ class Console:
                     .format(arguments[0], ", ".join(self.command_tree.keys())), True
 
     def __process_print(self, arguments):
-        target = globals()[arguments[1]]
+        if arguments[1] == "debug":
+            target = DEBUG
+        else:
+            raise util.GameException(f"Unexpected value to print from; {arguments[1]}")
         index = 2
         while index < len(arguments):
             target = getattr(target, arguments[index])

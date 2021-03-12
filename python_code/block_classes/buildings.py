@@ -8,7 +8,7 @@ from typing import List, TYPE_CHECKING
 import block_classes.building_materials as build_materials
 import block_classes.materials as base_materials
 import block_classes.blocks as block_classes
-import inventories
+from utility import inventories
 import utility.utilities as util
 import interfaces.base_interface as base_interface
 import interfaces.small_interfaces as small_interfaces
