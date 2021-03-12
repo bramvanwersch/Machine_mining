@@ -451,7 +451,7 @@ class Game(Scene, util.Serializer):
         self.progress_var[0] = "Running some innitial update cycles..."
         self.board.setup_board()
 
-        self.director = director.Director(self.board, self.progress_var, self.sprite_group)
+        self.director = director.User(self.board, self.progress_var, self.sprite_group)
 
         # add one of the imventories of the terminal
         if self.building_interface is None:

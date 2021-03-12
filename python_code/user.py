@@ -10,7 +10,7 @@ import utility.utilities as util
 from block_classes import buildings, environment_materials
 
 
-class Director(utility.event_handling.EventHandler):
+class User(utility.event_handling.EventHandler):
     """The director of a game, assigning tasks to workers and directing interaction between workers the board and the
     tkas management"""
     def __init__(self, board, progress_var, sprite_group):
