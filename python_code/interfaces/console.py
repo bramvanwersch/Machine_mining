@@ -2,7 +2,7 @@
 
 import pygame
 import re
-from typing import Union, Tuple, List, Dict, Any
+from typing import Union, Tuple, List, Dict, Any, TYPE_CHECKING
 import os
 
 from interfaces.base_interface import Window
@@ -10,6 +10,8 @@ import utility.utilities as util
 import utility.constants as con
 from utility.constants import DEBUG
 import interfaces.widgets as widgets
+if TYPE_CHECKING:
+    from board.sprite_groups import CameraAwareLayeredUpdates
 
 
 class ConsoleWindow(Window):
@@ -22,7 +24,10 @@ class ConsoleWindow(Window):
     __log: "TextLog"
     __console: "Console"
 
-    def __init__(self, sprite_group):
+    def __init__(
+        self,
+        sprite_group: "CameraAwareLayeredUpdates"
+    ):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, static=False, title="CONSOLE")
         self.__input_line = None
         self.__text_log_label = None
@@ -38,6 +43,12 @@ class ConsoleWindow(Window):
         self.add_widget((0, self.WINDOW_SIZE.height - self.__input_line.rect.height), self.__input_line)
         self.__text_log_label = TextLogLabel(self.WINDOW_SIZE - (0, self.__input_line.rect.height), self.__log)
         self.add_widget((0, 0), self.__text_log_label)
+
+    def show_window(self, value: bool):
+        super().show_window(value)
+        if value is True:
+            self.selected_widget = self.__input_line
+            self.__input_line.set_selected(True)
 
     def update(self, *args):
         super().update()

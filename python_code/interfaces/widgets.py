@@ -1322,6 +1322,8 @@ class MultilineTextBox(Pane):
         **kwargs
     ) -> None:
         self.selected = selected
+        for line in self.__lines:
+            line.set_selected(False)
         self.__lines[-1].set_selected(selected)
 
     def handle_events(
