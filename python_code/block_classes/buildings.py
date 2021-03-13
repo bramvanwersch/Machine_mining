@@ -2,7 +2,7 @@
 
 # library imports
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Tuple, Union
 
 # own imports
 import block_classes.building_materials as build_materials
@@ -72,7 +72,7 @@ class InterfaceBuilding(Building, ABC):
 
     def __init__(
         self,
-        pos: List[int],
+        pos: Union[Tuple[int, int], List[int]],
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         size: int = -1,
         in_filter: inventories.Filter = None,
@@ -118,7 +118,7 @@ class Terminal(InterfaceBuilding, network.NetworkNode):
 
     def __init__(
         self,
-        pos: List[int],
+        pos: Union[Tuple[int, int], List[int]],
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
@@ -136,7 +136,7 @@ class Furnace(InterfaceBuilding, network.NetworkNode):
 
     def __init__(
         self,
-        pos: List[int],
+        pos: Union[Tuple[int, int], List[int]],
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
@@ -153,7 +153,7 @@ class Factory(InterfaceBuilding, network.NetworkNode):
 
     def __init__(
         self,
-        pos: List[int],
+        pos: Union[Tuple[int, int], List[int]],
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):

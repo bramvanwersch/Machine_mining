@@ -1,6 +1,10 @@
 from abc import ABC
+from typing import List, TYPE_CHECKING
 
 import utility.constants as con
+
+if TYPE_CHECKING:
+    import pygame
 
 
 class EventHandler(ABC):
@@ -103,12 +107,12 @@ class EventHandler(ABC):
                 unpressed_keys.append(self.__pressed_keys[key])
         return unpressed_keys
 
-    def handle_events(self, events, consume_events=True):
-        """
-        Handles events for the inheriting class.
-        :param events:
-        :return:
-        """
+    def handle_events(
+        self,
+        events: List["pygame.event.Event"],
+        consume_events: bool = True
+    ) -> List["pygame.event.Event"]:
+        """Base handle event case where all relevant events are recorded and all ignored events are pushed on"""
         return self.__record_pressed_keys(events, consume_events)
 
 

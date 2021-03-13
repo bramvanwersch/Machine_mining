@@ -16,7 +16,7 @@ from interfaces import widgets as widgets, interface_utility as interface_util, 
     managers as window_managers, console
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
-import director
+import user
 
 
 # defined below SceneManager
@@ -418,7 +418,7 @@ class Game(Scene, util.Serializer):
         self.progress_var = [""]
         self.board = board_
         self.task_control = task_control
-        self.director = None
+        self.user = None
 
         # ready made windows
         self.window_manager = None
@@ -451,7 +451,7 @@ class Game(Scene, util.Serializer):
         self.progress_var[0] = "Running some innitial update cycles..."
         self.board.setup_board()
 
-        self.director = director.User(self.board, self.progress_var, self.sprite_group)
+        self.user = user.User(self.board, self.progress_var, self.sprite_group)
 
         # add one of the imventories of the terminal
         if self.building_interface is None:
@@ -516,7 +516,7 @@ class Game(Scene, util.Serializer):
             self.window_manager.add(self.pause_window)
         if self.unpressed(con.K_COMMA):
             self.window_manager.add(self.console_window)
-        self.director.handle_events(leftover_events)
+        self.user.handle_events(leftover_events)
 
     def set_update_rectangles(self):
         # get a number of rectangles that encompass the changed board state
@@ -631,6 +631,7 @@ class Game(Scene, util.Serializer):
         """
         prev_zoom_level = self._zoom
         self._zoom = round(min(max(0.4, self._zoom + increase), 2), 1)
+        self.user.zoom = self._zoom
         # prevent unnecesairy recalculations
         if prev_zoom_level != self._zoom:
             for sprite in self.sprite_group.sprites():
