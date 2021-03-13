@@ -1,15 +1,18 @@
 from abc import ABC
 from itertools import count
 import pygame
+from typing import List, Tuple, Union, TYPE_CHECKING
 
 import utility.constants as con
 import utility.utilities as util
 from utility import inventories
 import tasks
 import utility.event_handling as event_handling
+if TYPE_CHECKING:
+    from board.sprite_groups import CameraAwareLayeredUpdates
 
 
-class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
+class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
     """
     Basic entity class is a sprite with an image.
     """
@@ -19,7 +22,7 @@ class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
                  visible=True, **kwargs):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
-        self.surface = self._create_surface(size, color, **kwargs)
+        self.surface = self._create_surface(size, color)
         self.orig_surface = self.surface
         self.orig_rect = self.surface.get_rect(topleft=pos)
         self._visible = visible
@@ -50,20 +53,15 @@ class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
     def is_showing(self):
         return self._visible
 
-    def _create_surface(self, size, color, **kwargs):
-        """
-        Create an image using a size and color
-
-        :param size: a Size object or tuple of lenght 2
-        :param color: a rgb color as tuple of lenght 2 or 3
-        :param kwargs: additional named arguments
-        :return: a pygame Surface object
-        """
+    def _create_surface(self, size, color):
+        """Create the innitial surface forn this entity"""
         if len(color) == 3:
             image = pygame.Surface(size).convert()
-        #included alpha channel
+        # included alpha channel
         elif len(color) == 4:
             image = pygame.Surface(size).convert_alpha()
+        else:
+            raise util.GameException(f"Invalid color argument of length {len(color)} supplied")
         image.fill(color)
         return image
 
@@ -87,12 +85,12 @@ class Entity(pygame.sprite.Sprite, util.Serializer, ABC):
         self.orig_rect = rect
 
 
-class ZoomableEntity(Entity):
+class ZoomableMySprite(MySprite):
     """
     Basic zoomable entity class
     """
     def __init__(self, pos, size, *groups, zoom=1, **kwargs):
-        Entity.__init__(self, pos, size, *groups, zoomable=True, **kwargs)
+        MySprite.__init__(self, pos, size, *groups, zoomable=True, **kwargs)
         # zoom variables
         self._zoom = zoom
         # if an entity is created after zooming make sure it is zoomed to the
@@ -138,12 +136,12 @@ class ZoomableEntity(Entity):
         self.orig_rect = rect
 
 
-class SelectionRectangle(ZoomableEntity):
+class SelectionRectangle(ZoomableMySprite):
     """
     Creates a rectangle by draging the mouse. To highlight certain areas.
     """
     def __init__(self, pos, size, mouse_pos, *groups, **kwargs):
-        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableMySprite.__init__(self, pos, size, *groups, **kwargs)
         self.__start_pos = list(pos)
         self.__prev_screen_pos = list(mouse_pos)
         self.__size = util.Size(*size)
@@ -201,14 +199,14 @@ class SelectionRectangle(ZoomableEntity):
             self.__update_image()
 
 
-class MovingEntity(ZoomableEntity):
+class MovingEntity(ZoomableMySprite):
     """
     Base class for moving entities
     """
     MAX_SPEED = 10  # pixels/s
 
     def __init__(self, pos, size, *groups, max_speed=MAX_SPEED, speed=None, **kwargs):
-        ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableMySprite.__init__(self, pos, size, *groups, **kwargs)
         self.max_speed = max_speed
         self.speed = pygame.Vector2(*speed) if speed else pygame.Vector2(0, 0)
 
@@ -418,32 +416,59 @@ class Worker(MovingEntity):
             self.speed.y = 0
 
 
-class TextSprite(ZoomableEntity):
-    COLOR = (255,0,0)
-    #in ms
-    TOTAL_LIFE_SPAN = 1000
+class TextSprite(ZoomableMySprite):
     """
     Entity for drawing text on the screen
     """
-    def __init__(self, pos, size, text, font, *groups, color = COLOR, **kwargs):
-        #size has no information
-        ZoomableEntity.__init__(self, pos, size, *groups, font = font,
-                                text = text, **kwargs)
-        self.lifespan = [0,self.TOTAL_LIFE_SPAN]
 
-    def _create_surface(self, size, color, **kwargs):
-        """
-        Create some tect using a string, font and color
+    TOTAL_LIFE_SPAN = 1000  # in ms
+    FONT = 30
+    COLOR = (255, 18, 18, 150)
 
-        :param size: a Size object or tuple of lenght 2
-        :param color: a rgb color as tuple of lenght 2 or 3
-        :param args: additional arguments
-        :return: a pygame Surface object
-        """
-        image = kwargs["font"].render(str(kwargs["text"]), True, color)
+    text: str
+    __font_size: int
+    __color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]]
+    lifespan: List[int]
+
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        text: str,
+        *groups: "CameraAwareLayeredUpdates",
+        font: int = FONT,
+        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]] = COLOR,
+        lifespan: int = TOTAL_LIFE_SPAN,
+        **kwargs
+    ):
+        self.text = text
+        self.__font_size = font
+        self.__color = color
+        size = con.FONTS[self.__font_size].size(self.text)
+        pos[0] -= int(size[0] / 2)
+        pos[1] -= int(size[1] / 2)
+        super().__init__(pos, size, *groups, layer=con.TOOLTIP_LAYER, **kwargs)
+        self.lifespan = [0, lifespan]
+
+    def _create_surface(
+        self,
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]],
+    ) -> pygame.Surface:
+        """Create some tect using a string, font and color"""
+        image = con.FONTS[self.__font_size].render(self.text, False, self.__color)
+
+        # blit transparant text
+        if len(self.__color) == 4:
+            back_image = pygame.Surface(size)
+            back_image.fill(con.INVISIBLE_COLOR)
+            back_image.blit(image, (0, 0))
+            back_image.set_colorkey(con.INVISIBLE_COLOR, pygame.RLEACCEL)
+            back_image.set_alpha(self.__color[3])
+            back_image = back_image.convert_alpha()
+            image = back_image
         return image
 
-    def update(self,*args):
+    def update(self, *args):
         """
         Decrease the lifespan of the text making sure that is dies after around
         a second.
@@ -452,4 +477,3 @@ class TextSprite(ZoomableEntity):
         self.lifespan[0] += con.GAME_TIME.get_time()
         if self.lifespan[0] >= self.lifespan[1]:
             self.kill()
-        self.orig_rect.y -= 2

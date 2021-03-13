@@ -94,6 +94,9 @@ class User(utility.event_handling.EventHandler):
                 if not self._mode.persistent_highlight:
                     self.__remove_highlight_rectangle()
                 self._mode = con.MODES[pressed_modes[0].name]
+                board_coord = interface_util.screen_to_board_coordinate(con.SCREEN_SIZE.center,
+                                                                        self.__sprite_group.target, self.zoom)
+                entities.TextSprite(board_coord, self._mode.name, self.__sprite_group)
                 # TODO add this into the gui somewhere best way might be with a text entity
                 print(self._mode.name)
 

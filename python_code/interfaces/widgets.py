@@ -768,7 +768,7 @@ class SelectionList(Pane):
         return leftover_events
 
 
-class Frame(entities.ZoomableEntity, Pane):
+class Frame(entities.ZoomableMySprite, Pane):
     """Pane that belongs to a sprite group thus it is drawn whenever it is visible"""
     selected_widget: Union[None, Widget, Label, Button, Pane]
     __select_top_widget_flag: bool
@@ -781,7 +781,7 @@ class Frame(entities.ZoomableEntity, Pane):
         **kwargs
     ):
         Pane.__init__(self, size, board_pos=pos, **kwargs)
-        entities.ZoomableEntity.__init__(self, pos, size, *groups, **kwargs)
+        entities.ZoomableMySprite.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
         self.__select_top_widget_flag = False
         self.__previous_board_pos = self.board_position
@@ -877,7 +877,7 @@ class Frame(entities.ZoomableEntity, Pane):
         return leftover_events
 
 
-class Tooltip(entities.Entity):
+class Tooltip(entities.MySprite):
     """Strict frame containing one or more labels with text"""
     # the extra area around the text to make the tooltip feel less cramped
     __EXTRA_SIZE: ClassVar[Tuple[int, int]] = (10, 10)
@@ -911,10 +911,9 @@ class Tooltip(entities.Entity):
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
         color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List[int]],
-        **kwargs
     ):
         """Add the lines and a border to the default rendered """
-        surface = super()._create_surface(size, color, **kwargs)
+        surface = super()._create_surface(size, color)
         line_height = size[1] / len(self.lines)
         for index, line in enumerate(self.lines):
             rendereded_line = self.font.render(line, True, (0, 0, 0))

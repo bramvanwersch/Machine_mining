@@ -1,4 +1,6 @@
 import pygame
+from typing import Tuple, List, Union, TYPE_CHECKING
+from abc import ABC
 
 import block_classes.environment_materials as environment_materials
 import block_classes.materials as base_materials
@@ -10,25 +12,29 @@ from utility import inventories
 import interfaces.interface_utility as interface_util
 import board.pathfinding as pathfinding
 import board.flora as flora
+if TYPE_CHECKING:
+    from block_classes.blocks import Block
 
 
 class Chunk(util.Serializer):
 
     def __init__(self, pos, foreground, background, main_sprite_group, first_time=False):
-        # chunk with sizes in pixels lowest value should 0,0
-        self.rect = pygame.Rect((*pos, *con.CHUNK_SIZE))
+        self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
 
         self.plants = {}
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
-        # changed, if it is the first time
+        # changed, if it is the first time --> tracking for loading purposes of new chunks
         self.changed = [False, first_time]
 
         offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
-        foreground_image = BoardImage(self.rect.topleft, block_matrix = self.__matrix, layer = con.BOARD_LAYER, offset=offset)
-        background_image = BoardImage(self.rect.topleft, block_matrix = self.__back_matrix, layer = con.BACKGROUND_LAYER, offset=offset)
-        light_image = LightImage(self.rect.topleft, layer = con.LIGHT_LAYER, color=con.INVISIBLE_COLOR if con.DEBUG.NO_LIGHTING else (0, 0, 0, 255))
-        selection_image = TransparantBoardImage(self.rect.topleft, layer = con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
+        foreground_image = BoardImage(self.rect.topleft, block_matrix=self.__matrix, layer=con.BOARD_LAYER,
+                                      offset=offset)
+        background_image = BoardImage(self.rect.topleft, block_matrix=self.__back_matrix, layer=con.BACKGROUND_LAYER,
+                                      offset=offset)
+        light_image = LightImage(self.rect.topleft, layer=con.LIGHT_LAYER,
+                                 color=con.INVISIBLE_COLOR if con.DEBUG.NO_LIGHTING else (0, 0, 0, 255))
+        selection_image = TransparantBoardImage(self.rect.topleft, layer=con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
 
         self.layers = [light_image, selection_image, foreground_image, background_image]
         self.pathfinding_chunk = pathfinding.PathfindingChunk(self.__matrix)
@@ -170,63 +176,84 @@ class StartChunk(Chunk):
         return matrix
 
 
-class BoardImage(entities.ZoomableEntity):
+class BaseBoardImage(entities.ZoomableMySprite, ABC):
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        **kwargs
+    ):
+        super().__init__(pos, con.CHUNK_SIZE, **kwargs)
+
+    def add_rect(
+        self,
+        rect: Union[pygame.Rect, List[int], Tuple[int, int, int, int]],
+        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]],
+        border: bool
+    ):
+        """Add a rectangle to the this image. This can be transparant to remove rectangles"""
+        pygame.draw.rect(self.orig_surface, color, rect, border)
+        zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom),
+                                   round(rect.width * self._zoom), round(rect.height * self._zoom)))
+        pygame.draw.rect(self.surface, color, zoomed_rect, border)
+
+    def add_image(
+        self,
+        rect: Union[pygame.Rect, List[int], Tuple[int, int, int, int]],
+        image: pygame.Surface
+    ):
+        """Blit an image on this image at a given rectangle while taking zoomed varaibles into account"""
+        self.orig_surface.blit(image, rect)
+        zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),
+                                   round(rect.width * self._zoom),round(rect.height * self._zoom)))
+        zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
+        self.surface.blit(zoomed_image, zoomed_rect)
+
+
+class BoardImage(BaseBoardImage):
     """
     Convert a matrix of block_classes into a surface that persists as an entity. This
     is done to severly decrease the amount of blit calls and allow for layering
     of images aswell as easily scaling.
     """
-    def __init__(self, pos, **kwargs):
-        entities.ZoomableEntity.__init__(self, pos, con.CHUNK_SIZE, **kwargs)
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        offset: Union[List[int], Tuple[int, int]],
+        block_matrix: List[List["Block"]],
+        **kwargs
+    ):
+        self.__offset = offset
+        self.__block_matrix = block_matrix
+        super().__init__(pos, **kwargs)
 
-    def _create_surface(self, size, color, **kwargs):
+    def _create_surface(
+        self,
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]],
+    ):
         """
         Overwrites the image creation process in the basic Entity class
         """
-        block_matrix = kwargs["block_matrix"]
-        offset = kwargs["offset"]
         image = pygame.Surface(size).convert()
         image.set_colorkey(con.INVISIBLE_COLOR, con.RLEACCEL)
         # make sure that surfaces that have alpha channels are blittet as transparant because the background
         # is transparant
         image.fill(con.INVISIBLE_COLOR)
-        for row in block_matrix:
+        for row in self.__block_matrix:
             for block in row:
-                block_rect = (block.rect.left - offset[0] * con.CHUNK_SIZE.width, block.rect.top - offset[1] * con.CHUNK_SIZE.height, *block.rect.size)
+                block_rect = (block.rect.left - self.__offset[0] * con.CHUNK_SIZE.width,
+                              block.rect.top - self.__offset[1] * con.CHUNK_SIZE.height, *block.rect.size)
                 image.blit(block.surface, block_rect)
         return image
 
-    def add_rect(self, rect, color, border):
-        """
-        Add a rectangle to the image, this can be a transparant rectangle to
-        remove a part of the image or another rectangle
 
-        :param rect: a pygame rect object
-        """
-        pygame.draw.rect(self.orig_surface, color, rect, border)
-        zoomed_rect = pygame.Rect((round(rect.x * self._zoom), round(rect.y * self._zoom), round(rect.width * self._zoom), round(rect.height * self._zoom)))
-        pygame.draw.rect(self.surface, color, zoomed_rect, border)
-
-    def add_image(self, rect, image):
-        """
-        Add an image to the boardImage
-
-        :param rect: location of the image as a pygame Rect object
-        :param image: a pygame Surface object
-        """
-        self.orig_surface.blit(image, rect)
-        zoomed_rect = pygame.Rect((round(rect.x * self._zoom),round(rect.y * self._zoom),round(rect.width * self._zoom),round(rect.height * self._zoom)))
-        zoomed_image = pygame.transform.scale(image, (round(rect.width * self._zoom),round(rect.height * self._zoom)))
-        self.surface.blit(zoomed_image, zoomed_rect)
-
-
-class TransparantBoardImage(BoardImage):
+class TransparantBoardImage(BaseBoardImage):
     """
     Slight variation on the basic Board image that creates a transparant
     surface on which selections can be drawn
     """
 
-    def _create_surface(self, size, color, **kwargs):
+    def _create_surface(self, size, color):
         """
         Overwrites the image creation process in the basic Entity class
         """
@@ -237,7 +264,11 @@ class TransparantBoardImage(BoardImage):
 
 
 class LightImage(TransparantBoardImage):
-    def __init__(self, pos,  **kwargs):
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        **kwargs
+    ):
         super().__init__(pos, **kwargs)
         # first values can be determined when the first rectangle is added
         self.__left = con.BOARD_SIZE.width
