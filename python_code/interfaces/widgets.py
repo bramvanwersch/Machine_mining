@@ -1109,7 +1109,7 @@ class MultilineTextBox(Pane):
 
     def delete_text(self):
         for line in self.__lines:
-            line.text = ""
+            line.set_line_text("")
 
     def set_text_at_line(self, line_index, text):
         self.__lines[line_index].set_line_text(text)
@@ -1355,10 +1355,10 @@ class _TextLine(Label):
         self.__blinker_image =\
             image_handling.ImageDefinition("general", (90, 10),
                                            image_size=util.Size(self.rect.height, self.rect.height)).images()[0]
-        self.text = text
+        self.__text = text
         self.__blinker_timer = 0
         self.__blinker_active = True
-        self.line_location = len(self.text)
+        self.line_location = len(self.__text)
         # track if there is a newline at the end of the line
         self.newline = False
         self.text_changed = False
@@ -1375,6 +1375,10 @@ class _TextLine(Label):
             self.__blinker_timer = 0
             self.__blinker_active = not self.__blinker_active
             self.text_changed = True
+
+    @property
+    def text(self):
+        return self.__text
 
     def set_blinker(
         self,
@@ -1404,21 +1408,23 @@ class _TextLine(Label):
         """Add some text at the end of the line"""
         for letter in text:
             self.append(letter)
+        self.text_changed = True
 
     def set_line_text(
         self,
         text: str
     ) -> None:
         """Replace the text with text"""
-        self.text = ""
+        self.__text = ""
         self.add_text(text)
+        self.text_changed = True
 
     def __render(self) -> None:
         """Render the text and the blinker"""
-        self.set_text(self.text, (0, "C"), self.__text_color, self.__font_size)
+        self.set_text(self.__text, (0, "C"), self.__text_color, self.__font_size)
         if self.__blinker_active:
-            blinker_position = (int(self.__font.size(self.text[:self.line_location])[0] -
-                                (self.__blinker_image.get_size()[0] / 2) + 1), 0)
+            blinker_position = (int(self.__font.size(self.__text[:self.line_location])[0] -
+                                    (self.__blinker_image.get_size()[0] / 2) + 1), 0)
             self.set_image(self.__blinker_image, blinker_position)
         else:
             self.clean_surface(clean_text=False)
@@ -1430,14 +1436,14 @@ class _TextLine(Label):
     ) -> Union[str, None]:
         if start > stop:
             return None
-        cut_text = self.text[start: stop]
-        self.text = self.text[:start] + self.text[stop + 1:]
+        cut_text = self.__text[start: stop]
+        self.__text = self.__text[:start] + self.__text[stop + 1:]
         if self.line_location > start:
             self.move_line_location(len(cut_text))
         return cut_text
 
     def __repr__(self):
-        return f"<_TextLine object with: location: {self.line_location}, text: '{self.text}'>"
+        return f"<_TextLine object with: location: {self.line_location}, text: '{self.__text}'>"
 
     def set_line_location(
         self,
@@ -1451,13 +1457,13 @@ class _TextLine(Label):
         value
     ) -> None:
         """Move the line location within the allowed bounds"""
-        self.line_location = max(0, min(len(self.text), self.line_location + value))
+        self.line_location = max(0, min(len(self.__text), self.line_location + value))
 
     def can_append(
         self,
         value: str
     ) -> bool:
-        return self.__font.size(self.text + value)[0] <= self.rect.width - 5
+        return self.__font.size(self.__text + value)[0] <= self.rect.width - 5
 
     def append(
         self,
@@ -1465,17 +1471,17 @@ class _TextLine(Label):
     ) -> None:
         if not self.can_append(value):
             return
-        self.text = self.text[:self.line_location] + value + self.text[self.line_location:]
+        self.__text = self.__text[:self.line_location] + value + self.__text[self.line_location:]
         self.move_line_location(len(value))
         self.text_changed = True
 
     def backspace(self) -> None:
         if self.line_location > 0:
-            if self.line_location == len(self.text) and self.newline:
+            if self.line_location == len(self.__text) and self.newline:
                 self.newline = False
             else:
-                self.text = self.text[:self.line_location - 1] + self.text[self.line_location:]
+                self.__text = self.__text[:self.line_location - 1] + self.__text[self.line_location:]
                 self.move_line_location(-1)
 
     def delete(self) -> None:
-        self.text = self.text[:self.line_location] + self.text[self.line_location + 1:]
+        self.__text = self.__text[:self.line_location] + self.__text[self.line_location + 1:]

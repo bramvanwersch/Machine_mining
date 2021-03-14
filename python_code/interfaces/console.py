@@ -52,7 +52,6 @@ class ConsoleWindow(Window):
         else:
             raise util.GameException(f"Invalid direction for retrieving Console line {direction}")
         self.__input_line.set_text_at_line(0, line.text)
-        self.__input_line.wupdate()
 
     def __init_widgets(self):
         self.__input_line = ConsoleLine(self.WINDOW_SIZE.width)
@@ -231,6 +230,8 @@ class TextLog:
     def append(self, line):
         self.user_log[len(self.user_log) + len(self.warning_log)] = line
         self.changed = True
+        # always place the cursor at the last line to act like linux instead of windows command line
+        self.user_log_location = 0
 
     def append_warning(self, line):
         self.warning_log[len(self.user_log) + len(self.warning_log)] = line
