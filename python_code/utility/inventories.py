@@ -143,9 +143,9 @@ class Inventory:
         return None
 
     def __str__(self):
-        final_str = ""
+        final_str = "Inventory:"
         for item in self.__container.values():
-            final_str += "{}: {}\n".format(item.name(), item.quantity)
+            final_str += f"{str(item)}\n"
         return final_str[:-1]
 
 

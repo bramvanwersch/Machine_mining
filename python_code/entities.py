@@ -282,7 +282,7 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
         return leftover_events
 
 
-class Worker(MovingEntity):
+class Worker(MovingEntity, util.ConsoleReadable):
     """
     A worker class that can perform tasks
     """
@@ -310,6 +310,14 @@ class Worker(MovingEntity):
         # for loading purposes
         if self.board:
             self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
+
+    def printables(self) -> List[str]:
+        attributes = super().printables()
+        attributes.remove("board")
+        attributes.remove("task_control")
+        attributes.remove("surface")
+        attributes.remove("orig_surface")
+        return attributes
 
     def update(self, *args):
         """

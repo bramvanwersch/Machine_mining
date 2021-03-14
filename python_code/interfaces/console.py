@@ -13,6 +13,7 @@ import interfaces.widgets as widgets
 if TYPE_CHECKING:
     from board.sprite_groups import CameraAwareLayeredUpdates
     from board.board import Board
+    import user
 
 
 class ConsoleWindow(Window):
@@ -28,17 +29,30 @@ class ConsoleWindow(Window):
     def __init__(
         self,
         sprite_group: "CameraAwareLayeredUpdates",
-        board: "Board"
+        board: "Board",
+        user_: "user.User"
     ):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, static=False, title="CONSOLE")
         self.__input_line = None
         self.__text_log_label = None
         self.__log = TextLog()
-        self.__console = Console(board)
+        self.__console = Console(board, user_)
 
         self.__init_widgets()
         self.add_key_event_listener(con.K_TAB, self.__create_tab_information, values=[self.__input_line],
                                     types=["pressed"])
+        self.add_key_event_listener(con.K_UP, self.__set_log_line, values=[-1], types=["unpressed"])
+        self.add_key_event_listener(con.K_DOWN, self.__set_log_line, values=[1], types=["unpressed"])
+
+    def __set_log_line(self, direction):
+        if direction == 1:
+            line = self.__log.line_down()
+        elif direction == -1:
+            line = self.__log.line_up()
+        else:
+            raise util.GameException(f"Invalid direction for retrieving Console line {direction}")
+        self.__input_line.set_text_at_line(0, line.text)
+        self.__input_line.wupdate()
 
     def __init_widgets(self):
         self.__input_line = ConsoleLine(self.WINDOW_SIZE.width)
@@ -296,10 +310,12 @@ class Line:
 class Console:
     def __init__(
         self,
-        board: "Board"
+        board: "Board",
+        user_: "user.User"
     ):
         self.command_tree = {}
         self.__board = board
+        self.__user = user_
         self.__innitialise_command_tree()
 
     def __innitialise_command_tree(self):
@@ -309,6 +325,8 @@ class Console:
     def __create_print_tree(self) -> Dict[str, Any]:
         tree = dict()
         tree["debug"] = self.__create_attribute_tree(DEBUG, "printables")
+        tree["workers"] = {f"worker_{index + 1}": self.__create_attribute_tree(worker, "printables")
+                           for index, worker in enumerate(self.__user.workers)}
         return tree
 
     def __create_script_tree(self) -> Dict[str, Any]:
@@ -351,12 +369,13 @@ class Console:
             return str(e), True
         for arguments in commands_list:
             arguments = arguments.strip().split(" ")
-            if arguments[0] == "print":
-                return self.__process_print(arguments), False
-            elif arguments[0] == "scripts":
-
-                return self.__process_script_call(arguments)
-
+            try:
+                if arguments[0] == "print":
+                    return self.__process_print(arguments)
+                elif arguments[0] == "scripts":
+                    return self.__process_script_call(arguments)
+            except (IndexError, KeyError):
+                return f"Not enough arguments supplied for the {arguments[0]} command.", True
 
             #     return self.__process(commands)
             # elif commands[0] == "create":
@@ -376,15 +395,25 @@ class Console:
                     .format(arguments[0], ", ".join(self.command_tree.keys())), True
 
     def __process_print(self, arguments):
+        strat_argument_index = 1
+        check_dictionary = self.command_tree[arguments[0]][arguments[1]]
         if arguments[1] == "debug":
             target = DEBUG
+        elif arguments[1] == "workers":
+            target = self.__user.workers[int(arguments[2].split("_")[1]) - 1]
+            strat_argument_index = 2
+            check_dictionary = check_dictionary[arguments[2]]
         else:
             raise util.GameException(f"Unexpected value to print from; {arguments[1]}")
-        index = 2
+        index = strat_argument_index + 1
         while index < len(arguments):
+            if arguments[index] not in check_dictionary:
+                return f"Value {'.'.join(arguments[strat_argument_index:])} is not allowed or cannot be accessed.", True
+            else:
+                check_dictionary = check_dictionary[arguments[index]]
             target = getattr(target, arguments[index])
             index += 1
-        return "Value of {} is {}".format(".".join(arguments[1:]), str(target))
+        return "Value of {} is {}".format(".".join(arguments[strat_argument_index:]), str(target)), False
 
     def __process_script_call(
         self,

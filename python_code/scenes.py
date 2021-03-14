@@ -419,13 +419,13 @@ class Game(Scene, util.Serializer):
         self.board = board_
         self.task_control = task_control
         self.user = None
+        self.pause_window = None
+        self.console_window = None
 
         # ready made windows
         self.window_manager = None
         self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
                                                                   self.sprite_group) if self.board else None
-        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console.ConsoleWindow(sprite_group, self.board)
 
     def start(self):
         # function for setting up a Game
@@ -459,6 +459,8 @@ class Game(Scene, util.Serializer):
                                                                       self.sprite_group)
 
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
+        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
+        self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
 
     def to_dict(self):
         return {
