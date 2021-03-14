@@ -32,7 +32,8 @@ class ConsoleWindow(Window):
         board: "Board",
         user_: "user.User"
     ):
-        super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, static=False, title="CONSOLE")
+        super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, static=False, title="CONSOLE",
+                         color=(150, 150, 150))
         self.__input_line = None
         self.__text_log_label = None
         self.__log = TextLog()
@@ -73,7 +74,7 @@ class ConsoleWindow(Window):
             if is_error:
                 [self.add_error_message(m) for m in message.split("\n")]
             else:
-                [self.add_conformation_message(m) for m in message.split("\n")]
+                [self.add_result_message(m) for m in message.split("\n")]
             self.__input_line.process_line = None
 
     def __create_tab_information(self, current_line: widgets.MultilineTextBox):
@@ -111,11 +112,8 @@ class ConsoleWindow(Window):
             else:
                 current_line.set_text_at_line(0, current_line_text[:-len(last_command)] + possible_commands[0])
         elif len(possible_commands) > 0:
-            mcl = max(len(command) for command in possible_commands)
-            m1 = "{:<" + str(mcl + 2) + "}"
-            m2 = m1 * len(possible_commands)
-            message = m2.format(*possible_commands)
-            self.__log.append_warning(Line(text=message, color=(0, 0, 255)))
+            message = " ".join(possible_commands)
+            self.add_tab_possibilities_message(message)
             lpc = str(max(possible_commands, key=len))
             letters = ""
             for letter in lpc:
@@ -162,10 +160,14 @@ class ConsoleWindow(Window):
         message = "ERROR: "
         self.__log.append_warning(Line(text=message + text, color=(163, 28, 23)))
 
-    def add_conformation_message(self, text):
+    def add_result_message(self, text):
         self.__log.append_warning(Line(text=text, color=(25, 118, 168)))
 
+    def add_tab_possibilities_message(self, text):
+        self.__log.append_warning(Line(text=text, color=(0, 0, 255), line_type="list"))
+
     def add_executed_command_message(self, text):
+        """Print a command that was just executed in greenn"""
         self.__log.append(Line(text=text, color=(64, 235, 52)))
 
 
@@ -253,15 +255,16 @@ class TextLog:
 
 
 class Line:
-    MAX_LINE_SIZE = 155
+    MAX_LINE_LENGTH = con.SCREEN_SIZE.width
     BACKGROUND_COLOR = (150, 150, 150)
 
-    def __init__(self, text="", color=(0, 255, 0), font=22):
+    def __init__(self, text="", color=(0, 255, 0), font=22, line_type="normal"):
         self.color = color
         self.text = text
         self.line_location = len(self.text)
         self.rendered_str = None
         self.font = con.FONTS[font]
+        self.__line_type = line_type
 
     def __str__(self):
         return self.text
@@ -273,33 +276,58 @@ class Line:
             return self.__render_string()
 
     def __render_string(self):
-        # if line is bigger then max of screen seperate the words and put them on separate lines
-        size = util.Size(con.SCREEN_SIZE.width, 0)
-        line_heigth = self.font.size("k")[1]
-        if len(self.text) > self.MAX_LINE_SIZE:
-            words = self.text.split(" ")
-            text = [""]
-            line_length = 0
-            for word in words:
-                if line_length + len(word) < self.MAX_LINE_SIZE:
-                    text[len(text) - 1] += word + " "
-                    line_length += len(word) + 1
-                else:
-                    s = self.font.size(text[len(text) - 1])
-                    size.height += line_heigth
-                    line_length = 0
-                    text.append("")
-            size.height += line_heigth
+        if self.__line_type == "normal":
+            text = self.__render_normal_line()
+        elif self.__line_type == "list":
+            text = self.__render_list_line()
         else:
-            text = [self.text]
-            size = util.Size(*self.font.size(self.text))
-        surf = pygame.Surface((size.width + 2, size.height + 2))
+            raise util.GameException(f"Unsupported line_type {self.__line_type}")
+        surf = pygame.Surface((con.SCREEN_SIZE.width + 2, len(text) * self.font.size("k")[1] + 2))
 
         surf.fill(self.BACKGROUND_COLOR)
         for index, line in enumerate(text):
             rt = self.font.render(line, True, self.color)
             surf.blit(rt, (0, rt.get_size()[1] * index))
         return surf
+
+    def __render_normal_line(self) -> List[str]:
+        """Render a 'normal' text line that can be longer then the given MAX_LINE_LENGTH. In that the case the line
+        is split up in multiple lines using the words to break."""
+        if self.font.size(self.text) > self.MAX_LINE_LENGTH:
+            words = self.text.split(" ")
+            lines = [""]
+            line_length = 0
+            for word in words:
+                word_size = self.font.size(word + " ")
+                if line_length + word_size < self.MAX_LINE_LENGTH:
+                    lines[len(lines) - 1] += word + " "
+                    line_length += word_size
+                else:
+                    line_length = self.font.size(word)
+                    lines.append(word)
+            return lines
+        else:
+            return [self.text]
+
+    def __render_list_line(self) -> List[str]:
+        """Render a line that represents a list of values that are seperated on spaces. In this case the line should
+        be shown in sutch a way that the list elements allign under one another if there are multiple lines needed"""
+        words = self.text.split(" ")
+        longest_word = max(self.font.size(word + "   ")[0] for word in words)
+        lines = [""]
+        line_length = 0
+        for word in words:
+            word_size = self.font.size(word)[0]
+            while word_size < longest_word:
+                word += " "
+                word_size = self.font.size(word)[0]
+            if line_length + word_size < self.MAX_LINE_LENGTH:
+                lines[len(lines) - 1] += word
+                line_length += word_size
+            else:
+                line_length = word_size
+                lines.append(word)
+        return lines
 
     def __len__(self):
         return len(self.text)
