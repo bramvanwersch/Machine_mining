@@ -2,7 +2,7 @@
 
 # library imports
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING, Tuple, Union
+from typing import List, TYPE_CHECKING, Tuple, Union, Set
 
 # own imports
 import block_classes.building_materials as build_materials
@@ -25,7 +25,7 @@ def building_type_from_material(material):
     return material_mapping[material.name()]
 
 
-class Building(block_classes.MultiBlock, ABC):
+class Building(block_classes.MultiBlock, util.ConsoleReadable, ABC):
     """
     Abstract class for buildings. Buildings are multiblock (can be 1) structures
     that contain an image
@@ -92,6 +92,12 @@ class InterfaceBuilding(Building, ABC):
     @abstractmethod
     def INTERFACE_TYPE(self) -> type:
         pass
+
+    def printables(self) -> Set[str]:
+        attributes = super().printables()
+        attributes.remove("window_manager")
+        attributes.remove("interface")
+        return attributes
 
     def __select_buidling_action(self) -> None:
         # make sure to update the window manager when needed

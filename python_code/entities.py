@@ -1,7 +1,7 @@
 from abc import ABC
 from itertools import count
 import pygame
-from typing import List, Tuple, Union, TYPE_CHECKING
+from typing import List, Tuple, Union, TYPE_CHECKING, Set
 
 import utility.constants as con
 import utility.utilities as util
@@ -311,7 +311,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
         if self.board:
             self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
 
-    def printables(self) -> List[str]:
+    def printables(self) -> Set[str]:
         attributes = super().printables()
         attributes.remove("board")
         attributes.remove("task_control")

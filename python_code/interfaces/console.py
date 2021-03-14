@@ -328,6 +328,9 @@ class Console:
         tree["debug"] = self.__create_attribute_tree(DEBUG, "printables")
         tree["workers"] = {f"worker_{index + 1}": self.__create_attribute_tree(worker, "printables")
                            for index, worker in enumerate(self.__user.workers)}
+        tree["buildings"] = \
+            {f"buildling_{index + 1}({buidling.name()[:3]})": self.__create_attribute_tree(buidling, "printables")
+             for index, buidling in enumerate(self.__user.board.buildings.values())}
         return tree
 
     def __create_script_tree(self) -> Dict[str, Any]:
@@ -375,7 +378,9 @@ class Console:
                     return self.__process_print(arguments)
                 elif arguments[0] == "scripts":
                     return self.__process_script_call(arguments)
-            except (IndexError, KeyError):
+            except (IndexError, KeyError) as e:
+                if con.DEBUG.WARNINGS:
+                    print(str(e))
                 return f"Not enough arguments supplied for the {arguments[0]} command.", True
 
             #     return self.__process(commands)
@@ -402,6 +407,10 @@ class Console:
             target = DEBUG
         elif arguments[1] == "workers":
             target = self.__user.workers[int(arguments[2].split("_")[1]) - 1]
+            strat_argument_index = 2
+            check_dictionary = check_dictionary[arguments[2]]
+        elif arguments[1] == "buildings":
+            target = list(self.__user.board.buildings.values())[int(arguments[2].split("_")[1].split("(")[0]) - 1]
             strat_argument_index = 2
             check_dictionary = check_dictionary[arguments[2]]
         else:

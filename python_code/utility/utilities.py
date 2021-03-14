@@ -1,10 +1,12 @@
 from pygame import Rect
-from typing import List, Union, Iterable
+from typing import List, Union, Iterable, Set
+import types
 from math import pi, e, sqrt, erfc, pow
 from abc import ABC, abstractmethod
 import json
 from time import time_ns
 from numpy import array, linalg, exp
+import inspect
 
 
 LAST_IDS = set()
@@ -69,9 +71,10 @@ class Serializer(ABC):
 class ConsoleReadable(ABC):
     """Methods that a class that is usable for certain console commands has"""
 
-    def printables(self) -> List[str]:
+    def printables(self) -> Set[str]:
         """Return a list of variable names that are allowed printable, default is all public varaible names"""
-        return [key for key in self.__dict__.keys() if not key.startswith("_")]
+        return {name for name, method in inspect.getmembers(self) if not name.startswith("_")
+                and not isinstance(method, types.MethodType)}
 
     def setables(self):
         """Return a list of varaible names that are allowed to be changed"""

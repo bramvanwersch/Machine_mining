@@ -12,11 +12,9 @@ import block_classes.building_materials as build_materials
 import block_classes.environment_materials as environment_materials
 import board.pathfinding as pathfinding
 import network.pipes as network
-import interfaces.small_interfaces as small_interface
 import interfaces.interface_utility as interface_util
 import board.chunks as chunks
 from utility import inventories
-import entities
 
 
 class Board(util.Serializer):
@@ -50,7 +48,7 @@ class Board(util.Serializer):
         progress_var[0] = "Innitialising pipe network..."
         self.pipe_network = network.Network(None)
 
-        self.__buildings = {}
+        self.buildings = {}
         self.changed_light_blocks = set()
         self.__grow_update_time = grow_update_time
 
@@ -90,7 +88,7 @@ class Board(util.Serializer):
         return {
             "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
             "pipe_coordinates": self.pipe_network.pipe_coordinates(),
-            "buildings": [building.to_dict() for building in self.__buildings.values()],
+            "buildings": [building.to_dict() for building in self.buildings.values()],
             "grow_update_time": self.__grow_update_time
         }
 
@@ -232,7 +230,7 @@ class Board(util.Serializer):
     def remove_blocks(self, *blocks):
         removed_items = []
         for block in blocks:
-            if block.id in self.__buildings:
+            if block.id in self.buildings:
                 removed_items.append(self.remove_building(block))
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
@@ -278,7 +276,7 @@ class Board(util.Serializer):
         return removed_items
 
     def remove_building(self, block):
-        building_instance = self.__buildings.pop(block.id, None)
+        building_instance = self.buildings.pop(block.id, None)
         if building_instance == None:
             return
         if isinstance(block, block_classes.NetworkEdgeBlock):
@@ -322,7 +320,7 @@ class Board(util.Serializer):
         #TODO lookinto what the draw parameter ads
         """
         building_rect = building_instance.rect
-        self.__buildings[building_instance.id] = building_instance
+        self.buildings[building_instance.id] = building_instance
         update_blocks = []
         if isinstance(building_instance, network.NetworkNode):
             self.pipe_network.add_node(building_instance)
@@ -419,7 +417,7 @@ class Board(util.Serializer):
         #any distance should be shorter possible on the board
         shortest_distance = con.BOARD_SIZE.width * con.BOARD_SIZE.height
         closest_block = None
-        for building in self.__buildings.values():
+        for building in self.buildings.values():
             if not building.has_inventory():
                 continue
             inventory = building.blocks[0][0].inventory
