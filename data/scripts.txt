@@ -1,1 +1,1 @@
-all_debug_values:print debug SHOW_BLOCK_BORDER;print debug FPS;print debug ENTITY_NMBR;print debug AIR_RECTANGLES;print debug WARNINGS;print debug SHOW_ZOOM;print debug NO_LIGHTING;print debug SHOW_THREADS;print debug TEST_BOARD
+all_debug_values:print debug [SHOW_BLOCK_BORDER, FPS, ENTITY_NMBR, AIR_RECTANGLES, WARNINGS, SHOW_ZOOM, NO_LIGHTING, SHOW_THREADS, TEST_BOARD]

@@ -40,8 +40,7 @@ class ConsoleWindow(Window):
         self.__console = Console(board, user_)
 
         self.__init_widgets()
-        self.add_key_event_listener(con.K_TAB, self.__create_tab_information, values=[self.__input_line],
-                                    types=["pressed"])
+        self.add_key_event_listener(con.K_TAB, self.__create_tab_information, types=["pressed"])
         self.add_key_event_listener(con.K_UP, self.__set_log_line, values=[-1], types=["unpressed"])
         self.add_key_event_listener(con.K_DOWN, self.__set_log_line, values=[1], types=["unpressed"])
 
@@ -52,34 +51,51 @@ class ConsoleWindow(Window):
             line = self.__log.line_up()
         else:
             raise util.GameException(f"Invalid direction for retrieving Console line {direction}")
-        self.__input_line.set_text_at_line(0, line.text)
+        self.__input_line.active_line.set_line_text(line.text)
 
     def __init_widgets(self):
-        self.__input_line = ConsoleLine(self.WINDOW_SIZE.width)
-        self.add_widget((0, self.WINDOW_SIZE.height - self.__input_line.rect.height), self.__input_line)
-        self.__text_log_label = TextLogLabel(self.WINDOW_SIZE - (0, self.__input_line.rect.height), self.__log)
+        self.__input_line = ConsoleLine(self.WINDOW_SIZE.width - 10)
+        self.add_widget((5, self.WINDOW_SIZE.height - self.__input_line.rect.height - 5), self.__input_line)
+        self.add_border(self.__input_line, color=(50, 50, 50))
+
+        self.__text_log_label = TextLogLabel(self.WINDOW_SIZE - (0, self.__input_line.rect.height + 10), self.__log)
         self.add_widget((0, 0), self.__text_log_label)
 
-    def show_window(self, value: bool):
+    def show_window(
+        self,
+        value: bool
+    ):
         super().show_window(value)
         if value is True:
             self.selected_widget = self.__input_line
             self.__input_line.set_selected(True)
 
-    def update(self, *args):
+    def update(
+        self,
+        *args: Any
+    ):
+        """Make sure to process the input line when one is presented when enter is pressed"""
         super().update()
         if self.__input_line.process_line is not None:
             self.add_executed_command_message(self.__input_line.process_line)
-            message, is_error = self.__console.process_command_line_text(self.__input_line.process_line)
-            if is_error:
-                [self.add_error_message(m) for m in message.split("\n")]
-            else:
-                [self.add_result_message(m) for m in message.split("\n")]
+            results = self.__console.process_command_line_text(self.__input_line.process_line)
+            for message, is_error in results:
+                if is_error:
+                    [self.add_error_message(m) for m in message.split("\n")]
+                else:
+                    [self.add_result_message(m) for m in message.split("\n")]
             self.__input_line.process_line = None
 
-    def __create_tab_information(self, current_line: widgets.MultilineTextBox):
-        current_line_text = current_line.get_text().replace("\n", "")
-        commands = self.__get_commands_from_line(current_line_text)
+    def __create_tab_information(
+        self,
+    ):
+        """Determine tab information that is relevant and append either a list of options or add the information that 
+        is shared between all options e.g """
+        # get all the text between the start and the cursor
+        full_line = self.__input_line.active_line.text
+        until_cursor_text = full_line[:self.__input_line.active_line.line_location]
+        after_cursor_text = full_line[self.__input_line.active_line.line_location:]
+        commands = self.__get_commands_from_line(until_cursor_text)
         possible_commands_dict = self.__console.command_tree
         last_command = commands.pop(-1)
         count = 0
@@ -102,15 +118,19 @@ class ConsoleWindow(Window):
             possible_commands = list(possible_commands_dict.keys())
         # if it ends on a perfect command simply add a space to the line
         elif last_command in possible_commands_dict.keys():
-            current_line.add_text_at_line(0, " ")
+            self.__input_line.active_line.append(" ")
             return
         else:
             possible_commands = [key for key in possible_commands_dict.keys() if key.startswith(last_command)]
         if len(possible_commands) == 1:
+            # if line ended on a space
             if len(last_command) == 0:
-                current_line.set_text_at_line(0, current_line_text + possible_commands[0])
+                self.__input_line.active_line.append(possible_commands[0])
             else:
-                current_line.set_text_at_line(0, current_line_text[:-len(last_command)] + possible_commands[0])
+                self.__input_line.active_line.set_line_text(until_cursor_text[:-len(last_command)]
+                                                            + possible_commands[0] + after_cursor_text)
+                self.__input_line.active_line.set_line_location(len(until_cursor_text) - len(last_command) +
+                                                                len(possible_commands[0]))
         elif len(possible_commands) > 0:
             message = " ".join(possible_commands)
             self.add_tab_possibilities_message(message)
@@ -122,9 +142,15 @@ class ConsoleWindow(Window):
                     letters = letters[:-1]
                     break
             if not len(last_command) == 0:
-                current_line.set_text_at_line(0, current_line_text[:-len(last_command)] + letters)
+                self.__input_line.active_line.set_line_text(until_cursor_text[:-len(last_command)] + letters +
+                                                            after_cursor_text)
+                self.__input_line.active_line.set_line_location(len(until_cursor_text) - len(last_command) +
+                                                                len(letters))
 
-    def __get_commands_from_line(self, current_line_text: str):
+    def __get_commands_from_line(
+        self,
+        current_line_text: str
+    ) -> List[str]:
         word = ""
         commands = []
         list_multiplier = None
@@ -172,15 +198,21 @@ class ConsoleWindow(Window):
 
 
 class ConsoleLine(widgets.MultilineTextBox):
-    def __init__(self, width):
+
+    process_line: Union[str, None]
+
+    def __init__(
+        self,
+        width: int
+    ):
         super().__init__(util.Size(width, con.FONTS[22].get_linesize() + 6), lines=1, font_size=22)
         self.add_key_event_listener(con.K_RETURN, action_function=self.handle_return, types=["pressed"])
         self.remove_key_event_listener(con.K_TAB)
         self.process_line = None
 
     def handle_return(self):
-        self.process_line = self.get_text().replace("\n", "")
-        self.delete_text()
+        self.process_line = self.active_line.text
+        self.active_line.set_line_text("")
 
 
 class TextLogLabel(widgets.Label):
@@ -275,7 +307,7 @@ class Line:
         else:
             return self.__render_string()
 
-    def __render_string(self):
+    def __render_string(self) -> pygame.Surface:
         if self.__line_type == "normal":
             text = self.__render_normal_line()
         elif self.__line_type == "list":
@@ -293,12 +325,12 @@ class Line:
     def __render_normal_line(self) -> List[str]:
         """Render a 'normal' text line that can be longer then the given MAX_LINE_LENGTH. In that the case the line
         is split up in multiple lines using the words to break."""
-        if self.font.size(self.text) > self.MAX_LINE_LENGTH:
+        if self.font.size(self.text)[0] > self.MAX_LINE_LENGTH:
             words = self.text.split(" ")
             lines = [""]
             line_length = 0
             for word in words:
-                word_size = self.font.size(word + " ")
+                word_size = self.font.size(word + " ")[0]
                 if line_length + word_size < self.MAX_LINE_LENGTH:
                     lines[len(lines) - 1] += word + " "
                     line_length += word_size
@@ -337,6 +369,20 @@ class Line:
 
 
 class Console:
+    """Class that allows for using commands in order to manipulate values while the game is running
+    Quick guide:
+        - Every command is build up in a simple way. Name of main command, a series of names indicating where to find
+         the value. A potential value to set the located value too.
+        - tab can be pressed to see the allowed commands given a certain type point.
+        - square brackets ([]) can be used in order to save typing by allowing some sort of multiplication e.g print
+         debug [FPS, NO_LIGHTING] -means-> print debug FPS and print debug NO_LIGTHING, this works in a nested fashion 
+         as well
+        - brackets and ; are used in order to set lists in order to not interfer with the square bracket syntax
+    """
+    command_tree: Dict[str, Any]
+    __board: "Board"
+    __user: "user.User"
+
     def __init__(
         self,
         board: "Board",
@@ -394,22 +440,24 @@ class Console:
     def process_command_line_text(
         self,
         text: str
-    ):
+    ) -> List[Tuple[str, bool]]:
+        results = []
         try:
             commands_list = self.__text_to_commands(text)
         except ValueError as e:
-            return str(e), True
+            return [(str(e), True)]
         for arguments in commands_list:
             arguments = arguments.strip().split(" ")
             try:
                 if arguments[0] == "print":
-                    return self.__process_print(arguments)
+                    results.append(self.__process_print(arguments))
                 elif arguments[0] == "scripts":
-                    return self.__process_script_call(arguments)
-            except (IndexError, KeyError) as e:
-                if con.DEBUG.WARNINGS:
-                    print(str(e))
-                return f"Not enough arguments supplied for the {arguments[0]} command.", True
+                    results.extend(self.__process_script_call(arguments))
+                else:
+                    results.append(("{} is not a valid command. Choose one of the following: {}."
+                                    .format(arguments[0], ", ".join(self.command_tree.keys())), True))
+            except (IndexError, KeyError):
+                results.append((f"Not enough arguments supplied for the {arguments[0]} command.", True))
 
             #     return self.__process(commands)
             # elif commands[0] == "create":
@@ -424,9 +472,7 @@ class Console:
             #         self.__process_commands(self.command_tree["scripts"][commands[1]])
             #     else:
             #         return "No script known by name {}".format(commands[1]), True
-            else:
-                return "{} is not a valid command. Choose one of the following: {}."\
-                    .format(arguments[0], ", ".join(self.command_tree.keys())), True
+        return results
 
     def __process_print(self, arguments):
         strat_argument_index = 1
@@ -445,7 +491,7 @@ class Console:
             raise util.GameException(f"Unexpected value to print from; {arguments[1]}")
         index = strat_argument_index + 1
         while index < len(arguments):
-            if arguments[index] not in check_dictionary:
+            if not isinstance(check_dictionary, dict) or arguments[index] not in check_dictionary:
                 return f"Value {'.'.join(arguments[strat_argument_index:])} is not allowed or cannot be accessed.", True
             else:
                 check_dictionary = check_dictionary[arguments[index]]
@@ -456,17 +502,11 @@ class Console:
     def __process_script_call(
         self,
         arguments: List[str]
-    ) -> Tuple[str, bool]:
-        """Process a script call by taking the called script and calling all script lines that are provided by ;
-        separation"""
+    ) -> List[Tuple[str, bool]]:
+        """Process a script call by taking the name and taking the provided line"""
         command_line = self.command_tree["scripts"][arguments[1]]
-        total_message = ""
-        all_return_code = True
-        for line in command_line.split(";"):
-            message, return_code = self.process_command_line_text(line)
-            all_return_code = return_code and all_return_code
-            total_message += message + "\n"
-        return total_message[:-1], all_return_code
+        results = self.process_command_line_text(command_line)
+        return results
 
     def __text_to_commands(self, text):
         text = text.strip()

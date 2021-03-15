@@ -41,7 +41,7 @@ class WidgetEvent(ABC):
         function: Callable,
         values: List = None,
         types: List = None
-    ) -> None:
+    ):
         """Add an action for one of the 2 states"""
         types = types if types else self.ALLOWED_STATES
         values = values if values else []
@@ -82,14 +82,14 @@ class SelectionGroup:
     def add(
         self,
         widget: "Widget"
-    ) -> None:
+    ):
         self.__widgets.add(widget)
 
     def select(
         self,
         widget: "Widget",
         **kwargs
-    ) -> None:
+    ):
         if not self.multi_mode:
             for w in self.__widgets:
                 w.set_selected(False)
@@ -100,12 +100,12 @@ class SelectionGroup:
         else:
             self.selected_widgets.append(widget)
 
-    def off(self) -> None:
+    def off(self):
         """Turn all widgets off"""
         self.selected_widgets = None
         [w.set_selected(False) for w in self.__widgets]
 
-    def on(self) -> None:
+    def on(self):
         """Turn all widgets on"""
         if self.multi_mode:
             [w.set_selected(True) for w in self.__widgets]
@@ -225,7 +225,7 @@ class Widget(event_handlers.EventHandler, ABC):
     def move(
         self,
         offset: Union[Tuple[int, int], List[int]]
-    ) -> None:
+    ):
         self.board_position[0] += offset[0]
         self.board_position[1] += offset[1]
 
@@ -243,7 +243,7 @@ class Widget(event_handlers.EventHandler, ABC):
     def add_tooltip(
         self,
         tooltip: "Tooltip"
-    ) -> None:
+    ):
         self.add_hover_event_listener(tooltip.show_tooltip, tooltip.show_tooltip, hover_values=[True],
                                       unhover_values=[False])
 
@@ -257,7 +257,7 @@ class Widget(event_handlers.EventHandler, ABC):
         values: List = None,
         types: List = None,
         no_repeat: bool = False
-    ) -> None:
+    ):
         """Link functions to key events"""
         if key in self.__listened_for_events:
             self.__listened_for_events[key].add_action(action_function, values, types)
@@ -285,7 +285,7 @@ class Widget(event_handlers.EventHandler, ABC):
         unhover_action_function: Callable = None,
         hover_values: List = None,
         unhover_values: List = None
-    ) -> None:
+    ):
         """Link functions to hover events and trigger when appropriate"""
         if hover_action_function:
             self.add_key_event_listener(con.BTN_HOVER, hover_action_function, values=hover_values, types=["pressed"],
@@ -321,7 +321,7 @@ class Widget(event_handlers.EventHandler, ABC):
         self,
         selected: bool,
         **kwargs
-    ) -> None:
+    ):
         """Set a widget as selected. Allowing a highlight for instance"""
         if self.selectable:
             self.selected = selected
@@ -386,7 +386,7 @@ class Label(Widget):
         text_pos: Union[Tuple[Union[int, str], Union[str, int]], List[int]] = ("center", "center"),
         text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
-    ) -> None:
+    ):
         if image is not None:
             self.set_image(image, image_pos, image_size)
         if text is not None:
@@ -428,7 +428,7 @@ class Label(Widget):
         pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         size: Union[util.Size, Tuple[int, int], List[int]] = None,
         redraw: bool = True
-    ) -> None:
+    ):
         if redraw:
             self.clean_surface()
         if size is not None:
@@ -452,7 +452,7 @@ class Label(Widget):
         color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
         redraw: bool = True
-    ) -> None:
+    ):
 
         s = con.FONTS[font_size].render(str(text), True, color)
         rect = s.get_rect()
@@ -473,7 +473,7 @@ class Label(Widget):
         selected: bool,
         color: Union[Tuple[int, int, int], List[int]] = None,
         redraw: bool = True
-    ) -> None:
+    ):
         super().set_selected(selected)
         if not self.selectable:
             return
@@ -492,7 +492,7 @@ class Label(Widget):
         clean_text: bool = True,
         clean_selected: bool = True,
         clean_image: bool = True
-    ) -> None:
+    ):
         """Allow to clean a certain type or multiple of the image"""
         # reset the surface and reado anything that should not have been cleared
         self.surface = self.orig_surface.copy()
@@ -564,7 +564,7 @@ class Pane(Label):
         pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]],
         widget: Widget,
         add_topleft: bool = False
-    ) -> None:
+    ):
         """
         Add a widget at the provided position
         """
@@ -587,7 +587,7 @@ class Pane(Label):
         self.surface = self.orig_surface.copy()
         self.changed_image = True
 
-    def wupdate(self, *args) -> None:
+    def wupdate(self, *args):
         """Update all the widgets in this container based on the changed_image attribute"""
         for widget in self.widgets:
             widget.wupdate()
@@ -595,7 +595,7 @@ class Pane(Label):
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def move(self, offset: Union[Tuple[int, int], List[int]]) -> None:
+    def move(self, offset: Union[Tuple[int, int], List[int]]):
         super().move(offset)
         for widget in self.widgets:
             widget.move(offset)
@@ -635,7 +635,7 @@ class Pane(Label):
     def __redraw_widget(
         self,
         widget: Widget
-    ) -> None:
+    ):
         """Method that redraws a widget in this container. No check is performed"""
         self.orig_surface.blit(widget.surface, dest=widget.rect,
                                area=pygame.Rect((0, 0, widget.rect.width, widget.rect.height)))
@@ -646,7 +646,7 @@ class Pane(Label):
         self,
         widget: Widget,
         color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0)
-    ) -> None:
+    ):
         """add a border around a specified widget. The widget should be in the pane"""
         rect = widget.rect.inflate(4, 4)
         pygame.draw.rect(self.orig_surface, color, rect, 3)
@@ -695,7 +695,7 @@ class SelectionList(Pane):
     def __init_widgets(
         self,
         sprite_group: pygame.sprite.AbstractGroup
-    ) -> None:
+    ):
         line_width = self.rect.width - self.rect.height
         line_height = self.LINE_HEIGHT
         self.__show_label = Label((line_width, line_height), self.color, border=True, text=self.__options[0],
@@ -722,7 +722,7 @@ class SelectionList(Pane):
         # make sure that events are captured that could cover the frame containing the options
         self.rect.height += self.__expanded_options_frame.rect.height
 
-    def select_option(self, option_str: str) -> None:
+    def select_option(self, option_str: str):
         # these only contain labels
         for label in self.__expanded_options_frame.widgets:
             label: Label
@@ -803,7 +803,7 @@ class Frame(entities.ZoomableMySprite, Pane):
     def set_zoom(
         self,
         zoom: float
-    ) -> None:
+    ):
         self._zoom = zoom
 
     @property
@@ -822,7 +822,7 @@ class Frame(entities.ZoomableMySprite, Pane):
     def rect(
         self,
         rect: pygame.Rect
-    ) -> None:
+    ):
         self.orig_rect = rect
 
     def handle_mouse_events(
@@ -930,7 +930,7 @@ class Tooltip(entities.MySprite):
     def show_tooltip(
         self,
         value: bool
-    ) -> None:
+    ):
         self.show(value)
         self.__showing_tooltip = value
         if value:
@@ -969,7 +969,7 @@ class ScrollPane(Pane):
     def add_widget(
             self,
             widget: Widget,
-    ) -> None:
+    ):
         # configure the position of the next
         if len(self.widgets) > 0:
             # when the widget does not fit on the current line go a line down
@@ -989,7 +989,7 @@ class ScrollPane(Pane):
     def scroll_y(
         self,
         offset_y: int
-    ) -> None:
+    ):
         """Scroll the main image of the pane"""
         # for cases with negative offset
         if self.__total_rect.height - self.rect.height + offset_y + self.__total_offset_y < 0:
@@ -1011,7 +1011,7 @@ class ScrollPane(Pane):
     def __extend_scroll_image(
         self,
         amnt: int
-    ) -> None:
+    ):
         """Extend the current orig_surface and total_rect to hold more image"""
         self.__total_rect.height += amnt
         orig_copy = self.orig_surface.copy()
@@ -1039,21 +1039,21 @@ class ItemDisplay(Label):
     def add_item(
         self,
         item: "inventories.Item"
-    ) -> None:
+    ):
         """Add or change the item displayed"""
         self.item = item
         self.__add_item_image()
         self.__add_quantity_text()
         self.changed_image = True
 
-    def __add_item_image(self) -> None:
+    def __add_item_image(self):
         """Add the image of the item in the correct size"""
         item_size = util.Size(*self.rect.size) - (12, 12)
         item_image = self.item.material.full_surface
         item_image = pygame.transform.scale(item_image, item_size)
         self.set_image(item_image)
 
-    def __add_quantity_text(self) -> None:
+    def __add_quantity_text(self):
         """Add the quantity text"""
         self.previous_total = self.item.quantity
         self.set_text(str(self.previous_total), (5, 5), color=self.item.TEXT_COLOR)
@@ -1085,7 +1085,7 @@ class MultilineTextBox(Pane):
         text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         lines: int = None,
         **kwargs
-    ) -> None:
+    ):
         self.__font_size = font_size
         self.__text_color = text_color
         super().__init__(size, color=(255, 255, 255), selectable=True, **kwargs)
@@ -1101,23 +1101,11 @@ class MultilineTextBox(Pane):
         [self.add_key_event_listener(key, self.__add_letter, values=[key], types=["pressed"]) for key in con.KEY_KEYS]
         [self.add_key_event_listener(key, self.unpress_key, values=[key], types=["unpressed"]) for key in con.KEY_KEYS]
 
-    def get_text(self) -> str:
-        all_text = ""
-        for line in self.__lines:
-            all_text += line.text + "\n"
-        return all_text
+    @property
+    def active_line(self) -> "_TextLine":
+        return self.__lines[self.__selected_line_index]
 
-    def delete_text(self):
-        for line in self.__lines:
-            line.set_line_text("")
-
-    def set_text_at_line(self, line_index, text):
-        self.__lines[line_index].set_line_text(text)
-
-    def add_text_at_line(self, line_index, text):
-        self.__lines[line_index].add_text(text)
-
-    def wupdate(self, *args) -> None:
+    def wupdate(self, *args):
         super().wupdate(*args)
         if self.pressed_key_code is not None:
             if self.next_key_repeat <= 0:
@@ -1127,7 +1115,7 @@ class MultilineTextBox(Pane):
                 self.next_key_repeat -= con.GAME_TIME.get_time()
             self.__lines[self.__selected_line_index].text_changed = True
 
-    def __init_widgets(self) -> None:
+    def __init_widgets(self):
         """Innitialize the first line"""
         new_line = _TextLine(self.rect.width, font_size=self.__font_size)
         self.add_widget((self.__BORDER_SPACING, self.__BORDER_SPACING), new_line)
@@ -1137,7 +1125,7 @@ class MultilineTextBox(Pane):
         self,
         key_code: int,
         reset_repeat: bool = True
-    ) -> None:
+    ):
         """Add a letter to the selected line"""
         self.pressed_key_code = key_code
         active_line = self.__lines[self.__selected_line_index]
@@ -1175,7 +1163,7 @@ class MultilineTextBox(Pane):
     def unpress_key(
         self,
         key_code: int
-    ) -> None:
+    ):
         """when a key is let go"""
         if key_code == self.pressed_key_code:
             self.pressed_key_code = None
@@ -1184,7 +1172,7 @@ class MultilineTextBox(Pane):
     def enter(
         self,
         add_newline: bool = True
-    ) -> None:
+    ):
         """Add an additional line if possible"""
         if len(self.__lines) >= self.__max_lines:
             return
@@ -1203,7 +1191,7 @@ class MultilineTextBox(Pane):
     def add_line(
         self,
         text=""
-    ) -> None:
+    ):
         # shift all lines down
         for line in self.__lines[self.__selected_line_index + 1:]:
             copy_text = line.text
@@ -1217,7 +1205,7 @@ class MultilineTextBox(Pane):
                          len(self.__lines) + self.__BORDER_SPACING), new_line)
         self.__lines.append(new_line)
 
-    def backspace(self) -> None:
+    def backspace(self):
         """Backspace over multiple lines"""
         active_line = self.__lines[self.__selected_line_index]
         if not active_line.line_location == 0:
@@ -1242,7 +1230,7 @@ class MultilineTextBox(Pane):
     def remove_line(
         self,
         remove_index: int
-    ) -> None:
+    ):
         """Remove a line from the text and shift all lower lines up"""
         for index, line in enumerate(self.__lines[remove_index + 1:]):
             previous_line = self.__lines[remove_index + index]
@@ -1256,7 +1244,7 @@ class MultilineTextBox(Pane):
         self,
         target_line: "_TextLine",
         other_line_index: int
-    ) -> None:
+    ):
         other_line = self.__lines[other_line_index]
         index = 0
         start_line_location = target_line.line_location
@@ -1278,7 +1266,7 @@ class MultilineTextBox(Pane):
         self,
         value: int,
         location: int = None
-    ) -> None:
+    ):
         old_selected_line_index = self.__selected_line_index
         self.__selected_line_index = max(0, min(len(self.__lines) - 1, self.__selected_line_index + value))
         if old_selected_line_index != self.__selected_line_index:
@@ -1298,7 +1286,7 @@ class MultilineTextBox(Pane):
     def move_line_location(
         self,
         value: int
-    ) -> None:
+    ):
         """Move line location over lines"""
         active_line = self.__lines[self.__selected_line_index]
         old_location = active_line.line_location
@@ -1319,7 +1307,7 @@ class MultilineTextBox(Pane):
         self,
         selected: bool,
         **kwargs
-    ) -> None:
+    ):
         self.selected = selected
         for line in self.__lines:
             line.set_selected(False)
@@ -1383,7 +1371,7 @@ class _TextLine(Label):
     def set_blinker(
         self,
         value: bool
-    ) -> None:
+    ):
         self.__blinker_active = value
         self.__blinker_timer = 0
 
@@ -1392,7 +1380,7 @@ class _TextLine(Label):
         selected: bool,
         color: Union[Tuple[int, int, int], List[int]] = None,
         redraw: bool = True
-    ) -> None:
+    ):
         """Do not add the highligth"""
         self.selected = selected
         if not selected:
@@ -1404,7 +1392,7 @@ class _TextLine(Label):
     def add_text(
         self,
         text: str
-    ) -> None:
+    ):
         """Add some text at the end of the line"""
         for letter in text:
             self.append(letter)
@@ -1413,13 +1401,13 @@ class _TextLine(Label):
     def set_line_text(
         self,
         text: str
-    ) -> None:
+    ):
         """Replace the text with text"""
         self.__text = ""
         self.add_text(text)
         self.text_changed = True
 
-    def __render(self) -> None:
+    def __render(self):
         """Render the text and the blinker"""
         self.set_text(self.__text, (0, "C"), self.__text_color, self.__font_size)
         if self.__blinker_active:
@@ -1448,14 +1436,14 @@ class _TextLine(Label):
     def set_line_location(
         self,
         value: int
-    ) -> None:
-        """Set the line location within the allowed bounds"""
+    ):
+        """Set the line location within the allowed bounds by calculating what the required move is and moving"""
         self.move_line_location(value - self.line_location)
 
     def move_line_location(
         self,
-        value
-    ) -> None:
+        value: int
+    ):
         """Move the line location within the allowed bounds"""
         self.line_location = max(0, min(len(self.__text), self.line_location + value))
 
@@ -1468,14 +1456,14 @@ class _TextLine(Label):
     def append(
         self,
         value: str
-    ) -> None:
+    ):
         if not self.can_append(value):
             return
         self.__text = self.__text[:self.line_location] + value + self.__text[self.line_location:]
         self.move_line_location(len(value))
         self.text_changed = True
 
-    def backspace(self) -> None:
+    def backspace(self):
         if self.line_location > 0:
             if self.line_location == len(self.__text) and self.newline:
                 self.newline = False
@@ -1483,5 +1471,5 @@ class _TextLine(Label):
                 self.__text = self.__text[:self.line_location - 1] + self.__text[self.line_location:]
                 self.move_line_location(-1)
 
-    def delete(self) -> None:
+    def delete(self):
         self.__text = self.__text[:self.line_location] + self.__text[self.line_location + 1:]
