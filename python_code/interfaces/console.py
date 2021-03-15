@@ -44,7 +44,10 @@ class ConsoleWindow(Window):
         self.add_key_event_listener(con.K_UP, self.__set_log_line, values=[-1], types=["unpressed"])
         self.add_key_event_listener(con.K_DOWN, self.__set_log_line, values=[1], types=["unpressed"])
 
-    def __set_log_line(self, direction):
+    def __set_log_line(
+        self,
+        direction: int
+    ):
         if direction == 1:
             line = self.__log.line_down()
         elif direction == -1:
@@ -86,9 +89,7 @@ class ConsoleWindow(Window):
                     [self.add_result_message(m) for m in message.split("\n")]
             self.__input_line.process_line = None
 
-    def __create_tab_information(
-        self,
-    ):
+    def __create_tab_information(self):
         """Determine tab information that is relevant and append either a list of options or add the information that 
         is shared between all options e.g """
         # get all the text between the start and the cursor
@@ -99,6 +100,7 @@ class ConsoleWindow(Window):
         possible_commands_dict = self.__console.command_tree
         last_command = commands.pop(-1)
         count = 0
+        # moving down the tree for all found commands
         while count < len(commands):
             command = commands[count]
             try:
@@ -184,13 +186,13 @@ class ConsoleWindow(Window):
 
     def add_error_message(self, text):
         message = "ERROR: "
-        self.__log.append_warning(Line(text=message + text, color=(163, 28, 23)))
+        self.__log.append_other(Line(text=message + text, color=(163, 28, 23)))
 
     def add_result_message(self, text):
-        self.__log.append_warning(Line(text=text, color=(25, 118, 168)))
+        self.__log.append_other(Line(text=text, color=(25, 118, 168)))
 
     def add_tab_possibilities_message(self, text):
-        self.__log.append_warning(Line(text=text, color=(0, 0, 255), line_type="list"))
+        self.__log.append_other(Line(text=text, color=(0, 0, 255), line_type="list"))
 
     def add_executed_command_message(self, text):
         """Print a command that was just executed in greenn"""
@@ -198,6 +200,7 @@ class ConsoleWindow(Window):
 
 
 class ConsoleLine(widgets.MultilineTextBox):
+    """The command line where the commands are typed"""
 
     process_line: Union[str, None]
 
@@ -216,7 +219,18 @@ class ConsoleLine(widgets.MultilineTextBox):
 
 
 class TextLogLabel(widgets.Label):
-    def __init__(self, size, text_log, color=(150, 150, 150), **kwargs):
+    """The area above the command line containing the replies of the console"""
+    # TODO use a scrollpane in order to better see the full history
+
+    __log: "TextLog"
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        text_log: "TextLog",
+        color: Union[Tuple[int, int, int], List[int]] = (150, 150, 150),
+        **kwargs
+    ):
         super().__init__(size, color=color, selectable=False, **kwargs)
         self.__log = text_log
 
@@ -228,114 +242,155 @@ class TextLogLabel(widgets.Label):
             self.__log.changed = False
 
     def __create_log_image(self):
+        """Create the label image to be displayed only called when the log is changed"""
         image = pygame.Surface(self.rect.size)
         image.fill((150, 150, 150))
         prev_line_heigth = 0
         for i, line in enumerate(iter(self.__log)):
             if self.rect.height - prev_line_heigth < 0:
                 break
-            text = line.render_str()
+            text = line.render()
             prev_line_heigth += text.get_size()[1]
             image.blit(text, (5, self.rect.height - prev_line_heigth))
         return image.convert()
 
 
 class TextLog:
+    """Log for tracking the commands typed by the user, warnings and confirmation messages. Commands typed by the user
+    are tracked separatelly from the others in order to allow the for finding back these commands
+
+    The user log and warning/confirmation log are dictionaries with indexes as keys, together one full log is formed
+    """
+
+    __user_log: Dict
+    __warning_and_confirmation_log: Dict
+    __user_log_location: int
+    changed: bool
+
     def __init__(self):
-        self.user_log = {}
-        self.warning_log = {}
-        self.user_log_location = 0
+        self.__user_log = {}  # the log with user issued commands
+        self.__warning_and_confirmation_log = {}  # all other text that is commited to the log
+        self.__user_log_location = 0
         self.changed = False
 
     def __getitem__(self, key):
-        return self.user_log[len(self.user_log) - key]
+        return self.__user_log[len(self.__user_log) - key]
 
     def __len__(self):
-        return len(self.user_log)
+        return len(self.__user_log)
 
     def __iter__(self):
-        # return all the user and warning messages in one itter sorted based on the insertion line
-        combined_keys = list(self.user_log.keys()) + list(self.warning_log.keys())
+        """return all the user and warning messages in one itter sorted based on the insertion line"""
+        combined_keys = list(self.__user_log.keys()) + list(self.__warning_and_confirmation_log.keys())
         combined_keys.sort()
-        combined = {**self.user_log, **self.warning_log}
+        combined = {**self.__user_log, **self.__warning_and_confirmation_log}
         sorted_lines = reversed(list(combined[key] for key in combined_keys))
         return iter(sorted_lines)
 
-    def append(self, line):
-        self.user_log[len(self.user_log) + len(self.warning_log)] = line
+    def append(
+        self,
+        line: "Line"
+    ):
+        """Add a line to the user log"""
+        self.__user_log[len(self.__user_log) + len(self.__warning_and_confirmation_log)] = line
         self.changed = True
         # always place the cursor at the last line to act like linux instead of windows command line
-        self.user_log_location = 0
+        self.__user_log_location = 0
 
-    def append_warning(self, line):
-        self.warning_log[len(self.user_log) + len(self.warning_log)] = line
+    def append_other(
+        self,
+        line: "Line"
+    ):
+        """Add a line to the warning/confirmation log"""
+        self.__warning_and_confirmation_log[len(self.__user_log) + len(self.__warning_and_confirmation_log)] = line
         self.changed = True
 
-    def line_up(self):
-        if len(self.user_log) == 0:
+    def line_up(self) -> "Line":
+        """Move the line location one line up if possible and return a copy of the the line moved to"""
+        if len(self.__user_log) == 0:
             return Line()
-        if self.user_log_location < len(self.user_log):
-            self.user_log_location += 1
-        return list(self.user_log.values())[-self.user_log_location].copy()
+        if self.__user_log_location < len(self.__user_log):
+            self.__user_log_location += 1
+        return list(self.__user_log.values())[-self.__user_log_location].copy()
 
-    def line_down(self):
-        if self.user_log_location > 0:
-            self.user_log_location -= 1
-        if self.user_log_location == 0:
+    def line_down(self) -> "Line":
+        """Move the line location one line down if possible and return a copy of the the line moved to"""
+        if self.__user_log_location > 0:
+            self.__user_log_location -= 1
+        if self.__user_log_location == 0:
             return Line()
-        return list(self.user_log.values())[-self.user_log_location].copy()
+        return list(self.__user_log.values())[-self.__user_log_location].copy()
 
 
 class Line:
+    """TextLog lines that are easier to keep track of and have methods for console accurate rendering"""
+
     MAX_LINE_LENGTH = con.SCREEN_SIZE.width
     BACKGROUND_COLOR = (150, 150, 150)
 
-    def __init__(self, text="", color=(0, 255, 0), font=22, line_type="normal"):
-        self.color = color
+    text: str
+    __color: Union[Tuple[int, int, int], List[int]]
+    __line_location: int
+    __rendered_str: Union[None, pygame.Surface]
+    __font: pygame.font.Font
+    __line_type: str
+
+    def __init__(
+        self,
+        text: str = "",
+        color: Union[Tuple[int, int, int], List[int]] = (0, 255, 0),
+        font: int = 22,
+        line_type: str = "normal"
+    ):
         self.text = text
-        self.line_location = len(self.text)
-        self.rendered_str = None
-        self.font = con.FONTS[font]
+        self.__color = color
+        self.__line_location = len(self.text)
+        self.__rendered_str = None
+        self.__font = con.FONTS[font]
         self.__line_type = line_type
 
     def __str__(self):
         return self.text
 
-    def render_str(self):
-        if self.rendered_str:
-            return self.rendered_str
+    def render(self) -> pygame.Surface:
+        """Render the string of this line, either return the rendered version of it was rendered before or actually
+        render the string"""
+        if self.__rendered_str:
+            return self.__rendered_str
         else:
             return self.__render_string()
 
     def __render_string(self) -> pygame.Surface:
+        """Render the string based on the __line_type, the line type determines if a list like format is rendered or
+        the normal line with enters if neccesairy"""
         if self.__line_type == "normal":
             text = self.__render_normal_line()
         elif self.__line_type == "list":
             text = self.__render_list_line()
         else:
             raise util.GameException(f"Unsupported line_type {self.__line_type}")
-        surf = pygame.Surface((con.SCREEN_SIZE.width + 2, len(text) * self.font.size("k")[1] + 2))
+        surf = pygame.Surface((con.SCREEN_SIZE.width + 2, len(text) * self.__font.size("k")[1] + 2))
 
         surf.fill(self.BACKGROUND_COLOR)
         for index, line in enumerate(text):
-            rt = self.font.render(line, True, self.color)
+            rt = self.__font.render(line, True, self.__color)
             surf.blit(rt, (0, rt.get_size()[1] * index))
         return surf
 
     def __render_normal_line(self) -> List[str]:
         """Render a 'normal' text line that can be longer then the given MAX_LINE_LENGTH. In that the case the line
         is split up in multiple lines using the words to break."""
-        if self.font.size(self.text)[0] > self.MAX_LINE_LENGTH:
+        if self.__font.size(self.text)[0] > self.MAX_LINE_LENGTH:
             words = self.text.split(" ")
             lines = [""]
             line_length = 0
             for word in words:
-                word_size = self.font.size(word + " ")[0]
+                word_size = self.__font.size(word + " ")[0]
                 if line_length + word_size < self.MAX_LINE_LENGTH:
                     lines[len(lines) - 1] += word + " "
                     line_length += word_size
                 else:
-                    line_length = self.font.size(word)
+                    line_length = self.__font.size(word)
                     lines.append(word)
             return lines
         else:
@@ -345,14 +400,14 @@ class Line:
         """Render a line that represents a list of values that are seperated on spaces. In this case the line should
         be shown in sutch a way that the list elements allign under one another if there are multiple lines needed"""
         words = self.text.split(" ")
-        longest_word = max(self.font.size(word + "   ")[0] for word in words)
+        longest_word = max(self.__font.size(word + "   ")[0] for word in words)
         lines = [""]
         line_length = 0
         for word in words:
-            word_size = self.font.size(word)[0]
+            word_size = self.__font.size(word)[0]
             while word_size < longest_word:
                 word += " "
-                word_size = self.font.size(word)[0]
+                word_size = self.__font.size(word)[0]
             if line_length + word_size < self.MAX_LINE_LENGTH:
                 lines[len(lines) - 1] += word
                 line_length += word_size
@@ -364,8 +419,9 @@ class Line:
     def __len__(self):
         return len(self.text)
 
-    def copy(self):
-        return Line(text=self.text, color=self.color)
+    def copy(self) -> "Line":
+        """Return a copy of this line"""
+        return Line(text=self.text, color=self.__color, line_type=self.__line_type)
 
 
 class Console:
@@ -441,6 +497,7 @@ class Console:
         self,
         text: str
     ) -> List[Tuple[str, bool]]:
+        """Process a string that presumably represents a valid command"""
         results = []
         try:
             commands_list = self.__text_to_commands(text)
@@ -474,7 +531,51 @@ class Console:
             #         return "No script known by name {}".format(commands[1]), True
         return results
 
-    def __process_print(self, arguments):
+    def __text_to_commands(self, text):
+        """Extract all commands in a given text by writing out all the lists into lines of commands conveyed by those
+        lists"""
+        text = text.strip()
+        lists = {}
+        if text.count("]") != text.count("["):
+            raise ValueError("Uneven amount of open and closing brackets.")
+        # first get all lists within lists
+        count = 0
+        while True:
+            matches = re.findall("\[[^\[]+?\]", text)  # noqa --> because fuck of
+            if matches:
+                for match in matches:
+                    text = text.replace(match, ",list" + str(count))
+                    lists["list" + str(count)] = match
+                    count += 1
+            else:
+                break
+        # then get all commands conveyed by those lists
+        return self.__get_command_list(text, lists)
+
+    def __get_command_list(
+        self,
+        text: str,
+        lists: Dict
+    ):
+        text = text.split(",")
+        fl = []
+        for i in range(len(text)):
+            if text[i] in lists:
+                text[i] = self.__get_command_list(lists[text[i]][1:-1], lists)
+                for val in text[i]:
+                    combined = text[i - 1].strip() + " " + val.strip()
+                    fl.append(combined)
+                    # remove the shorter version from the final_list
+                    if text[i-1] in fl:
+                        fl.remove(text[i-1])
+            else:
+                fl.append(text[i])
+        return fl
+
+    def __process_print(
+        self,
+        arguments: List[str]
+    ) -> Tuple[str, bool]:
         strat_argument_index = 1
         check_dictionary = self.command_tree[arguments[0]][arguments[1]]
         if arguments[1] == "debug":
@@ -507,41 +608,6 @@ class Console:
         command_line = self.command_tree["scripts"][arguments[1]]
         results = self.process_command_line_text(command_line)
         return results
-
-    def __text_to_commands(self, text):
-        text = text.strip()
-        lists = {}
-        if text.count("]") != text.count("["):
-            raise ValueError("Uneven amount of open and closing brackets.")
-        # first get all lists within lists
-        count = 0
-        while True:
-            matches = re.findall("\[[^\[]+?\]", text)
-            if matches:
-                for match in matches:
-                    text = text.replace(match, ",list" + str(count))
-                    lists["list" + str(count)] = match
-                    count += 1
-            else:
-                break
-        # then get all commands conveyed by those lists
-        return self.__get_command_list(text, lists)
-
-    def __get_command_list(self, text, lists):
-        text = text.split(",")
-        fl = []
-        for i in range(len(text)):
-            if text[i] in lists:
-                text[i] = self.__get_command_list(lists[text[i]][1:-1], lists)
-                for val in text[i]:
-                    combined = text[i - 1].strip() + " " + val.strip()
-                    fl.append(combined)
-                    # remove the shorter version from the final_list
-                    if text[i-1] in fl:
-                        fl.remove(text[i-1])
-            else:
-                fl.append(text[i])
-        return fl
 
     # def __process(self, commands):
     # #     if len(commands) < 3:
