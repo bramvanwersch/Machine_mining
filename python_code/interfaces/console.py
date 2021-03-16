@@ -467,6 +467,11 @@ class Console:
     def __create_set_tree(self) -> Dict[str, Any]:
         tree = dict()
         tree["debug"] = self.__create_attribute_tree(DEBUG, "setables")
+        tree["workers"] = {f"worker_{index + 1}": self.__create_attribute_tree(worker, "printables")
+                           for index, worker in enumerate(self.__user.workers)}
+        tree["buildings"] = \
+            {f"buildling_{index + 1}({buidling.name()[:3]})": self.__create_attribute_tree(buidling, "printables")
+             for index, buidling in enumerate(self.__user.board.buildings.values())}
         return tree
 
     def __create_script_tree(self) -> Dict[str, Any]:
@@ -642,34 +647,47 @@ class Console:
             return "Value {} cannot be accessed or is not allowed to be accessed". \
                        format(".".join(arguments[start_argument_index:])), True
         current_value = getattr(target, target_attribute)
-        expected_type = type(current_value)
         try:
-            proper_type_new_value = self.__convert_to_type(expected_type, new_value, current_value)
+            proper_type_new_value = self.__convert_to_type(new_value, current_value)
         except ValueError as e:
             return str(e), True
         setattr(target, target_attribute, proper_type_new_value)
         return "The value {} = {} is set to {}".format('.'.join(arguments[start_argument_index:-1]), current_value,
                                                        str(proper_type_new_value)), False
 
-    def __convert_to_type(self, type_s, s, orig_value=None):
+    def __convert_to_type(
+        self,
+        string_to_convert: str,
+        orig_value: Any
+    ) -> Any:
         try:
-            if type_s is str:
-                return s
-            elif type_s is bool:
-                return self.__string_to_bool(s)
-            elif type_s is int:
-                return int(s)
-            elif type_s is float:
-                return float(s)
-            elif type_s in [list, tuple]:
-                return self.__string_to_list(s, [type(val) for val in orig_value])
+            if isinstance(orig_value, str):
+                return string_to_convert
+            elif isinstance(orig_value, bool):
+                return self.__string_to_bool(string_to_convert)
+            elif isinstance(orig_value, int):
+                return int(string_to_convert)
+            elif isinstance(orig_value, float):
+                return float(string_to_convert)
+            elif isinstance(orig_value, list) or isinstance(orig_value, tuple):
+                return self.__string_to_list(string_to_convert, orig_value)
+            elif isinstance(orig_value, pygame.math.Vector2):
+                values = self.__string_to_list(string_to_convert, [orig_value[0], orig_value[1]])
+                return pygame.math.Vector2(*values)
+            elif isinstance(orig_value, pygame.Rect):
+                values = self.__string_to_list(string_to_convert, [orig_value[0], orig_value[1], orig_value[2],
+                                                                   orig_value[3]])
+                return pygame.Rect(*values)
             elif con.DEBUG.WARNINGS:
-                print("No case for value of type_s {}".format(type_s))
+                print("No case for value of type {}".format(type(orig_value)))
         except ValueError as e:
             raise e
-        raise ValueError("cannot convert to type_s {}. No known method.".format(type_s))
+        raise ValueError("cannot convert to type_s {}. No known method.".format(type(orig_value)))
 
-    def __string_to_bool(self, value):
+    def __string_to_bool(
+        self,
+        value: str
+    ) -> bool:
         value = value.lower()
         if value == "true" or value == "t":
             return True
@@ -678,7 +696,11 @@ class Console:
         else:
             raise ValueError("expected a boolean to be either: true, t, false or f (case insensitive)".format(value))
 
-    def __string_to_list(self, value, types):
+    def __string_to_list(
+        self,
+        value: str,
+        orig_list: Union[List, Tuple]
+    ) -> List[Any]:
         """
         only a one dimensional list is expected
         """
@@ -686,16 +708,17 @@ class Console:
             raise ValueError("expected a list to be of form (val1;val2;..)")
         value = value.replace("(", "").replace(")", "")
         the_list = [val.strip() for val in value.split(";")]
-        if len(types) != len(the_list):
-            raise ValueError("list is of wrong length. Expected a list of lenght {}.".format(len(types)))
-        for i, val_type in enumerate(types):
+        if len(orig_list) != len(the_list):
+            raise ValueError("list is of wrong length. Expected a list of lenght {}.".format(len(orig_list)))
+        for index, value in enumerate(orig_list):
+            val_type = type(value)
             try:
-                user_value = the_list[i]
+                user_value = the_list[index]
                 if val_type != str:
                     user_value = user_value.strip()
-                correct_typed_value = self.__convert_to_type(val_type, user_value)
-                the_list[i] = correct_typed_value
+                correct_typed_value = self.__convert_to_type(user_value, value)
+                the_list[index] = correct_typed_value
             except ValueError:
                 raise ValueError("expected value of type {} at index {}. Cannot convert {} to {}."
-                                 .format(val_type, i, the_list[i], val_type))
+                                 .format(val_type, index, the_list[index], val_type))
         return the_list
