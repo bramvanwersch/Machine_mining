@@ -13,7 +13,6 @@ import utility.utilities as util
 # debug controls
 class DebugValues(util.ConsoleReadable):
     def __init__(self):
-        self.SHOW_BLOCK_BORDER = True
         self.FPS = True
         self.ENTITY_NMBR = True
         self.AIR_RECTANGLES = False
@@ -21,10 +20,12 @@ class DebugValues(util.ConsoleReadable):
         self.SHOW_ZOOM = True
         self.NO_LIGHTING = False
         self.SHOW_THREADS = True
-        self.TEST_BOARD = True
 
 
 DEBUG = DebugValues()
+
+SHOW_BLOCK_BORDER = True
+TEST_BOARD = True
 
 # innitialize fonts to pre load a font
 pygame.font.init()
@@ -46,7 +47,7 @@ DATA_DIR = "{}{}data".format(MAIN_DIR, os.sep)
 # 1920, 1080
 SCREEN_SIZE = util.Size(820, 820)  # pixels
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
-if DEBUG.TEST_BOARD:
+if TEST_BOARD:
     BOARD_SIZE = util.Size(1000, 1000)  # board size should always be bigger then the SCREEN_SIZE
     # preserve the board size
     ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()

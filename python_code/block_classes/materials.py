@@ -169,7 +169,7 @@ class ColorDefinition:
                     raise util.GameException("Color argument {} is invalid should have lenght 3 or 4 not {}"
                                              .format(color, len(color)))
                 image.fill(color)
-                if con.DEBUG.SHOW_BLOCK_BORDER and self.__border_allowed:
+                if con.SHOW_BLOCK_BORDER and self.__border_allowed:
                     pygame.draw.rect(image, self.__configure_border_color(color),
                                      (0, 0, self.__surface_size.width, self.__surface_size.height), 1)
                 self.__images.append(image)
