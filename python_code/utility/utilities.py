@@ -76,9 +76,10 @@ class ConsoleReadable(ABC):
         return {name for name, method in inspect.getmembers(self) if not name.startswith("_")
                 and not isinstance(method, types.MethodType)}
 
-    def setables(self):
-        """Return a list of varaible names that are allowed to be changed"""
-        return []
+    def setables(self) -> Set[str]:
+        """Return a list of varaible names that are allowed to be changed trough the console. The default is all the
+        printable values"""
+        return self.printables()
 
 
 def normalize(values, scale=1):

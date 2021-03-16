@@ -452,6 +452,7 @@ class Console:
     def __innitialise_command_tree(self):
         self.command_tree["print"] = self.__create_print_tree()
         self.command_tree["scripts"] = self.__create_script_tree()
+        self.command_tree["set"] = self.__create_set_tree()
 
     def __create_print_tree(self) -> Dict[str, Any]:
         tree = dict()
@@ -461,6 +462,11 @@ class Console:
         tree["buildings"] = \
             {f"buildling_{index + 1}({buidling.name()[:3]})": self.__create_attribute_tree(buidling, "printables")
              for index, buidling in enumerate(self.__user.board.buildings.values())}
+        return tree
+
+    def __create_set_tree(self) -> Dict[str, Any]:
+        tree = dict()
+        tree["debug"] = self.__create_attribute_tree(DEBUG, "setables")
         return tree
 
     def __create_script_tree(self) -> Dict[str, Any]:
@@ -507,28 +513,17 @@ class Console:
             arguments = arguments.strip().split(" ")
             try:
                 if arguments[0] == "print":
-                    results.append(self.__process_print(arguments))
+                    results.append(self.__process_arguments(arguments))
                 elif arguments[0] == "scripts":
-                    results.extend(self.__process_script_call(arguments))
+                    # special case
+                    results.extend(self._process_script_call(arguments))
+                elif arguments[0] == "set":
+                    results.append(self.__process_arguments(arguments))
                 else:
                     results.append(("{} is not a valid command. Choose one of the following: {}."
                                     .format(arguments[0], ", ".join(self.command_tree.keys())), True))
             except (IndexError, KeyError):
                 results.append((f"Not enough arguments supplied for the {arguments[0]} command.", True))
-
-            #     return self.__process(commands)
-            # elif commands[0] == "create":
-            #     return self.__process_create(commands)
-            # elif commands[0] == "delete":
-            #     return self.__process_delete(commands)
-            # elif commands[0] == "print":
-            #     # make sure that the last part of the command is executed.
-            #     return self.__process(commands + [" "])
-            # elif commands[0] == "scripts":
-            #     if commands[1] in self.command_tree["scripts"]:
-            #         self.__process_commands(self.command_tree["scripts"][commands[1]])
-            #     else:
-            #         return "No script known by name {}".format(commands[1]), True
         return results
 
     def __text_to_commands(self, text):
@@ -541,7 +536,7 @@ class Console:
         # first get all lists within lists
         count = 0
         while True:
-            matches = re.findall("\[[^\[]+?\]", text)  # noqa --> because fuck of
+            matches = re.findall("\[[^\[]+?\]", text)  # noqa --> because fuck off
             if matches:
                 for match in matches:
                     text = text.replace(match, ",list" + str(count))
@@ -572,35 +567,48 @@ class Console:
                 fl.append(text[i])
         return fl
 
-    def __process_print(
+    def __process_arguments(
         self,
         arguments: List[str]
     ) -> Tuple[str, bool]:
-        strat_argument_index = 1
+        start_argument_index = 1
         check_dictionary = self.command_tree[arguments[0]][arguments[1]]
         if arguments[1] == "debug":
             target = DEBUG
         elif arguments[1] == "workers":
             target = self.__user.workers[int(arguments[2].split("_")[1]) - 1]
-            strat_argument_index = 2
+            start_argument_index = 2
             check_dictionary = check_dictionary[arguments[2]]
         elif arguments[1] == "buildings":
             target = list(self.__user.board.buildings.values())[int(arguments[2].split("_")[1].split("(")[0]) - 1]
-            strat_argument_index = 2
+            start_argument_index = 2
             check_dictionary = check_dictionary[arguments[2]]
         else:
             raise util.GameException(f"Unexpected value to print from; {arguments[1]}")
-        index = strat_argument_index + 1
+
+        return getattr(self, f"_process_{arguments[0]}")(arguments, start_argument_index, check_dictionary, target)
+
+    def _process_print(
+        self,
+        arguments: List[str],
+        start_argument_index: int,
+        check_dictionary: Dict,
+        target: Any
+    ) -> Tuple[str, bool]:
+        """Process a print call by the user"""
+        index = start_argument_index + 1
+        # walk down the tree for all the arguments
         while index < len(arguments):
             if not isinstance(check_dictionary, dict) or arguments[index] not in check_dictionary:
-                return f"Value {'.'.join(arguments[strat_argument_index:])} is not allowed or cannot be accessed.", True
+                return "Value {} cannot be accessed or is not allowed to be accessed".\
+                           format(".".join(arguments[start_argument_index:])), True
             else:
                 check_dictionary = check_dictionary[arguments[index]]
             target = getattr(target, arguments[index])
             index += 1
-        return "Value of {} is {}".format(".".join(arguments[strat_argument_index:]), str(target)), False
+        return "Value of {} is {}".format(".".join(arguments[start_argument_index:]), str(target)), False
 
-    def __process_script_call(
+    def _process_script_call(
         self,
         arguments: List[str]
     ) -> List[Tuple[str, bool]]:
@@ -609,66 +617,41 @@ class Console:
         results = self.process_command_line_text(command_line)
         return results
 
-    # def __process(self, commands):
-    # #     if len(commands) < 3:
-    #         return "Expected al least 3 arguments to SET command [FROM, NAME, VALUE].", True
-    #     if commands[1] == "game_rule":
-    #         self.__execute(game_rules, commands)
-    #     elif commands[1] == "player":
-    #         self.__execute(self.screen.player, commands)
-    #     elif commands[1] == "room_entities":
-    #         enemie = None
-    #         for e in self.stage.room_group.sprites():
-    #             if str(e) == commands[2]:
-    #                 enemie = e
-    #                 break
-    #         if enemie:
-    #             self.__execute(enemie, commands, 2)
-    #         else:
-    #             self.main_sprite.add_error_message("Unknown enemy {}.".format(commands[2]))
-    #     elif commands[1] == "entities":
-    #         correct_class = None
-    #         for c in inspect.getmembers(entities, inspect.isclass):
-    #             if c[0] == commands[2]:
-    #                 correct_class = c[1]
-    #                 break
-    #         if correct_class:
-    #             self.__execute(correct_class, commands, 2)
-    #         else:
-    #             self.main_sprite.add_error_message("Unknown entity class {}.".format(commands[2]))
-    #     elif commands[1] == "stage":
-    #         self.__execute(self.stage, commands)
-    #     elif commands[1] == "weapon":
-    #         self.__execute(self.weapon_parts[commands[2]][commands[3]], commands, 3)
-    #     else:
-    #         self.main_sprite.add_error_message("{} is not a valid FROM location. Choose one of the following: game_rule, player, room_entities, entities".format(commands[1]))
-    #
-    # def __execute(self, target, commands, from_l=1):
-    #     for i, name in enumerate(commands[1 + from_l:-1]):
-    #         if hasattr(target, name):
-    #             if i < len(commands[1 + from_l:-1]) - 1:
-    #                 target = getattr(target, name)
-    #             else:
-    #                 if commands[0] == "set":
-    #                     try:
-    #                         value = self.__convert_to_type(type(getattr(target, name)), commands[-1],
-    #                                                        getattr(target, name), target)
-    #                     except ValueError as e:
-    #                         return str(e), True
-    #                     if type(getattr(target, name)) is property:
-    #                         getattr(target, name).fset(target, value)
-    #                     else:
-    #                         setattr(target, name, value)
-    #                     return "{} is set to {}".format(".".join(commands[1:-1]), value), False
-    #                 elif commands[0] == "print":
-    #                     val = getattr(target, name)
-    #                     if type(val) is property:
-    #                         val = getattr(target, name).fget(target)
-    #                     return "The value of {} is: {}".format(".".join(commands[1:-1]), val), False
-    #         else:
-    #             return "{} has no attribute {}.".format(target, name), True
+    def _process_set(
+        self,
+        arguments: List[str],
+        start_argument_index: int,
+        check_dictionary: Dict,
+        target: Any
+    ) -> Tuple[str, bool]:
+        index = start_argument_index + 1
+        # walk down the tree for all the arguments
+        if len(arguments) < 3:
+            return "Expected at least 3 arguments for a set call.", True
+        while index < len(arguments) - 2:
+            if not isinstance(check_dictionary, dict) or arguments[index] not in check_dictionary:
+                return "Value {} cannot be accessed or is not allowed to be accessed". \
+                           format(".".join(arguments[start_argument_index:])), True
+            else:
+                check_dictionary = check_dictionary[arguments[index]]
+            target = getattr(target, arguments[index])
+            index += 1
+        new_value = arguments[-1]
+        target_attribute = arguments[-2]
+        if not hasattr(target, target_attribute):
+            return "Value {} cannot be accessed or is not allowed to be accessed". \
+                       format(".".join(arguments[start_argument_index:])), True
+        current_value = getattr(target, target_attribute)
+        expected_type = type(current_value)
+        try:
+            proper_type_new_value = self.__convert_to_type(expected_type, new_value, current_value)
+        except ValueError as e:
+            return str(e), True
+        setattr(target, target_attribute, proper_type_new_value)
+        return "The value {} = {} is set to {}".format('.'.join(arguments[start_argument_index:-1]), current_value,
+                                                       str(proper_type_new_value)), False
 
-    def __convert_to_type(self, type_s, s, orig_value=None, target=None):
+    def __convert_to_type(self, type_s, s, orig_value=None):
         try:
             if type_s is str:
                 return s
@@ -678,12 +661,8 @@ class Console:
                 return int(s)
             elif type_s is float:
                 return float(s)
-            elif type_s is list:
+            elif type_s in [list, tuple]:
                 return self.__string_to_list(s, [type(val) for val in orig_value])
-            elif type_s is tuple:
-                return self.__string_to_list(s, [type(val) for val in orig_value])
-            elif type_s is property:
-                return self.__convert_to_type(type(orig_value.fget(target)), s)
             elif con.DEBUG.WARNINGS:
                 print("No case for value of type_s {}".format(type_s))
         except ValueError as e:
