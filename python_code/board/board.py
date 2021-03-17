@@ -10,11 +10,10 @@ import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
 import block_classes.environment_materials as environment_materials
-import board.pathfinding as pathfinding
 import network.pipes as network
 import interfaces.interface_utility as interface_util
-import board.chunks as chunks
 from utility import inventories
+from board import flora, chunks, pathfinding
 
 
 class Board(util.Serializer):
@@ -31,6 +30,7 @@ class Board(util.Serializer):
         # setup the board
         progress_var[0] = "Innitialising pathfinding..."
         self.pf = pathfinding.PathFinder()
+        self.all_plants = flora.Flora()
 
         self.board_generator = board_generator
         self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
@@ -50,6 +50,7 @@ class Board(util.Serializer):
 
         self.buildings = {}
         self.changed_light_blocks = set()
+
         self.__grow_update_time = grow_update_time
 
     def setup_board(self):
@@ -59,30 +60,39 @@ class Board(util.Serializer):
 
     def update_board(self):
 
-        #update lighting
+        # update lighting
         self.change_light_levels()
         self.changed_light_blocks = set()
 
-        #update network
+        # update network
         self.pipe_network.update()
 
-        #update pathfinding
+        # update pathfinding
         self.pf.update()
 
+        self.__update_plants()
+
         # chunk updates
-        self.__grow_update_time += con.GAME_TIME.get_time()
         for chunk in self.loaded_chunks.copy():
             if not chunk.is_showing():
                 continue
-            if self.__grow_update_time > con.GROW_CYCLE_UPDATE_TIME:
-                self.__grow_flora(chunk)
-                self.__grow_update_time = 0
             # when the first update happens to a chunk meaning the player is there generate new ones.
             if not chunk.changed[1] and chunk.changed[0]:
                 chunk.changed[1] = True
                 chunk_coord = interface_util.p_to_cp(chunk.rect.topleft)
                 self.generate_chunks(list(range(chunk_coord[0] - 1, chunk_coord[0] + 2)),
                                      list(range(chunk_coord[1] - 1, chunk_coord[1] + 2)))
+
+    def __update_plants(self):
+        self.__grow_update_time += con.GAME_TIME.get_time()
+        if self.__grow_update_time < con.GROW_CYCLE_UPDATE_TIME:
+            return
+        for plant in self.all_plants:
+            if plant.can_grow() and uniform(0, 1) < plant.material.GROW_CHANCE:
+                new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
+                if new_blocks is not None:
+                    self.add_blocks(*new_blocks)
+        self.__grow_update_time = 0
 
     def to_dict(self):
         return {
@@ -103,13 +113,6 @@ class Board(util.Serializer):
         # add the network blocks back
         inst.add_blocks(*[block_classes.NetworkEdgeBlock(pos, getattr(build_materials, type_)) for pos, type_ in pipe_coords])
 
-    def __grow_flora(self, chunk):
-        for plant in chunk.plants.values():
-            if plant.can_grow() and uniform(0, 1) < plant.material.GROW_CHANCE:
-                new_blocks = plant.grow(self.surrounding_blocks(plant.grow_block))
-                if new_blocks is not None:
-                    self.add_blocks(*new_blocks)
-
     def generate_chunks(
         self,
         col_coords_load: List,
@@ -123,8 +126,8 @@ class Board(util.Serializer):
                     current_chunk = (row_li * len(con.START_LOAD_AREA[1])) + col_li + 1
                     progress_var[0] = f"Generating chunk {current_chunk} out of {con.TOTAL_START_CHUNKS}..."
                 # make sure to not generate chunks outside the board
-                if row_gi < 0 or row_gi > ceil(con.BOARD_SIZE.height / con.CHUNK_SIZE.height) - 1 or \
-                        col_gi < 0 or col_gi > ceil(con.BOARD_SIZE.width / con.CHUNK_SIZE.width) - 1:
+                if row_gi < 0 or row_gi > ceil(con.ORIGINAL_BOARD_SIZE.height / con.CHUNK_SIZE.height) - 1 or \
+                        col_gi < 0 or col_gi > ceil(con.ORIGINAL_BOARD_SIZE.width / con.CHUNK_SIZE.width) - 1:
                     continue
                 # make sure 2 threads are not working on the same thing
                 if self.chunk_matrix[row_gi][col_gi] is not None or (col_gi, row_gi) in self._loading_chunks:
@@ -140,9 +143,10 @@ class Board(util.Serializer):
         for_string_matrix, back_string_matrix = self.board_generator.generate_chunk(point_pos)
         if (col_i, row_i) == con.START_CHUNK_POS:
             chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
-                                      first_time=True)
+                                      self.all_plants, first_time=True)
         else:
-            chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group)
+            chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
+                                 self.all_plants)
         self.chunk_matrix[row_i][col_i] = chunk
         self.loaded_chunks.add(chunk)
         self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
@@ -247,31 +251,28 @@ class Board(util.Serializer):
                 elif isinstance(s_block, block_classes.NetworkEdgeBlock) and not isinstance(s_block, block_classes.ContainerBlock):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
                     self.add_blocks(s_block)
-                # check if the block a surrounding plant is attached to is still solid
-                elif isinstance(s_block.material, environment_materials.EnvironmentMaterial) and \
-                        index == s_block.material.START_DIRECTION:
+                # check if the block a surrounding plant is attached to is stbill solid
+                elif block.is_solid() and isinstance(s_block.material, environment_materials.EnvironmentMaterial) and\
+                        index == (s_block.material.START_DIRECTION + 2) % 4:
                     removed_items.extend(self.remove_blocks(s_block))
         return removed_items
 
-    def remove_plant(self, block):
+    def remove_plant(self, plant_block):
         removed_items = []
-        chunk = self.chunk_from_point(block.rect.topleft)
-        possible_chunks = self.surrounding_chunks(chunk) + [chunk]
         plant = None
-        for chunk in possible_chunks:
-            if chunk != None and block.id in chunk.plants:
-                plant = chunk.plants[block.id]
-        if plant == None:
+        if plant_block in self.all_plants:
+            plant = self.all_plants.get(plant_block.id)
+        if plant is None:
             return []
-        removed_blocks = plant.remove_block(block)
+        removed_blocks = plant.remove_block(plant_block)
 
-        for block in removed_blocks:
-            chunk = self.chunk_from_point(block.rect.topleft)
-            removed_items.extend(chunk.remove_blocks(block))
-        if plant._size() == 0:
-            chunk.plants.pop(block.id)
+        for plant_block in removed_blocks:
+            chunk = self.chunk_from_point(plant_block.rect.topleft)
+            removed_items.extend(chunk.remove_blocks(plant_block))
+        if plant.size() == 0:
+            self.all_plants.remove(plant_block.id)
         else:
-            plant.grow_block.material.image_key = -1
+            # redraw the tip of the plant
             self.add_blocks(plant.grow_block)
         return removed_items
 

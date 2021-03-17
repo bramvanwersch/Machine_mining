@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 
 class Chunk(util.Serializer):
 
-    def __init__(self, pos, foreground, background, main_sprite_group, first_time=False):
+    def __init__(self, pos, foreground, background, main_sprite_group, all_plants, first_time=False):
         self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
 
-        self.plants = {}
+        self.all_plants = all_plants
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
         # changed, if it is the first time --> tracking for loading purposes of new chunks
@@ -47,8 +47,12 @@ class Chunk(util.Serializer):
     def coord(self):
         return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
 
-    def is_showing(self):
+    def is_showing(self) -> bool:
         return self.layers[2].is_showing()
+
+    def is_loaded(self) -> bool:
+        # TODO make this respond to the location of workers and the player
+        return self.changed[1]
 
     def to_dict(self):
         return {
@@ -74,10 +78,10 @@ class Chunk(util.Serializer):
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
 
-            #check if a new plant, if so make sure the start is unique
-            if isinstance(block.material, environment_materials.MultiFloraMaterial) and block.id not in self.plants:
-                plant = flora.Plant(block)
-                self.plants[plant.id] = plant
+            # check if a new plant, if so make sure the start is unique
+            if isinstance(block.material, environment_materials.MultiFloraMaterial) and block not in self.all_plants:
+                plant = flora.Plant(block, self)
+                self.all_plants.add(plant)
                 block.material.image_key = -1
             # add the block
             self.layers[2].add_image(local_block_rect, block.surface)
@@ -146,14 +150,14 @@ class Chunk(util.Serializer):
         """
         for row_i, row in enumerate(s_matrix):
             for column_i, value in enumerate(row):
-                #create position
+                # create position
                 pos = (self.rect.left + column_i * con.BLOCK_SIZE.width,
-                       self.rect.top + row_i * con.BLOCK_SIZE.height,)
+                       self.rect.top + row_i * con.BLOCK_SIZE.height)
                 material_instance = block_util.material_instance_from_string(s_matrix[row_i][column_i], depth=row_i)
                 block = material_instance.to_block(pos)
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
-                    plant = flora.Plant(block)
-                    self.plants[plant.id] = plant
+                    plant = flora.Plant(block, self)
+                    self.all_plants.add(plant)
                 s_matrix[row_i][column_i] = block
         return s_matrix
 
@@ -164,15 +168,20 @@ class StartChunk(Chunk):
                                    round((con.CHUNK_SIZE.width / 2) / 10) * 10,
                                    round((con.CHUNK_SIZE.height / 5) / 10) * 10))
 
-    def __init__(self, pos, foreground, background, main_sprite_group, **kwargs):
+    def __init__(self, pos, foreground, background, main_sprite_group, all_plants, **kwargs):
         foreground = self.__adjust_foreground_string_matrix(foreground)
-        super().__init__(pos, foreground, background, main_sprite_group, **kwargs)
+        super().__init__(pos, foreground, background, main_sprite_group, all_plants, **kwargs)
 
     def __adjust_foreground_string_matrix(self, matrix):
-        #generate the air space at the start position
+        # generate the air space at the start position
+        first = True
         for row_i in range(interface_util.p_to_r(self.START_RECTANGLE.top), interface_util.p_to_r(self.START_RECTANGLE.bottom)):
             for column_i in range(interface_util.p_to_c(self.START_RECTANGLE.left), interface_util.p_to_c(self.START_RECTANGLE.right)):
-                matrix[row_i][column_i] = "Air"
+                if first:
+                    matrix[row_i][column_i] = "Vine"
+                    first = False
+                else:
+                    matrix[row_i][column_i] = "Air"
         return matrix
 
 

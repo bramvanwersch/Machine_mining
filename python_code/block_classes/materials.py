@@ -5,7 +5,7 @@
 import pygame
 from abc import ABC, abstractmethod
 from random import randint, choices, choice
-from typing import Set, Tuple, ClassVar, List, Dict, Any
+from typing import Set, Tuple, ClassVar, List, Dict, Any, Union
 
 # own imports
 import utility.constants as con
@@ -83,7 +83,7 @@ class BaseMaterial(ABC):
     def block_type(self) -> type:
         return self._BLOCK_TYPE
 
-    def to_block(self, pos: List[int], **kwargs) -> blocks.Block:
+    def to_block(self, pos: Union[List[int], Tuple[int, int]], **kwargs) -> blocks.Block:
         """Convert a material into the appropriate block with that material
 
         Args:
