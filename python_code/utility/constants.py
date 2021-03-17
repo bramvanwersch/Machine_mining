@@ -34,7 +34,7 @@ FONTS: Dict[int, pygame.font.Font] = {i: pygame.font.SysFont("roboto", i) for i 
 # time constants
 GAME_TIME = pygame.time.Clock()  # time tracked by pygame
 PF_UPDATE_TIME = 1000  # constant to tell when to recalculate the full chunk
-GROW_CYCLE_UPDATE_TIME = 100  # every 10 seconds
+GROW_CYCLE_UPDATE_TIME = 10_000  # every 10 seconds
 MINING_SPEED_PER_HARDNESS = 100   # ms
 
 # path varaibles

@@ -234,8 +234,8 @@ class Board(util.Serializer):
     def remove_blocks(self, *blocks):
         removed_items = []
         for block in blocks:
-            if block.id in self.buildings:
-                removed_items.append(self.remove_building(block))
+            if isinstance(block.material, build_materials.BuildingMaterial):
+                removed_items.extend(self.remove_building(block))
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             else:
@@ -246,7 +246,7 @@ class Board(util.Serializer):
                 self.pipe_network.remove_pipe(block)
             surrounding_blocks = self.surrounding_blocks(block)
             for index, s_block in enumerate(surrounding_blocks):
-                if s_block == None:
+                if s_block is None:
                     continue
                 elif isinstance(s_block, block_classes.NetworkEdgeBlock) and not isinstance(s_block, block_classes.ContainerBlock):
                     self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
@@ -278,17 +278,25 @@ class Board(util.Serializer):
 
     def remove_building(self, block):
         building_instance = self.buildings.pop(block.id, None)
-        if building_instance == None:
-            return
+        if building_instance is None:
+            return []
         if isinstance(block, block_classes.NetworkEdgeBlock):
             self.pipe_network.remove_node(building_instance)
         blocks = building_instance.blocks
+        removed_items = []
+        first = True
         for row in blocks:
             for block in row:
                 # self.task_control.cancel_tasks(block, remove=True)
                 chunk = self.chunk_from_point(block.rect.topleft)
-                chunk.remove_blocks(block)
-        return inventories.Item(block.material, 1)
+
+                # make sure that when the inventory is emptied that happens once
+                if first:
+                    removed_items = chunk.remove_blocks(block)
+                    first = False
+                else:
+                    chunk.remove_blocks(block)
+        return removed_items
 
     def add_blocks(self, *blocks, update=False):
         """
@@ -311,16 +319,14 @@ class Board(util.Serializer):
         if len(update_blocks) > 0:
             self.add_blocks(*update_blocks)
 
-    def add_building(self, building_instance, draw = True):
+    def add_building(self, building_instance):
         """
         Add a building into the matrix and potentially draw it when requested
 
         :param building_instance: an instance of Building
         :param draw: Boolean telling if the foreground image should be updated
         mainly important when innitiating
-        #TODO lookinto what the draw parameter ads
         """
-        building_rect = building_instance.rect
         self.buildings[building_instance.id] = building_instance
         update_blocks = []
         if isinstance(building_instance, network.NetworkNode):

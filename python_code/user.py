@@ -8,7 +8,7 @@ import utility.event_handling
 import interfaces.small_interfaces as small_interface
 import interfaces.interface_utility as interface_util
 import utility.utilities as util
-from block_classes import buildings, environment_materials
+from block_classes import buildings, environment_materials, building_materials
 
 if TYPE_CHECKING:
     from board.board import Board
@@ -124,19 +124,29 @@ class User(utility.event_handling.EventHandler):
                 # if no item is selected dont do anything
                 if item is None:
                     return
-                material = small_interface.get_selected_item().material
-                building_block_i = material.block_type
+
+                building_block_class = self.get_building_block_class()
+
                 mouse_pos = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos,
                                                                       self.__sprite_group.target, self.zoom)
                 mouse_pos[0] = int(mouse_pos[0] / 10) * 10
                 mouse_pos[1] = int(mouse_pos[1] / 10) * 10
-                rectangle = pygame.Rect((mouse_pos[0], mouse_pos[1], building_block_i.SIZE.width - 1,
-                                         building_block_i.SIZE.height - 1))
+                rectangle = pygame.Rect((mouse_pos[0], mouse_pos[1], building_block_class.SIZE.width,
+                                         building_block_class.SIZE.height))
                 self.__process_selection(rectangle)
             else:
                 rectangle = self.selection_rectangle.orig_rect
                 self.__process_selection(rectangle)
                 self.__remove_selection_rectangle()
+
+    def get_building_block_class(self):
+        material = small_interface.get_selected_item().material
+        if isinstance(material, building_materials.BuildingMaterial):
+            # this is fine because building is the abstract class that all buildings have
+            building_block_class = buildings.material_mapping[material.name()]  # noqa
+        else:
+            building_block_class = material.block_type
+        return building_block_class
 
     def add_selection_rectangle(
         self,
@@ -332,16 +342,16 @@ class User(utility.event_handling.EventHandler):
             # this should always be 1 block
             block = blocks[0]
             material = small_interface.get_selected_item().material
-            building_block_i = material.block_type
+            building_block_class = self.get_building_block_class()
             group = block.transparant_group
             if group != 0:
                 block.transparant_group = util.unique_id()
                 chunk = self.board.chunk_from_point(block.coord)
                 chunk.update_blocks(block)
-            if issubclass(building_block_i, buildings.InterfaceBuilding):
-                finish_block = building_block_i(block.rect.topleft, self.__sprite_group, material=material)
+            if issubclass(building_block_class, buildings.InterfaceBuilding):
+                finish_block = building_block_class(block.rect.topleft, self.__sprite_group)
             else:
-                finish_block = building_block_i(block.rect.topleft, material=material)
+                finish_block = building_block_class(block.rect.topleft, material=material)
             if isinstance(finish_block, buildings.Building):
                 overlap_rect = pygame.Rect((finish_block.rect.top, finish_block.rect.left, finish_block.rect.width - 1,
                                             finish_block.rect.height - 1))
