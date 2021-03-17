@@ -97,13 +97,9 @@ class User(utility.event_handling.EventHandler):
                 board_coord = interface_util.screen_to_board_coordinate(con.SCREEN_SIZE.center,
                                                                         self.__sprite_group.target, self.zoom)
                 entities.TextSprite(board_coord, self._mode.name, self.__sprite_group)
-                # TODO add this into the gui somewhere best way might be with a text entity
-                print(self._mode.name)
 
     def __handle_mouse_events(self):
-        """
-        Handle mouse events issued by the user.
-        """
+        """Handle mouse events issued by the user."""
         # mousebutton1
         if self.pressed(1):
             if self._mode.name in ["Mining", "Cancel", "Selecting"]:
@@ -139,7 +135,7 @@ class User(utility.event_handling.EventHandler):
                 self.__process_selection(rectangle)
                 self.__remove_selection_rectangle()
 
-    def get_building_block_class(self):
+    def get_building_block_class(self) -> "Block":
         material = small_interface.get_selected_item().material
         if isinstance(material, building_materials.BuildingMaterial):
             # this is fine because building is the abstract class that all buildings have
@@ -163,9 +159,7 @@ class User(utility.event_handling.EventHandler):
                                                                zoom=self.zoom)
 
     def __remove_selection_rectangle(self):
-        """
-        Safely remove the selection rectangle
-        """
+        """Safely remove the selection rectangle"""
         if self.selection_rectangle:
             self.selection_rectangle.kill()
             self.selection_rectangle = None
