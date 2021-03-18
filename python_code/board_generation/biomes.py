@@ -46,7 +46,7 @@ class Biome(ABC):
         """Likelyhood of this biome occuring at exactly depth"""
         # make sure that the depth is expressed between 1 and 100
         norm_depth = depth / con.MAX_DEPTH * 100
-        return cls.DEPTH_DISTRIBUTION.probability(norm_depth)
+        return cls.DEPTH_DISTRIBUTION.probability(norm_depth)  # noqa
 
     # noinspection PyPep8Naming
     @property
@@ -178,6 +178,28 @@ class IceBiome(Biome):
     ]
 
 
+class SlimeBiome(Biome):
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 20)
+    FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.SlimeBlock1,
+        ground_materials.SlimeBlock2,
+    ]
+    ORE_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.Oralchium,
+        ground_materials.Iron,
+        ground_materials.Coal,
+        ground_materials.Titanium
+    ]
+    FLORA_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        environment_materials.Vine,
+        environment_materials.SlimeBush
+    ]
+    BACKGROUND_MATERIALS: ClassVar[List["DepthMaterial"]] = [
+        ground_materials.BackSlime1,
+        ground_materials.BackSlime2,
+    ]
+
+
 class BiomeGenerationDefinition(ABC):
     BIOME_PROBABILITIES: ClassVar[Dict[type, float]]
 
@@ -193,12 +215,12 @@ class BiomeGenerationDefinition(ABC):
         """Calculate the likelyhood of a biome for a given depth based on the frequency of the biome overall and a
         likelyhood given the depth"""
         biome_lhs_at_depth = {biome: biome.get_likelyhood_at_depth(depth) * frequencey
-                              for biome, frequencey in cls.BIOME_PROBABILITIES.items()}
+                              for biome, frequencey in cls.BIOME_PROBABILITIES.items()}  # noqa
         biome_type = choices(list(biome_lhs_at_depth.keys()), list(biome_lhs_at_depth.values()), k=1)[0]
         return biome_type
 
 
 class NormalBiomeGeneration(BiomeGenerationDefinition):
     BIOME_PROBABILITIES: ClassVar[Dict[type, float]] = {
-        NormalBiome: 0.75, IceBiome: 0.25
+        NormalBiome: 0.80, IceBiome: 0.10, SlimeBiome: 0.10
     }

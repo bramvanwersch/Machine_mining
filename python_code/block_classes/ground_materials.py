@@ -113,6 +113,28 @@ class BackIce(base_materials.DepthMaterial, base_materials.ColorMaterial):
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((24, 81, 118))
 
 
+class SlimeBlock1(base_materials.DepthMaterial, base_materials.ImageMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    IMAGE_DEFINITIONS: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (40, 30), flip=(True, True))
+
+
+class SlimeBlock2(base_materials.DepthMaterial, base_materials.ImageMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    IMAGE_DEFINITIONS: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (50, 30), flip=(True, True))
+
+
+class BackSlime1(base_materials.DepthMaterial, base_materials.ColorMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((6, 99, 31))
+
+
+class BackSlime2(base_materials.DepthMaterial, base_materials.ColorMaterial):
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((36, 120, 59))
+
+
 class OreMaterial(base_materials.DepthMaterial, ABC):
     WHEIGHT: ClassVar[int] = 2
     HARDNESS: ClassVar[int] = 5
@@ -186,6 +208,14 @@ class Titanium(OreMaterial, base_materials.ColorMaterial):
     WHEIGHT: ClassVar[int] = 10
 
 
+class Oralchium(OreMaterial, base_materials.ColorMaterial):
+    HARDNESS: ClassVar[int] = 30
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
+    CLUSTER_SIZE: ClassVar[Tuple[int, int]] = (5, 10)
+    COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((0, 255, 70))
+    WHEIGHT: ClassVar[int] = 3
+
+
 class IronIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (70, 10))
@@ -209,3 +239,8 @@ class CopperIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
 class TitaniumIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (10, 20))
+
+
+class OralchiumIngot(base_materials.Unbuildable, base_materials.ImageMaterial):
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (60, 30))

@@ -117,6 +117,7 @@ class ColorDefinition:
     """Defines a range of colors based on input parameters, is optimized on order to prevent repeated color image
     creation"""
     BORDER_DARKER: ClassVar[int] = 20
+    MAX_COLOR_COMPONENT: ClassVar[int] = 255
     __slots__ = "__colors", "__images", "__surface_size", "__border_allowed"
 
     __images: List[pygame.Surface]
@@ -153,6 +154,8 @@ class ColorDefinition:
             for index, color_component in enumerate(base_color):
                 # make the color darker with depth and add a random component to it
                 color_component = max(min_color[index], color_component + random_change)
+                # make sure the color componenet is valid
+                color_component = max(0, min(self.MAX_COLOR_COMPONENT, color_component))
                 new_color[index] = int(color_component)
             new_colors.append(new_color)
         return new_colors

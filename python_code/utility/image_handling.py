@@ -81,7 +81,7 @@ class ImageDefinition:
     __sheet_name: str
     __image_location: Tuple[int, int]
     __color_key: Tuple[int, int, int]
-    __flip: bool
+    __flip: Tuple[bool, bool]
     # this varaible will save when get_images is called once before te prevent unnecesairy transform an image_at calls
     __images: List[pygame.Surface]
     __size: util.Size
@@ -92,7 +92,7 @@ class ImageDefinition:
         sheet_name: str,
         image_location: Tuple[int, int],
         color_key: Tuple[int, int, int] = con.INVISIBLE_COLOR,
-        flip: bool = False,
+        flip: Tuple[bool, bool] = (False, False),
         image_size: util.Size = con.BLOCK_SIZE,
         size: util.Size = con.BLOCK_SIZE
     ):
@@ -118,9 +118,11 @@ class ImageDefinition:
         norm_size = norm_image.get_size()
         if norm_size[0] != self.__image_size[0] or norm_size[1] != self.__image_size[1]:
             norm_image = pygame.transform.scale(norm_image, self.__image_size.size)
-        if self.__flip:
-            flip_image = pygame.transform.flip(norm_image, True, False)
-            self.__images = [norm_image, flip_image]
-        else:
-            self.__images = [norm_image]
+        self.__images = [norm_image]
+        if self.__flip[0]:
+            horizontal_flip_image = pygame.transform.flip(norm_image, True, False)
+            self.__images.append(horizontal_flip_image)
+        if self.__flip[1]:
+            vertical_flip_image = pygame.transform.flip(norm_image, False, True)
+            self.__images.append(vertical_flip_image)
         return self.__images

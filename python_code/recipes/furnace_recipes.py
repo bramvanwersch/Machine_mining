@@ -102,3 +102,21 @@ class TitaniumBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
 
         grid.add_all_rows(row1, row2)
         return grid
+
+
+class OralchiumBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+    FUEL_CONSUMPTION = 10
+    CRAFTING_TIME = 3000
+
+    def __init__(self):
+        mat = ground_materials.OralchiumIngot
+        base_recipes.BaseRecipe.__init__(self, mat)
+
+    def _create_recipe_grid(self):
+        grid = base_recipes.RecipeGrid(util.Size(2, 2))
+
+        row1 = [ground_materials.Oralchium, ground_materials.Oralchium]
+        row2 = [base_materials.Air, base_materials.Air]
+
+        grid.add_all_rows(row1, row2)
+        return grid
