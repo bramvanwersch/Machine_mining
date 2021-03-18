@@ -25,7 +25,7 @@ class DebugValues(util.ConsoleReadable):
 DEBUG = DebugValues()
 
 SHOW_BLOCK_BORDER = True
-TEST_BOARD = True
+TEST_BOARD = False
 
 # innitialize fonts to pre load a font
 pygame.font.init()

@@ -179,7 +179,7 @@ class IceBiome(Biome):
 
 
 class SlimeBiome(Biome):
-    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 20)
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(60, 10)
     FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.SlimeBlock1,
         ground_materials.SlimeBlock2,

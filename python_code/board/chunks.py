@@ -78,11 +78,14 @@ class Chunk(util.Serializer):
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
 
-            # check if a new plant, if so make sure the start is unique
-            if isinstance(block.material, environment_materials.MultiFloraMaterial) and block not in self.all_plants:
-                plant = flora.Plant(block, self)
-                self.all_plants.add(plant)
-                block.material.image_key = -1
+            # dont update for growing plants
+            if isinstance(block.material, environment_materials.MultiFloraMaterial):
+                self.changed[0] = False
+                # check if a new plant, if so make sure the start is unique also
+                if block not in self.all_plants:
+                    plant = flora.Plant(block, self)
+                    self.all_plants.add(plant)
+                    block.material.image_key = -1
             # add the block
             self.layers[2].add_image(local_block_rect, block.surface)
 
