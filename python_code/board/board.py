@@ -192,7 +192,10 @@ class Board(util.Serializer):
                     blocks.append(chunk.get_block(point))
         return blocks
 
-    def surrounding_blocks(self, block):
+    def surrounding_blocks(
+        self,
+        block: block_classes.Block
+    ) -> List[Union[None, block_classes.Block]]:
         """
         Calculate the surrounding block_classes of a certain block in the order
         NESW and None if there is no block (edge of the playing field).
@@ -298,7 +301,15 @@ class Board(util.Serializer):
             if isinstance(block, block_classes.ConveyorNetworkBlock):
                 self.conveyor_network.add(block)
             chunk = self.chunk_from_point(block.coord)
+            self.__set_block_lighting(block)
             chunk.add_blocks(block)
+
+    def __set_block_lighting(self, block):
+        """Set the lighting for one block specifically"""
+        surrounding_blocks = self.surrounding_blocks(block)
+        max_light_block = max([b for b in surrounding_blocks if b is not None], key=lambda x: x.light_level)
+        change = con.DECREASE_SPEED_SOLID if max_light_block.is_solid() else con.DECREASE_SPEED
+        block.light_level = max_light_block.light_level - change
 
     def add_building(self, building_instance):
         self.buildings[building_instance.id] = building_instance
@@ -311,7 +322,7 @@ class Board(util.Serializer):
 
     def adjust_lighting(
         self,
-        point: Union[Tuple[int, int], List],
+        point: Union[Tuple[int, int], List[int]],
         radius: int,
         point_light: int
     ):
@@ -363,7 +374,8 @@ class Board(util.Serializer):
                                                           (row_sign * - 1) * con.BLOCK_SIZE.height))
                 if next_block is None:
                     continue
-                self.__change_block_light_level(light_level[col_s_i], next_block)
+                if light_level[col_s_i] != next_block.light_level:
+                    self.__change_block_light_level(light_level[col_s_i], next_block)
                 change = con.DECREASE_SPEED_SOLID if next_block.is_solid() else con.DECREASE_SPEED
                 if adjacent_block is not None and adjacent_block.light_level > light_level[col_s_i]:
                     light_level[col_s_i] = adjacent_block.light_level - change

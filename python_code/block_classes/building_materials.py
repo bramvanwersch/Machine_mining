@@ -113,7 +113,7 @@ class StoneBrickMaterial(base_materials.ImageMaterial):
 
 
 class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial):
-    _BASE_TRANSPARANT_GROUP: ClassVar[int] = 5
+    _BASE_TRANSPARANT_GROUP: ClassVar[int] = 6
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ConveyorNetworkBlock
     # 0-3 for the 4 directions, N, E, S, W
     IMAGE_DEFINITIONS: ClassVar[Dict[str, List[utility.image_handling.ImageDefinition]]] = \

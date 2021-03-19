@@ -292,6 +292,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
     INVENTORY_SIZE = 2
     NUMBER = count(1, 1)
     VISON_RADIUS = 80
+    EMITTED_LIGTH = 10
 
     def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
@@ -309,7 +310,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         # for loading purposes
         if self.board:
-            self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
+            self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, self.EMITTED_LIGTH)
 
     def printables(self) -> Set[str]:
         attributes = super().printables()

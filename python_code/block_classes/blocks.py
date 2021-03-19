@@ -91,7 +91,7 @@ class Block(ABC):
 class ConveyorNetworkBlock(Block):
     def __init__(
         self,
-        pos: List[int],
+        pos: Union[Tuple[int, int], List[int]],
         material: "base_materials.BaseMaterial",
         **kwargs
     ):
