@@ -24,8 +24,9 @@ class DebugValues(util.ConsoleReadable):
 
 DEBUG = DebugValues()
 
+TESTING = True  # can be used to cheat in items at certain places for easier testing
 SHOW_BLOCK_BORDER = True
-TEST_BOARD = False
+TEST_BOARD = TESTING
 
 # innitialize fonts to pre load a font
 pygame.font.init()

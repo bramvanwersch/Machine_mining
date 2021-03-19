@@ -348,7 +348,7 @@ class BuildTask(MultiTask):
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
-        entity.board.add_blocks(self.finish_block, update=True)
+        entity.board.add_blocks(self.finish_block)
         entity.inventory.get(self.finish_block.name(), 1)
         entity.inventory.add_blocks(*self.removed_blocks)
 

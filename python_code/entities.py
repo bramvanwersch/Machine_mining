@@ -363,7 +363,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.task_queue.task.cancel()
             self.__next_task()
         else:
-            path = self.board.pf.get_path(self.orig_rect, self.task_queue.task.block.rect)
+            path = self.board.pathfinding.get_path(self.orig_rect, self.task_queue.task.block.rect)
             if path != None:
                 self.path = path
             else:

@@ -14,7 +14,6 @@ import interfaces.base_interface as base_interface
 import interfaces.small_interfaces as small_interfaces
 import interfaces.crafting_interfaces as craft_interfaces
 import recipes.recipe_utility as r_constants
-import network.pipes as network
 if TYPE_CHECKING:
     import board.sprite_groups as sprite_groups
     from interfaces.managers import game_window_manager
@@ -114,7 +113,7 @@ class InterfaceBuilding(Building, ABC):
         return blocks_
 
 
-class Terminal(InterfaceBuilding, network.NetworkNode):
+class Terminal(InterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -129,10 +128,9 @@ class Terminal(InterfaceBuilding, network.NetworkNode):
         **kwargs
     ):
         InterfaceBuilding.__init__(self, pos, spite_group, size=-1, **kwargs)
-        network.NetworkNode.__init__(self)
 
 
-class Furnace(InterfaceBuilding, network.NetworkNode):
+class Furnace(InterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -149,10 +147,9 @@ class Furnace(InterfaceBuilding, network.NetworkNode):
         InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=[None]),
                                    out_filter=inventories.Filter(whitelist=[None]), size=200,
                                    recipes=r_constants.recipe_books["furnace"], **kwargs)
-        network.NetworkNode.__init__(self)
 
 
-class Factory(InterfaceBuilding, network.NetworkNode):
+class Factory(InterfaceBuilding):
     MATERIAL = build_materials.FactoryMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
@@ -166,7 +163,6 @@ class Factory(InterfaceBuilding, network.NetworkNode):
         InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=[None]),
                                    out_filter=inventories.Filter(whitelist=[None]),
                                    recipes=r_constants.recipe_books["factory"], **kwargs)
-        network.NetworkNode.__init__(self)
 
 
 material_mapping = {"TerminalMaterial": Terminal,

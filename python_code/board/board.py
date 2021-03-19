@@ -10,10 +10,9 @@ import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
 import block_classes.environment_materials as environment_materials
-import network.pipes as network
 import interfaces.interface_utility as interface_util
-from utility import inventories
 from board import flora, chunks, pathfinding
+import network.conveynetwork
 
 
 class Board(util.Serializer):
@@ -29,7 +28,7 @@ class Board(util.Serializer):
 
         # setup the board
         progress_var[0] = "Innitialising pathfinding..."
-        self.pf = pathfinding.PathFinder()
+        self.pathfinding = pathfinding.PathFinder()
         self.all_plants = flora.Flora()
 
         self.board_generator = board_generator
@@ -46,7 +45,7 @@ class Board(util.Serializer):
 
         # pipe network
         progress_var[0] = "Innitialising pipe network..."
-        self.pipe_network = network.Network(None)
+        self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
         self.buildings = {}
         self.changed_light_blocks = set()
@@ -64,11 +63,9 @@ class Board(util.Serializer):
         self.change_light_levels()
         self.changed_light_blocks = set()
 
-        # update network
-        self.pipe_network.update()
+        self.pathfinding.update()
 
-        # update pathfinding
-        self.pf.update()
+        self.__update_conveyor_network()
 
         self.__update_plants()
 
@@ -94,10 +91,13 @@ class Board(util.Serializer):
                     self.add_blocks(*new_blocks)
         self.__grow_update_time = 0
 
+    def __update_conveyor_network(self):
+        for belt in self.conveyor_network:
+            pass
+
     def to_dict(self):
         return {
             "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
-            "pipe_coordinates": self.pipe_network.pipe_coordinates(),
             "buildings": [building.to_dict() for building in self.buildings.values()],
             "grow_update_time": self.__grow_update_time
         }
@@ -111,7 +111,6 @@ class Board(util.Serializer):
         building_objects = [getattr(buildings, dct["type"]).from_dict(**dct) for dct in builds]
         [inst.add_building(build) for build in building_objects]
         # add the network blocks back
-        inst.add_blocks(*[block_classes.NetworkEdgeBlock(pos, getattr(build_materials, type_)) for pos, type_ in pipe_coords])
 
     def generate_chunks(
         self,
@@ -149,7 +148,7 @@ class Board(util.Serializer):
                                  self.all_plants)
         self.chunk_matrix[row_i][col_i] = chunk
         self.loaded_chunks.add(chunk)
-        self.pf.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
+        self.pathfinding.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
         self._loading_chunks.remove((col_i, row_i))
 
     def get_start_chunk(self):
@@ -242,15 +241,10 @@ class Board(util.Serializer):
                 chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
-            if isinstance(block, block_classes.NetworkEdgeBlock):
-                self.pipe_network.remove_pipe(block)
             surrounding_blocks = self.surrounding_blocks(block)
             for index, s_block in enumerate(surrounding_blocks):
                 if s_block is None:
                     continue
-                elif isinstance(s_block, block_classes.NetworkEdgeBlock) and not isinstance(s_block, block_classes.ContainerBlock):
-                    self.pipe_network.configure_block(s_block, self.surrounding_blocks(s_block), remove=True)
-                    self.add_blocks(s_block)
                 # check if the block a surrounding plant is attached to is stbill solid
                 elif block.is_solid() and isinstance(s_block.material, environment_materials.EnvironmentMaterial) and\
                         index == (s_block.material.START_DIRECTION + 2) % 4:
@@ -280,8 +274,6 @@ class Board(util.Serializer):
         building_instance = self.buildings.pop(block.id, None)
         if building_instance is None:
             return []
-        if isinstance(block, block_classes.NetworkEdgeBlock):
-            self.pipe_network.remove_node(building_instance)
         blocks = building_instance.blocks
         removed_items = []
         first = True
@@ -298,49 +290,24 @@ class Board(util.Serializer):
                     chunk.remove_blocks(block)
         return removed_items
 
-    def add_blocks(self, *blocks, update=False):
-        """
-        Add a block to the board by changing the matrix and blitting the image
-        to the foreground_layer
-
-        :param blocks: one or more BasicBlock objects or inheriting classes
-        """
-        update_blocks = []
+    def add_blocks(self, *blocks: List[block_classes.Block]):
         for block in blocks:
             if isinstance(block, buildings.Building):
                 self.add_building(block)
-            else:
-                if isinstance(block, block_classes.NetworkEdgeBlock):
-                    update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=update))
-                    if update:
-                        self.pipe_network.add_pipe(block)
-                chunk = self.chunk_from_point(block.coord)
-                chunk.add_blocks(block)
-        if len(update_blocks) > 0:
-            self.add_blocks(*update_blocks)
+                return
+            if isinstance(block, block_classes.ConveyorNetworkBlock):
+                self.conveyor_network.add(block)
+            chunk = self.chunk_from_point(block.coord)
+            chunk.add_blocks(block)
 
     def add_building(self, building_instance):
-        """
-        Add a building into the matrix and potentially draw it when requested
-
-        :param building_instance: an instance of Building
-        :param draw: Boolean telling if the foreground image should be updated
-        mainly important when innitiating
-        """
         self.buildings[building_instance.id] = building_instance
-        update_blocks = []
-        if isinstance(building_instance, network.NetworkNode):
-            self.pipe_network.add_node(building_instance)
         for row in building_instance.blocks:
             for block in row:
+                if hasattr(block, "inventory"):
+                    self.inventorie_blocks.append(block)
                 chunk = self.chunk_from_point(block.coord)
                 chunk.add_blocks(block)
-                if isinstance(block, block_classes.ContainerBlock):
-                    self.inventorie_blocks.append(block)
-                    update_blocks.extend(self.pipe_network.configure_block(block, self.surrounding_blocks(block), update=True))
-        if len(update_blocks) > 0:
-            update_blocks = [block for block in update_blocks if not isinstance(block, block_classes.ContainerBlock)]
-            self.add_blocks(*update_blocks)
 
     def adjust_lighting(
         self,
@@ -493,6 +460,8 @@ class Board(util.Serializer):
         t = buildings.Terminal(appropriate_location + (60, -10), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (40, -10), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (20, -10), self.main_sprite_group)
+        if con.TESTING:
+            t.inventory.add_materials(*[build_materials.ConveyorBelt() for _ in range(10)])
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)

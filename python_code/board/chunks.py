@@ -121,13 +121,15 @@ class Chunk(util.Serializer):
         except IndexError:
             raise util.GameException("Point: {} is not within chunk at {}".format(point, self.rect))
 
-    def overlapping_blocks(self, rect):
+    def overlapping_blocks(
+        self,
+        rect: pygame.Rect
+    ) -> List["Block"]:
         column_start, row_start = self.__local_adusted_block_coordinate(rect.topleft)
         column_end, row_end = self.__local_adusted_block_coordinate(rect.bottomright)
-
         overlapping_blocks = []
-        for row in self.__matrix[row_start : row_end + 1]:
-            add_row = row[column_start : column_end + 1]
+        for row in self.__matrix[row_start: row_end + 1]:
+            add_row = row[column_start: column_end + 1]
             if len(add_row) > 0:
                 overlapping_blocks.append(add_row)
         return overlapping_blocks

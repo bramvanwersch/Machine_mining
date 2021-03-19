@@ -43,7 +43,7 @@ class BuildingWindow(base_interfaces.Window):
         self._inventory_sp = None
         self.__initiate_widgets()
 
-        self.__prev_no_items = self.__inventory.number_of_items
+        self.__prev_no_items = 0
 
     def update(self, *args):
         """

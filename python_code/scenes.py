@@ -495,8 +495,8 @@ class Game(Scene, util.Serializer):
         self.board.update_board()
 
     def draw_air_rectangles(self):
-        for key in self.board.pf.pathfinding_tree.rectangle_network[0]:
-            for rect in self.board.pf.pathfinding_tree.rectangle_network[0][key]:
+        for key in self.board.pathfinding.pathfinding_tree.rectangle_network[0]:
+            for rect in self.board.pathfinding.pathfinding_tree.rectangle_network[0][key]:
                 self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
 
     def draw(self):

@@ -3,7 +3,7 @@
 # library imports
 import pygame
 from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING
-from abc import ABC, abstractmethod
+from abc import ABC
 
 # own imports
 import utility.constants as con
@@ -34,7 +34,7 @@ class Block(ABC):
         action: Callable = None,
         light_level: int = 0
     ):
-        self.rect = pygame.Rect((pos[0], pos[1], self.SIZE.width, self.SIZE.height))
+        self.rect = pygame.Rect((pos[0], pos[1], self.size().width, self.size().height))
         self.material = material
         self._action_function = action
         self.id = id_ if id_ else util.unique_id()
@@ -42,6 +42,11 @@ class Block(ABC):
 
     def __getattr__(self, item):
         return getattr(self.material, item)
+
+    @classmethod
+    def size(cls):
+        """Allow inheriting classes to modify this value in a flexible way"""
+        return cls.SIZE
 
     def action(self) -> None:
         """Trigger action defined in self._action_function"""
@@ -83,6 +88,16 @@ class Block(ABC):
         return hash((self.coord, self.name()))
 
 
+class ConveyorNetworkBlock(Block):
+    def __init__(
+        self,
+        pos: List[int],
+        material: "base_materials.BaseMaterial",
+        **kwargs
+    ):
+        super().__init__(pos, material, **kwargs)
+
+
 class NetworkEdgeBlock(Block):
     """Block that is part of a network"""
     __slots__ = "network_group"
@@ -120,9 +135,8 @@ class ContainerBlock(NetworkEdgeBlock):
 
 
 class MultiBlock(Block, ABC):
-    # have this here since you are technically allowed to call the size
     MULTIBLOCK_DIMENSION: ClassVar[util.Size] = util.Size(1, 1)
-    SIZE = Block.SIZE * MULTIBLOCK_DIMENSION
+    # this works fine with inheritance
     __slots__ = "blocks"
 
     blocks: List[List[Block]]
@@ -136,15 +150,14 @@ class MultiBlock(Block, ABC):
         super().__init__(pos, material, **kwargs)
         self.blocks = self._get_blocks()
 
-    # noinspection PyPep8Naming
-    @property
-    @abstractmethod
-    def MULTIBLOCK_DIMENSION(self) -> ClassVar[util.Size]:
-        pass
+    @classmethod
+    def size(cls) -> ClassVar[util.Size]:
+        return cls.SIZE * cls.MULTIBLOCK_DIMENSION
 
     def _get_blocks(self) -> List[List[Block]]:
         # has to be the case to prevent circular imports
         import block_classes.block_utility as block_utility
+
         blocks = []
         topleft = self.rect.topleft
         image_key_count = 1

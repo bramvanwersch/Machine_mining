@@ -103,3 +103,17 @@ class StoneBrickMaterial(base_materials.ImageMaterial):
     HARDNESS: ClassVar[int] = 4
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (0, 0))
+
+
+class ConveyorBelt(BuildingMaterial, base_materials.MultiImageMaterial):
+    _BASE_TRANSPARANT_GROUP: ClassVar[int] = 5
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ConveyorNetworkBlock
+    # 0-3 for the 4 directions, N, E, S, W
+    IMAGE_DEFINITIONS: ClassVar[Dict[str, List[utility.image_handling.ImageDefinition]]] = \
+        {0: utility.image_handling.ImageDefinition("materials", (80, 30)),
+         1: utility.image_handling.ImageDefinition("materials", (90, 30)),
+         2: utility.image_handling.ImageDefinition("materials", (0, 40)),
+         3: utility.image_handling.ImageDefinition("materials", (10, 40))}
+
+    def __init__(self, **kwargs):
+        super().__init__(image_key=0, **kwargs)

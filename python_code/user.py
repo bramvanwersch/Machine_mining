@@ -127,8 +127,8 @@ class User(utility.event_handling.EventHandler):
                                                                       self.__sprite_group.target, self.zoom)
                 mouse_pos[0] = int(mouse_pos[0] / 10) * 10
                 mouse_pos[1] = int(mouse_pos[1] / 10) * 10
-                rectangle = pygame.Rect((mouse_pos[0], mouse_pos[1], building_block_class.SIZE.width,
-                                         building_block_class.SIZE.height))
+                rectangle = pygame.Rect((mouse_pos[0], mouse_pos[1], building_block_class.size().width - 1,
+                                         building_block_class.size().height - 1))
                 self.__process_selection(rectangle)
             else:
                 rectangle = self.selection_rectangle.orig_rect
@@ -137,7 +137,7 @@ class User(utility.event_handling.EventHandler):
 
     def get_building_block_class(self) -> "Block":
         material = small_interface.get_selected_item().material
-        if isinstance(material, building_materials.BuildingMaterial):
+        if isinstance(material, building_materials.Building):
             # this is fine because building is the abstract class that all buildings have
             building_block_class = buildings.material_mapping[material.name()]  # noqa
         else:
