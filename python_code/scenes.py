@@ -622,7 +622,7 @@ class Game(Scene, util.Serializer):
         self.__debug_rectangle = (*debug_topleft, width, y_coord - debug_topleft[1])
 
     def __handle_interface_selection_events(self):
-        if self.pressed(con.BUILDING):
+        if self.pressed(con.BOARD_KEYS.BUILDING):
             self.window_manager.add(self.building_interface)
 
     def __zoom_entities(self, increase):

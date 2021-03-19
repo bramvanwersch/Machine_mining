@@ -2,7 +2,7 @@
 
 # library imports
 import pygame
-from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING
+from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union
 from abc import ABC
 
 # own imports
@@ -28,7 +28,7 @@ class Block(ABC):
 
     def __init__(
         self,
-        pos: List[int],
+        pos: Union[Tuple[int, int], List[int]],
         material: "base_materials.BaseMaterial",
         id_: str = None,
         action: Callable = None,

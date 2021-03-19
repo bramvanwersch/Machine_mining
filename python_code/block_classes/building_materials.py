@@ -17,6 +17,13 @@ class BuildingMaterial(ABC):
                                     if task not in ["Building"]}
 
 
+class RotatbleBuildingMaterial(BuildingMaterial, ABC):
+
+    @abstractmethod
+    def rotate(self, rotate_count: int):
+        pass
+
+
 class Building(ABC):
     """abstraction level for all buildings"""
 
@@ -105,15 +112,20 @@ class StoneBrickMaterial(base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (0, 0))
 
 
-class ConveyorBelt(BuildingMaterial, base_materials.MultiImageMaterial):
+class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 5
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ConveyorNetworkBlock
     # 0-3 for the 4 directions, N, E, S, W
     IMAGE_DEFINITIONS: ClassVar[Dict[str, List[utility.image_handling.ImageDefinition]]] = \
         {0: utility.image_handling.ImageDefinition("materials", (80, 30)),
-         1: utility.image_handling.ImageDefinition("materials", (90, 30)),
-         2: utility.image_handling.ImageDefinition("materials", (0, 40)),
-         3: utility.image_handling.ImageDefinition("materials", (10, 40))}
+         1: utility.image_handling.ImageDefinition("materials", (10, 40)),
+         2: utility.image_handling.ImageDefinition("materials", (90, 30)),
+         3: utility.image_handling.ImageDefinition("materials", (0, 40))}
 
     def __init__(self, **kwargs):
         super().__init__(image_key=0, **kwargs)
+
+    def rotate(self, rotate_count: int):
+        self.image_key = rotate_count % 4
+
+

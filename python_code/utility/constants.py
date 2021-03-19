@@ -2,7 +2,7 @@
 
 # library imports
 import pygame
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Iterable
 import os
 from pygame.locals import *
 
@@ -150,15 +150,35 @@ class ModeConstants:
         self.persistent_highlight = persisten_highlight
 
 
-MINING = K_m
-BUILDING = K_b
-CANCEL = K_x
-SELECTING = K_k
+class BoardKeys:
+    """A streamlined place for keybinds related to the board. This allows for easier changed later with settings"""
 
-MODES = {MINING: ModeConstants(MINING, "Mining", (9, 108, 128, 100)),
-         BUILDING: ModeConstants(BUILDING, "Building", (255, 64, 229, 100)),
-         CANCEL: ModeConstants(CANCEL, "Cancel", (255, 0, 0, 100), False),
-         SELECTING: ModeConstants(SELECTING, "Selecting", (59, 191, 70, 100), False)}
+    __keys: Dict[str, int]
+
+    def __init__(self):
+        self.__keys = {
+            "MINING": K_m,
+            "BUILDING": K_b,
+            "CANCEL": K_x,
+            "SELECTING": K_k,
+            "ROTATING": K_r
+        }
+
+    def all_keys(self) -> Iterable[int]:
+        return self.__keys.values()
+
+    def __getattr__(self, item: str) -> int:
+        if item in self.__keys:
+            return self.__keys[item]
+        raise AttributeError(f"No key bound for {item}")
+
+
+BOARD_KEYS = BoardKeys()
+
+MODES = {BOARD_KEYS.MINING: ModeConstants(BOARD_KEYS.MINING, "Mining", (9, 108, 128, 100)),
+         BOARD_KEYS.BUILDING: ModeConstants(BOARD_KEYS.BUILDING, "Building", (255, 64, 229, 100)),
+         BOARD_KEYS.CANCEL: ModeConstants(BOARD_KEYS.CANCEL, "Cancel", (255, 0, 0, 100), False),
+         BOARD_KEYS.SELECTING: ModeConstants(BOARD_KEYS.SELECTING, "Selecting", (59, 191, 70, 100), False)}
 
 
 # tasks constants

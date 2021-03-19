@@ -1,5 +1,5 @@
 import pygame
-from typing import Union, List, Tuple, TYPE_CHECKING
+from typing import Union, List, Tuple, TYPE_CHECKING, Type
 
 import tasks
 import utility.constants as con
@@ -37,7 +37,7 @@ class User(utility.event_handling.EventHandler):
         progress_var: List[str],
         sprite_group: "CameraAwareLayeredUpdates"
     ):
-        super().__init__(recordable_keys=[1, 2, 3, 4, con.MINING, con.CANCEL, con.BUILDING, con.SELECTING])
+        super().__init__(recordable_keys=[1, 2, 3, 4, *con.BOARD_KEYS.all_keys()])
         self.board = board
         self.__sprite_group = sprite_group
         self.task_control = None
@@ -48,8 +48,9 @@ class User(utility.event_handling.EventHandler):
         self.workers = []
         self.__init_workers(progress_var)
 
-        self._mode = con.MODES[con.SELECTING]
+        self._mode = con.MODES[con.BOARD_KEYS.SELECTING]
         self.zoom = 1.0
+        self.__rotate = 0  # track the amount of times that the rotate key was pressed
 
     def __init_task_control(
         self,
@@ -83,20 +84,21 @@ class User(utility.event_handling.EventHandler):
         """Handle mouse and mode events separately"""
         leftover_events = super().handle_events(events, consume_events=consume_events)
         self.__handle_mouse_events()
-        self.__handle_mode_events()
+        self.__handle_key_events()
         return leftover_events
 
-    def __handle_mode_events(self):
-        pressed_modes = self.get_all_pressed()
-        if len(pressed_modes):
-            # make sure to clear the board of any remnants before switching
-            if pressed_modes[0].name in con.MODES:
+    def __handle_key_events(self):
+        pressed_keys = self.get_all_pressed()
+        for key in pressed_keys:
+            if key.name in con.MODES:
                 if not self._mode.persistent_highlight:
                     self.__remove_highlight_rectangle()
-                self._mode = con.MODES[pressed_modes[0].name]
+                self._mode = con.MODES[key.name]
                 board_coord = interface_util.screen_to_board_coordinate(con.SCREEN_SIZE.center,
                                                                         self.__sprite_group.target, self.zoom)
                 entities.TextSprite(board_coord, self._mode.name, self.__sprite_group)
+            elif key.name == con.BOARD_KEYS.ROTATING and self._mode.name == "Building":
+                self.__rotate += 1
 
     def __handle_mouse_events(self):
         """Handle mouse events issued by the user."""
@@ -135,7 +137,7 @@ class User(utility.event_handling.EventHandler):
                 self.__process_selection(rectangle)
                 self.__remove_selection_rectangle()
 
-    def get_building_block_class(self) -> "Block":
+    def get_building_block_class(self) -> Union[Type["Block"], Type[buildings.InterfaceBuilding]]:
         material = small_interface.get_selected_item().material
         if isinstance(material, building_materials.Building):
             # this is fine because building is the abstract class that all buildings have
@@ -336,6 +338,8 @@ class User(utility.event_handling.EventHandler):
             # this should always be 1 block
             block = blocks[0]
             material = small_interface.get_selected_item().material
+            if isinstance(material, building_materials.RotatbleBuildingMaterial):
+                material.rotate(self.__rotate)
             building_block_class = self.get_building_block_class()
             group = block.transparant_group
             if group != 0:
