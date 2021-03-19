@@ -41,7 +41,7 @@ class Plant:
 
     def grow(self, surrounding_blocks):
         direction = self.material.CONTINUATION_DIRECTION
-        if surrounding_blocks[direction] != "Air":
+        if surrounding_blocks[direction] is None or surrounding_blocks[direction].name() != "Air":
             return None
         material_obj = getattr(environment_materials, self.grow_block.name())
         extension_block = block_classes.Block(self.grow_block.coord, material_obj(image_key=direction), id_=self.id)

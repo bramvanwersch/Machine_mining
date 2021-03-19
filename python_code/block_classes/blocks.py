@@ -78,15 +78,6 @@ class Block(ABC):
         """name of material"""
         return self.material.name()
 
-    def __eq__(self, other):
-        """Compare this block instance with a string, comparing the name of this block with another"""
-        if not isinstance(other, str) and other is not None:
-            raise NotImplementedError("For comparissons with blocks use strings")
-        return other == self.material.name()
-
-    def __hash__(self):
-        return hash((self.coord, self.name()))
-
 
 class ConveyorNetworkBlock(Block):
     def __init__(

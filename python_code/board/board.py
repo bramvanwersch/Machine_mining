@@ -236,11 +236,13 @@ class Board(util.Serializer):
     def remove_blocks(self, *blocks):
         removed_items = []
         for block in blocks:
-            if isinstance(block.material, build_materials.BuildingMaterial):
+            if isinstance(block.material, build_materials.Building):
                 removed_items.extend(self.remove_building(block))
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             else:
+                if isinstance(block, block_classes.ConveyorNetworkBlock):
+                    self.conveyor_network.remove(block)
                 chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
@@ -282,7 +284,6 @@ class Board(util.Serializer):
         first = True
         for row in blocks:
             for block in row:
-                # self.task_control.cancel_tasks(block, remove=True)
                 chunk = self.chunk_from_point(block.rect.topleft)
 
                 # make sure that when the inventory is emptied that happens once
@@ -326,7 +327,8 @@ class Board(util.Serializer):
         radius: int,
         point_light: int
     ):
-        # extend in a diamond around a center point and assign new light values based on the light point
+        """extend in a diamond around a center point and assign new light values based on the light point. This is a
+        function for updating the light around a light source"""
         point_light = min(point_light, con.MAX_LIGHT)
 
         start_block = self.__block_from_point(point)
