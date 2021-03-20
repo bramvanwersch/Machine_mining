@@ -105,6 +105,15 @@ class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
         super().__init__(image_key="0_", **kwargs)
 
 
+class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMaterial):
+    TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
+    FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (20, 40))
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (20, 40))
+
+
 class StoneBrickMaterial(base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 4
@@ -112,20 +121,41 @@ class StoneBrickMaterial(base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (0, 0))
 
 
-class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial):
+class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, ABC):
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def TRANSFER_TIME(self) -> int:
+        pass
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def STACK_SIZE(self) -> int:
+        pass
+
+
+class BasicConveyorBelt(ConveyorBelt):
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 6
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ConveyorNetworkBlock
+
+    TRANSFER_TIME: ClassVar[int] = 1000
+    STACK_SIZE: ClassVar[int] = 2
+    TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
+
     # 0-3 for the 4 directions, N, E, S, W
     IMAGE_DEFINITIONS: ClassVar[Dict[str, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("materials", (80, 30)),
-         1: utility.image_handling.ImageDefinition("materials", (10, 40)),
-         2: utility.image_handling.ImageDefinition("materials", (90, 30)),
-         3: utility.image_handling.ImageDefinition("materials", (0, 40))}
+        {0: utility.image_handling.ImageDefinition("materials", (0, 40)),
+         1: utility.image_handling.ImageDefinition("materials", (80, 30)),
+         2: utility.image_handling.ImageDefinition("materials", (10, 40)),
+         3: utility.image_handling.ImageDefinition("materials", (90, 30))}
 
     def __init__(self, **kwargs):
         super().__init__(image_key=0, **kwargs)
 
     def rotate(self, rotate_count: int):
         self.image_key = rotate_count % 4
+
 
 

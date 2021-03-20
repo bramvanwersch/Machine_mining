@@ -93,7 +93,8 @@ class Board(util.Serializer):
 
     def __update_conveyor_network(self):
         for belt in self.conveyor_network:
-            pass
+            surrounding_blocks = self.surrounding_blocks(belt)
+            belt.check_item_movement(surrounding_blocks)
 
     def to_dict(self):
         return {
@@ -475,7 +476,7 @@ class Board(util.Serializer):
         c = buildings.Factory(appropriate_location + (40, -10), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (20, -10), self.main_sprite_group)
         if con.TESTING:
-            t.inventory.add_materials(*[build_materials.ConveyorBelt() for _ in range(10)])
+            t.inventory.add_materials(*[build_materials.BasicConveyorBelt() for _ in range(10)])
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)

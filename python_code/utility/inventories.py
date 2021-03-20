@@ -99,8 +99,8 @@ class Inventory:
     ) -> Union["Item", None]:
         """Get the first item from the inventory that is allowed."""
         for item in self.__container.values():
-            if self.check_item_get(item.name, 1):
-                return self.get(item.name, amnt)
+            if self.check_item_get(item.name(), 1) and "Conveyor" not in item.name():
+                return self.get(item.name(), amnt)
         return None
 
     def get_all_items(
@@ -226,7 +226,7 @@ class Inventory:
         return None
 
     def __str__(self) -> str:
-        final_str = "Inventory:"
+        final_str = "Inventory:\n"
         for item in self.__container.values():
             final_str += f"{str(item)}\n"
         return final_str[:-1]

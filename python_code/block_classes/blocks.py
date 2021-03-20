@@ -9,7 +9,7 @@ from abc import ABC
 import utility.constants as con
 import utility.utilities as util
 if TYPE_CHECKING:
-    import block_classes.materials as base_materials
+    import block_classes.materials as base_materials, building_materials
     from utility import inventories
 
 
@@ -66,7 +66,10 @@ class Block(ABC):
     def transparant_group(self, value):
         self.material.transparant_group = value
 
-    def is_task_allowded(self, task_type: str) -> bool:
+    def is_task_allowded(
+        self,
+        task_type: str
+    ) -> bool:
         """Check if the material allows a task to be performed"""
         return task_type in self.material.allowed_tasks
 
@@ -80,13 +83,77 @@ class Block(ABC):
 
 
 class ConveyorNetworkBlock(Block):
+    """Conveyor bloks that transport items"""
+    __slots__ = "current_item", "progress", "__push_priority_direction"
+
+    material: "building_materials.ConveyorBelt"
+    current_item: Union["inventories.Item", None]
+    progress: List[int]
+    __push_prioity_direction: int
+
     def __init__(
         self,
         pos: Union[Tuple[int, int], List[int]],
-        material: "base_materials.BaseMaterial",
+        material: "building_materials.ConveyorBelt",
         **kwargs
     ):
         super().__init__(pos, material, **kwargs)
+        self.current_item = None
+        self.progress = [0, self.material.TRANSFER_TIME]
+        self.__push_priority_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
+
+    def put_item(
+        self,
+        item: "inventories.Item"
+    ):
+        self.current_item = item
+        self.progress = [0, self.material.TRANSFER_TIME]
+
+    def check_item_movement(
+        self,
+        surrounding_blocks: List[Union[None, Block]]
+    ):
+        if self.current_item is not None:
+            self.__move_item(surrounding_blocks)
+        else:
+            self.__take_item(surrounding_blocks)
+
+    def __move_item(
+        self,
+        surrounding_blocks: List[Union[None, Block]]
+    ):
+        """Move an item within the belt or to the next belt when required"""
+        # dont keep counting if there is no place to put the item
+        if self.progress[0] <= self.progress[1]:
+            self.progress[0] += con.GAME_TIME.get_time()
+        if self.progress[0] > self.progress[1]:
+            elligable_blocks = [surrounding_blocks[self.material.image_key - 1],
+                                surrounding_blocks[self.material.image_key],
+                                surrounding_blocks[(self.material.image_key + 1) % 4]]
+            for block in elligable_blocks[self.__push_priority_direction:] + \
+                    elligable_blocks[:self.__push_priority_direction]:
+                if block is None:
+                    continue
+                if isinstance(block, ConveyorNetworkBlock) and block.current_item is None:
+                    block.put_item(self.current_item)
+                    self.current_item = None
+                    break
+                elif isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name):
+                    block.inventory.add_items(self.current_item)
+                    self.current_item = None
+                    break
+            self.__push_priority_direction += 1
+
+    def __take_item(
+        self,
+        surrounding_blocks
+    ):
+        opposite_block = surrounding_blocks[self.material.image_key - 2]  # block that is opposite the belt direction
+        if not isinstance(opposite_block, ContainerBlock):
+            return
+        item = opposite_block.inventory.get_first(self.material.STACK_SIZE)
+        if item is not None:
+            self.current_item = item
 
 
 class NetworkEdgeBlock(Block):
@@ -107,9 +174,7 @@ class NetworkEdgeBlock(Block):
 
 
 class ContainerBlock(NetworkEdgeBlock):
-    """
-    Block that has an inventory
-    """
+    """Block that has an inventory"""
     __slots__ = "inventory"
 
     inventory: "inventories.Inventory"
