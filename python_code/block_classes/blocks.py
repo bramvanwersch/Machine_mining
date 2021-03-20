@@ -43,8 +43,13 @@ class Block(ABC):
     def __getattr__(self, item):
         return getattr(self.material, item)
 
+    @property
+    def surface(self) -> pygame.Surface:
+        """Make inheritance more apparent"""
+        return self.material.surface
+
     @classmethod
-    def size(cls):
+    def size(cls) -> int:
         """Allow inheriting classes to modify this value in a flexible way"""
         return cls.SIZE
 
@@ -84,12 +89,16 @@ class Block(ABC):
 
 class ConveyorNetworkBlock(Block):
     """Conveyor bloks that transport items"""
-    __slots__ = "current_item", "progress", "__push_priority_direction"
+    __slots__ = "current_item", "progress", "__push_priority_direction", "__item_location", "__item_surface",\
+                "changed"
 
     material: "building_materials.ConveyorBelt"
     current_item: Union["inventories.Item", None]
     progress: List[int]
     __push_prioity_direction: int
+    __item_location: Tuple[int, int]
+    __item_surface: [None, pygame.Surface]
+    changed: bool
 
     def __init__(
         self,
@@ -101,6 +110,9 @@ class ConveyorNetworkBlock(Block):
         self.current_item = None
         self.progress = [0, self.material.TRANSFER_TIME]
         self.__push_priority_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
+        self.__item_location = (-1, -1)
+        self.__item_surface = None
+        self.changed = False
 
     def put_item(
         self,
@@ -108,11 +120,21 @@ class ConveyorNetworkBlock(Block):
     ):
         self.current_item = item
         self.progress = [0, self.material.TRANSFER_TIME]
+        self.__item_location = (-1, -1)
+        self.__item_surface = None
+
+    def remove_item(self):
+        self.current_item = None
+        self.progress = [0, self.material.TRANSFER_TIME]
+        self.__item_location = (-1, -1)
+        self.__item_surface = None
+        self.changed = True
 
     def check_item_movement(
         self,
         surrounding_blocks: List[Union[None, Block]]
     ):
+        """Move items within the conveyor belt"""
         if self.current_item is not None:
             self.__move_item(surrounding_blocks)
         else:
@@ -126,7 +148,12 @@ class ConveyorNetworkBlock(Block):
         # dont keep counting if there is no place to put the item
         if self.progress[0] <= self.progress[1]:
             self.progress[0] += con.GAME_TIME.get_time()
-        if self.progress[0] > self.progress[1]:
+            new_location = self.__get_item_position()
+            if new_location != self.__item_location:
+                self.__item_location = new_location
+                self.changed = True
+
+        elif self.progress[0] > self.progress[1]:
             elligable_blocks = [surrounding_blocks[self.material.image_key - 1],
                                 surrounding_blocks[self.material.image_key],
                                 surrounding_blocks[(self.material.image_key + 1) % 4]]
@@ -154,6 +181,24 @@ class ConveyorNetworkBlock(Block):
         item = opposite_block.inventory.get_first(self.material.STACK_SIZE)
         if item is not None:
             self.current_item = item
+
+    @property
+    def surface(self) -> pygame.Surface:
+        if self.current_item is None:
+            return self.material.surface
+        if self.changed:
+            self.__item_surface = self.material.surface.copy()
+            self.__item_surface.blit(self.current_item.material.transport_surface, self.__item_location)  # noqa
+        return self.__item_surface
+
+    def __get_item_position(self):
+        # the material is always a TransportableMaterial
+        item_size = util.Size(*self.current_item.material.transport_surface.get_size())  # noqa
+        progression_fraction = self.progress[0] / self.progress[1]
+        x_movement_room = self.rect.width - item_size.width
+        location_x = int(progression_fraction * x_movement_room)
+        location_y = self.rect.height - item_size.height
+        return location_x, location_y
 
 
 class NetworkEdgeBlock(Block):

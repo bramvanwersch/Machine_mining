@@ -10,9 +10,10 @@ import utility.image_handling
 import utility.utilities as util
 import block_classes.blocks as blocks
 import block_classes.materials as base_materials
+import utility.constants as con
 
 
-class BuildingMaterial(ABC):
+class BuildingMaterial(base_materials.TransportableMaterial, ABC):
     ALLOWED_TASKS: ClassVar[Set] = {task for task in base_materials.BaseMaterial.ALLOWED_TASKS
                                     if task not in ["Building"]}
 
@@ -50,6 +51,9 @@ class TerminalMaterial(Building, base_materials.Indestructable, base_materials.M
          2: utility.image_handling.ImageDefinition("buildings", (10, 0)),
          3: utility.image_handling.ImageDefinition("buildings", (0, 10)),
          4: utility.image_handling.ImageDefinition("buildings", (10, 10))}
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("buildings", (0, 0), size=util.Size(20, 20),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
@@ -63,6 +67,9 @@ class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
          2: utility.image_handling.ImageDefinition("buildings", (30, 0)),
          3: utility.image_handling.ImageDefinition("buildings", (20, 10)),
          4: utility.image_handling.ImageDefinition("buildings", (30, 10))}
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("buildings", (20, 0), size=util.Size(20, 20),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
@@ -76,6 +83,9 @@ class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
          2: utility.image_handling.ImageDefinition("buildings", (50, 0)),
          3: utility.image_handling.ImageDefinition("buildings", (40, 10)),
          4: utility.image_handling.ImageDefinition("buildings", (50, 10))}
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("buildings", (40, 0), size=util.Size(20, 20),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
@@ -100,6 +110,8 @@ class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
          "1_1": utility.image_handling.ImageDefinition("materials", (40, 10)),
          "1_2": utility.image_handling.ImageDefinition("materials", (50, 10)),
          "0_": utility.image_handling.ImageDefinition("materials", (60, 10))}
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (10, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
 
     def __init__(self, **kwargs):
         super().__init__(image_key="0_", **kwargs)
@@ -112,13 +124,17 @@ class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMateria
         utility.image_handling.ImageDefinition("materials", (20, 40))
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (20, 40))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (20, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class StoneBrickMaterial(base_materials.ImageMaterial):
+class StoneBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 4
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (0, 0))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (0, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, ABC):
@@ -150,11 +166,16 @@ class BasicConveyorBelt(ConveyorBelt):
          1: utility.image_handling.ImageDefinition("materials", (80, 30)),
          2: utility.image_handling.ImageDefinition("materials", (10, 40)),
          3: utility.image_handling.ImageDefinition("materials", (90, 30))}
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (0, 40), image_size=con.TRANSPORT_BLOCK_SIZE)
 
     def __init__(self, **kwargs):
         super().__init__(image_key=0, **kwargs)
 
-    def rotate(self, rotate_count: int):
+    def rotate(
+        self,
+        rotate_count: int
+    ):
         self.image_key = rotate_count % 4
 
 

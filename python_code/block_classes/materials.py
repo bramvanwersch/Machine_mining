@@ -114,7 +114,7 @@ class BaseMaterial(ABC):
 
 
 class ColorDefinition:
-    """Defines a range of colors based on input parameters, is optimized on order to prevent repeated color image
+    """Defines a range of colors based on input parameters, is optimized in order to prevent repeated color image
     creation"""
     BORDER_DARKER: ClassVar[int] = 20
     MAX_COLOR_COMPONENT: ClassVar[int] = 255
@@ -134,13 +134,13 @@ class ColorDefinition:
         min_color: Tuple[int, int, int] = (20, 20, 20),
         nr_colors: int = 10,
         change_range: Tuple[int, int] = (-10, 10),
-        size: util.Size = con.BLOCK_SIZE
+        image_size: util.Size = con.BLOCK_SIZE
     ):
         if len(additional_colors) > 0 or not more_colors:
             self.__colors = [base_color, *additional_colors]
         else:
             self.__colors = self.__configure_colors(base_color, min_color, nr_colors, change_range)
-        self.__surface_size = size
+        self.__surface_size = image_size
         self.__border_allowed = border
         self.__images = []
 
@@ -160,7 +160,7 @@ class ColorDefinition:
             new_colors.append(new_color)
         return new_colors
 
-    def colors(self) -> List[pygame.Surface]:
+    def images(self) -> List[pygame.Surface]:
         """Create surfaces of a single color for all colors in self.__colors"""
         if len(self.__images) == 0:
             for color in self.__colors:
@@ -207,7 +207,7 @@ class ColorMaterial(BaseMaterial, ABC):
 
     def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
         """the self._surface attribute is set to this value. For colors this is a list of possible colors"""
-        return self.COLOR_DEFINITIONS.colors()
+        return self.COLOR_DEFINITIONS.images()
 
     @property
     def surface(self) -> pygame.Surface:
@@ -353,3 +353,17 @@ class InventoryMaterial:
 
 class Indestructable:
     ALLOWED_TASKS: ClassVar[Set] = {task for task in BaseMaterial.ALLOWED_TASKS if task not in ["Building", "Mining"]}
+
+
+class TransportableMaterial(ABC):
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def TRANSPORT_IMAGE_DEFINITION(self) -> Union[ImageDefinition, ColorDefinition]:
+        pass
+
+    @property
+    def transport_surface(self) -> pygame.Surface:
+        return self.TRANSPORT_IMAGE_DEFINITION.images()[0]
+

@@ -768,7 +768,7 @@ class SelectionList(Pane):
         return leftover_events
 
 
-class Frame(entities.ZoomableMySprite, Pane):
+class Frame(entities.ZoomableSprite, Pane):
     """Pane that belongs to a sprite group thus it is drawn whenever it is visible"""
     selected_widget: Union[None, Widget, Label, Button, Pane]
     __select_top_widget_flag: bool
@@ -781,7 +781,7 @@ class Frame(entities.ZoomableMySprite, Pane):
         **kwargs
     ):
         Pane.__init__(self, size, board_pos=pos, **kwargs)
-        entities.ZoomableMySprite.__init__(self, pos, size, *groups, **kwargs)
+        entities.ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
         self.selected_widget = None
         self.__select_top_widget_flag = False
         self.__previous_board_pos = self.board_position

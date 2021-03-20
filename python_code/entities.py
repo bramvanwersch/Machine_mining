@@ -85,7 +85,7 @@ class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
         self.orig_rect = rect
 
 
-class ZoomableMySprite(MySprite):
+class ZoomableSprite(MySprite):
     """
     Basic zoomable entity class
     """
@@ -136,12 +136,12 @@ class ZoomableMySprite(MySprite):
         self.orig_rect = rect
 
 
-class SelectionRectangle(ZoomableMySprite):
+class SelectionRectangle(ZoomableSprite):
     """
     Creates a rectangle by draging the mouse. To highlight certain areas.
     """
     def __init__(self, pos, size, mouse_pos, *groups, **kwargs):
-        ZoomableMySprite.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
         self.__start_pos = list(pos)
         self.__prev_screen_pos = list(mouse_pos)
         self.__size = util.Size(*size)
@@ -199,14 +199,14 @@ class SelectionRectangle(ZoomableMySprite):
             self.__update_image()
 
 
-class MovingEntity(ZoomableMySprite):
+class MovingEntity(ZoomableSprite):
     """
     Base class for moving entities
     """
     MAX_SPEED = 10  # pixels/s
 
     def __init__(self, pos, size, *groups, max_speed=MAX_SPEED, speed=None, **kwargs):
-        ZoomableMySprite.__init__(self, pos, size, *groups, **kwargs)
+        ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
         self.max_speed = max_speed
         self.speed = pygame.Vector2(*speed) if speed else pygame.Vector2(0, 0)
 
@@ -425,7 +425,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.speed.y = 0
 
 
-class TextSprite(ZoomableMySprite):
+class TextSprite(ZoomableSprite):
     """
     Entity for drawing text on the screen
     """

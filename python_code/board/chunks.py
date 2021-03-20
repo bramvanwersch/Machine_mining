@@ -190,7 +190,7 @@ class StartChunk(Chunk):
         return matrix
 
 
-class BaseBoardImage(entities.ZoomableMySprite, ABC):
+class BaseBoardImage(entities.ZoomableSprite, ABC):
     def __init__(
         self,
         pos: Union[List[int], Tuple[int, int]],

@@ -8,9 +8,10 @@ from typing import ClassVar, List, Dict
 import block_classes.materials as base_materials
 import utility.image_handling
 import utility.utilities as util
+import utility.constants as con
 
 
-class EnvironmentMaterial(ABC):
+class EnvironmentMaterial(base_materials.TransportableMaterial, ABC):
     """Class for materials that are part of the environment of the board"""
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 100
 
@@ -29,6 +30,9 @@ class Fern(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.Ima
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (30, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (30, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class Reed(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
@@ -36,6 +40,9 @@ class Reed(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.Ima
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (40, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (40, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class Moss(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
@@ -43,30 +50,45 @@ class Moss(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.Ima
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (90, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (90, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class BrownShroom(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (50, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (50, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class BrownShroomers(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (70, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (70, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class RedShroom(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (80, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (80, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class RedShroomers(EnvironmentMaterial, base_materials.ImageMaterial):
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (60, 20), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (60, 20), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class ShroomCollection(base_materials.MaterialCollection):
@@ -80,6 +102,9 @@ class Icicle(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.I
     START_DIRECTION: ClassVar[int] = 0
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (20, 30), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (20, 30), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class SnowLayer(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
@@ -87,6 +112,9 @@ class SnowLayer(EnvironmentMaterial, base_materials.DepthMaterial, base_material
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (30, 30), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (30, 30), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class MultiFloraMaterial(EnvironmentMaterial, ABC):
@@ -106,6 +134,9 @@ class Vine(MultiFloraMaterial, base_materials.DepthMaterial, base_materials.Mult
         {-1: utility.image_handling.ImageDefinition("materials", (0, 30), flip=(True, False)),
          2: utility.image_handling.ImageDefinition("materials", (10, 30), flip=(True, False))}
     GROW_CHANCE: ClassVar[float] = 0.1
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (10, 30), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class SlimeBush(EnvironmentMaterial, base_materials.DepthMaterial, base_materials.ImageMaterial):
@@ -113,3 +144,6 @@ class SlimeBush(EnvironmentMaterial, base_materials.DepthMaterial, base_material
     START_DIRECTION: ClassVar[int] = 2
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (70, 30), flip=(True, False))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (70, 30), flip=(True, False),
+                                               image_size=con.TRANSPORT_BLOCK_SIZE)

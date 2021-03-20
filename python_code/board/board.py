@@ -95,6 +95,9 @@ class Board(util.Serializer):
         for belt in self.conveyor_network:
             surrounding_blocks = self.surrounding_blocks(belt)
             belt.check_item_movement(surrounding_blocks)
+            if belt.changed:
+                self.add_blocks(belt)
+                belt.changed = False
 
     def to_dict(self):
         return {
@@ -472,11 +475,11 @@ class Board(util.Serializer):
         start_chunk = self.get_start_chunk()
         appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width + start_chunk.rect.left,
                                               + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + + start_chunk.rect.top)
-        t = buildings.Terminal(appropriate_location + (60, -10), self.main_sprite_group)
-        c = buildings.Factory(appropriate_location + (40, -10), self.main_sprite_group)
-        f = buildings.Furnace(appropriate_location + (20, -10), self.main_sprite_group)
+        t = buildings.Terminal(appropriate_location + (20, -10), self.main_sprite_group)
+        # c = buildings.Factory(appropriate_location + (40, -10), self.main_sprite_group)
+        # f = buildings.Furnace(appropriate_location + (60, -10), self.main_sprite_group)
         if con.TESTING:
-            t.inventory.add_materials(*[build_materials.BasicConveyorBelt() for _ in range(10)])
+            t.inventory.add_materials(*[build_materials.BasicConveyorBelt() for _ in range(100)])
         self.add_building(t)
-        self.add_building(c)
-        self.add_building(f)
+        # self.add_building(c)
+        # self.add_building(f)
