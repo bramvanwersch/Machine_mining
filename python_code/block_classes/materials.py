@@ -112,6 +112,9 @@ class BaseMaterial(ABC):
         """Mili seconds needed to mine a block with this material"""
         return self.HARDNESS * con.MINING_SPEED_PER_HARDNESS
 
+    def copy(self, **kwargs):
+        return type(self)(**kwargs)
+
 
 class ColorDefinition:
     """Defines a range of colors based on input parameters, is optimized in order to prevent repeated color image

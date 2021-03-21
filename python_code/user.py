@@ -337,7 +337,7 @@ class User(utility.event_handling.EventHandler):
         elif self._mode.name == "Building":
             # this should always be 1 block
             block = blocks[0]
-            material = small_interface.get_selected_item().material
+            material = small_interface.get_selected_item().material.copy()
             if isinstance(material, building_materials.RotatbleBuildingMaterial):
                 material.rotate(self.__rotate)
             building_block_class = self.get_building_block_class()

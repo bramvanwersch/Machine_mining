@@ -91,13 +91,12 @@ class Block(ABC):
 
 class ConveyorNetworkBlock(Block):
     """Conveyor bloks that transport items"""
-    __slots__ = "current_item", "progress", "__push_priority_direction", "__item_surface",\
-                "changed", "__exact_item_position", "incomming_item"
+    __slots__ = "current_item", "progress", "__current_push_direction", "__item_surface",\
+                "changed", "__exact_item_position", "incomming_item", "next_block"
 
     material: "building_materials.ConveyorBelt"
     current_item: Union[inventories.TransportItem, None]
     progress: List[int]
-    __push_prioity_direction: int
     __item_surface: [None, pygame.Surface]
     changed: bool
 
@@ -111,10 +110,11 @@ class ConveyorNetworkBlock(Block):
         self.current_item = None
         self.incomming_item = None
         self.progress = [0, self.material.TRANSFER_TIME]
-        self.__push_priority_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
+        self.__current_push_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
         self.__item_surface = None
         self.__exact_item_position = [0, 0]
         self.changed = False
+        self.next_block = None
 
     def put_current_item(
         self,
@@ -129,6 +129,9 @@ class ConveyorNetworkBlock(Block):
         self.incomming_item = None
         self.__exact_item_position = [0, 0]
         self.__item_surface = None
+        self.next_block = None
+        # increase push direction to make sure that the items are cycled nicely between belts
+        self.__current_push_direction = (self.__current_push_direction + 1) % 3
 
     def put_incomming_item(self, item):
         self.incomming_item = item
@@ -161,62 +164,98 @@ class ConveyorNetworkBlock(Block):
 
         if self.progress[0] <= self.progress[1]:
             self.__move_item_forward(surrounding_blocks)
-        #     if new_location != self.__item_location:
-        #         self.__item_location = new_location
-        #         self.changed = True
-        # if new_location[0] > self.rect.width:
-        #
-        # if self.progress[0] > self.progress[1]:
-        #     elligable_blocks = [surrounding_blocks[self.material.image_key - 1],
-        #                         surrounding_blocks[self.material.image_key],
-        #                         surrounding_blocks[(self.material.image_key + 1) % 4]]
-        #     for block in elligable_blocks[self.__push_priority_direction:] + \
-        #             elligable_blocks[:self.__push_priority_direction]:
-        #         if block is None:
-        #             continue
-        #         if isinstance(block, ConveyorNetworkBlock) and block.current_item is None:
-        #             block.put_item(self.current_item)
-        #             self.remove_item()
-        #             break
-        #         elif isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name):
-        #             block.inventory.add_items(self.current_item)
-        #             self.remove_item()
-        #             break
-        #     self.__push_priority_direction += 1
+
+    def __set_item_position(self, direction):
+        if direction == 0:
+            self.__set_y_item_position(-1)
+        elif direction == 1:
+            self.__set_x_item_position(1)
+        elif direction == 2:
+            self.__set_y_item_position(1)
+        elif direction == 3:
+            self.__set_x_item_position(-1)
 
     def __move_item_forward(self, surrounding_blocks):
         # TODO make universal for all directions
         previous_position = self.current_item.rect.topleft
-        if self.material.image_key == 1 and self.current_item.rect.centerx < self.rect.centerx:
-            self.__set_item_position()
-            self.progress[0] += con.GAME_TIME.get_time()
-        else:
-            elligable_blocks = self.__get_elligable_move_blocks(surrounding_blocks)
-            if len(elligable_blocks) > 0:
-                # TODO make sure that the item is pushed in the direction of next
-                self.__set_item_position()
-                self.progress[0] += con.GAME_TIME.get_time()
-                # TODO save the elligable block and make the whole system more save
-                if not self.rect.contains(self.current_item.rect):
-                    elligable_blocks[0].put_incomming_item(self.current_item)
-                if not self.rect.colliderect(self.current_item.rect):
-                    elligable_blocks[0].put_current_item(self.current_item)
-                    self.remove_item()
-                    return
-        if previous_position != self.current_item.rect.topleft:
+        if self.material.image_key == 0:
+            if self.current_item.rect.centery > self.rect.centery:
+                self.__move_towards_center()
+            else:
+                self.__move_towards_next_block(surrounding_blocks)
+        elif self.material.image_key == 1:
+            if self.current_item.rect.centerx < self.rect.centerx:
+                self.__move_towards_center()
+            else:
+                self.__move_towards_next_block(surrounding_blocks)
+        elif self.material.image_key == 2:
+            if self.current_item.rect.centery < self.rect.centery:
+                self.__move_towards_center()
+            else:
+                self.__move_towards_next_block(surrounding_blocks)
+        elif self.material.image_key == 3:
+            if self.current_item.rect.centerx > self.rect.centerx:
+                self.__move_towards_center()
+            else:
+                self.__move_towards_next_block(surrounding_blocks)
+
+        if self.current_item is not None and previous_position != self.current_item.rect.topleft:
             self.changed = True
 
-    def __set_item_position(self):
+    def __move_towards_center(self):
+        self.__set_item_position(self.material.image_key)
+        self.progress[0] += con.GAME_TIME.get_time()
+
+    def __move_towards_next_block(self, surrounding_blocks):
+        self.__set_next_block(surrounding_blocks)
+        if self.next_block:
+            self.__set_item_position(self.next_block.image_key)
+            self.__check_next_block()
+        else:
+            self.current_item.rect.center = self.rect.center
+
+    def __set_next_block(self, surrounding_blocks):
+        """Set the value for the next block. This will be chosen dependant on the __current_push_direction. If the
+        next_block is None as a result of the push direction then the push direction is cycled next."""
+        elligable_blocks = self.__get_elligable_move_blocks(surrounding_blocks)
+        if self.next_block is None:
+            self.__current_push_direction = (self.__current_push_direction + 1) % 3
+        self.next_block = elligable_blocks[self.__current_push_direction]
+
+    def __check_next_block(self):
+        current_item_rect = self.current_item.rect
+        direction = self.next_block.material.image_key
+        if not self.rect.contains(current_item_rect) and isinstance(self.next_block, ConveyorNetworkBlock):
+            self.next_block.put_incomming_item(self.current_item)
+        if (direction == 0 and self.next_block.rect.bottom >= current_item_rect.bottom) or \
+                (direction == 1 and self.next_block.rect.left <= current_item_rect.left) or \
+                (direction == 2 and self.next_block.rect.top <= current_item_rect.top) or \
+                (direction == 3 and self.next_block.rect.right >= current_item_rect.right):
+            if isinstance(self.next_block, ConveyorNetworkBlock):
+                self.next_block.put_current_item(self.current_item)
+            elif isinstance(self.next_block, ContainerBlock):
+                self.next_block.inventory.add_items(self.current_item)
+            self.remove_item()
+
+    def __set_y_item_position(self, sign):
+        item_rect = self.current_item.rect
+        progression_fraction = con.GAME_TIME.get_time() / self.progress[1]
+        # from the start of the right to the end of the left
+        location_y = progression_fraction * (self.rect.height + item_rect.height)
+        self.__exact_item_position[1] += location_y
+        while self.__exact_item_position[1] > 1:
+            self.current_item.rect.top += 1 * sign
+            self.__exact_item_position[1] -= 1
+
+    def __set_x_item_position(self, sign):
         item_rect = self.current_item.rect
         progression_fraction = con.GAME_TIME.get_time() / self.progress[1]
         # from the start of the right to the end of the left
         location_x = progression_fraction * (self.rect.width + item_rect.width)
-        # location_y = max(0, self.rect.height - item_rect.height - 3)
         self.__exact_item_position[0] += location_x
         while self.__exact_item_position[0] > 1:
-            self.current_item.rect.left += 1
+            self.current_item.rect.left += 1 * sign
             self.__exact_item_position[0] -= 1
-        # self.current_item.rect.top = location_y
 
     def __get_elligable_move_blocks(self, surrounding_blocks):
         elligible_blocks = []
@@ -227,6 +266,8 @@ class ConveyorNetworkBlock(Block):
                     (isinstance(block, ConveyorNetworkBlock) and block.material.image_key == block_index and
                      block.current_item is None):
                 elligible_blocks.append(block)
+            else:
+                elligible_blocks.append(None)
         return elligible_blocks
 
     def __take_item(
