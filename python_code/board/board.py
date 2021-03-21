@@ -9,6 +9,7 @@ import utility.constants as con
 import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.building_materials as build_materials
+import block_classes.ground_materials as ground_materials
 import block_classes.environment_materials as environment_materials
 import interfaces.interface_utility as interface_util
 from board import flora, chunks, pathfinding
@@ -480,6 +481,7 @@ class Board(util.Serializer):
         # f = buildings.Furnace(appropriate_location + (60, -10), self.main_sprite_group)
         if con.TESTING:
             t.inventory.add_materials(*[build_materials.BasicConveyorBelt() for _ in range(100)])
+            t.inventory.add_materials(ground_materials.Gold())
         self.add_building(t)
         # self.add_building(c)
         # self.add_building(f)

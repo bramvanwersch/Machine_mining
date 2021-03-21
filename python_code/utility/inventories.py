@@ -1,5 +1,6 @@
 from typing import Union, List, Set, Dict, TYPE_CHECKING, Iterable, Any
 if TYPE_CHECKING:
+    import pygame
     from block_classes.blocks import Block
     from block_classes.materials import BaseMaterial
 
@@ -258,3 +259,17 @@ class Item:
 
     def __str__(self) -> str:
         return "{}: {}".format(self.material.name(), self.quantity)
+
+
+class TransportItem(Item):
+    """Class to allow for tracking a rectangle with the item for transport"""
+    __slots__ = "rect"
+
+    def __init__(
+        self,
+        rect: "pygame.Rect",
+        material: "BaseMaterial",
+        quantity: int = 1
+    ):
+        super().__init__(material, quantity)
+        self.rect = rect
