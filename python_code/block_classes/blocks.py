@@ -136,6 +136,7 @@ class ConveyorNetworkBlock(Block):
 
     def put_incomming_item(self, item):
         self.incomming_item = item
+        self.__previous_incomming_position = list(item.rect.topleft)
 
     def remove_item(self):
         self.current_item = None
@@ -150,23 +151,13 @@ class ConveyorNetworkBlock(Block):
     ):
         """Move items within the conveyor belt"""
         if self.current_item is not None:
-            self.__move_item(surrounding_blocks)
+            self.__move_item_forward(surrounding_blocks)
         elif self.incomming_item is not None:
             if self.incomming_item.rect.topleft != self.__previous_incomming_position:
                 self.__previous_incomming_position = self.incomming_item.rect.topleft
                 self.changed = True
         else:
             self.__take_item(surrounding_blocks)
-
-    def __move_item(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ):
-        """Move an item within the belt or to the next belt when required"""
-        # dont keep counting if there is no place to put the item
-
-        if self.progress[0] <= self.progress[1]:
-            self.__move_item_forward(surrounding_blocks)
 
     def __set_item_position(self, direction):
         if direction == 0:
@@ -282,28 +273,34 @@ class ConveyorNetworkBlock(Block):
         # block 1
         block_index = (self.material.image_key - 1) % 4
         block = surrounding_blocks[block_index]
-        if isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) or \
-                (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
-                 (block.incomming_item is None or self.current_item == block.incomming_item)
-                 and block.material.image_key == block_index):
+        if (isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
+                self.material.image_key == block_index):
+            elligible_blocks[0] = block
+        elif (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
+              (block.incomming_item is None or self.current_item == block.incomming_item)
+              and block.material.image_key == block_index):
             elligible_blocks[0] = block
 
         # block 2
         block_index = self.material.image_key
         block = surrounding_blocks[block_index]
-        if isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) or \
-                (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
-                 (block.incomming_item is None or self.current_item == block.incomming_item) and
-                 block.material.image_key in [block_index, (block_index + 1) % 4, (block_index - 1) % 4]):
+        if (isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
+                self.material.image_key == block_index):
+            elligible_blocks[1] = block
+        if (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
+                (block.incomming_item is None or self.current_item == block.incomming_item) and
+                block.material.image_key in [block_index, (block_index + 1) % 4, (block_index - 1) % 4]):
             elligible_blocks[1] = block
 
         # block 3
         block_index = (self.material.image_key + 1) % 4
         block = surrounding_blocks[block_index]
-        if isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) or \
-                (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
-                 (block.incomming_item is None or self.current_item == block.incomming_item)
-                 and block.material.image_key == block_index):
+        if (isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
+                self.material.image_key == block_index):
+            elligible_blocks[2] = block
+        if (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
+                (block.incomming_item is None or self.current_item == block.incomming_item)
+                and block.material.image_key == block_index):
             elligible_blocks[2] = block
         return elligible_blocks
 
@@ -318,7 +315,6 @@ class ConveyorNetworkBlock(Block):
         item = opposite_block.get_transport_item(self.material.STACK_SIZE)
         if item is not None:
             self.current_item = item
-            # TODO make a case for all directions
             if self.material.image_key == 0:
                 self.current_item.rect.top = self.rect.bottom
             elif self.material.image_key == 1:
