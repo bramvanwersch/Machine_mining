@@ -248,8 +248,7 @@ class BoardImage(BaseBoardImage):
         """
         Overwrites the image creation process in the basic Entity class
         """
-        image = pygame.Surface(size).convert()
-        image.set_colorkey(con.INVISIBLE_COLOR, con.RLEACCEL)
+        image = pygame.Surface(size).convert_alpha()
         # make sure that surfaces that have alpha channels are blittet as transparant because the background
         # is transparant
         image.fill(con.INVISIBLE_COLOR)
