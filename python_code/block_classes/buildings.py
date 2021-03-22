@@ -84,13 +84,21 @@ class InterfaceBuilding(Building, ABC):
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
 
-        self.interface = self.INTERFACE_TYPE(self, sprite_group, recipes=recipes)
+        self.interface = self.create_interface(sprite_group, recipes=recipes)
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
     def INTERFACE_TYPE(self) -> type:
         pass
+
+    def create_interface(
+        self,
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
+    ) -> base_interface.Window:
+        """Innitiate the interface window"""
+        return self.INTERFACE_TYPE(self, sprite_group, **kwargs)
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
@@ -119,7 +127,7 @@ class Terminal(InterfaceBuilding):
     """
     MATERIAL: base_materials.BaseMaterial = build_materials.TerminalMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
-    INTERFACE_TYPE: base_interface.Window = small_interfaces.TerminalWindow
+    INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
     def __init__(
         self,
@@ -128,6 +136,39 @@ class Terminal(InterfaceBuilding):
         **kwargs
     ):
         InterfaceBuilding.__init__(self, pos, spite_group, size=-1, **kwargs)
+
+    def create_interface(
+        self,
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
+    ) -> base_interface.Window:
+        """Innitiate the interface window"""
+        return self.INTERFACE_TYPE(self, sprite_group, title="TERMINAL", **kwargs)
+
+
+class StoneChest(InterfaceBuilding):
+    """
+        Terminal building. The main interaction centrum for the workers
+        """
+    MATERIAL: base_materials.BaseMaterial = build_materials.StoneChestMaterial
+    MULTIBLOCK_DIMENSION: util.Size = util.Size(1, 1)
+    INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
+
+    def __init__(
+            self,
+            pos: Union[Tuple[int, int], List[int]],
+            spite_group: "sprite_groups.CameraAwareLayeredUpdates",
+            **kwargs
+    ):
+        InterfaceBuilding.__init__(self, pos, spite_group, size=100, **kwargs)
+
+    def create_interface(
+        self,
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
+    ) -> base_interface.Window:
+        """Innitiate the interface window"""
+        return self.INTERFACE_TYPE(self, sprite_group, title="STONE CHEST", **kwargs)
 
 
 class Furnace(InterfaceBuilding):
@@ -144,8 +185,8 @@ class Furnace(InterfaceBuilding):
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=[None]),
-                                   out_filter=inventories.Filter(whitelist=[None]), size=200,
+        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=None),
+                                   out_filter=inventories.Filter(whitelist=None), size=200,
                                    recipes=r_constants.recipe_books["furnace"], **kwargs)
 
 
@@ -160,11 +201,12 @@ class Factory(InterfaceBuilding):
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=[None]),
-                                   out_filter=inventories.Filter(whitelist=[None]),
+        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=None),
+                                   out_filter=inventories.Filter(whitelist=None),
                                    recipes=r_constants.recipe_books["factory"], **kwargs)
 
 
 material_mapping = {"TerminalMaterial": Terminal,
                     "FurnaceMaterial": Furnace,
-                    "FactoryMaterial": Factory}
+                    "FactoryMaterial": Factory,
+                    "StoneChestMaterial": StoneChest}

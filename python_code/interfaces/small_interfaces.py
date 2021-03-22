@@ -119,17 +119,16 @@ class PauseWindow(base_interfaces.Window):
         scenes.scenes["Game"].save()
 
 
-class TerminalWindow(base_interfaces.Window):
-    SIZE = util.Size(200, 100)
+class InventoryWindow(base_interfaces.Window):
+    SIZE = util.Size(300, 200)
     COLOR = (173, 94, 29)
 
-    def __init__(self, terminal_object, *groups, recipes=None):
+    def __init__(self, terminal_object, *groups, recipes=None, title=""):
         self.__terminal = terminal_object
         self.__terminal_inv = self.__terminal.blocks[0][0].inventory
         fr = self.__terminal.rect
         location = fr.bottomleft
-        super().__init__(location, self.SIZE,
-                         *groups, layer=con.INTERFACE_LAYER, title="TERMINAL",
+        super().__init__(location, self.SIZE, *groups, layer=con.INTERFACE_LAYER, title=title,
                          allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
         self.__add_widgets()
         self.__prev_no_items = self.__terminal_inv.number_of_items

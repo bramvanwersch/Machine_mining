@@ -46,8 +46,7 @@ SAVE_DIR = "{}{}saves".format(MAIN_DIR, os.sep)
 DATA_DIR = "{}{}data".format(MAIN_DIR, os.sep)
 
 # sizes
-# 1920, 1080
-SCREEN_SIZE = util.Size(820, 820)  # pixels
+SCREEN_SIZE = util.Size(820, 820) if TESTING else util.Size(1920, 1080)  # pixels
 CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
 if TEST_BOARD:
     BOARD_SIZE = util.Size(1000, 1000)  # board size should always be bigger then the SCREEN_SIZE
