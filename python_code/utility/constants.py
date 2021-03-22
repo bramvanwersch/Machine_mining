@@ -20,6 +20,7 @@ class DebugValues(util.ConsoleReadable):
         self.SHOW_ZOOM = True
         self.NO_LIGHTING = True
         self.SHOW_THREADS = True
+        self.SHOW_BELT_ITEMS = True
 
 
 DEBUG = DebugValues()

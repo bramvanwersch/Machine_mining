@@ -14,13 +14,13 @@ if TYPE_CHECKING:
     import block_classes.building_materials as building_materials
 
 
-
 class Block(ABC):
     """
     Base class for the block_classes in image matrices
     """
-    SIZE: ClassVar[util.Size] = con.BLOCK_SIZE
     __slots__ = "rect", "material", "_action_function", "id", "light_level"
+
+    SIZE: ClassVar[util.Size] = con.BLOCK_SIZE
 
     rect: pygame.Rect
     material: "base_materials.BaseMaterial"
@@ -180,6 +180,7 @@ class ConveyorNetworkBlock(Block):
         self,
         surrounding_blocks: List[Union[None, Block]]
     ):
+        """Determine if an item needs to move to the center or to the next block"""
         previous_position = self.current_item.rect.topleft
         if self.material.image_key == 0:
             if self.current_item.rect.centery > self.rect.centery:
@@ -210,7 +211,8 @@ class ConveyorNetworkBlock(Block):
             else:
                 self.__move_towards_next_block(surrounding_blocks)
 
-        if self.current_item is not None and previous_position != self.current_item.rect.topleft:
+        if self.current_item is not None and previous_position != self.current_item.rect.topleft and \
+                con.DEBUG.SHOW_BELT_ITEMS:
             self.changed = True
 
     def __move_towards_center(self):
@@ -357,13 +359,14 @@ class ConveyorNetworkBlock(Block):
                 self.current_item.rect.bottom = self.rect.top
             elif self.material.image_key == 3:
                 self.current_item.rect.left = self.rect.right
-            self.changed = True
+            if con.DEBUG.SHOW_BELT_ITEMS:
+                self.changed = True
 
     @property
     def surface(self) -> pygame.Surface:
         """Overwrite the surface return of this block by dynamically assigning a new value based on the item that is
         held"""
-        if self.current_item is None and self.incomming_item is None:
+        if (self.current_item is None and self.incomming_item is None) or not con.DEBUG.SHOW_BELT_ITEMS:
             return self.material.surface
         if self.changed:
             self.__item_surface = self.material.surface.copy()
@@ -419,7 +422,7 @@ class ContainerBlock(NetworkEdgeBlock):
         item = self.inventory.get_first(amnt)
         if item is None:
             return item
-        transport_rect = pygame.Rect(0, 0, *item.material.transport_surface.get_size())
+        transport_rect = pygame.Rect(0, 0, *item.material.transport_surface.get_size())  # noqa
         transport_rect.center = self.rect.center
         return inventories.TransportItem(transport_rect, item.material, item.quantity)
 

@@ -1,3 +1,3 @@
 all_debug_values:print debug [FPS, ENTITY_NMBR, AIR_RECTANGLES, WARNINGS, SHOW_ZOOM, NO_LIGHTING, SHOW_THREADS]
-switch_visual_debug_off:set debug [FPS f, ENTITY_NMBR f, SHOW_ZOOM f, SHOW_THREADS f]
-switch_visual_debug_on:set debug [FPS t, ENTITY_NMBR t, SHOW_ZOOM t, SHOW_THREADS t]
+switch_visual_debug_off:set debug [FPS f, ENTITY_NMBR f, SHOW_ZOOM f, SHOW_THREADS f, SHOW_BELT_ITEMS f]
+switch_visual_debug_on:set debug [FPS t, ENTITY_NMBR t, SHOW_ZOOM t, SHOW_THREADS t, SHOW_BELT_ITEMS t]

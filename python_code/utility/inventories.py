@@ -1,4 +1,5 @@
 from typing import Union, List, Set, Dict, TYPE_CHECKING, Iterable, Any
+
 if TYPE_CHECKING:
     import pygame
     from block_classes.blocks import Block

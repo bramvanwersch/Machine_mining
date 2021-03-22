@@ -479,6 +479,7 @@ class Board(util.Serializer):
         t = buildings.Terminal(appropriate_location + (-20, -10), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (20, -10), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (60, -10), self.main_sprite_group)
+        # t.inventory.add_materials(*[build_materials.BasicConveyorBelt() for _ in range(100)])
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)
