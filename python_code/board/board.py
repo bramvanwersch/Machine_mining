@@ -52,6 +52,7 @@ class Board(util.Serializer):
         self.changed_light_blocks = set()
 
         self.__grow_update_time = grow_update_time
+        self.__terminal = None
 
     def setup_board(self):
         self.__add_starter_buildings()
@@ -479,7 +480,10 @@ class Board(util.Serializer):
         t = buildings.Terminal(appropriate_location + (-20, -10), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (20, -10), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (60, -10), self.main_sprite_group)
-        # t.inventory.add_materials(*[build_materials.BasicConveyorBelt() for _ in range(100)])
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)
+        self.__terminal = t
+
+    def add_to_terminal_inventory(self, item):
+        self.__terminal.inventory.add_items(item)

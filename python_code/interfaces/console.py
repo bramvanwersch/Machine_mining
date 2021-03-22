@@ -4,12 +4,16 @@ import pygame
 import re
 from typing import Union, Tuple, List, Dict, Any, TYPE_CHECKING
 import os
+import inspect
 
 from interfaces.base_interface import Window
+
+import utility.inventories
 import utility.utilities as util
 import utility.constants as con
 from utility.constants import DEBUG
 import interfaces.widgets as widgets
+from block_classes import building_materials, environment_materials, ground_materials, machine_materials, materials
 if TYPE_CHECKING:
     from board.sprite_groups import CameraAwareLayeredUpdates
     from board.board import Board
@@ -448,11 +452,13 @@ class Console:
         self.__board = board
         self.__user = user_
         self.__innitialise_command_tree()
+        self.process_command_line_text("scripts start")
 
     def __innitialise_command_tree(self):
         self.command_tree["print"] = self.__create_print_tree()
         self.command_tree["scripts"] = self.__create_script_tree()
         self.command_tree["set"] = self.__create_set_tree()
+        self.command_tree["add_item"] = self.__create_add_item_tree()
 
     def __create_print_tree(self) -> Dict[str, Any]:
         tree = dict()
@@ -484,6 +490,18 @@ class Console:
         for line in lines:
             name, command_line = line.split(":")
             tree[name] = command_line
+        return tree
+
+    def __create_add_item_tree(self) -> Dict[str, Any]:
+        tree = dict()
+        for module, module_name in [(building_materials, "building_materials"),
+                                    (environment_materials, "environment_materials"),
+                                    (ground_materials, "ground_materials"),
+                                    (machine_materials, "machine_materials")]:
+            tree[module_name] = {}
+            for cls_name, cls in inspect.getmembers(module, inspect.isclass):
+                if inspect.isclass(cls) and issubclass(cls, materials.BaseMaterial) and not util.is_abstract(cls):
+                    tree[module_name][cls_name] = cls
         return tree
 
     def __create_attribute_tree(
@@ -524,6 +542,8 @@ class Console:
                     results.extend(self._process_script_call(arguments))
                 elif arguments[0] == "set":
                     results.append(self.__process_arguments(arguments))
+                elif arguments[0] == "add_item":
+                    results.append(self.__process_add_item(arguments))
                 else:
                     results.append(("{} is not a valid command. Choose one of the following: {}."
                                     .format(arguments[0], ", ".join(self.command_tree.keys())), True))
@@ -592,6 +612,20 @@ class Console:
             raise util.GameException(f"Unexpected value to print from; {arguments[1]}")
 
         return getattr(self, f"_process_{arguments[0]}")(arguments, start_argument_index, check_dictionary, target)
+
+    def __process_add_item(self, arguments):
+        if len(arguments) < 4:
+            return f"Expected 3 arguments to add item only got {len(arguments)}", True
+        material = getattr(globals()[arguments[1]], arguments[2])()
+        try:
+            amount = int(arguments[3])
+        except ValueError:
+            return "Expected the amount argument to be a valid integer", True
+        if amount <= 0:
+            return "The amount must be bigger then 0", True
+        item = utility.inventories.Item(material, amount)
+        self.__board.add_to_terminal_inventory(item)
+        return f"Added {str(item)} to the terminal", False
 
     def _process_print(
         self,
