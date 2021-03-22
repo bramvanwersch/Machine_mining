@@ -182,11 +182,7 @@ class StartChunk(Chunk):
         first = True
         for row_i in range(interface_util.p_to_r(self.START_RECTANGLE.top), interface_util.p_to_r(self.START_RECTANGLE.bottom)):
             for column_i in range(interface_util.p_to_c(self.START_RECTANGLE.left), interface_util.p_to_c(self.START_RECTANGLE.right)):
-                if first:
-                    matrix[row_i][column_i] = "Vine"
-                    first = False
-                else:
-                    matrix[row_i][column_i] = "Air"
+                matrix[row_i][column_i] = "Air"
         return matrix
 
 
