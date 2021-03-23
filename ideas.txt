@@ -21,6 +21,7 @@ SPECIFIC FEATURES:
 - fix weird movements trough rectangles while pathfinding / fix not always taking the shortest route whit pathfinding
 - make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
 - give blocks a destroy method that defines what items are returned upon destroying
+- have belts prioritze valid inventories over other belts when splitting
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs

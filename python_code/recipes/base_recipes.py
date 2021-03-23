@@ -95,7 +95,7 @@ class BaseRecipe(ABC):
     """
     def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
-        self._material = material
+        self.material = material
         # list of item objects
         self.needed_items = self.__count_grid()
         self.quantity = 1
@@ -121,16 +121,17 @@ class BaseRecipe(ABC):
         """
         return None
 
+    # noinspection PyPep8Naming
     @property
     @abstractmethod
     def CRAFTING_TIME(self):
         return None
 
     def get_image(self):
-        return self._material().full_surface
+        return self.material().full_surface
 
     def get_tooltip_text(self):
-        tooltip_str = f"{self._material.name()}\nRequires:\n"
+        tooltip_str = f"{self.material.name()}\nRequires:\n"
         for item in self.needed_items:
             tooltip_str += f" -{item.name()}: {item.quantity}\n"
         return tooltip_str[:-1]
@@ -153,7 +154,7 @@ class CancelRecipe(BaseRecipe):
         mat = base_materials.CancelMaterial
         super().__init__(mat)
         self.quantity = 0
-        self.needed_items = [inventories.Item(self._material, 20)]
+        self.needed_items = [inventories.Item(self.material, 20)]
 
     def _create_recipe_grid(self):
         return RecipeGrid(util.Size(0,0))
