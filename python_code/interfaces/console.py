@@ -70,10 +70,10 @@ class ConsoleWindow(Window):
 
     def show_window(
         self,
-        value: bool
+        is_showing: bool
     ):
-        super().show_window(value)
-        if value is True:
+        super().show_window(is_showing)
+        if is_showing is True:
             self.selected_widget = self.__input_line
             self.__input_line.set_selected(True)
 

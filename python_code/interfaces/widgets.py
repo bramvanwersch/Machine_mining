@@ -652,6 +652,18 @@ class Pane(Label):
         pygame.draw.rect(self.orig_surface, color, rect, 3)
         self.surface = self.orig_surface.copy()
 
+    def _reset_hovers(
+        self,
+        mock_key: event_handlers.Key
+    ):
+        """Reset the hover state of all widgets in this Pane that have a hover functionality"""
+        for widget in self.widgets:
+            if isinstance(widget, Pane):
+                widget._reset_hovers(mock_key)
+            elif widget.has_hover():
+                mock_key.unpress(None)
+                widget.action(mock_key, "unpressed")
+
 
 class SelectionList(Pane):
     __FONT_SIZE = 20
