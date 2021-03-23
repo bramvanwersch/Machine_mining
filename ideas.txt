@@ -3,10 +3,7 @@
 BUGS:
 - Windows dont close when buildings are destroyed
 - Windows dont appear when opening in zoomed in mode.
-- The scroll pane does not scroll properly down anymore
-- Fix weird prioritisation with tasks
 - Mouse moves from window bar when moving windows in zoomed mode
-- There is a bug with lighting not updating when building or growing etc.
 - In zoomed mode there seems to be a lag problem probably associated with repeated transformation
 - couple of issues with the start settings leading to some errors when generating the map.
 
@@ -14,21 +11,17 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - Allot more recipes --> make a tree of progress using the recipes
 - An end goal.
 - Some narrative that gives some background to the story
-- optimize the scaling of entities, only relevant entities should be scaled. The bigger the board the lagier the scaling will be at the moment
+- saving the game
+- add settings
+- Load and unload chunks when needed and have processes react to that
 
 SPECIFIC FEATURES:
-- add tooltips
 - Draw air rectangles non-biased towards the y direction.
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
 - fix weird movements trough rectangles while pathfinding / fix not always taking the shortest route whit pathfinding
-- saving the game
-- make the camera stop when the screen stops moving instead of the edge of the screen.
-
-INTERFACE FEATURES:
-- add input at the start of the game for level configuration
-- add settings
+- make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
+- give blocks a destroy method that defines what items are returned upon destroying
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
 - add numpy arrays for the chunks instead of the current lists of lists
-- make the board dynamically grow when new areas are explored but in a seeded way
