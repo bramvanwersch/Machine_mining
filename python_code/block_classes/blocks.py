@@ -419,7 +419,7 @@ class ContainerBlock(NetworkEdgeBlock):
         amnt: int
     ) -> Union[inventories.TransportItem, None]:
         """Get the first allowed item from an inventory and place it into a TransportItem object"""
-        item = self.inventory.get_first(amnt)
+        item = self.inventory.get_random_item(amnt)
         if item is None:
             return item
         transport_rect = pygame.Rect(0, 0, *item.material.transport_surface.get_size())  # noqa

@@ -185,8 +185,8 @@ class Furnace(InterfaceBuilding):
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=None),
-                                   out_filter=inventories.Filter(whitelist=None), size=200,
+        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=[]),
+                                   out_filter=inventories.Filter(whitelist=[]), size=200,
                                    recipes=r_constants.recipe_books["furnace"], **kwargs)
 
 
@@ -201,8 +201,8 @@ class Factory(InterfaceBuilding):
         spite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=None),
-                                   out_filter=inventories.Filter(whitelist=None),
+        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=[]),
+                                   out_filter=inventories.Filter(whitelist=[]),
                                    recipes=r_constants.recipe_books["factory"], **kwargs)
 
 

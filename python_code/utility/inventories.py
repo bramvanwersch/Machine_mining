@@ -1,4 +1,5 @@
 from typing import Union, List, Set, Dict, TYPE_CHECKING, Iterable, Any
+import random
 
 if TYPE_CHECKING:
     import pygame
@@ -9,8 +10,9 @@ if TYPE_CHECKING:
 class Filter:
     """Inventory filter that can tell if an item is allowed or not"""
     __slots__ = "__whitelist", "__blacklist"
+
     __blacklist: Set
-    __whitelist: Set
+    __whitelist: Union[Set, None]
 
     def __init__(
         self,
@@ -18,14 +20,14 @@ class Filter:
         whitelist: Union[List[str], None] = None
     ):
         self.__blacklist = set(blacklist if blacklist is not None else [])
-        self.__whitelist = set(whitelist if whitelist is not None else [])
+        self.__whitelist = whitelist if whitelist is None else set(whitelist)
 
     def allowed(
         self,
         item_name: str
     ) -> bool:
         """Check if an item is allowed by this filter"""
-        if len(self.__whitelist) > 0 and item_name not in self.__whitelist or \
+        if self.__whitelist is not None and item_name not in self.__whitelist or \
                 item_name in self.__blacklist:
             return False
         return True
@@ -95,15 +97,16 @@ class Inventory:
                 return Item(item.material, available_amnt)
         return None
 
-    def get_first(
+    def get_random_item(
         self,
         amnt: int
     ) -> Union["Item", None]:
         """Get the first item from the inventory that is allowed."""
-        for item in self.__container.values():
-            if self.check_item_get(item.name(), 1) and "Conveyor" not in item.name():
-                return self.get(item.name(), amnt)
-        return None
+        allowed_items = [item.name() for item in self.__container.values() if self.check_item_get(item.name(), 1)]
+        if len(allowed_items) == 0:
+            return None
+        chosen_item_name = random.choice(allowed_items)
+        return self.get(chosen_item_name, amnt)
 
     def get_all_items(
         self,

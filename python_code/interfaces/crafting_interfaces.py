@@ -25,7 +25,6 @@ class CraftingWindow(base_interface.Window):
 
         self._craftable_item_recipe = None
         self._crafting = False
-        #current target
         self._crafting_time = [0, 1]
 
     def update(self, *args):

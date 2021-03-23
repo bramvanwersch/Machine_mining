@@ -125,7 +125,7 @@ class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMateria
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("materials", (20, 40))
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
-        utility.image_handling.ImageDefinition("materials", (20, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
+        utility.image_handling.ImageDefinition("materials", (20, 40), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class StoneBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):

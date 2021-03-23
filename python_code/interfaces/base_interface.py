@@ -105,7 +105,7 @@ class Window(widgets.Frame):
 
     def add_widget(
         self,
-        pos: Union[Tuple[int, int], List[int]],
+        pos: Union[Tuple[Union[int, str], Union[int, str]], List[Union[int, str]]],
         widget: widgets.Widget,
         adjust: bool = True
     ):

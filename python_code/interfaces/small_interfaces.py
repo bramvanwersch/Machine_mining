@@ -36,9 +36,8 @@ class BuildingWindow(base_interfaces.Window):
                                                 int((con.SCREEN_SIZE.height - WINDOW_SIZE.height) / 2))
 
     def __init__(self, terminal_inventory, *groups):
-        super().__init__(self.WINDOW_POS, self.WINDOW_SIZE,
-                         *groups, layer=con.INTERFACE_LAYER, title="PICK AN ITEM TO BUILD:",
-                         allowed_events=[1, con.K_ESCAPE])
+        super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, *groups, layer=con.INTERFACE_LAYER,
+                         title="PICK AN ITEM TO BUILD:", allowed_events=[1, con.K_ESCAPE])
         self.__inventory = terminal_inventory
         self._inventory_sp = None
         self.__initiate_widgets()
