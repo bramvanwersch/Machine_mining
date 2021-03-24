@@ -256,7 +256,7 @@ class Board(util.Serializer):
             for index, s_block in enumerate(surrounding_blocks):
                 if s_block is None:
                     continue
-                # check if the block a surrounding plant is attached to is stbill solid
+                # check if the block a surrounding plant is attached to is still solid
                 elif block.is_solid() and isinstance(s_block.material, environment_materials.EnvironmentMaterial) and\
                         index == (s_block.material.START_DIRECTION + 2) % 4:
                     removed_items.extend(self.remove_blocks(s_block))
@@ -286,18 +286,11 @@ class Board(util.Serializer):
         if building_instance is None:
             return []
         blocks = building_instance.blocks
-        removed_items = []
-        first = True
+        removed_items = building_instance.destroy()
         for row in blocks:
             for block in row:
                 chunk = self.chunk_from_point(block.rect.topleft)
-
-                # make sure that when the inventory is emptied that happens once
-                if first:
-                    removed_items = chunk.remove_blocks(block)
-                    first = False
-                else:
-                    chunk.remove_blocks(block)
+                chunk.remove_blocks(block)
         return removed_items
 
     def add_blocks(self, *blocks: List[block_classes.Block]):
@@ -483,7 +476,6 @@ class Board(util.Serializer):
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)
-        f.inventory.add_materials(ground_materials.Coal())
         self.__terminal = t
 
     def add_to_terminal_inventory(self, item):

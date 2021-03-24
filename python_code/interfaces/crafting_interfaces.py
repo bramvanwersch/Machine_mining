@@ -19,6 +19,7 @@ class CraftingWindow(base_interface.Window, ABC):
     """Base crafting window for crafting interfaces"""
     SIZE: util.Size = util.Size(300, 250)
     RECIPE_LABEL_SIZE: util.Size = util.Size(30, 30)
+    MAX_ITEM_STACK: int = 2
 
     _recipe_book: "recipe_utility.RecipeBook"
     _craftable_item_recipe: Union["base_recipes.BaseRecipe", None]
@@ -45,6 +46,8 @@ class CraftingWindow(base_interface.Window, ABC):
         self._crafting = False
         self._crafting_time = [0, 1]
 
+        self.__max_allowed_items = dict()
+
         self._crafting_grid = self.create_crafting_grid()
         self._crafting_result_lbl = self.create_crafting_result_lbl()
 
@@ -67,6 +70,7 @@ class CraftingWindow(base_interface.Window, ABC):
         super().update(*args)
         if self._craftable_item_recipe is not None:
             self._crafting = self._check_materials()
+            self.__configure_filters()
 
             self._craft_item()
 
@@ -91,6 +95,13 @@ class CraftingWindow(base_interface.Window, ABC):
             self._craft_building.inventory.add_items(item, ignore_filter=True)
         self._crafting_result_lbl.add_item(item)
         self._crafting_time[1] = recipe.CRAFTING_TIME
+        self.__set_max_allowed_items()
+
+    def __set_max_allowed_items(self):
+        """Configure the maximum allowed item of a certain type in order to not infinitally fill the inventory"""
+        self.__max_allowed_items = dict()
+        for item in self._craftable_item_recipe.needed_items:
+            self.__max_allowed_items[item.name()] = item.quantity * self.MAX_ITEM_STACK
 
     def _craft_item(self):
         """Count the time an item is crafted for and finished when appropriate"""
@@ -124,6 +135,18 @@ class CraftingWindow(base_interface.Window, ABC):
             if not present:
                 return False
         return True
+
+    def __configure_filters(self):
+        """set the item filters of the inventory of the building so that not to much items are taken from the belts and
+        machines are not infinitally loaded with items"""
+        for item_name, max_item_quantity in self.__max_allowed_items.items():
+            inventory_item_pointer = self._craft_building.inventory.item_pointer(item_name)
+            if inventory_item_pointer is None:
+                self._craft_building.inventory.in_filter.add_whitelist(item_name)
+            elif inventory_item_pointer.quantity >= max_item_quantity:
+                self._craft_building.inventory.in_filter.remove_from_whitelist(item_name)
+            else:
+                self._craft_building.inventory.in_filter.add_whitelist(item_name)
 
     def _create_recipe_selector(
         self,

@@ -97,10 +97,7 @@ class Chunk(util.Serializer):
         self.changed[0] = True
         removed_items = []
         for block in blocks:
-            removed_items.append(inventories.Item(block.material))
-            if hasattr(block, "inventory"):
-                items = block.inventory.get_all_items(ignore_filter=True)
-                removed_items.extend(items)
+            removed_items.extend(block.destroy())
             local_block_rect = self.__local_adjusted_rect(block.rect)
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
             # remove the highlight

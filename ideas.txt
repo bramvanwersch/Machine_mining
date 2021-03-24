@@ -6,6 +6,7 @@ BUGS:
 - Mouse moves from window bar when moving windows in zoomed mode
 - In zoomed mode there seems to be a lag problem probably associated with repeated transformation
 - couple of issues with the start settings leading to some errors when generating the map.
+- chunk generation crashes when zoomed in
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
@@ -17,6 +18,7 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - The base zoom should be the 2 X zoom then allowing for furter zoom with the max out being 1 X this prevents these
   weirdly small images and 1 X is hard to see regardless.
 - allow the game to be paused by pressing space
+- add a filter options for the belts for allot better stuff
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.

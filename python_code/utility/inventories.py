@@ -285,7 +285,7 @@ class Item:
         return Item(self.material, self.quantity)
 
     def __str__(self) -> str:
-        return "{}: {}".format(self.material.name(), self.quantity)
+        return f"{self.material.name()}: {self.quantity}"
 
 
 class TransportItem(Item):
@@ -300,3 +300,6 @@ class TransportItem(Item):
     ):
         super().__init__(material, quantity)
         self.rect = rect
+
+    def __str__(self) -> str:
+        return f"{super().__str__()}({self.rect})"

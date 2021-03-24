@@ -88,6 +88,10 @@ class Block(ABC):
         """name of material"""
         return self.material.name()
 
+    def destroy(self) -> List[inventories.Item]:
+        """Get items returned by this block when destroyed and do actions neccesairy before destroying"""
+        return [inventories.Item(self.material, 1)]
+
 
 class ConveyorNetworkBlock(Block):
     """Conveyor bloks that transport items"""
@@ -391,6 +395,12 @@ class ConveyorNetworkBlock(Block):
                 self.__item_surface.blit(self.incomming_item.material.transport_surface, relative_position)  # noqa
         return self.__item_surface
 
+    def destroy(self) -> List[inventories.Item]:
+        items = super().destroy()
+        if self.current_item is not None:
+            items.append(self.current_item)
+        return items
+
 
 class NetworkEdgeBlock(Block):
     """Block that is part of a network"""
@@ -437,6 +447,11 @@ class ContainerBlock(NetworkEdgeBlock):
         transport_rect.center = self.rect.center
         return inventories.TransportItem(transport_rect, item.material, item.quantity)
 
+    def destroy(self) -> List[inventories.Item]:
+        items = super().destroy()
+        items.extend(self.inventory.get_all_items(ignore_filter=True))
+        return items
+
 
 class MultiBlock(Block, ABC):
     MULTIBLOCK_DIMENSION: ClassVar[util.Size] = util.Size(1, 1)
@@ -474,3 +489,7 @@ class MultiBlock(Block, ABC):
                 block_row.append(material.to_block(pos, id_=self.id, action=self._action_function))
             blocks.append(block_row)
         return blocks
+
+    def destroy(self) -> List[inventories.Item]:
+        items = self.blocks[0][0].destroy()
+        return items
