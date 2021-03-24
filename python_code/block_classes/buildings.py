@@ -205,8 +205,7 @@ class Furnace(CraftingInterfaceBuilding):
         **kwargs
     ):
         super().__init__(pos, r_constants.recipe_books["furnace"], sprite_group,
-                         in_filter=inventories.Filter(whitelist=[]), out_filter=inventories.Filter(whitelist=[]),
-                         size=200, **kwargs)
+                         in_filter=inventories.Filter(whitelist=[]), size=200, **kwargs)
 
 
 class Factory(CraftingInterfaceBuilding):
@@ -221,8 +220,7 @@ class Factory(CraftingInterfaceBuilding):
         **kwargs
     ):
         super().__init__(pos, r_constants.recipe_books["factory"], sprite_group, size=300,
-                         in_filter=inventories.Filter(whitelist=[]), out_filter=inventories.Filter(whitelist=[]),
-                         **kwargs)
+                         in_filter=inventories.Filter(whitelist=[]), **kwargs)
 
 
 material_mapping = {"TerminalMaterial": Terminal,

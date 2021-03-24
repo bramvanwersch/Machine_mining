@@ -81,7 +81,9 @@ class CraftingWindow(base_interface.Window, ABC):
         selection_group.select(lbl, color=(0, 0, 0))
         self._crafting_grid.add_recipe(recipe)
         self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_items])
-        self._craft_building.inventory.out_filter.set_whitelist(recipe.material.name())
+
+        # allow removal of all items except for the ones that are required for the crafting
+        self._craft_building.inventory.out_filter.set_blacklist(*[item.name() for item in recipe.needed_items])
         if recipe.material.name() in self._craft_building.inventory:
             item = self._craft_building.inventory.item_pointer(recipe.material.name())
         else:
@@ -242,6 +244,7 @@ class FurnaceWindow(CraftingWindow):
         selection_group: widgets.SelectionGroup
     ):
         super().set_recipe(recipe, lbl, selection_group)
+        self._craft_building.inventory.out_filter.add_blacklist(*[fuel.name() for fuel in block_util.fuel_materials])
         if not self.__fuel_meter.full():
             self._craft_building.inventory.in_filter.add_whitelist(*[fuel.name() for fuel in block_util.fuel_materials])
 
