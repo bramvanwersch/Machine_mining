@@ -1,106 +1,79 @@
 from abc import abstractmethod, ABC
+from typing import Union, List, Tuple, Type, TYPE_CHECKING
 
 import block_classes.materials as base_materials
 import utility.utilities as util
 from utility import inventories
+if TYPE_CHECKING:
+    import pygame
 
 
 class RecipeGrid:
-    """
-    A grid that each recipe has that tracks what a recipe looks like
-    """
-    def __init__(self, size):
-        """
-        :param total_size: a Size object that defines the maximum size of the
-        recipe
-        :param core_size: a Size object that is the minum size of a recipe
-        """
+    """A grid that each recipe has that tracks what a recipe looks like"""
+    size: Union[util.Size, Tuple[int, int], List[int]]
+    material_grid: List[List[Type[base_materials.BaseMaterial]]]
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]]
+    ):
         self.size = size
-        #grid that saves all materials
-        self.material_grid = [[[base_materials.Air] for _ in range(self.size.width)] for _ in range(self.size.height)]
+        self.material_grid = [[base_materials.Air for _ in range(self.size.width)] for _ in range(self.size.height)]
 
-    def add_all_rows(self, *values):
-        """
-        Add all rows of the matrix at once
-
-        :param values: a list of rows
-        """
-        for index, row in enumerate(values):
+    def add_all_rows(
+        self,
+        *rows: List[Type[base_materials.BaseMaterial]]
+    ):
+        """Add all rows of the matrix at once"""
+        for index, row in enumerate(rows):
             self.add_row(row, index)
 
-    def add_row(self, row, row_i):
-        """
-        Add a row at a time
-
-        :param row: the row to add.
-        :param row_i: the index where to insert the row
-        """
+    def add_row(
+        self,
+        row: List[Type[base_materials.BaseMaterial]],
+        row_i: int
+    ):
+        """Add a row at a time"""
         for column_i, value in enumerate(row):
             self.add_value(value, column_i, row_i)
 
-    def add_value(self, value, column_i, row_i):
-        """
-        Add a value to the material matrix
-
-        :param value: a RMat object
-        :param column_i: the column to add the value to
-        :param row_i: the row to add the value to
-        """
+    def add_value(
+        self,
+        value: Type[base_materials.BaseMaterial],
+        column_i: int,
+        row_i: int
+    ):
+        """Add a value to the material matrix"""
         self.material_grid[row_i][column_i] = value
 
-    def __getitem__(self, item):
-        """
-        Get a material from the grid
-
-        :param item: index of row
-        :return: the item at the index
-        """
+    def __getitem__(
+        self,
+        item: int
+    ) -> List[Type[base_materials.BaseMaterial]]:
+        """Get a material from the grid"""
         return self.material_grid[item]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.material_grid)
-
-    def print(self, attribute):
-        """
-        For printing a recipe and getting an idea of correctness
-
-        :param attribute: the attribute of the material to show
-        """
-        for row in self.material_grid:
-            attr_values = [getattr(value, attribute) for value in row]
-            str_values = list(map(str, attr_values))
-            value_format = "{:" + str(self.__longest_string(str_values) + 2) + "}"
-            s = (value_format * self.size.width)
-            str_row = s.format(*str_values)
-            print(str_row)
-
-    def __longest_string(self, strings):
-        """
-        Longest string in a list of strings
-
-        :param strings: a list of strings
-        :return: the lenght of the longest string
-        """
-        longest = 0
-        for string in strings:
-            if len(string) > longest:
-                longest = len(string)
-        return longest
 
 
 class BaseRecipe(ABC):
-    """
-    Base class for all recipe concepts. It saves a recipe a grid that is a
-    potential of all recipes that can be.
-    """
+    """Base class for all recipe concepts. It saves a recipe a grid that is a potential of all recipes that can be."""
+
+    __recipe_grid: RecipeGrid
+    material: Type[base_materials.BaseMaterial]
+    needed_items: List[inventories.Item]
+    quantity: int
+
     def __init__(self, material):
         self.__recipe_grid = self._create_recipe_grid()
-        self.material = material
+        self.material = material  # the resulting material
         # list of item objects
         self.needed_items = self.__count_grid()
-        self.quantity = 1
+        self.quantity = 1  # the amount of items resulting from making this recipe
 
-    def __count_grid(self):
+    def __count_grid(self) -> List[inventories.Item]:
+        """Count the items needed for this recipe"""
         counts = {}
         for row in self.__recipe_grid:
             for obj in row:
@@ -113,30 +86,26 @@ class BaseRecipe(ABC):
         return items
 
     @abstractmethod
-    def _create_recipe_grid(self):
-        """
-        Method to define a recipe material_grid
-
-        :return: a RecipeGrid object
-        """
-        return None
+    def _create_recipe_grid(self) -> RecipeGrid:
+        """Method to define a recipe material_grid"""
+        pass
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def CRAFTING_TIME(self):
-        return None
+    def CRAFTING_TIME(self) -> float:
+        pass
 
-    def get_image(self):
+    def get_image(self) -> "pygame.Surface":
         return self.material().full_surface
 
-    def get_tooltip_text(self):
+    def get_tooltip_text(self) -> str:
         tooltip_str = f"{self.material.name()}\nRequires:\n"
         for item in self.needed_items:
             tooltip_str += f" -{item.name()}: {item.quantity}\n"
         return tooltip_str[:-1]
 
-    def get_image_grid(self):
+    def get_image_grid(self) -> List[List[List[Union[str, "pygame.Surface"]]]]:
         image_grid = []
         for row in self.__recipe_grid:
             image_row = []
@@ -147,14 +116,15 @@ class BaseRecipe(ABC):
 
 
 class CancelRecipe(BaseRecipe):
-    CRAFTING_TIME = 0
-    FUEL_CONSUMPTION = 0
+    """Recipe for when recetting the crafting grid into a blank format"""
+    CRAFTING_TIME: int = 0
+    FUEL_CONSUMPTION: int = 0
 
     def __init__(self):
         mat = base_materials.CancelMaterial
         super().__init__(mat)
         self.quantity = 0
-        self.needed_items = [inventories.Item(self.material, 20)]
+        self.needed_items = [inventories.Item(self.material(), 20)]
 
-    def _create_recipe_grid(self):
-        return RecipeGrid(util.Size(0,0))
+    def _create_recipe_grid(self) -> RecipeGrid:
+        return RecipeGrid(util.Size(0, 0))

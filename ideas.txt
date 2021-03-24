@@ -7,6 +7,7 @@ BUGS:
 - In zoomed mode there seems to be a lag problem probably associated with repeated transformation
 - couple of issues with the start settings leading to some errors when generating the map.
 - chunk generation crashes when zoomed in
+- Low priority: chunks generated while zoomed dont show up until updated
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
@@ -21,6 +22,7 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - add a filter options for the belts for allot better stuff
 - allow plants to have berries oid
 - have different states for active and inactive machines
+- add structures
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.
@@ -28,6 +30,8 @@ SPECIFIC FEATURES:
 - fix weird movements trough rectangles while pathfinding / fix not always taking the shortest route whit pathfinding
 - make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
 - proper miner images and animations
+- add a penalty moving in the y direction
+- have speed be constant instead of scale with fps
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
