@@ -303,8 +303,10 @@ class ConveyorNetworkBlock(Block):
         """Get a list of length 3 with the 3 blocks that are checked around a belt that an item can be pushed to.
 
         The requirements for an elligable block is that the block has to be an inventory or a belt and a certain
-        direction"""
+        direction relative to the direction of this block. Inventories are prioritzed to make sure that items go into
+        an inventory if possible"""
         elligible_blocks = [None, None, None]
+        is_inventorys = [False, False, False]
 
         # block 1
         block_index = (self.material.image_key - 1) % 4
@@ -312,6 +314,7 @@ class ConveyorNetworkBlock(Block):
         if (isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
                 self.material.image_key == block_index):
             elligible_blocks[0] = block
+            is_inventorys[0] = True
         elif (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
               (block.incomming_item is None or self.current_item == block.incomming_item)
               and block.material.image_key == block_index):
@@ -323,6 +326,7 @@ class ConveyorNetworkBlock(Block):
         if (isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
                 self.material.image_key == block_index):
             elligible_blocks[1] = block
+            is_inventorys[1] = True
         if (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
                 (block.incomming_item is None or self.current_item == block.incomming_item) and
                 block.material.image_key in [block_index, (block_index + 1) % 4, (block_index - 1) % 4]):
@@ -334,10 +338,17 @@ class ConveyorNetworkBlock(Block):
         if (isinstance(block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
                 self.material.image_key == block_index):
             elligible_blocks[2] = block
+            is_inventorys[2] = True
         if (isinstance(block, ConveyorNetworkBlock) and block.current_item is None and
                 (block.incomming_item is None or self.current_item == block.incomming_item)
                 and block.material.image_key == block_index):
             elligible_blocks[2] = block
+
+        # check if an inventory was encountered and if so make sure to set all non-inventories as invalid (None)
+        if any(is_inventorys):
+            for index in range(len(elligible_blocks)):
+                if not is_inventorys[index]:
+                    elligible_blocks[index] = None
         return elligible_blocks
 
     def __take_item(
