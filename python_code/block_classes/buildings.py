@@ -76,7 +76,6 @@ class InterfaceBuilding(Building, ABC):
         size: int = -1,
         in_filter: inventories.Filter = None,
         out_filter: inventories.Filter = None,
-        recipes: r_constants.RecipeBook = None,
         **kwargs
     ):
         self.inventory = inventories.Inventory(size, in_filter=in_filter, out_filter=out_filter)
@@ -84,7 +83,7 @@ class InterfaceBuilding(Building, ABC):
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
 
-        self.interface = self.create_interface(sprite_group, recipes=recipes)
+        self.interface = self.create_interface(sprite_group)
 
     # noinspection PyPep8Naming
     @property
@@ -95,10 +94,9 @@ class InterfaceBuilding(Building, ABC):
     def create_interface(
         self,
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
-        **kwargs
     ) -> base_interface.Window:
         """Innitiate the interface window"""
-        return self.INTERFACE_TYPE(self, sprite_group, **kwargs)
+        return self.INTERFACE_TYPE(self, sprite_group)
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
@@ -119,6 +117,27 @@ class InterfaceBuilding(Building, ABC):
             for block in row:
                 block.inventory = self.inventory
         return blocks_
+
+
+class CraftingInterfaceBuilding(InterfaceBuilding, ABC):
+    def __init__(
+        self,
+        pos: Union[Tuple[int, int], List[int]],
+        recipes: r_constants.RecipeBook,
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        size: int = -1,
+        in_filter: inventories.Filter = None,
+        out_filter: inventories.Filter = None,
+        **kwargs
+    ):
+        self.__recipes = recipes
+        super().__init__(pos, sprite_group, size, in_filter, out_filter, **kwargs)
+
+    def create_interface(
+        self,
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+    ) -> base_interface.Window:
+        return self.INTERFACE_TYPE(self, self.__recipes, sprite_group)
 
 
 class Terminal(InterfaceBuilding):
@@ -148,8 +167,8 @@ class Terminal(InterfaceBuilding):
 
 class StoneChest(InterfaceBuilding):
     """
-        Terminal building. The main interaction centrum for the workers
-        """
+    Terminal building. The main interaction centrum for the workers
+    """
     MATERIAL: base_materials.BaseMaterial = build_materials.StoneChestMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(1, 1)
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
@@ -171,7 +190,7 @@ class StoneChest(InterfaceBuilding):
         return self.INTERFACE_TYPE(self, sprite_group, title="STONE CHEST", **kwargs)
 
 
-class Furnace(InterfaceBuilding):
+class Furnace(CraftingInterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -182,15 +201,15 @@ class Furnace(InterfaceBuilding):
     def __init__(
         self,
         pos: Union[Tuple[int, int], List[int]],
-        spite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, in_filter=inventories.Filter(whitelist=[]),
-                                   out_filter=inventories.Filter(whitelist=[]), size=200,
-                                   recipes=r_constants.recipe_books["furnace"], **kwargs)
+        super().__init__(pos, r_constants.recipe_books["furnace"], sprite_group,
+                         in_filter=inventories.Filter(whitelist=[]), out_filter=inventories.Filter(whitelist=[]),
+                         size=200, **kwargs)
 
 
-class Factory(InterfaceBuilding):
+class Factory(CraftingInterfaceBuilding):
     MATERIAL = build_materials.FactoryMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
@@ -198,12 +217,12 @@ class Factory(InterfaceBuilding):
     def __init__(
         self,
         pos: Union[Tuple[int, int], List[int]],
-        spite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, size=300, in_filter=inventories.Filter(whitelist=[]),
-                                   out_filter=inventories.Filter(whitelist=[]),
-                                   recipes=r_constants.recipe_books["factory"], **kwargs)
+        super().__init__(pos, r_constants.recipe_books["factory"], sprite_group, size=300,
+                         in_filter=inventories.Filter(whitelist=[]), out_filter=inventories.Filter(whitelist=[]),
+                         **kwargs)
 
 
 material_mapping = {"TerminalMaterial": Terminal,

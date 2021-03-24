@@ -7,11 +7,11 @@ import block_classes.materials as base_materials
 import utility.utilities as util
 
 
-class FactoryRecipeInterface(ABC):
+class BaseFactoryRecipe(ABC):
     pass
 
 
-class FurnaceRecipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
+class FurnaceRecipe(base_recipes.BaseRecipe, BaseFactoryRecipe):
     CRAFTING_TIME = 1000
 
     def __init__(self):
@@ -28,7 +28,7 @@ class FurnaceRecipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
         return grid
 
 
-class CompactStoneRecipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
+class CompactStoneRecipe(base_recipes.BaseRecipe, BaseFactoryRecipe):
     CRAFTING_TIME = 100
 
     def __init__(self):
@@ -44,7 +44,7 @@ class CompactStoneRecipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
         return grid
 
 
-class StonePipe(base_recipes.BaseRecipe, FactoryRecipeInterface):
+class StonePipe(base_recipes.BaseRecipe, BaseFactoryRecipe):
     CRAFTING_TIME = 1000
 
     def __init__(self):

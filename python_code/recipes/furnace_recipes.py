@@ -6,7 +6,7 @@ import block_classes.materials as base_materials
 import utility.utilities as util
 
 
-class FurnaceRecipesInterface(ABC):
+class BaseFurnaceRecipe(ABC):
 
     @property
     @abstractmethod
@@ -14,7 +14,7 @@ class FurnaceRecipesInterface(ABC):
         return 0
 
 
-class IronBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+class IronBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 5
     CRAFTING_TIME = 3000
 
@@ -32,7 +32,7 @@ class IronBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
         return grid
 
 
-class ZincBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+class ZincBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 2
     CRAFTING_TIME = 3000
 
@@ -50,7 +50,7 @@ class ZincBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
         return grid
 
 
-class GoldBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+class GoldBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 4
     CRAFTING_TIME = 3000
 
@@ -68,7 +68,7 @@ class GoldBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
         return grid
 
 
-class CopperBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+class CopperBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 3
     CRAFTING_TIME = 3000
 
@@ -86,7 +86,7 @@ class CopperBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
         return grid
 
 
-class TitaniumBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+class TitaniumBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 10
     CRAFTING_TIME = 3000
 
@@ -104,7 +104,7 @@ class TitaniumBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
         return grid
 
 
-class OralchiumBarRecipe(base_recipes.BaseRecipe, FurnaceRecipesInterface):
+class OralchiumBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 10
     CRAFTING_TIME = 3000
 
