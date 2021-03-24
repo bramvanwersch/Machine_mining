@@ -479,10 +479,11 @@ class Board(util.Serializer):
                                               + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + + start_chunk.rect.top)
         t = buildings.Terminal(appropriate_location + (-20, -10), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (20, -10), self.main_sprite_group)
-        f = buildings.Furnace(appropriate_location + (60, -10), self.main_sprite_group)
+        f = buildings.Furnace(appropriate_location + (0, -10), self.main_sprite_group)
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)
+        f.inventory.add_materials(ground_materials.Coal())
         self.__terminal = t
 
     def add_to_terminal_inventory(self, item):

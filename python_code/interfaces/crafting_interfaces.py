@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 
 class CraftingWindow(base_interface.Window, ABC):
-    SIZE = util.Size(300, 250)
+    """Base crafting window for crafting interfaces"""
+    SIZE: util.Size = util.Size(300, 250)
     RECIPE_LABEL_SIZE: util.Size = util.Size(30, 30)
 
     def __init__(self, craft_building, *groups, recipes=None, **kwargs):
@@ -39,10 +40,12 @@ class CraftingWindow(base_interface.Window, ABC):
         pass
 
     def create_crafting_grid(self) -> "CraftingGrid":
+        """Create the grid where the recipes are shown and if materials are present"""
         return CraftingGrid(self.CRAFT_GRID_SIZE, self._craft_building.inventory)
 
     @abstractmethod
     def create_crafting_result_lbl(self) -> widgets.ItemDisplay:
+        """Create the label that will hold the result of a crafting job"""
         pass
 
     def update(self, *args):
@@ -52,13 +55,37 @@ class CraftingWindow(base_interface.Window, ABC):
 
             self._craft_item()
 
+    def set_recipe(
+        self,
+        recipe: "base_recipes.BaseRecipe",
+        lbl: widgets.Label,
+        selection_group: widgets.SelectionGroup
+    ):
+        """Set a recipe as active recipe invoked by clicking the recipes in the scrollpane"""
+        self._craftable_item_recipe = recipe
+        selection_group.select(lbl, color=(0, 0, 0))
+        self.crafting_grid.add_recipe(recipe)
+        self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_items])
+        self._craft_building.inventory.out_filter.set_whitelist(recipe.material.name())
+        if recipe.material.name() in self._craft_building.inventory:
+            item = self._craft_building.inventory.item_pointer(recipe.material.name())
+        else:
+            item = inventories.Item(recipe.material(), 0)
+            self._craft_building.inventory.add_items(item, ignore_filter=True)
+        self.crafting_result_lbl.add_item(item)
+        self._crafting_time[1] = recipe.CRAFTING_TIME
+
     def _craft_item(self):
+        """Count the time an item is crafted for and finished when appropriate"""
         if not self._crafting:
             return
         self._crafting_time[0] += con.GAME_TIME.get_time()
         over_time = self._crafting_time[1] - self._crafting_time[0]
-        if over_time > 0:
-            return
+        if over_time <= 0:
+            self._finish_item_crafting(over_time)
+
+    def _finish_item_crafting(self, over_time: int):
+        """Finish the crafting of an item, remove the items used for crafting and add the final product"""
         self._crafting_time[0] = abs(over_time)
         item = inventories.Item(self._craftable_item_recipe.material(), self._craftable_item_recipe.quantity)
 
@@ -69,7 +96,8 @@ class CraftingWindow(base_interface.Window, ABC):
         for item in self._craftable_item_recipe.needed_items:
             self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
 
-    def _check_materials(self):
+    def _check_materials(self) -> bool:
+        """Check if all materials are present to start crafting"""
         for n_item in self._craftable_item_recipe.needed_items:
             present = False
             for item in self._craft_building.inventory.items:
@@ -86,6 +114,7 @@ class CraftingWindow(base_interface.Window, ABC):
         size: Union[util.Size, Tuple[int, int], List[int]],
         color: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]]
     ):
+        """Create a scroll pane where the user can select recipes"""
         recipe_scrollpane = widgets.ScrollPane(size, color=color)
         self.add_widget(loc, recipe_scrollpane)
         self.add_border(recipe_scrollpane)
@@ -108,29 +137,8 @@ class CraftingWindow(base_interface.Window, ABC):
             selection_group.add(recipe_lbl)
             recipe_scrollpane.add_widget(recipe_lbl)
 
-    def set_recipe(
-        self,
-        recipe: "base_recipes.BaseRecipe",
-        lbl: widgets.Label,
-        selection_group: widgets.SelectionGroup
-    ):
-        """Set a recipe as active recipe"""
-        self._craftable_item_recipe = recipe
-        selection_group.select(lbl, color=(0, 0, 0))
-        self.crafting_grid.add_recipe(recipe)
-        self._craft_building.inventory.in_filter.set_whitelist(*[item.name() for item in recipe.needed_items])
-        self._craft_building.inventory.out_filter.set_whitelist(recipe.material.name())
-        if recipe.material.name() in self._craft_building.inventory:
-            item = self._craft_building.inventory.item_pointer(recipe.material.name())
-        else:
-            item = inventories.Item(recipe.material(), 0)
-            self._craft_building.inventory.add_items(item, ignore_filter=True)
-        self.crafting_result_lbl.add_item(item)
-        self._crafting_time[1] = recipe.CRAFTING_TIME
-
 
 class FactoryWindow(CraftingWindow):
-    SIZE = util.Size(300, 250)
     CRAFT_GRID_SIZE: util.Size = util.Size(4, 4)
 
     def __init__(self, craft_building, *groups, recipes=None):
@@ -172,7 +180,7 @@ class FurnaceWindow(CraftingWindow):
         # create material_grid
         self.add_widget((40, 28), self.crafting_grid)
 
-        self.__fuel_meter = FuelMeter((25, 100))
+        self.__fuel_meter = FuelMeter((25, 100), self._craft_building.inventory)
         self.add_widget((10, 10), self.__fuel_meter)
 
         # add arrow pointing from grid to displa
@@ -186,15 +194,14 @@ class FurnaceWindow(CraftingWindow):
 
     def update(self):
         super().update()
-        # configure fuel based on inventory fuel items.
-        total_fuel = 0
-        for mat_name in [f.name() for f in block_util.fuel_materials]:
-            fuel_pointer = self._craft_building.inventory.item_pointer(mat_name)
-            if fuel_pointer is not None and fuel_pointer.quantity > 0:
-                total_fuel += fuel_pointer.FUEL_VALUE * fuel_pointer.quantity
-                # remove the fuel
-                fuel_pointer.quantity = 0
-        self.__fuel_meter.add_fuel(total_fuel)
+        if self.__fuel_meter.full():
+            self._craft_building.inventory.in_filter.remove_from_whitelist(*[fuel.name() for
+                                                                             fuel in block_util.fuel_materials])
+
+    def _check_materials(self) -> bool:
+        result = super()._check_materials()
+        needed_fuel = self._craftable_item_recipe.FUEL_CONSUMPTION - self.__fuel_meter.fuel_lvl
+        return result and needed_fuel <= 0
 
     def set_recipe(
         self,
@@ -203,26 +210,17 @@ class FurnaceWindow(CraftingWindow):
         selection_group: widgets.SelectionGroup
     ):
         super().set_recipe(recipe, lbl, selection_group)
-        if self._craftable_item_recipe != None and not self.__requested_fuel:
-            needed_fuel = self._craftable_item_recipe.FUEL_CONSUMPTION - self.__fuel_meter._fuel_lvl
-            if needed_fuel > 0 and needed_fuel > self._craft_building.requested_fuel:
-                self._craft_building.requested_fuel += needed_fuel
-            self.__requested_fuel = True
+        if not self.__fuel_meter.full():
+            self._craft_building.inventory.in_filter.add_whitelist(*[fuel.name() for fuel in block_util.fuel_materials])
 
-    def _craft_item(self):
-        if self._crafting and self._check_materials() and self.__fuel_meter._fuel_lvl >= self._craftable_item_recipe.FUEL_CONSUMPTION:
-            self._crafting_time[0] += con.GAME_TIME.get_time()
-            over_time = self._crafting_time[1] - self._crafting_time[0]
-            if over_time <= 0:
-                self._crafting = False
-                self.__requested_fuel = False
-                self._crafting_time[0] = abs(over_time)
-                item = inventories.Item(self._craftable_item_recipe.material(), self._craftable_item_recipe.quantity)
-                self._craft_building.inventory.add_items(item, ignore_filter=True)
-                self._craft_building.pushed_items.append(item)
-                self.__fuel_meter.add_fuel(-1 * self._craftable_item_recipe.FUEL_CONSUMPTION)
-                for item in self._craftable_item_recipe.needed_items:
-                    self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
+    def _finish_item_crafting(
+        self,
+        over_time: int
+    ):
+        super()._finish_item_crafting(over_time)
+        self.__fuel_meter.remove_fuel(self._craftable_item_recipe.FUEL_CONSUMPTION)
+        if not self.__fuel_meter.full():
+            self._craft_building.inventory.in_filter.add_whitelist(*[fuel.name() for fuel in block_util.fuel_materials])
 
 
 class CraftingGrid(widgets.Pane):
@@ -363,7 +361,7 @@ class ProgressArrow(widgets.Label):
 
     __arrow_image: pygame.Surface
     __full_progress_arrow: pygame.Surface
-    __progress: List[int]
+    __crafting_progress: List[int]
     __previous_progress: int
 
     def __init__(
@@ -378,21 +376,21 @@ class ProgressArrow(widgets.Label):
         self.__arrow_image = pygame.transform.scale(self.__arrow_image, size)
         self.__full_progress_arrow = pygame.transform.scale(self.__full_progress_arrow, size)
 
-        self.__progress = crafting_progress  # the progress that the current crafting process has [current, max]
+        self.__crafting_progress = crafting_progress  # the progress in form [current, max]
         self.__previous_progress = crafting_progress[0]
         self.__set_progress()
 
     def wupdate(self):
         super().wupdate()
-        if self.__previous_progress != self.__progress[0]:
-            self.__previous_progress = self.__progress[0]
+        if self.__previous_progress != self.__crafting_progress[0]:
+            self.__previous_progress = self.__crafting_progress[0]
             self.__set_progress()
 
     def __set_progress(self):
         """Set the progress of the arrow based on the progress of the crafting process"""
         full_rect = self.__full_progress_arrow.get_rect()
         try:
-            fraction_progress = min(1.0, self.__progress[0] / self.__progress[1])
+            fraction_progress = min(1.0, self.__crafting_progress[0] / self.__crafting_progress[1])
         except ZeroDivisionError:
             fraction_progress = 0.0
         width = int(fraction_progress * full_rect.width)
@@ -403,35 +401,75 @@ class ProgressArrow(widgets.Label):
 
 
 class FuelMeter(widgets.Pane):
-    MAX_FUEL = 100
-    def __init__(self, size, max_fuel=MAX_FUEL, **kwargs):
+    """Monitors the fuel present in the watching inventory and displays it accordingly"""
+
+    def __init__(self, size, watching_inventory, max_fuel=100, **kwargs):
         super().__init__(size, color=con.INVISIBLE_COLOR, **kwargs)
-        self._fuel_lvl = 0
-        self.__max_fuel = max_fuel
+        self.fuel_lvl = 0
+        self.__watching_inventory = watching_inventory
+        self.__max_fuel = max(1, max_fuel)
+        self.__leftover_fuel = 0  # value tracking fuel that was leftover from a previous smelting job
 
         self.__init_widgets()
+        self.__change_fuel_indicator()
 
     def __init_widgets(self):
         text_lbl = widgets.Label((25, 10), color=con.INVISIBLE_COLOR, selectable=False)
-        text_lbl.set_text("Fuel", (0,0), font_size=16)
-        self.add_widget((0,0), text_lbl)
+        text_lbl.set_text("Fuel", (0, 0), font_size=16)
+        self.add_widget((0, 0), text_lbl)
 
         self.fuel_indicator = widgets.Label((20, self.rect.height - 20), color=con.INVISIBLE_COLOR, selectable=False)
         self.add_border(self.fuel_indicator)
         self.add_widget((2, 15), self.fuel_indicator)
 
-    def add_fuel(self, value):
-        #dont allow above the max or under 0
-        self._fuel_lvl = min(max(self._fuel_lvl + value, 0), self.MAX_FUEL)
-        self.__change_fuel_indicator()
+    def wupdate(self, *args):
+        super().wupdate(*args)
+        self.configure_fuel_level()
+
+    def configure_fuel_level(self):
+        total_fuel = 0
+        for mat_name in [f.name() for f in block_util.fuel_materials]:
+            fuel_pointer = self.__watching_inventory.item_pointer(mat_name)
+            if fuel_pointer is not None and fuel_pointer.quantity > 0:
+                total_fuel += fuel_pointer.FUEL_VALUE * fuel_pointer.quantity
+        if total_fuel != self.fuel_lvl:
+            self.fuel_lvl = total_fuel
+            self.__change_fuel_indicator()
+
+    def remove_fuel(
+        self,
+        needed_fuel: int
+    ):
+        """Remove fuel from the watched_inventory based on the needed value"""
+        needed_fuel -= self.__leftover_fuel
+        if needed_fuel <= 0:
+            self.__leftover_fuel = abs(needed_fuel)
+        for mat_name in [f.name() for f in block_util.fuel_materials]:
+            fuel_pointer = self.__watching_inventory.item_pointer(mat_name)
+            if fuel_pointer is None:
+                continue
+            while fuel_pointer.quantity > 0 and needed_fuel > 0:
+                needed_fuel -= fuel_pointer.FUEL_VALUE
+                fuel_pointer.quantity -= 1
+            if needed_fuel <= 0:
+                self.__leftover_fuel = abs(needed_fuel)
+                break
+        if needed_fuel > 0:
+            raise util.GameException("It should not be allowed to craft when there is not enough fuel.")
+
+    def full(self) -> bool:
+        return self.fuel_lvl >= self.__max_fuel
 
     def __change_fuel_indicator(self):
-        full_image = pygame.Surface(self.fuel_indicator.rect.size)
-        full_image.fill((150,150,150))
-        img_height = int(self.fuel_indicator.rect.height * (self._fuel_lvl / self.__max_fuel))
-        fuel_image = pygame.Surface((self.fuel_indicator.rect.width , img_height))
-        fuel_image.fill((0,255,0))
-        full_image.blit(fuel_image, (0, self.fuel_indicator.rect.height - img_height, self.fuel_indicator.rect.width , img_height))
+        full_image = pygame.Surface(self.fuel_indicator.rect.size).convert()
+        full_image.fill((150, 150, 150))
+        # a value that is inbetween 0 and max_fuel to make sure that the indicator does not look weird
+        capped_fuel_level = min(max(self.fuel_lvl, 0), self.__max_fuel)
+        img_height = int(self.fuel_indicator.rect.height * (capped_fuel_level / self.__max_fuel))
+        fuel_image = pygame.Surface((self.fuel_indicator.rect.width, img_height))
+        fuel_image.fill((0, 255, 0))
+        full_image.blit(fuel_image, (0, self.fuel_indicator.rect.height - img_height, self.fuel_indicator.rect.width,
+                                     img_height))
 
         self.fuel_indicator.set_image(full_image, pos=(0, 0))
         self.add_border(self.fuel_indicator)

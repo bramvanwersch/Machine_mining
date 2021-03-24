@@ -579,7 +579,10 @@ class Pane(Label):
         self.orig_surface.blit(widget.surface, pos)
         self.surface = self.orig_surface.copy()
 
-    def remove_widget(self, widget):
+    def remove_widget(
+        self,
+        widget: Widget
+    ):
         self.widgets.remove(widget)
         cover_surface = pygame.Surface(widget.rect.size)
         cover_surface.fill(self.color)
@@ -595,7 +598,10 @@ class Pane(Label):
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def move(self, offset: Union[Tuple[int, int], List[int]]):
+    def move(
+        self,
+        offset: Union[Tuple[int, int], List[int]]
+    ):
         super().move(offset)
         for widget in self.widgets:
             widget.move(offset)
@@ -734,7 +740,10 @@ class SelectionList(Pane):
         # make sure that events are captured that could cover the frame containing the options
         self.rect.height += self.__expanded_options_frame.rect.height
 
-    def select_option(self, option_str: str):
+    def select_option(
+        self,
+        option_str: str
+    ):
         # these only contain labels
         for label in self.__expanded_options_frame.widgets:
             label: Label

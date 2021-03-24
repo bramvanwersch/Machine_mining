@@ -14,6 +14,9 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - saving the game
 - add settings
 - Load and unload chunks when needed and have processes react to that
+- The base zoom should be the 2 X zoom then allowing for furter zoom with the max out being 1 X this prevents these
+  weirdly small images and 1 X is hard to see regardless.
+- allow the game to be paused by pressing space
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.

@@ -1,6 +1,7 @@
 from typing import Union, List, Set, Dict, TYPE_CHECKING, Iterable, Any
 import random
 
+import utility.utilities as util
 if TYPE_CHECKING:
     import pygame
     from block_classes.blocks import Block
@@ -45,6 +46,14 @@ class Filter:
         for item_name in item_names:
             self.__blacklist.add(item_name)
 
+    def remove_from_blacklist(
+        self,
+        *item_names: List[str]
+    ):
+        for item_name in item_names:
+            if item_name in self.__blacklist:
+                self.__blacklist.remove(item_name)
+
     def set_whitelist(
         self,
         *item_names: List[str]
@@ -58,8 +67,22 @@ class Filter:
         for item_name in item_names:
             self.__whitelist.add(item_name)
 
+    def remove_from_whitelist(
+        self,
+        *item_names: List[str]
+    ):
+        for item_name in item_names:
+            if item_name in self.__whitelist:
+                self.__whitelist.remove(item_name)
 
-class Inventory:
+    def __str__(self) -> str:
+        info_str = "Filter:\n"
+        info_str += f"Whitelist: {[name for name in self.__whitelist] if self.__whitelist is not None else []}\n"
+        info_str += f"Blacklist: {[name for name in self.__blacklist]}"
+        return info_str
+
+
+class Inventory(util.ConsoleReadable):
     """Inventory for managing items within"""
     __slots__ = "__container", "in_filter", "out_filter", "wheight"
     __container: Dict[str, "Item"]
