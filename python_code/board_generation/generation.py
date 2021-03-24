@@ -338,9 +338,11 @@ class BoardGenerator:
         """Add blocks that span accros chunks but are not bigger then a chunk"""
         # check in a 3 * 3 around the chunk_coord if there is still special blocks to generate
         for chunk_row in range(max(0, chunk_coord[1] - 1),
-                               min(chunk_coord[1] + 2, ceil(con.BOARD_SIZE.height / con.CHUNK_SIZE.height) - 1)):
+                               min(chunk_coord[1] + 2,
+                                   ceil(con.ORIGINAL_BOARD_SIZE.height / con.CHUNK_SIZE.height) - 1)):
             for chunk_col in range(max(0, chunk_coord[0] - 1),
-                                   min(chunk_coord[0] + 2, ceil(con.BOARD_SIZE.width / con.CHUNK_SIZE.width) - 1)):
+                                   min(chunk_coord[0] + 2,
+                                       ceil(con.ORIGINAL_BOARD_SIZE.width / con.CHUNK_SIZE.width) - 1)):
                 if self.__generated_chunks_matrix[chunk_row][chunk_col] != 0:
                     continue
                 rect = Rect((chunk_col * con.CHUNK_SIZE.width, chunk_row * con.CHUNK_SIZE.height,
