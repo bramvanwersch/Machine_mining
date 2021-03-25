@@ -17,6 +17,7 @@ from interfaces import widgets as widgets, interface_utility as interface_util, 
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
 import user
+from utility import game_timing
 
 
 # defined below SceneManager
@@ -68,12 +69,17 @@ class Scene(event_handling.EventHandler, ABC):
 
         # signifies if the scene is still alive
         self.going = True
+        self.__counter = 0
 
     def update(self):
         self.scene_updates()
         self.scene_event_handling()
         self.sprite_group.update()
         self.draw()
+        self.__counter += 1
+        if self.__counter == 500 and con.DEBUG.PRINT_TIMING_BREAKDOWN:
+            self.__counter = 0
+            print(game_timing.TIMINGS.get_time_summary())
 
     def get_events(self):
         """Starting point for event handling"""
@@ -96,6 +102,7 @@ class Scene(event_handling.EventHandler, ABC):
             self.sprite_group.change_layer(sprite, sprite._layer)
         self.set_update_rectangles()
 
+    @game_timing.time_function("scene drawing")
     def draw(self):
         self.sprite_group.draw(self.screen)
 
@@ -503,6 +510,7 @@ class Game(Scene, util.Serializer):
         super().draw()
         self.draw_debug_info()
 
+    @game_timing.time_function("scene event handling")
     def scene_event_handling(self, consume=False):
         events = super().scene_event_handling()
         self.__handle_interface_selection_events()
@@ -551,7 +559,7 @@ class Game(Scene, util.Serializer):
                 board_u_rects.append(window.orig_rect)
                 # TODO fix this kind of cheaty fix, right now the rectangle is made bigger to cover the full area, but
                 #  this is a halfed as solution
-                adjusted_rect = pygame.Rect((round(rect[0]* zoom) - 5,
+                adjusted_rect = pygame.Rect((round(rect[0] * zoom) - 5,
                                              round(rect[1] * zoom) - 5,
                                              rect.width + 10, rect.height + 10))
                 clipped_rect = adjusted_rect.clip(self.rect)

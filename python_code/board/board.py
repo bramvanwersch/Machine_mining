@@ -14,6 +14,7 @@ import block_classes.environment_materials as environment_materials
 import interfaces.interface_utility as interface_util
 from board import flora, chunks, pathfinding
 import network.conveynetwork
+from utility import game_timing
 
 
 class Board(util.Serializer):
@@ -79,6 +80,7 @@ class Board(util.Serializer):
                 self.generate_chunks(list(range(chunk_coord[0] - 1, chunk_coord[0] + 2)),
                                      list(range(chunk_coord[1] - 1, chunk_coord[1] + 2)))
 
+    @game_timing.time_function("plant update")
     def __update_plants(self):
         self.__grow_update_time += con.GAME_TIME.get_time()
         if self.__grow_update_time < con.GROW_CYCLE_UPDATE_TIME:
@@ -92,11 +94,25 @@ class Board(util.Serializer):
 
     def __update_conveyor_network(self):
         for belt in self.conveyor_network:
-            surrounding_blocks = self.surrounding_blocks(belt)
-            belt.check_item_movement(surrounding_blocks)
-            if belt.changed:
-                self.add_blocks(belt, update_ligth=False)
-                belt.changed = False
+            self.__calculate_conveyor_movement(belt)
+            self.__redraw_conveyor_item(belt)
+
+    @game_timing.time_function("conveyor calcluation update")
+    def __calculate_conveyor_movement(
+        self,
+        belt: block_classes.ConveyorNetworkBlock
+    ):
+        surrounding_blocks = self.surrounding_blocks(belt)
+        belt.check_item_movement(surrounding_blocks)
+
+    @game_timing.time_function("conveyor drawing update")
+    def __redraw_conveyor_item(
+        self,
+        belt: block_classes.ConveyorNetworkBlock
+    ):
+        if belt.changed:
+            self.add_blocks(belt, update_ligth=False)
+            belt.changed = False
 
     def to_dict(self):
         return {
@@ -290,7 +306,11 @@ class Board(util.Serializer):
                 chunk.remove_blocks(block)
         return removed_items
 
-    def add_blocks(self, *blocks: List[block_classes.Block], update_ligth=True):
+    def add_blocks(
+        self,
+        *blocks: block_classes.Block,
+        update_ligth: bool = True
+    ):
         for block in blocks:
             if isinstance(block, buildings.Building):
                 self.add_building(block)
@@ -396,6 +416,7 @@ class Board(util.Serializer):
             block.light_level = light_level
             self.changed_light_blocks.add(block)
 
+    @game_timing.time_function("light updates")
     def change_light_levels(self):
         for block in self.changed_light_blocks:
             chunk = self.chunk_from_point(block.rect.topleft)

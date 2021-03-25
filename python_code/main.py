@@ -7,6 +7,7 @@ import os
 # own imports
 import utility.constants as con
 import utility.image_handling as image_handlers
+from utility import game_timing
 import recipes.recipe_utility as recipe_constants
 import block_classes.block_utility as block_util
 import scenes
@@ -30,6 +31,9 @@ class Main:
         self.run()
 
     def __innitialize_game_varaibles(self):
+        # innitialize the timings
+        game_timing.config_timings_value()
+
         # load images
         image_handlers.load_images()
 
@@ -47,6 +51,7 @@ class Main:
         # Main Loop
         while scenes.scenes.is_scene_alive():
             self.screen.fill((0, 0, 0))
+            game_timing.TIMINGS.increase_frame_count()
             active_scene = scenes.scenes.active_scene
             active_scene.update()
             if con.DEBUG.NO_LIGHTING:
