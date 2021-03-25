@@ -18,7 +18,7 @@ class DebugValues(util.ConsoleReadable):
         self.AIR_RECTANGLES = False
         self.WARNINGS = True
         self.SHOW_ZOOM = True
-        self.NO_LIGHTING = True
+        self.NO_LIGHTING = False
         self.SHOW_THREADS = True
         self.SHOW_BELT_ITEMS = True
 
@@ -47,9 +47,9 @@ DATA_DIR = "{}{}data".format(MAIN_DIR, os.sep)
 
 # sizes
 SCREEN_SIZE = util.Size(820, 820) if TESTING else util.Size(1920, 1080)  # pixels
-CHUNK_SIZE = util.Size(250, 250)  # make this always devisible by then 10 and <= 2^x
+CHUNK_SIZE = util.Size(500, 500)  # make this always devisible by then 10 and <= 2^x
 if TEST_BOARD:
-    BOARD_SIZE = util.Size(1000, 1000)  # board size should always be bigger then the SCREEN_SIZE
+    BOARD_SIZE = util.Size(2000, 2000)  # board size should always be bigger then the SCREEN_SIZE
     # preserve the board size
     ORIGINAL_BOARD_SIZE = BOARD_SIZE.copy()
     # the center of the board
@@ -68,7 +68,7 @@ else:
     TOTAL_START_CHUNKS = ((START_CHUNK_POS[0] + 3) - (START_CHUNK_POS[0] - 2)) * \
                          ((START_CHUNK_POS[1] + 3) - (START_CHUNK_POS[1] - 2))
 
-BLOCK_SIZE = util.Size(10, 10)
+BLOCK_SIZE = util.Size(20, 20)
 TRANSPORT_BLOCK_SIZE = util.Size(int(BLOCK_SIZE.width * 0.6), int(BLOCK_SIZE.height * 0.6))
 MAX_DEPTH = BOARD_SIZE.height / BLOCK_SIZE.height  # in blocks
 

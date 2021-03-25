@@ -287,11 +287,11 @@ class Worker(MovingEntity, util.ConsoleReadable):
     A worker class that can perform tasks
     """
     COLOR = (255, 0, 0, 100)
-    SIZE = (10, 10)
+    SIZE = (20, 20)
     # in wheight
     INVENTORY_SIZE = 2
     NUMBER = count(1, 1)
-    VISON_RADIUS = 80
+    VISON_RADIUS = 8 * con.BLOCK_SIZE.width
     EMITTED_LIGTH = 10
 
     def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):

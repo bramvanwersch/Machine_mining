@@ -283,9 +283,9 @@ class ConveyorNetworkBlock(Block):
         progression_fraction = con.GAME_TIME.get_time() / self.material.TRANSFER_TIME
         location_y = progression_fraction * (self.rect.height + item_rect.height)
         self.__exact_item_position[1] += location_y
-        while self.__exact_item_position[1] > 1:
-            self.current_item.rect.top += 1 * sign
-            self.__exact_item_position[1] -= 1
+        while self.__exact_item_position[1] > 3:
+            self.current_item.rect.top += 3 * sign
+            self.__exact_item_position[1] -= 3
 
     def __set_x_item_position(
         self,
@@ -296,9 +296,9 @@ class ConveyorNetworkBlock(Block):
         progression_fraction = con.GAME_TIME.get_time() / self.material.TRANSFER_TIME
         location_x = progression_fraction * (self.rect.width + item_rect.width)
         self.__exact_item_position[0] += location_x
-        while self.__exact_item_position[0] > 1:
-            self.current_item.rect.left += 1 * sign
-            self.__exact_item_position[0] -= 1
+        while self.__exact_item_position[0] > 3:
+            self.current_item.rect.left += 3 * sign
+            self.__exact_item_position[0] -= 3
 
     def __get_elligable_move_blocks(
         self,

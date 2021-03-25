@@ -676,9 +676,11 @@ class SelectionList(Pane):
     __FONT = con.FONTS[__FONT_SIZE]
     LINE_HEIGHT = __FONT.size("T")[1] + 10
     __EXPAND_BUTTON_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
-        image_handling.ImageDefinition("general", (70, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT))
+        image_handling.ImageDefinition("general", (70, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT),
+                                       size=util.Size(10, 10))
     __EXPAND_BUTTON_HOVER_IMAGE: ClassVar[List[image_handling.ImageDefinition]] = \
-        image_handling.ImageDefinition("general", (80, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT))
+        image_handling.ImageDefinition("general", (80, 10), image_size=util.Size(LINE_HEIGHT, LINE_HEIGHT),
+                                       size=util.Size(10, 10))
 
     __show_label: Union[None, Label]
     __expand_button: Union[None, Button]

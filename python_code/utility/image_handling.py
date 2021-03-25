@@ -94,7 +94,7 @@ class ImageDefinition:
         color_key: Tuple[int, int, int] = con.INVISIBLE_COLOR,
         flip: Tuple[bool, bool] = (False, False),
         image_size: util.Size = con.BLOCK_SIZE,
-        size: util.Size = con.BLOCK_SIZE
+        size: util.Size = util.Size(10, 10)
     ):
         self.__sheet_name = sheet_name
         self.__image_location = image_location

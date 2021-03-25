@@ -22,7 +22,9 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - add a filter options for the belts for allot better stuff
 - allow plants to have berries oid
 - have different states for active and inactive machines
-- add structures
+- add structures while terrain generating
+- add ghost buildings when building
+
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.

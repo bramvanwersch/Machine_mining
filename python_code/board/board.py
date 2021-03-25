@@ -18,9 +18,6 @@ import network.conveynetwork
 
 class Board(util.Serializer):
 
-    START_RECTANGLE = pygame.Rect((con.BOARD_SIZE.width / 2 - 125, 0, 250, 50))
-    BLOCK_PER_CLUSRTER = 500
-
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
     def __init__(self, board_generator, main_sprite_group, progress_var, chunk_matrix=None, pipe_network=None, grow_update_time=0):
@@ -98,7 +95,7 @@ class Board(util.Serializer):
             surrounding_blocks = self.surrounding_blocks(belt)
             belt.check_item_movement(surrounding_blocks)
             if belt.changed:
-                self.add_blocks(belt)
+                self.add_blocks(belt, update_ligth=False)
                 belt.changed = False
 
     def to_dict(self):
@@ -293,7 +290,7 @@ class Board(util.Serializer):
                 chunk.remove_blocks(block)
         return removed_items
 
-    def add_blocks(self, *blocks: List[block_classes.Block]):
+    def add_blocks(self, *blocks: List[block_classes.Block], update_ligth=True):
         for block in blocks:
             if isinstance(block, buildings.Building):
                 self.add_building(block)
@@ -301,13 +298,20 @@ class Board(util.Serializer):
             if isinstance(block, block_classes.ConveyorNetworkBlock):
                 self.conveyor_network.add(block)
             chunk = self.chunk_from_point(block.coord)
-            self.__set_block_lighting(block)
+            if update_ligth:
+                self.__set_block_lighting(block)
             chunk.add_blocks(block)
 
-    def __set_block_lighting(self, block):
+    def __set_block_lighting(
+        self,
+        block: block_classes.Block
+    ):
         """Set the lighting for one block specifically"""
         surrounding_blocks = self.surrounding_blocks(block)
-        max_light_block = max([b for b in surrounding_blocks if b is not None], key=lambda x: x.light_level)
+        valid_surrounding_blocks = [b for b in surrounding_blocks if b is not None]
+        if len(valid_surrounding_blocks) == 0:
+            return
+        max_light_block = max(valid_surrounding_blocks, key=lambda x: x.light_level)
         change = con.DECREASE_SPEED_SOLID if max_light_block.is_solid() else con.DECREASE_SPEED
         block.light_level = max_light_block.light_level - change
 
@@ -470,9 +474,9 @@ class Board(util.Serializer):
         start_chunk = self.get_start_chunk()
         appropriate_location = pygame.Vector2(int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width + start_chunk.rect.left,
                                               + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + + start_chunk.rect.top)
-        t = buildings.Terminal(appropriate_location + (-20, -10), self.main_sprite_group)
-        c = buildings.Factory(appropriate_location + (20, -10), self.main_sprite_group)
-        f = buildings.Furnace(appropriate_location + (0, -10), self.main_sprite_group)
+        t = buildings.Terminal(appropriate_location + (-40, 0), self.main_sprite_group)
+        c = buildings.Factory(appropriate_location + (40, 0), self.main_sprite_group)
+        f = buildings.Furnace(appropriate_location + (0, 0), self.main_sprite_group)
         self.add_building(t)
         self.add_building(c)
         self.add_building(f)

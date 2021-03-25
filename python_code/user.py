@@ -127,8 +127,8 @@ class User(utility.event_handling.EventHandler):
 
                 mouse_pos = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos,
                                                                       self.__sprite_group.target, self.zoom)
-                mouse_pos[0] = int(mouse_pos[0] / 10) * 10
-                mouse_pos[1] = int(mouse_pos[1] / 10) * 10
+                mouse_pos[0] = int(mouse_pos[0] / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width
+                mouse_pos[1] = int(mouse_pos[1] / con.BLOCK_SIZE.height) * con.BLOCK_SIZE.height
                 rectangle = pygame.Rect((mouse_pos[0], mouse_pos[1], building_block_class.size().width - 1,
                                          building_block_class.size().height - 1))
                 self.__process_selection(rectangle)
