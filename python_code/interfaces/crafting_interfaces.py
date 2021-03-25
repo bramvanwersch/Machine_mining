@@ -372,9 +372,9 @@ class CraftingGrid(widgets.Pane):
 class _GridLabel(widgets.Label):
     """Label that for within a CraftingGrid"""
     POSITIVE_MARK: ClassVar[image_handling.ImageDefinition] = \
-        image_handling.ImageDefinition("general", (80, 0), size=util.Size(10, 10))
+        image_handling.ImageDefinition("general", (80, 0), size=util.Size(10, 10), image_size=util.Size(10, 10))
     NEGATIVE_MARK: ClassVar[image_handling.ImageDefinition] = \
-        image_handling.ImageDefinition("general", (70, 0), size=util.Size(10, 10))
+        image_handling.ImageDefinition("general", (70, 0), size=util.Size(10, 10), image_size=util.Size(10, 10))
 
     __item_image: Union[None, pygame.Surface]
     __positive_mark: pygame.Surface
