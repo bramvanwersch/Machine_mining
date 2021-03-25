@@ -559,8 +559,8 @@ class Game(Scene, util.Serializer):
                 board_u_rects.append(window.orig_rect)
                 # TODO fix this kind of cheaty fix, right now the rectangle is made bigger to cover the full area, but
                 #  this is a halfed as solution
-                adjusted_rect = pygame.Rect((round(rect[0] * zoom) - 5,
-                                             round(rect[1] * zoom) - 5,
+                adjusted_rect = pygame.Rect((round(rect[0]) - 5,
+                                             round(rect[1]) - 5,
                                              rect.width + 10, rect.height + 10))
                 clipped_rect = adjusted_rect.clip(self.rect)
                 if clipped_rect.width > 0 and clipped_rect.height > 0:
