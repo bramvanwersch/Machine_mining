@@ -1,16 +1,21 @@
 import time
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, Any
 
 
 TIMINGS: Union[None, "Timings"] = None
 
 
 def config_timings_value():
+    """Innitialise the TIMINGS value"""
     global TIMINGS
     TIMINGS = Timings()
 
 
 class Timings:
+    """Track the timings of values that are marked with the time_function decorator"""
+
+    named_timings: Dict[str, "_TimedValue"]
+    __frame_number: int
 
     def __init__(self):
         self.named_timings = dict()
@@ -21,6 +26,7 @@ class Timings:
         name: str,
         value: float
     ):
+        """Add a value to a named timing"""
         if name in self.named_timings:
             self.named_timings[name].add_value(value, self.__frame_number)
         else:
@@ -30,7 +36,8 @@ class Timings:
     def increase_frame_count(self):
         self.__frame_number += 1
 
-    def get_time_summary(self):
+    def get_time_summary(self) -> str:
+        """Get the percentages of all the named timings that are saved"""
         summary = f"Past {_TimedValue.MAX_SAVED_TIMINGS} frames timings:\n"
         timings = {name: timed_value.get_average_value() for name, timed_value in self.named_timings.items()}
         total_time_timed = sum(timings.values())
@@ -46,8 +53,9 @@ class _TimedValue:
     together"""
     MAX_SAVED_TIMINGS = 100  # a list of timings saved for each saved varaible
 
-    __additon_index: int
     time_values: List[Union[float, None]]
+    __additon_index: int
+    __frame_nmr: int
 
     def __init__(self):
         self.time_values = [None for _ in range(self.MAX_SAVED_TIMINGS)]
@@ -71,11 +79,12 @@ class _TimedValue:
             self.time_values[self.__addition_index - 1] += value
 
     def get_average_value(self) -> float:
+        """Get the average value of the time_values"""
         valid_values = [value for value in self.time_values if value is not None]
         return sum(valid_values) / len(valid_values)
 
 
-def time_function(time_name: str):
+def time_function(time_name: str) -> Any:
     """Time a function decorated with this"""
     def function_decorator(func: Callable):
         def wrapper(*args, **kwargs):

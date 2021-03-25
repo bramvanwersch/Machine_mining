@@ -12,6 +12,7 @@ import utility.inventories
 import utility.utilities as util
 import utility.constants as con
 from utility.constants import DEBUG
+from utility import game_timing
 import interfaces.widgets as widgets
 from block_classes import building_materials, environment_materials, ground_materials, machine_materials, materials
 if TYPE_CHECKING:
@@ -468,15 +469,16 @@ class Console:
         tree["buildings"] = \
             {f"buildling_{index + 1}({buidling.name()[:3]})": self.__create_attribute_tree(buidling, "printables")
              for index, buidling in enumerate(self.__user.board.buildings.values())}
+        tree["timings"] = False
         return tree
 
     def __create_set_tree(self) -> Dict[str, Any]:
         tree = dict()
         tree["debug"] = self.__create_attribute_tree(DEBUG, "setables")
-        tree["workers"] = {f"worker_{index + 1}": self.__create_attribute_tree(worker, "printables")
+        tree["workers"] = {f"worker_{index + 1}": self.__create_attribute_tree(worker, "setables")
                            for index, worker in enumerate(self.__user.workers)}
         tree["buildings"] = \
-            {f"buildling_{index + 1}({buidling.name()[:3]})": self.__create_attribute_tree(buidling, "printables")
+            {f"buildling_{index + 1}({buidling.name()[:3]})": self.__create_attribute_tree(buidling, "setables")
              for index, buidling in enumerate(self.__user.board.buildings.values())}
         return tree
 
@@ -608,6 +610,8 @@ class Console:
             target = list(self.__user.board.buildings.values())[int(arguments[2].split("_")[1].split("(")[0]) - 1]
             start_argument_index = 2
             check_dictionary = check_dictionary[arguments[2]]
+        elif arguments[1] == "timings":
+            return game_timing.TIMINGS.get_time_summary()[:-1], False
         else:
             raise util.GameException(f"Unexpected value to print from; {arguments[1]}")
 
