@@ -90,7 +90,7 @@ class Chunk(util.Serializer):
             self.layers[2].add_image(local_block_rect, block.surface)
 
             column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
-            self.__matrix[row][column] = block
+            self.__matrix[row][column].set_block(block)
             self.pathfinding_chunk.added_rects.append(block.rect)
 
     def remove_blocks(self, *blocks):
@@ -103,7 +103,7 @@ class Chunk(util.Serializer):
             # remove the highlight
             self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
             column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
-            self.__matrix[row][column] = base_materials.Air().to_block(block.rect.topleft)
+            self.__matrix[row][column].set_block(base_materials.Air().to_block(block.rect.topleft))
             self.pathfinding_chunk.removed_rects.append(block.rect)
         return removed_items
 
@@ -111,7 +111,7 @@ class Chunk(util.Serializer):
         for block in blocks:
             self.pathfinding_chunk.added_rects.append(block.rect)
 
-    def get_block(self, point):
+    def get_block(self, point) -> util.BlockPointer:
         column, row = self.__local_adusted_block_coordinate(point)
         try:
             return self.__matrix[row][column]
@@ -160,7 +160,7 @@ class Chunk(util.Serializer):
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
                     plant = flora.Plant(block, self)
                     self.all_plants.add(plant)
-                s_matrix[row_i][column_i] = block
+                s_matrix[row_i][column_i] = util.BlockPointer(block)
         return s_matrix
 
 
@@ -176,7 +176,6 @@ class StartChunk(Chunk):
 
     def __adjust_foreground_string_matrix(self, matrix):
         # generate the air space at the start position
-        first = True
         for row_i in range(interface_util.p_to_r(self.START_RECTANGLE.top), interface_util.p_to_r(self.START_RECTANGLE.bottom)):
             for column_i in range(interface_util.p_to_c(self.START_RECTANGLE.left), interface_util.p_to_c(self.START_RECTANGLE.right)):
                 matrix[row_i][column_i] = "Air"

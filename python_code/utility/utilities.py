@@ -1,5 +1,5 @@
 from pygame import Rect
-from typing import List, Union, Iterable, Set
+from typing import List, Union, Iterable, Set, TYPE_CHECKING
 import types
 from math import pi, e, sqrt, erfc, pow
 from abc import ABC, abstractmethod
@@ -7,6 +7,8 @@ import json
 from time import time_ns
 from numpy import array, linalg, exp
 import inspect
+if TYPE_CHECKING:
+    from block_classes.blocks import Block
 
 
 LAST_IDS = set()
@@ -27,6 +29,32 @@ def unique_id():
             cycle += 1
         LAST_IDS.add(new_stamp)
         return new_stamp
+
+
+class BlockPointer:
+    """Super simple wrapper around a block class that allows to return a pointer to a block. In this way methods that
+    want to retrieve blocks from the original matrix and not repeadatly do that is now possible"""
+    __slots__ = "block"
+
+    block: "Block"
+
+    def __init__(self, block: "Block"):
+        super().__setattr__("block", block)
+
+    def __getattr__(self, item: str):
+        try:
+            return getattr(self.block, item)
+        except AttributeError:
+            raise(AttributeError(f"{type(self.block)} has no attribute {item}"))
+
+    def __setattr__(self, key, value):
+        try:
+            setattr(self.block, key, value)
+        except AttributeError:
+            raise(AttributeError(f"{type(self.block)} has no attribute {key}"))
+
+    def set_block(self, block: "Block"):
+        super().__setattr__("block", block)
 
 
 class GameException(Exception):
