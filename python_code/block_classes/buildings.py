@@ -2,7 +2,7 @@
 
 # library imports
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING, Tuple, Union, Set
+from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type
 
 # own imports
 import block_classes.building_materials as build_materials
@@ -36,12 +36,12 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, ABC):
         pos: List[int],
         **kwargs
     ):
-        super().__init__(pos, self.MATERIAL, **kwargs)
+        super().__init__(pos, self.MATERIAL(), **kwargs)
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def MATERIAL(self) -> base_materials.BaseMaterial:
+    def MATERIAL(self) -> Type[base_materials.BaseMaterial]:
         """
         Specify a material class. The material class should be called
         NameOfBuildingMaterial and the name of the building cannot contain the
@@ -144,7 +144,7 @@ class Terminal(InterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    MATERIAL: base_materials.BaseMaterial = build_materials.TerminalMaterial
+    MATERIAL: Type[base_materials.BaseMaterial] = build_materials.TerminalMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
@@ -169,7 +169,7 @@ class StoneChest(InterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    MATERIAL: base_materials.BaseMaterial = build_materials.StoneChestMaterial
+    MATERIAL: Type[base_materials.BaseMaterial] = build_materials.StoneChestMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(1, 1)
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
@@ -194,7 +194,7 @@ class Furnace(CraftingInterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
-    MATERIAL = build_materials.FurnaceMaterial
+    MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FurnaceMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FurnaceWindow
 
@@ -209,7 +209,7 @@ class Furnace(CraftingInterfaceBuilding):
 
 
 class Factory(CraftingInterfaceBuilding):
-    MATERIAL = build_materials.FactoryMaterial
+    MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FactoryMaterial
     MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
 

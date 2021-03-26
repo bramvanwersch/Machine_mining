@@ -214,7 +214,7 @@ class Board(util.Serializer):
     def surrounding_blocks(
         self,
         block: block_classes.Block
-    ) -> List[Union[None, block_classes.Block]]:
+    ) -> List[Union[None, util.BlockPointer]]:
         """
         Calculate the surrounding block_classes of a certain block in the order
         NESW and None if there is no block (edge of the playing field).
@@ -260,7 +260,7 @@ class Board(util.Serializer):
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             else:
-                if isinstance(block, block_classes.ConveyorNetworkBlock):
+                if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
                 chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
@@ -312,10 +312,10 @@ class Board(util.Serializer):
         update_ligth: bool = True
     ):
         for block in blocks:
-            if isinstance(block, buildings.Building):
+            if isinstance(block.material, build_materials.Building):
                 self.add_building(block)
                 return
-            if isinstance(block, block_classes.ConveyorNetworkBlock):
+            if isinstance(block.material, build_materials.ConveyorBelt):
                 self.conveyor_network.add(block)
             chunk = self.chunk_from_point(block.coord)
             if update_ligth:

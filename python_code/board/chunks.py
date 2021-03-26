@@ -121,7 +121,7 @@ class Chunk(util.Serializer):
     def overlapping_blocks(
         self,
         rect: pygame.Rect
-    ) -> List["Block"]:
+    ) -> List[util.BlockPointer]:
         column_start, row_start = self.__local_adusted_block_coordinate(rect.topleft)
         column_end, row_end = self.__local_adusted_block_coordinate(rect.bottomright)
         overlapping_blocks = []
