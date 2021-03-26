@@ -14,37 +14,51 @@ def config_timings_value():
 class Timings:
     """Track the timings of values that are marked with the time_function decorator"""
 
-    named_timings: Dict[str, "_TimedValue"]
+    FRAME_NUMBER: int = 0
+
+    __named_timing: "_TimedValue"
+    named_timings: Dict[str, "Timings"]
     __frame_number: int
 
-    def __init__(self):
+    def __init__(self, timing=None):
+        self.named_timing = timing
         self.named_timings = dict()
-        self.__frame_number = 0
 
     def add(
         self,
-        name: str,
-        value: float
+        value: float,
+        *names: str
     ):
         """Add a value to a named timing"""
+        if len(names) == 0:
+            self.named_timing.add_value(value, self.FRAME_NUMBER)
+            return
+        name = names[0]
         if name in self.named_timings:
-            self.named_timings[name].add_value(value, self.__frame_number)
+            self.named_timings[name].add(value, *names[1:])
         else:
-            self.named_timings[name] = _TimedValue()
-            self.named_timings[name].add_value(value, self.__frame_number)
+            self.named_timings[name] = Timings(_TimedValue())
+            self.named_timings[name].add(value, *names[1:])
 
     def increase_frame_count(self):
-        self.__frame_number += 1
+        Timings.FRAME_NUMBER += 1
 
-    def get_time_summary(self) -> str:
+    def get_time_summary(self, total_upper_time: float = None) -> str:
         """Get the percentages of all the named timings that are saved"""
-        summary = f"Past {_TimedValue.MAX_SAVED_TIMINGS} frames timings:\n"
-        timings = {name: timed_value.get_average_value() for name, timed_value in self.named_timings.items()}
-        total_time_timed = sum(timings.values())
+        summary = ""
+        timings = {}
+        for name, timing in self.named_timings.items():
+            average_time = timing.named_timing.get_average_value()
+            timings[name] = (average_time, timing.get_time_summary(average_time))
+        total_time_timed = sum(value[0] for value in timings.values()) if total_upper_time is None else total_upper_time
         if total_time_timed == 0:
             return ""
-        for name, timing in timings.items():
-            summary += f"{name}: ({(timing / total_time_timed) * 100:.2f}%)\n"
+        for name, value_summary in timings.items():
+            summary += f"{name}: ({(value_summary[0] / total_time_timed) * 100:.2f}%)\n"
+            for line in value_summary[1].split("\n"):
+                if len(line) == 0:
+                    continue
+                summary += f" - {line}\n"
         return summary
 
 
@@ -60,12 +74,12 @@ class _TimedValue:
     def __init__(self):
         self.time_values = [None for _ in range(self.MAX_SAVED_TIMINGS)]
         self.__addition_index = 0
-        self.__frame_nmr = 0
+        self.__frame_nmr = -1
 
     def add_value(
         self,
         value: float,
-        actual_frame_number: int
+        actual_frame_number: int,
     ):
         """Add a value at the addition_index (cycles from 0-MAX_SAVED_TIMINGS to make it a bit more efficient) and add
         the value up if within the same frame otherwise put in the next slot"""
@@ -84,7 +98,7 @@ class _TimedValue:
         return sum(valid_values) / len(valid_values)
 
 
-def time_function(time_name: str) -> Any:
+def time_function(*time_names: str) -> Any:
     """Time a function decorated with this"""
     def function_decorator(func: Callable):
         def wrapper(*args, **kwargs):
@@ -92,7 +106,7 @@ def time_function(time_name: str) -> Any:
             result = func(*args, **kwargs)
             end = time.time()
             global TIMINGS
-            TIMINGS.add(time_name, end - start)
+            TIMINGS.add(end - start, *time_names)
             return result
         return wrapper
     return function_decorator

@@ -8,7 +8,7 @@ from abc import ABC
 # own imports
 import utility.constants as con
 import utility.utilities as util
-from utility import inventories
+from utility import inventories, game_timing
 if TYPE_CHECKING:
     import block_classes.materials as base_materials
     import block_classes.building_materials as building_materials
@@ -165,21 +165,7 @@ class ConveyorNetworkBlock(Block):
         else:
             self.__take_item(surrounding_blocks)
 
-    def __set_item_position(
-        self,
-        direction: int
-    ):
-        """Set the position of an item based on the direction an item is moving. With 0-3 representing north, east,
-         south, west"""
-        if direction == 0:
-            self.__set_y_item_position(-1)
-        elif direction == 1:
-            self.__set_x_item_position(1)
-        elif direction == 2:
-            self.__set_y_item_position(1)
-        elif direction == 3:
-            self.__set_x_item_position(-1)
-
+    @game_timing.time_function("conveyor calcluation update", "move forward")
     def __move_item_forward(
         self,
         surrounding_blocks: List[Union[None, Block]]
@@ -189,29 +175,21 @@ class ConveyorNetworkBlock(Block):
         if self.material.image_key == 0:
             if self.current_item.rect.centery > self.rect.centery:
                 self.__move_towards_center()
-                if self.current_item.rect.centery < self.rect.centery:
-                    self.current_item.rect.center = self.rect.center
             else:
                 self.__move_towards_next_block(surrounding_blocks)
         elif self.material.image_key == 1:
             if self.current_item.rect.centerx < self.rect.centerx:
                 self.__move_towards_center()
-                if self.current_item.rect.centerx > self.rect.centerx:
-                    self.current_item.rect.center = self.rect.center
             else:
                 self.__move_towards_next_block(surrounding_blocks)
         elif self.material.image_key == 2:
             if self.current_item.rect.centery < self.rect.centery:
                 self.__move_towards_center()
-                if self.current_item.rect.centery > self.rect.centery:
-                    self.current_item.rect.center = self.rect.center
             else:
                 self.__move_towards_next_block(surrounding_blocks)
         elif self.material.image_key == 3:
             if self.current_item.rect.centerx > self.rect.centerx:
                 self.__move_towards_center()
-                if self.current_item.rect.centerx < self.rect.centerx:
-                    self.current_item.rect.center = self.rect.center
             else:
                 self.__move_towards_next_block(surrounding_blocks)
 
@@ -273,6 +251,21 @@ class ConveyorNetworkBlock(Block):
             return 2  # south direction
         if self.next_block.coord[0] < self.coord[0]:
             return 3  # west direction
+
+    def __set_item_position(
+            self,
+            direction: int
+    ):
+        """Set the position of an item based on the direction an item is moving. With 0-3 representing north, east,
+         south, west"""
+        if direction == 0:
+            self.__set_y_item_position(-1)
+        elif direction == 1:
+            self.__set_x_item_position(1)
+        elif direction == 2:
+            self.__set_y_item_position(1)
+        elif direction == 3:
+            self.__set_x_item_position(-1)
 
     def __set_y_item_position(
         self,
@@ -355,6 +348,7 @@ class ConveyorNetworkBlock(Block):
                     elligible_blocks[index] = None
         return elligible_blocks
 
+    @game_timing.time_function("conveyor calcluation update", "take item")
     def __take_item(
         self,
         surrounding_blocks: List[Union[None, Block]]

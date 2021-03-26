@@ -21,7 +21,7 @@ class DebugValues(util.ConsoleReadable):
         self.NO_LIGHTING = False
         self.SHOW_THREADS = True
         self.SHOW_BELT_ITEMS = True
-        self.PRINT_TIMING_BREAKDOWN = False
+        self.PRINT_TIMING_BREAKDOWN = True
 
 
 DEBUG = DebugValues()

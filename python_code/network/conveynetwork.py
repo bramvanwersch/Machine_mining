@@ -20,3 +20,6 @@ class ConveyorNetwork:
 
     def __iter__(self):
         return iter(self.__belts)
+
+    def __len__(self):
+        return len(self.__belts)
