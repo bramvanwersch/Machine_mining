@@ -179,7 +179,7 @@ BOARD_KEYS = BoardKeys()
 
 MODES = {BOARD_KEYS.MINING: ModeConstants(BOARD_KEYS.MINING, "Mining", (9, 108, 128, 100)),
          BOARD_KEYS.BUILDING: ModeConstants(BOARD_KEYS.BUILDING, "Building", (255, 64, 229, 100)),
-         BOARD_KEYS.CANCEL: ModeConstants(BOARD_KEYS.CANCEL, "Cancel", (255, 0, 0, 100), False),
+         BOARD_KEYS.CANCEL: ModeConstants(BOARD_KEYS.CANCEL, "Cancel", INVISIBLE_COLOR, False),
          BOARD_KEYS.SELECTING: ModeConstants(BOARD_KEYS.SELECTING, "Selecting", (59, 191, 70, 100), False)}
 
 

@@ -214,10 +214,10 @@ class User(utility.event_handling.EventHandler):
         rect = util.rect_from_block_matrix(blocks)
         self.__remove_all_tasks(blocks)
 
-        if self._mode.name == "Cancel":
-            return
         # select the full area
         self.__add_highlight_rectangle(rect, self._mode.color)
+        if self._mode.name == "Cancel":
+            return
 
         # assign tasks to all block_classes elligable
         if self._mode.name == "Building":

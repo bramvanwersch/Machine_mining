@@ -215,21 +215,19 @@ class Board(util.Serializer):
         block: block_classes.Block
     ) -> List[Union[None, util.BlockPointer]]:
         """
-        Calculate the surrounding block_classes of a certain block in the order
-        NESW and None if there is no block (edge of the playing field).
+        Calculate the surrounding block_classes of a certain block in the order NESW and None if there is no block
+        (edge of the playing field).
 
-        :param block: the center Block Object for the surrounding block_classes
-        :param matrix: the matrix that contains the surrounding block_classes
-        :return: 4 Block or None objects
+        It is important to note that this function returns pointers to the matrix blocks, this means that if the block
+        in the matrix changes the pointer will change.
         """
         blocks = [None for _ in range(4)]
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
-            surrounding_pos = (block.rect.x + new_position[0] * con.BLOCK_SIZE.width, block.rect.y + new_position[1] * con.BLOCK_SIZE.height)
+            surrounding_pos = (block.rect.x + new_position[0] * con.BLOCK_SIZE.width,
+                               block.rect.y + new_position[1] * con.BLOCK_SIZE.height)
             # Make sure within range
-            if surrounding_pos[0] > con.BOARD_SIZE.width or \
-                surrounding_pos[0] < 0 or \
-                surrounding_pos[1] > con.BOARD_SIZE.height or \
-                surrounding_pos[1] < 0:
+            if surrounding_pos[0] > con.ORIGINAL_BOARD_SIZE.width or surrounding_pos[0] < 0 or \
+                    surrounding_pos[1] > con.ORIGINAL_BOARD_SIZE.height or surrounding_pos[1] < 0:
                 continue
             chunk = self.chunk_from_point(surrounding_pos)
             if chunk:
@@ -242,9 +240,9 @@ class Board(util.Serializer):
         for index, new_position in enumerate([(0, -1), (1, 0), (0, 1), (-1, 0)]):
             surrounding_pos = (chunk.rect.x + new_position[0] * con.CHUNK_SIZE.width, chunk.rect.y + new_position[1] * con.CHUNK_SIZE.height)
             # Make sure within range
-            if surrounding_pos[0] > con.BOARD_SIZE.width or \
+            if surrounding_pos[0] > con.ORIGINAL_BOARD_SIZE.width or \
                 surrounding_pos[0] < 0 or \
-                surrounding_pos[1] > con.BOARD_SIZE.height or \
+                surrounding_pos[1] > con.ORIGINAL_BOARD_SIZE.height or \
                 surrounding_pos[1] < 0:
                 continue
             surrounding_chunk = self.chunk_from_point(surrounding_pos)
