@@ -74,7 +74,7 @@ class BuildingWindow(base_interfaces.Window):
                     if selected:
                         select_an_item(self)
 
-                lbl.add_key_event_listener(1, set_selected, [lbl, True], ["pressed"])
+                lbl.add_key_event_listener(1, set_selected, [lbl, True], ["unpressed"])
                 self._inventory_sp.add_widget(lbl)
 
     def __initiate_widgets(self):
