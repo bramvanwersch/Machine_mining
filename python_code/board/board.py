@@ -102,8 +102,7 @@ class Board(util.Serializer):
         self,
         belt: block_classes.ConveyorNetworkBlock
     ):
-        surrounding_blocks = self.surrounding_blocks(belt)
-        belt.check_item_movement(surrounding_blocks)
+        belt.check_item_movement()
 
     @game_timing.time_function("conveyor drawing update")
     def __redraw_conveyor_item(
@@ -111,7 +110,7 @@ class Board(util.Serializer):
         belt: block_classes.ConveyorNetworkBlock
     ):
         if belt.changed:
-            self.add_blocks(belt, update_ligth=False)
+            self.add_blocks(belt, update=False)
             belt.changed = False
 
     def to_dict(self):
@@ -309,7 +308,7 @@ class Board(util.Serializer):
     def add_blocks(
         self,
         *blocks: block_classes.Block,
-        update_ligth: bool = True
+        update: bool = True
     ):
         for block in blocks:
             if isinstance(block.material, build_materials.Building):
@@ -317,8 +316,10 @@ class Board(util.Serializer):
                 return
             if isinstance(block.material, build_materials.ConveyorBelt):
                 self.conveyor_network.add(block)
+            if isinstance(block, block_classes.SurroundableBlock) and update:
+                block.surrounding_blocks = self.surrounding_blocks(block)
             chunk = self.chunk_from_point(block.coord)
-            if update_ligth:
+            if update:
                 self.__set_block_lighting(block)
             chunk.add_blocks(block)
 

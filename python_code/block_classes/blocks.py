@@ -93,7 +93,18 @@ class Block(ABC):
         return [inventories.Item(self.material, 1)]
 
 
-class ConveyorNetworkBlock(Block):
+class SurroundableBlock(Block, ABC):
+    """Abstraction level for a Block that has surrounding blocks, to make sure that gets configured when adding"""
+
+    surrounding_blocks: Tuple[Union[None, util.BlockPointer], Union[None, util.BlockPointer],
+                              Union[None, util.BlockPointer], Union[None, util.BlockPointer]]
+
+    def __init__(self, pos, material, **kwargs):
+        super().__init__(pos, material, **kwargs)
+        self.surrounging_blocks = (None, None, None, None)
+
+
+class ConveyorNetworkBlock(SurroundableBlock):
     """Conveyor bloks that transport items"""
     __slots__ = "current_item", "__current_push_direction", "__item_surface", "changed", "__exact_item_position",\
                 "incomming_item", "next_block", "__previous_incomming_position"
@@ -151,47 +162,41 @@ class ConveyorNetworkBlock(Block):
         self.__item_surface = None
         self.changed = True
 
-    def check_item_movement(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ):
+    def check_item_movement(self):
         """Move items within the conveyor belt"""
         if self.current_item is not None:
-            self.__move_item_forward(surrounding_blocks)
+            self.__move_item_forward()
         elif self.incomming_item is not None:
             if self.incomming_item.rect.topleft != self.__previous_incomming_position:
                 self.__previous_incomming_position = self.incomming_item.rect.topleft
                 self.changed = True
         else:
-            self.__take_item(surrounding_blocks)
+            self.__take_item()
 
     @game_timing.time_function("conveyor calcluation update", "move forward")
-    def __move_item_forward(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ):
+    def __move_item_forward(self):
         """Determine if an item needs to move to the center or to the next block"""
         previous_position = self.current_item.rect.topleft
         if self.material.image_key == 0:
             if self.current_item.rect.centery > self.rect.centery:
                 self.__move_towards_center()
             else:
-                self.__move_towards_next_block(surrounding_blocks)
+                self.__move_towards_next_block()
         elif self.material.image_key == 1:
             if self.current_item.rect.centerx < self.rect.centerx:
                 self.__move_towards_center()
             else:
-                self.__move_towards_next_block(surrounding_blocks)
+                self.__move_towards_next_block()
         elif self.material.image_key == 2:
             if self.current_item.rect.centery < self.rect.centery:
                 self.__move_towards_center()
             else:
-                self.__move_towards_next_block(surrounding_blocks)
+                self.__move_towards_next_block()
         elif self.material.image_key == 3:
             if self.current_item.rect.centerx > self.rect.centerx:
                 self.__move_towards_center()
             else:
-                self.__move_towards_next_block(surrounding_blocks)
+                self.__move_towards_next_block()
 
         if self.current_item is not None and previous_position != self.current_item.rect.topleft and \
                 con.DEBUG.SHOW_BELT_ITEMS:
@@ -201,12 +206,9 @@ class ConveyorNetworkBlock(Block):
         """Move toward the center of a belt"""
         self.__set_item_position(self.material.image_key)
 
-    def __move_towards_next_block(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ):
+    def __move_towards_next_block(self):
         """Move from the center of belt to an other belt of inventory"""
-        self.__set_next_block(surrounding_blocks)
+        self.__set_next_block()
         if self.next_block is not None:
             self.__check_next_block()
             if self.current_item is not None:
@@ -214,13 +216,10 @@ class ConveyorNetworkBlock(Block):
         else:
             self.current_item.rect.center = self.rect.center
 
-    def __set_next_block(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ):
+    def __set_next_block(self):
         """Set the value for the next block. This will be chosen dependant on the __current_push_direction. If the
         next_block is None as a result of the push direction then the push direction is cycled next."""
-        elligable_blocks = self.__get_elligable_move_blocks(surrounding_blocks)
+        elligable_blocks = self.__get_elligable_move_blocks()
         if self.next_block is None:
             self.__current_push_direction = (self.__current_push_direction + 1) % 3
         self.next_block = elligable_blocks[self.__current_push_direction]
@@ -276,9 +275,9 @@ class ConveyorNetworkBlock(Block):
         progression_fraction = con.GAME_TIME.get_time() / self.material.TRANSFER_TIME
         location_y = progression_fraction * (self.rect.height + item_rect.height)
         self.__exact_item_position[1] += location_y
-        while self.__exact_item_position[1] > 1:
-            self.current_item.rect.top += 1 * sign
-            self.__exact_item_position[1] -= 1
+        while self.__exact_item_position[1] > 4:
+            self.current_item.rect.top += 4 * sign
+            self.__exact_item_position[1] -= 4
 
     def __set_x_item_position(
         self,
@@ -289,14 +288,11 @@ class ConveyorNetworkBlock(Block):
         progression_fraction = con.GAME_TIME.get_time() / self.material.TRANSFER_TIME
         location_x = progression_fraction * (self.rect.width + item_rect.width)
         self.__exact_item_position[0] += location_x
-        while self.__exact_item_position[0] > 1:
-            self.current_item.rect.left += 1 * sign
-            self.__exact_item_position[0] -= 1
+        while self.__exact_item_position[0] > 4:
+            self.current_item.rect.left += 4 * sign
+            self.__exact_item_position[0] -= 4
 
-    def __get_elligable_move_blocks(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ) -> List[Union[int, None]]:
+    def __get_elligable_move_blocks(self) -> List[Union[int, None]]:
         """Get a list of length 3 with the 3 blocks that are checked around a belt that an item can be pushed to.
 
         The requirements for an elligable block is that the block has to be an inventory or a belt and a certain
@@ -307,7 +303,7 @@ class ConveyorNetworkBlock(Block):
 
         # block 1
         block_index = (self.material.image_key - 1) % 4
-        block = surrounding_blocks[block_index]
+        block = self.surrounding_blocks[block_index]
         if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
                 self.material.image_key == block_index):
             elligible_blocks[0] = block
@@ -319,7 +315,7 @@ class ConveyorNetworkBlock(Block):
 
         # block 2
         block_index = self.material.image_key
-        block = surrounding_blocks[block_index]
+        block = self.surrounding_blocks[block_index]
         if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
                 self.material.image_key == block_index):
             elligible_blocks[1] = block
@@ -331,7 +327,7 @@ class ConveyorNetworkBlock(Block):
 
         # block 3
         block_index = (self.material.image_key + 1) % 4
-        block = surrounding_blocks[block_index]
+        block = self.surrounding_blocks[block_index]
         if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
                 self.material.image_key == block_index):
             elligible_blocks[2] = block
@@ -349,12 +345,9 @@ class ConveyorNetworkBlock(Block):
         return elligible_blocks
 
     @game_timing.time_function("conveyor calcluation update", "take item")
-    def __take_item(
-        self,
-        surrounding_blocks: List[Union[None, Block]]
-    ):
+    def __take_item(self):
         """Take an item from an inventory and set it as the current_item"""
-        opposite_block = surrounding_blocks[self.material.image_key - 2]  # block that is opposite the belt direction
+        opposite_block = self.surrounding_blocks[self.material.image_key - 2]  # block that is opposite belt direction
         if not isinstance(opposite_block.block, ContainerBlock):
             return
         item = opposite_block.get_transport_item(self.material.STACK_SIZE)

@@ -21,6 +21,8 @@ class TaskControl:
         storing what tasks can likely be performed and which ones not.
         """
         for block in blocks:
+            if isinstance(block, util.BlockPointer):
+                block = block.block
             if type == "Building":
                 task = BuildTask(block, priority = priority, **kwargs)
             elif type == "Request":
@@ -92,6 +94,7 @@ class TaskControl:
     def __check_surrounding_tasks(self, block):
         surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
         for block in surrounding_task_blocks:
+            block = block.block
             b = self.unreachable_block_tasks.pop(block, None)
             if b:
                 self.reachable_block_tasks[block] = b

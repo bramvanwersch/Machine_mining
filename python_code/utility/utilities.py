@@ -53,6 +53,12 @@ class BlockPointer:
         except AttributeError:
             raise(AttributeError(f"{type(self.block)} has no attribute {key}"))
 
+    def __hash__(self):
+        return hash(self.block)
+
+    def __eq__(self, other):
+        return self.block.__eq__(other)
+
     def set_block(self, block: "Block"):
         super().__setattr__("block", block)
 
