@@ -5,7 +5,7 @@ import tasks
 import utility.constants as con
 import entities
 import utility.event_handling
-import interfaces.small_interfaces as small_interface
+import interfaces.other_interfaces as small_interface
 import interfaces.interface_utility as interface_util
 import utility.utilities as util
 from block_classes import buildings, environment_materials, building_materials

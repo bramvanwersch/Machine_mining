@@ -12,7 +12,7 @@ import board.board
 import entities
 import tasks
 from board import sprite_groups as sprite_groups, chunks as chunks
-from interfaces import widgets as widgets, interface_utility as interface_util, small_interfaces as small_interfaces, \
+from interfaces import widgets as widgets, interface_utility as interface_util, other_interfaces as small_interfaces, \
     managers as window_managers, console
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
