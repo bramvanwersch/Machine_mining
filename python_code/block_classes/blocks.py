@@ -2,8 +2,8 @@
 
 # library imports
 import pygame
-from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union
-from abc import ABC
+from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable
+from abc import ABC, abstractmethod
 
 # own imports
 import utility.constants as con
@@ -441,7 +441,7 @@ class ContainerBlock(NetworkEdgeBlock):
 
 
 class MultiBlock(Block, ABC):
-    MULTIBLOCK_DIMENSION: ClassVar[util.Size] = util.Size(1, 1)
+    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1]]
     # this works fine with inheritance
     __slots__ = "blocks"
 
@@ -458,7 +458,7 @@ class MultiBlock(Block, ABC):
 
     @classmethod
     def size(cls) -> ClassVar[util.Size]:
-        return cls.SIZE * cls.MULTIBLOCK_DIMENSION
+        return cls.SIZE * (len(cls.MULTIBLOCK_LAYOUT[0]), len(cls.MULTIBLOCK_LAYOUT))
 
     def _get_blocks(self) -> List[List[Block]]:
         # has to be the case to prevent circular imports
@@ -466,12 +466,10 @@ class MultiBlock(Block, ABC):
 
         blocks = []
         topleft = self.rect.topleft
-        image_key_count = 1
-        for row_i in range(self.MULTIBLOCK_DIMENSION.height):
+        for row_i, row in enumerate(self.MULTIBLOCK_LAYOUT):
             block_row = []
-            for column_i in range(self.MULTIBLOCK_DIMENSION.width):
-                material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key_count)
-                image_key_count += 1
+            for column_i, image_key in enumerate(row):
+                material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key)
                 pos = [topleft[0] + column_i * con.BLOCK_SIZE.width, topleft[1] + row_i * con.BLOCK_SIZE.height]
                 block_row.append(material.to_block(pos, id_=self.id, action=self._action_function))
             blocks.append(block_row)

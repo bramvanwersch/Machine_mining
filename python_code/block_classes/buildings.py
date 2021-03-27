@@ -2,7 +2,7 @@
 
 # library imports
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type
+from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type, Hashable
 
 # own imports
 import block_classes.building_materials as build_materials
@@ -145,7 +145,7 @@ class Terminal(InterfaceBuilding):
     Terminal building. The main interaction centrum for the workers
     """
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.TerminalMaterial
-    MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
+    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
     def __init__(
@@ -159,10 +159,9 @@ class Terminal(InterfaceBuilding):
     def create_interface(
         self,
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
-        **kwargs
     ) -> base_interface.Window:
         """Innitiate the interface window"""
-        return self.INTERFACE_TYPE(self, sprite_group, title="TERMINAL", **kwargs)
+        return self.INTERFACE_TYPE(self, sprite_group, title="TERMINAL")
 
 
 class StoneChest(InterfaceBuilding):
@@ -170,7 +169,7 @@ class StoneChest(InterfaceBuilding):
     Terminal building. The main interaction centrum for the workers
     """
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.StoneChestMaterial
-    MULTIBLOCK_DIMENSION: util.Size = util.Size(1, 1)
+    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
     def __init__(
@@ -184,10 +183,9 @@ class StoneChest(InterfaceBuilding):
     def create_interface(
         self,
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
-        **kwargs
     ) -> base_interface.Window:
         """Innitiate the interface window"""
-        return self.INTERFACE_TYPE(self, sprite_group, title="STONE CHEST", **kwargs)
+        return self.INTERFACE_TYPE(self, sprite_group, title="STONE CHEST")
 
 
 class Furnace(CraftingInterfaceBuilding):
@@ -195,7 +193,7 @@ class Furnace(CraftingInterfaceBuilding):
     Terminal building. The main interaction centrum for the workers
     """
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FurnaceMaterial
-    MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
+    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FurnaceWindow
 
     def __init__(
@@ -210,7 +208,7 @@ class Furnace(CraftingInterfaceBuilding):
 
 class Factory(CraftingInterfaceBuilding):
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FactoryMaterial
-    MULTIBLOCK_DIMENSION: util.Size = util.Size(2, 2)
+    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
 
     def __init__(

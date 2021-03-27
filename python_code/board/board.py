@@ -59,7 +59,6 @@ class Board(util.Serializer):
 
     def update_board(self):
 
-        # update lighting
         self.change_light_levels()
         self.changed_light_blocks = set()
 

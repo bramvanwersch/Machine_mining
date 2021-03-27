@@ -112,7 +112,10 @@ class CraftingWindow(base_interface.Window, ABC):
         if over_time <= 0:
             self._finish_item_crafting(over_time)
 
-    def _finish_item_crafting(self, over_time: int):
+    def _finish_item_crafting(
+        self,
+        over_time: int
+    ):
         """Finish the crafting of an item, remove the items used for crafting and add the final product"""
         self._crafting_time[0] = abs(over_time)
         item = inventories.Item(self._craftable_item_recipe.material(), self._craftable_item_recipe.quantity)
@@ -123,6 +126,7 @@ class CraftingWindow(base_interface.Window, ABC):
         # remove all items
         for item in self._craftable_item_recipe.needed_items:
             self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
+        self.crafting = False
 
     def _check_materials(self) -> bool:
         """Check if all materials are present to start crafting"""
