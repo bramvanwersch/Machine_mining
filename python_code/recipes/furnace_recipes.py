@@ -16,7 +16,7 @@ class BaseFurnaceRecipe(ABC):
 
 class IronBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 5
-    CRAFTING_TIME = 3000
+    CRAFTING_TIME = 10_000
 
     def __init__(self):
         mat = ground_materials.IronIngot
@@ -34,7 +34,7 @@ class IronBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
 
 class ZincBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 2
-    CRAFTING_TIME = 3000
+    CRAFTING_TIME = 10_000
 
     def __init__(self):
         mat = ground_materials.ZincIngot
@@ -52,7 +52,7 @@ class ZincBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
 
 class GoldBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 4
-    CRAFTING_TIME = 3000
+    CRAFTING_TIME = 15_000
 
     def __init__(self):
         mat = ground_materials.GoldIngot
@@ -70,7 +70,7 @@ class GoldBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
 
 class CopperBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 3
-    CRAFTING_TIME = 3000
+    CRAFTING_TIME = 10_000
 
     def __init__(self):
         mat = ground_materials.CopperIngot
@@ -88,7 +88,7 @@ class CopperBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
 
 class TitaniumBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 10
-    CRAFTING_TIME = 3000
+    CRAFTING_TIME = 30_000
 
     def __init__(self):
         mat = ground_materials.TitaniumIngot
@@ -106,7 +106,7 @@ class TitaniumBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
 
 class OralchiumBarRecipe(base_recipes.BaseRecipe, BaseFurnaceRecipe):
     FUEL_CONSUMPTION = 10
-    CRAFTING_TIME = 3000
+    CRAFTING_TIME = 10_000
 
     def __init__(self):
         mat = ground_materials.OralchiumIngot

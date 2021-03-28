@@ -84,6 +84,11 @@ class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (40, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
+        {1: utility.image_handling.ImageDefinition("buildings", (40, 20)),
+         2: utility.image_handling.ImageDefinition("buildings", (50, 20)),
+         3: utility.image_handling.ImageDefinition("buildings", (40, 30)),
+         4: utility.image_handling.ImageDefinition("buildings", (50, 30))}
+    ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {1: utility.image_handling.ImageDefinition("buildings", (40, 0)),
          2: utility.image_handling.ImageDefinition("buildings", (50, 0)),
          3: utility.image_handling.ImageDefinition("buildings", (40, 10)),

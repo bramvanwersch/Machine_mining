@@ -207,7 +207,7 @@ class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
         block_classes.VariableSurfaceBlock.__init__(self)
 
 
-class Factory(CraftingInterfaceBuilding):
+class Factory(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FactoryMaterial
     MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
@@ -218,8 +218,10 @@ class Factory(CraftingInterfaceBuilding):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        super().__init__(pos, r_constants.recipe_books["factory"], sprite_group, size=300,
-                         in_filter=inventories.Filter(whitelist=[]), **kwargs)
+        CraftingInterfaceBuilding.__init__(self, pos, r_constants.recipe_books["factory"], sprite_group, size=300,
+                                           in_filter=inventories.Filter(whitelist=[]), **kwargs)
+        block_classes.VariableSurfaceBlock.__init__(self)
+
 
 
 material_mapping = {"TerminalMaterial": Terminal,
