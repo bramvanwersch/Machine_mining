@@ -188,7 +188,7 @@ class StoneChest(InterfaceBuilding):
         return self.INTERFACE_TYPE(self, sprite_group, title="STONE CHEST")
 
 
-class Furnace(CraftingInterfaceBuilding):
+class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -202,8 +202,9 @@ class Furnace(CraftingInterfaceBuilding):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        super().__init__(pos, r_constants.recipe_books["furnace"], sprite_group,
-                         in_filter=inventories.Filter(whitelist=[]), size=200, **kwargs)
+        CraftingInterfaceBuilding.__init__(self, pos, r_constants.recipe_books["furnace"], sprite_group,
+                                           in_filter=inventories.Filter(whitelist=[]), size=200, **kwargs)
+        block_classes.VariableSurfaceBlock.__init__(self)
 
 
 class Factory(CraftingInterfaceBuilding):

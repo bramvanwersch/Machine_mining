@@ -63,6 +63,11 @@ class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (20, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
+        {1: utility.image_handling.ImageDefinition("buildings", (20, 20)),
+         2: utility.image_handling.ImageDefinition("buildings", (30, 20)),
+         3: utility.image_handling.ImageDefinition("buildings", (20, 30)),
+         4: utility.image_handling.ImageDefinition("buildings", (30, 30))}
+    ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {1: utility.image_handling.ImageDefinition("buildings", (20, 0)),
          2: utility.image_handling.ImageDefinition("buildings", (30, 0)),
          3: utility.image_handling.ImageDefinition("buildings", (20, 10)),

@@ -47,6 +47,7 @@ class Board(util.Serializer):
         self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
         self.buildings = {}
+        self.varaible_blocks = set()
         self.changed_light_blocks = set()
 
         self.__grow_update_time = grow_update_time
@@ -67,6 +68,8 @@ class Board(util.Serializer):
         self.__update_conveyor_network()
 
         self.__update_plants()
+
+        self.__update_variable_blocks()
 
         # chunk updates
         for chunk in self.loaded_chunks.copy():
@@ -91,26 +94,18 @@ class Board(util.Serializer):
                     self.add_blocks(*new_blocks)
         self.__grow_update_time = 0
 
+    @game_timing.time_function("conveyor calcluation update")
     def __update_conveyor_network(self):
         for belt in self.conveyor_network:
-            self.__calculate_conveyor_movement(belt)
-            self.__redraw_conveyor_item(belt)
+            belt.check_item_movement()
 
-    @game_timing.time_function("conveyor calcluation update")
-    def __calculate_conveyor_movement(
-        self,
-        belt: block_classes.ConveyorNetworkBlock
-    ):
-        belt.check_item_movement()
-
-    @game_timing.time_function("conveyor drawing update")
-    def __redraw_conveyor_item(
-        self,
-        belt: block_classes.ConveyorNetworkBlock
-    ):
-        if belt.changed:
-            self.add_blocks(belt, update=False)
-            belt.changed = False
+    @game_timing.time_function("variable block updates")
+    def __update_variable_blocks(self):
+        """Check all blocks with varaible surfaces that potentially need to be changed if that is the case redraw the
+        surface"""
+        for block in self.varaible_blocks:
+            if block.changed:
+                self.add_blocks(block, update=False)
 
     def to_dict(self):
         return {
@@ -248,9 +243,14 @@ class Board(util.Serializer):
             chunks[index] = surrounding_chunk
         return chunks
 
-    def remove_blocks(self, *blocks):
+    def remove_blocks(
+        self,
+        *blocks: Union[block_classes.Block, util.BlockPointer]
+    ):
         removed_items = []
         for block in blocks:
+            if isinstance(block, util.BlockPointer):
+                block = block.block
             if isinstance(block.material, build_materials.Building):
                 removed_items.extend(self.remove_building(block))
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
@@ -258,6 +258,8 @@ class Board(util.Serializer):
             else:
                 if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
+                if isinstance(block, block_classes.VariableSurfaceBlock):
+                    self.varaible_blocks.remove(block)
                 chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
@@ -304,16 +306,22 @@ class Board(util.Serializer):
 
     def add_blocks(
         self,
-        *blocks: block_classes.Block,
+        *blocks: Union[block_classes.Block, util.BlockPointer],
         update: bool = True
     ):
         for block in blocks:
+            if isinstance(block, util.BlockPointer):
+                block = block.block
             if isinstance(block.material, build_materials.Building):
+                if update and isinstance(block, block_classes.VariableSurfaceBlock):
+                    self.varaible_blocks.add(block)
                 self.add_building(block)
                 return
             if isinstance(block.material, build_materials.ConveyorBelt):
                 self.conveyor_network.add(block)
-            if isinstance(block, block_classes.SurroundableBlock) and update:
+            if update and isinstance(block, block_classes.VariableSurfaceBlock):
+                self.varaible_blocks.add(block)
+            if update and isinstance(block, block_classes.SurroundableBlock):
                 block.surrounding_blocks = self.surrounding_blocks(block)
             chunk = self.chunk_from_point(block.coord)
             if update:
@@ -496,9 +504,9 @@ class Board(util.Serializer):
         t = buildings.Terminal(appropriate_location + (-40, 0), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (40, 0), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (0, 0), self.main_sprite_group)
-        self.add_building(t)
-        self.add_building(c)
-        self.add_building(f)
+        self.add_blocks(t)
+        self.add_blocks(c)
+        self.add_blocks(f)
         self.__terminal = t
 
     def add_to_terminal_inventory(self, item):

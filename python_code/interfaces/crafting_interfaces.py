@@ -69,7 +69,10 @@ class CraftingWindow(base_interface.Window, ABC):
     def update(self, *args):
         super().update(*args)
         if self._craftable_item_recipe is not None:
+            before_state = self._crafting
             self._crafting = self._check_materials()
+            if before_state != self._crafting:
+                self._craft_building.set_active(self._crafting)
             self.__configure_filters()
 
             self._craft_item()
@@ -126,7 +129,6 @@ class CraftingWindow(base_interface.Window, ABC):
         # remove all items
         for item in self._craftable_item_recipe.needed_items:
             self._craft_building.inventory.get(item.name(), item.quantity, ignore_filter=True)
-        self.crafting = False
 
     def _check_materials(self) -> bool:
         """Check if all materials are present to start crafting"""

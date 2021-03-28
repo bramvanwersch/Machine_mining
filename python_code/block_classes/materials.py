@@ -18,6 +18,7 @@ class BaseMaterial(ABC):
     """
     Base material class that defines the behaviour of a block
     """
+    __slots__ = "_surface", "_active_surface", "__transparant_group", "_active"
     HARDNESS: ClassVar[int] = 1
     WHEIGHT: ClassVar[int] = 1
 
@@ -31,16 +32,19 @@ class BaseMaterial(ABC):
 
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.Block
     BUILDABLE: ClassVar[bool] = True
-    __slots__ = "_surface", "__transparant_group"
 
     _surface: pygame.Surface
     __transparant_group: int
 
-    def __init__(self, image: pygame.Surface = None, **kwargs):
-        self._surface = self._configure_surface(image=image)
+    def __init__(self, **kwargs):
+        self._surface = self._configure_surface()
+        self._active_surface = self._configure_active_surface()
 
         # transparant groups are allowed to be changed
         self.__transparant_group = self._BASE_TRANSPARANT_GROUP
+
+        # flag that controls if the active or the normal surfaces are returned. Surfaces have to actively be redrawn
+        self._active = False
 
     @property
     def hardness(self) -> int:
@@ -103,8 +107,13 @@ class BaseMaterial(ABC):
                f"Wheight: {self.wheight}kg"
 
     @abstractmethod
-    def _configure_surface(self, image: pygame.Surface = None) -> pygame.Surface:
-        """Configure the surface if the material on instantiation"""
+    def _configure_surface(self) -> pygame.Surface:
+        """Configure the surface of the material on instantiation"""
+        pass
+
+    @abstractmethod
+    def _configure_active_surface(self) -> Union[List[pygame.Surface], None]:
+        """A surface that can be used to display the active state of a block"""
         pass
 
     @property
@@ -114,6 +123,19 @@ class BaseMaterial(ABC):
 
     def copy(self, **kwargs):
         return type(self)(**kwargs)
+
+    @property
+    def active(self) -> bool:
+        return self._active
+
+    def set_active(
+        self,
+        value: bool
+    ):
+        if self._active_surface is None:
+            raise util.GameException(f"Material {type(self)} has no ACTIVE_IMAGE_DEFINITION and as a result can not"
+                                     f"be set active")
+        self._active = value
 
 
 class ColorDefinition:
@@ -199,6 +221,7 @@ class ColorMaterial(BaseMaterial, ABC):
     Materials can inherit this when they simply are one color
     """
     COLOR_DEFINITIONS: ClassVar[ColorDefinition]
+    ACTIVE_COLOR_DEFINITIONS: ClassVar[Union[ColorDefinition, None]] = None
 
     _surface: List[pygame.Surface]
 
@@ -208,9 +231,12 @@ class ColorMaterial(BaseMaterial, ABC):
     def COLOR_DEFINITIONS(self) -> ColorDefinition:
         pass
 
-    def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
+    def _configure_surface(self) -> List[pygame.Surface]:
         """the self._surface attribute is set to this value. For colors this is a list of possible colors"""
         return self.COLOR_DEFINITIONS.images()
+
+    def _configure_active_surface(self) -> List[pygame.Surface]:
+        return self.ACTIVE_COLOR_DEFINITIONS.images() if self.ACTIVE_COLOR_DEFINITIONS else None
 
     @property
     def surface(self) -> pygame.Surface:
@@ -240,9 +266,13 @@ class BorderMaterial(ColorMaterial):
 
 class ImageMaterial(BaseMaterial, ABC):
     """Materials displaying an image"""
+    __slots__ = "_active_surface", "_active"
     IMAGE_DEFINITIONS: ClassVar[ImageDefinition]
+    ACTIVE_IMAGE_DEFINITIONS: ClassVar[Union[ImageDefinition, None]] = None
 
     _surface: List[pygame.Surface]
+    _active_surface: List[pygame.Surface]
+    _active: bool
 
     # noinspection PyPep8Naming
     @property
@@ -250,13 +280,19 @@ class ImageMaterial(BaseMaterial, ABC):
     def IMAGE_DEFINITIONS(self) -> ImageDefinition:
         pass
 
-    def _configure_surface(self, image: pygame.Surface = None) -> List[pygame.Surface]:
+    def _configure_surface(self) -> List[pygame.Surface]:
         """the self._surface attribute is set to this value. This is a list of possible images"""
         return self.IMAGE_DEFINITIONS.images()
 
+    def _configure_active_surface(self) -> Union[List[pygame.Surface], None]:
+        """the self._surface attribute is set to this value. This is a list of possible images"""
+        return self.ACTIVE_IMAGE_DEFINITIONS.images() if self.ACTIVE_IMAGE_DEFINITIONS else None
+
     @property
     def surface(self) -> pygame.Surface:
-        return choice(self._surface)
+        if not self._active:
+            return choice(self._surface)
+        return choice(self._active_surface)
 
     @property
     def full_surface(self) -> pygame.Surface:
@@ -266,26 +302,40 @@ class ImageMaterial(BaseMaterial, ABC):
 
 class MultiImageMaterial(ImageMaterial, ABC):
     """Class for materials that have multiple images associated with them that can be bound to keys in a dictionary"""
-    IMAGE_DEFINITIONS: ClassVar[Dict[Any, ImageDefinition]]
     __slots__ = "image_key"
+    IMAGE_DEFINITIONS: ClassVar[Dict[Any, ImageDefinition]]
+    ACTIVE_IMAGE_DEFINITIONS: ClassVar[Union[Dict[Any, ImageDefinition], None]] = None
 
     image_key: int
     _surface: Dict[Any, List[pygame.Surface]]
+    _active_surface: Dict[Any, List[pygame.Surface]]
 
     def __init__(self, image_key: Any = None, **kwargs):
         super().__init__(**kwargs)
         self.image_key = image_key if image_key else list(self.IMAGE_DEFINITIONS.keys())[0]
 
-    def _configure_surface(self, image: pygame.Surface = None) -> Dict[Any, List[pygame.Surface]]:
-        """the self._surface attribute is set to this value. This is dictionary of lists of possible images"""
+    def _configure_surface(self) -> Dict[Any, List[pygame.Surface]]:
+        return self.__get_definition_surfaces(self.IMAGE_DEFINITIONS)
+
+    def _configure_active_surface(self) -> Union[Dict[Any, List[pygame.Surface]], None]:
+        return self.__get_definition_surfaces(self.ACTIVE_IMAGE_DEFINITIONS)
+
+    def __get_definition_surfaces(
+        self,
+        definitions: Dict[Any, ImageDefinition]
+    ) -> Union[Dict[Any, List[pygame.Surface]], None]:
+        if definitions is None:
+            return None
         surfaces = dict()
-        for name, image_defenition in self.IMAGE_DEFINITIONS.items():
+        for name, image_defenition in definitions.items():
             surfaces[name] = image_defenition.images()
         return surfaces
 
     @property
     def surface(self):
-        return choice(self._surface[self.image_key])
+        if not self._active:
+            return choice(self._surface[self.image_key])
+        return choice(self._active_surface[self.image_key])
 
     @property
     def full_surface(self) -> pygame.Surface:
@@ -369,4 +419,3 @@ class TransportableMaterial(ABC):
     @property
     def transport_surface(self) -> pygame.Surface:
         return self.TRANSPORT_IMAGE_DEFINITION.images()[0]
-

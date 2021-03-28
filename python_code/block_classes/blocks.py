@@ -92,21 +92,58 @@ class Block(ABC):
         """Get items returned by this block when destroyed and do actions neccesairy before destroying"""
         return [inventories.Item(self.material, 1)]
 
+    def set_active(
+        self,
+        value: bool
+    ):
+        """Set the underlying material in an active state. This means that the surface that is returned will be
+        different this does not directly reflect on the board, that has to be done separately"""
+        if isinstance(self, VariableSurfaceBlock):
+            self._set_changed(True)
+        self.material.set_active(value)
+
+
+class VariableSurfaceBlock(ABC):
+
+    __changed: bool
+
+    def __init__(self):
+        self.__changed = False
+
+    def _set_changed(
+        self,
+        value: bool
+    ):
+        self.__changed = value
+
+    @property
+    def changed(self):
+        """Check if the block image has changed and flip the flag if that is the case"""
+        changed = self.__changed
+        if changed is True:
+            self.__changed = False
+        return changed
+
 
 class SurroundableBlock(Block, ABC):
     """Abstraction level for a Block that has surrounding blocks, to make sure that gets configured when adding"""
-
+    __slots__ = "surrounding_blocks"
     surrounding_blocks: Tuple[Union[None, util.BlockPointer], Union[None, util.BlockPointer],
                               Union[None, util.BlockPointer], Union[None, util.BlockPointer]]
 
-    def __init__(self, pos, material, **kwargs):
+    def __init__(
+        self,
+        pos: Union[Tuple[int, int], List[int]],
+        material: "building_materials.ConveyorBelt",
+        **kwargs
+    ):
         super().__init__(pos, material, **kwargs)
         self.surrounging_blocks = (None, None, None, None)
 
 
-class ConveyorNetworkBlock(SurroundableBlock):
+class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     """Conveyor bloks that transport items"""
-    __slots__ = "current_item", "__current_push_direction", "__item_surface", "changed", "__exact_item_position",\
+    __slots__ = "current_item", "__current_push_direction", "__item_surface", "__exact_item_position",\
                 "incomming_item", "next_block", "__previous_incomming_position"
 
     material: "building_materials.ConveyorBelt"
@@ -116,7 +153,6 @@ class ConveyorNetworkBlock(SurroundableBlock):
     __item_surface: [None, pygame.Surface]
     __exact_item_position: List[int]
     __previous_incomming_position: Tuple[int, int]
-    changed: bool
     next_block: Union[Block, None]
 
     def __init__(
@@ -125,14 +161,14 @@ class ConveyorNetworkBlock(SurroundableBlock):
         material: "building_materials.ConveyorBelt",
         **kwargs
     ):
-        super().__init__(pos, material, **kwargs)
+        SurroundableBlock.__init__(self, pos, material, **kwargs)
+        VariableSurfaceBlock.__init__(self)
         self.current_item = None
         self.incomming_item = None
         self.__current_push_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
         self.__item_surface = None  # surface tracking for efficiency
         self.__exact_item_position = [0, 0]
         self.__previous_incomming_position = (0, 0)  # track the previous position of the incomming item for efficiency
-        self.changed = False  # flag for changes
         self.next_block = None  # the block selected to push an item to
 
     def put_current_item(
@@ -160,7 +196,7 @@ class ConveyorNetworkBlock(SurroundableBlock):
         self.current_item = None
         self.__exact_item_position = [0, 0]
         self.__item_surface = None
-        self.changed = True
+        self._set_changed(True)
 
     def check_item_movement(self):
         """Move items within the conveyor belt"""
@@ -169,7 +205,7 @@ class ConveyorNetworkBlock(SurroundableBlock):
         elif self.incomming_item is not None:
             if self.incomming_item.rect.topleft != self.__previous_incomming_position:
                 self.__previous_incomming_position = self.incomming_item.rect.topleft
-                self.changed = True
+                self._set_changed(True)
         else:
             self.__take_item()
 
@@ -200,7 +236,7 @@ class ConveyorNetworkBlock(SurroundableBlock):
 
         if self.current_item is not None and previous_position != self.current_item.rect.topleft and \
                 con.DEBUG.SHOW_BELT_ITEMS:
-            self.changed = True
+            self._set_changed(True)
 
     def __move_towards_center(self):
         """Move toward the center of a belt"""
@@ -362,7 +398,7 @@ class ConveyorNetworkBlock(SurroundableBlock):
             elif self.material.image_key == 3:
                 self.current_item.rect.left = self.rect.right
             if con.DEBUG.SHOW_BELT_ITEMS:
-                self.changed = True
+                self._set_changed(True)
 
     @property
     def surface(self) -> pygame.Surface:
@@ -370,16 +406,15 @@ class ConveyorNetworkBlock(SurroundableBlock):
         held"""
         if (self.current_item is None and self.incomming_item is None) or not con.DEBUG.SHOW_BELT_ITEMS:
             return self.material.surface
-        if self.changed:
-            self.__item_surface = self.material.surface.copy()
-            if self.current_item is not None:
-                relative_position = (self.current_item.rect.left - self.rect.left,
-                                     self.current_item.rect.top - self.rect.top)
-                self.__item_surface.blit(self.current_item.material.transport_surface, relative_position)  # noqa
-            elif self.incomming_item is not None:
-                relative_position = (self.incomming_item.rect.left - self.rect.left,
-                                     self.incomming_item.rect.top - self.rect.top)
-                self.__item_surface.blit(self.incomming_item.material.transport_surface, relative_position)  # noqa
+        self.__item_surface = self.material.surface.copy()
+        if self.current_item is not None:
+            relative_position = (self.current_item.rect.left - self.rect.left,
+                                 self.current_item.rect.top - self.rect.top)
+            self.__item_surface.blit(self.current_item.material.transport_surface, relative_position)  # noqa
+        elif self.incomming_item is not None:
+            relative_position = (self.incomming_item.rect.left - self.rect.left,
+                                 self.incomming_item.rect.top - self.rect.top)
+            self.__item_surface.blit(self.incomming_item.material.transport_surface, relative_position)  # noqa
         return self.__item_surface
 
     def destroy(self) -> List[inventories.Item]:
@@ -478,3 +513,13 @@ class MultiBlock(Block, ABC):
     def destroy(self) -> List[inventories.Item]:
         items = self.blocks[0][0].destroy()
         return items
+
+    def set_active(
+        self,
+        value: bool
+    ):
+        if isinstance(self, VariableSurfaceBlock):
+            self._set_changed(True)
+        for row in self.blocks:
+            for block in row:
+                block.material.set_active(value)
