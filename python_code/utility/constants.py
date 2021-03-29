@@ -29,6 +29,7 @@ DEBUG = DebugValues()
 TESTING = True  # can be used to cheat in items at certain places for easier testing
 SHOW_BLOCK_BORDER = True
 TEST_BOARD = TESTING
+SEED = 8  # use this as a seed for the random
 
 # innitialize fonts to pre load a font
 pygame.font.init()

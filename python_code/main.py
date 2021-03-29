@@ -3,6 +3,7 @@
 # library imports
 import pygame
 import os
+from random import seed
 
 # own imports
 import utility.constants as con
@@ -28,6 +29,8 @@ class Main:
         pygame.mouse.set_visible(True)
 
         self.__innitialize_game_varaibles()
+        if con.TESTING:
+            seed(con.SEED)
         self.run()
 
     def __innitialize_game_varaibles(self):
