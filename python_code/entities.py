@@ -1,10 +1,11 @@
 from abc import ABC
 from itertools import count
 import pygame
-from typing import List, Tuple, Union, TYPE_CHECKING, Set
+from typing import List, Tuple, Union, TYPE_CHECKING, Set, ClassVar
 
 import utility.constants as con
 import utility.utilities as util
+from utility import image_handling
 from utility import inventories
 import tasks
 import utility.event_handling as event_handling
@@ -293,6 +294,8 @@ class Worker(MovingEntity, util.ConsoleReadable):
     NUMBER = count(1, 1)
     VISON_RADIUS = 8 * con.BLOCK_SIZE.width
     EMITTED_LIGTH = 10
+    WORKER_IMAGE: ClassVar[image_handling.ImageDefinition] = \
+        image_handling.ImageDefinition("general", (0, 40), size=util.Size(20, 20), image_size=util.Size(20, 20))
 
     def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
@@ -311,6 +314,9 @@ class Worker(MovingEntity, util.ConsoleReadable):
         # for loading purposes
         if self.board:
             self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, self.EMITTED_LIGTH)
+
+    def _create_surface(self, size, color):
+        return self.WORKER_IMAGE.images()[0]
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
@@ -401,7 +407,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
         if self.speed.x == self.speed.y == 0:
             self.dest = self.path.pop()
 
-        #x move
+        # x move
         if self.orig_rect.x < self.dest[0]:
             self.speed.x = min(self.max_speed, self.dest[0] - self.orig_rect.x)
         elif self.orig_rect.x > self.dest[0]:
@@ -410,7 +416,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
         else:
             self.speed.x = 0
 
-        #y move
+        # y move
         if self.orig_rect.y < self.dest[1]:
             self.speed.y = min(self.max_speed, self.dest[1] - self.orig_rect.y)
         elif self.orig_rect.y > self.dest[1]:
@@ -418,11 +424,11 @@ class Worker(MovingEntity, util.ConsoleReadable):
         else:
             self.speed.y = 0
 
-        #check for collision
-        if not self.board.transparant_collide((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
-            self.speed.x = 0
-        if not self.board.transparant_collide((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):
-            self.speed.y = 0
+        # #check for collision
+        # if not self.board.transparant_collide((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
+        #     self.speed.x = 0
+        # if not self.board.transparant_collide((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):
+        #     self.speed.y = 0
 
 
 class TextSprite(ZoomableSprite):
