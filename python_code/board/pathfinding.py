@@ -85,55 +85,29 @@ class PathFinder:
         path = Path(start)
         prev_node = node
         node = node.parent
-        target_location = prev_node.rect.center
         while node is not None:
             direction = self.DIRECTIONS[prev_node.direction_index]
             if direction in ["N", "S"]:
                 if direction == "N":
-                    y = node.rect.top
+                    y = prev_node.rect.bottom
                 else:
-                    y = node.rect.bottom - con.BLOCK_SIZE.height
-                # first check if the target should allign with the left or right
-                # side
-                if prev_node.rect.left > node.rect.left:
-                    left_distance = abs(prev_node.rect.left - target_location[0])
-                else:
-                    left_distance = abs(node.rect.left - target_location[0])
-                if prev_node.rect.right < node.rect.right:
-                    right_distance = abs(prev_node.rect.right - target_location[0])
-                else:
-                    right_distance = abs(node.rect.right - target_location[0])
-
-                # configure x
-                if left_distance < right_distance:
-                    x = max(prev_node.rect.left, node.rect.left)
-                else:
-                    x = min(prev_node.rect.right, node.rect.right) - con.BLOCK_SIZE[0]
+                    y = prev_node.rect.top - con.BLOCK_SIZE.height
+                y = [y, y]
+                x = [max(prev_node.rect.left, node.rect.left),
+                     min(prev_node.rect.right, node.rect.right - con.BLOCK_SIZE.width)]
             elif direction in ["E", "W"]:
                 if direction == "E":
-                    x = node.rect.right - con.BLOCK_SIZE.width
+                    x = prev_node.rect.left - con.BLOCK_SIZE.width
                 else:
-                    x = node.rect.left
-                if prev_node.rect.top > node.rect.top:
-                    top_distance = abs(node.rect.top - target_location[1])
-                else:
-                    top_distance = abs(prev_node.rect.top - target_location[1])
-                if prev_node.rect.bottom < node.rect.bottom:
-                    bottom_distance = abs(node.rect.bottom - target_location[1])
-                else:
-                    bottom_distance = abs(prev_node.rect.bottom - target_location[1])
-
-                # configure y
-                if top_distance < bottom_distance:
-                    y = max(prev_node.rect.top, node.rect.top)
-                else:
-                    y = min(prev_node.rect.bottom, node.rect.bottom) - con.BLOCK_SIZE[1]
+                    x = prev_node.rect.right
+                x = [x, x]
+                y = [max(prev_node.rect.top, node.rect.top),
+                     min(prev_node.rect.bottom, node.rect.bottom) - con.BLOCK_SIZE.height]
             else:
                 raise util.GameException("Invalid direction")
             path.append((x, y))
             prev_node = node
             node = node.parent
-            target_location = (x, y)
         return path
 
     def pathfind(self, start, end):
@@ -198,7 +172,7 @@ class PathFinder:
                     continue
 
                 # Create the f, g, and h values
-                child.g = current_node.g + 1
+                child.g = current_node.g + util.manhattan_distance(child.position, current_node.position)
                 child.h = util.manhattan_distance(child.position, end_node.position)
                 child.f = child.g + child.h
 
@@ -221,10 +195,12 @@ class Path:
         self.__coordinates = []
         self.__lenght = 0
 
-    def append(self, item):
-        self.__coordinates.append(item)
+    def append(self, point):
+        self.__coordinates.append(point)
         # distance will be zero for the first addition
-        self.__lenght += util.manhattan_distance(item, self.__coordinates[-1])
+        point1 = (sum(point[0]) / 2, sum(point[1]) / 2)
+        point2 = (sum(self.__coordinates[-1][0]) / 2, sum(self.__coordinates[-1][1]) / 2)
+        self.__lenght += util.manhattan_distance(point1, point2)
 
     def pop(self, index=-1):
         return self.__coordinates.pop(index)
@@ -254,7 +230,7 @@ class Node:
         self.parent = parent
         # in order y, x
         self.rect = rect
-        # value that tells the direction between the parent node en this node
+        # value that tells the direction between the parent node en this node seen from the parent
         self.direction_index = direction_index
 
         # used for the A* algorithm calculation of distance
@@ -272,7 +248,16 @@ class Node:
 
         :return: the center of the AirRectangle
         """
-        return self.rect.center
+        if self.direction_index is None:
+            return self.rect.center
+        elif self.direction_index == 0:
+            return self.rect.centerx, self.rect.bottom + con.BLOCK_SIZE.height
+        elif self.direction_index == 1:
+            return self.rect.right, self.rect.centery
+        elif self.direction_index == 2:
+            return self.rect.centerx, self.rect.top
+        elif self.direction_index == 3:
+            return self.rect.left - con.BLOCK_SIZE.width, self.rect.centery
 
     def __str__(self):
         return str(self.position[::-1])

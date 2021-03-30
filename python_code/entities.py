@@ -408,19 +408,19 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.dest = self.path.pop()
 
         # x move
-        if self.orig_rect.x < self.dest[0]:
-            self.speed.x = min(self.max_speed, self.dest[0] - self.orig_rect.x)
-        elif self.orig_rect.x > self.dest[0]:
-            self.speed.x = max(- self.max_speed, self.dest[0] - self.orig_rect.x)
+        if self.orig_rect.x < self.dest[0][0]:
+            self.speed.x = min(self.max_speed, self.dest[0][0] - self.orig_rect.x)
+        elif self.orig_rect.x > self.dest[0][1]:
+            self.speed.x = max(- self.max_speed, self.dest[0][1] - self.orig_rect.x)
         #destination achieved
         else:
             self.speed.x = 0
 
         # y move
-        if self.orig_rect.y < self.dest[1]:
-            self.speed.y = min(self.max_speed, self.dest[1] - self.orig_rect.y)
-        elif self.orig_rect.y > self.dest[1]:
-            self.speed.y = max(- self.max_speed, self.dest[1] - self.orig_rect.y)
+        if self.orig_rect.y < self.dest[1][0]:
+            self.speed.y = min(self.max_speed, self.dest[1][0] - self.orig_rect.y)
+        elif self.orig_rect.y > self.dest[1][1]:
+            self.speed.y = max(- self.max_speed, self.dest[1][1] - self.orig_rect.y)
         else:
             self.speed.y = 0
 

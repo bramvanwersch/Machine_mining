@@ -497,8 +497,8 @@ class Game(Scene, util.Serializer):
     def scene_updates(self):
         super().scene_updates()
         self.load_unload_sprites()
-
-        # self.draw_air_rectangles()
+        if con.DEBUG.AIR_RECTANGLES:
+            self.draw_air_rectangles()
         self.board.update_board()
 
     def draw_air_rectangles(self):
