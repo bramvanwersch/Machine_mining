@@ -1,53 +1,59 @@
 import random
-from typing import List, Dict, Union, ClassVar, Set, TYPE_CHECKING
-if TYPE_CHECKING:
-    from block_classes import blocks
+from typing import List, Dict, Union, ClassVar, Set, TYPE_CHECKING, Tuple, Any
 
 import utility.constants as con
 import utility.utilities as util
 import interfaces.interface_utility as interface_util
+if TYPE_CHECKING:
+    from block_classes import blocks
+    import pygame
 
 
 class PathFinder:
+    """Pathfinder object for continiously mapping the current board to a network of rectangles and finding paths using
+    that network.
+
+    TODO: pathfinding will be done repeadatly if there is no possible but the start and end rectangle are valid. This
+     can slow down the game significantly because a far distance is checked repeadetly
     """
-    Pathfinder object for continiously mapping the current board to a network
-    of rectangles and finding paths using that network
-    """
-    DIRECTIONS = ["N", "E", "S", "W"]
+    DIRECTIONS: ClassVar[List[str]] = ["N", "E", "S", "W"]
+    pathfinding_tree: "PathfindingTree"
 
     def __init__(self):
         self.pathfinding_tree = PathfindingTree()
 
     def update(self):
+        """Update all the pathfinding chunks"""
         for pf_chunk in self.pathfinding_tree.pathfinding_chunks:
             pf_chunk.update()
 
-    def get_path(self, start, end_rect):
-        """
-        Pathfinds a path between the start and end rectangle
+    def get_path(
+        self,
+        start_rect: "pygame.Rect",
+        end_rect: "pygame.Rect"
+    ) -> Union[None, "Path"]:
+        """Get a Path or None from the starting rectangle to the end rectangle.
 
-        :param start: a pygame rect
-        :param end_rect: a pygame rect
-        :return: a list of coordinates that constitutes a path
-        """
-        start_rect = None
+        The start rectangle has to be within a transparant rectangle of the pathfinding tree. The end rectangle can be
+        within a non-transparant block but has to be side by side with a transparant block"""
         # find start rectangle
-        direction_index = interface_util.relative_closest_direction(start.center)
+        direction_index = interface_util.relative_closest_direction(start_rect.center)
         found = False
         for key in self.pathfinding_tree.rectangle_network[direction_index]:
-            if (direction_index == 0 and key < start.centery) or (direction_index == 1 and key > start.centerx) or\
-                    (direction_index == 2 and key > start.centery) or (direction_index == 3 and key < start.centerx):
+            if (direction_index == 0 and key < start_rect.centery) or \
+                    (direction_index == 1 and key > start_rect.centerx) or \
+                    (direction_index == 2 and key > start_rect.centery) or \
+                    (direction_index == 3 and key < start_rect.centerx):
                 adjacent_rects = self.pathfinding_tree.rectangle_network[direction_index][key]
             else:
                 continue
             for rect in adjacent_rects:
-                if rect.collidepoint(start.center):
-                    start_rect = rect
+                if rect.collidepoint(start_rect.center):
                     found = True
                     break
             if found:
                 break
-        if start_rect is None:
+        if not found:
             return None
 
         # heck if there is a rectangle next to the end rectangle
@@ -63,25 +69,21 @@ class PathFinder:
         # there is no rectangle adjacent that could find a path
         if not can_find:
             return None
-        end_node = self.pathfind(start_rect, end_rect)
+        end_node = self.__pathfind(start_rect, end_rect)
         if not end_node:
             return None
-        path = self.__retrace_path(end_node, start.topleft)
+        path = self.__retrace_path(end_node, start_rect.topleft)
         return path
 
-    def __retrace_path(self, node, start):
-        """
-        Retraces the path from the last node of the pathfinding algorithm to
-        the first node in the chain
+    def __retrace_path(
+        self,
+        node: "Node",
+        start: Tuple[int, int]
+    ) -> "Path":
+        """Retraces the path from the last node of the pathfinding algorithm to the first node in the chain
 
-        :param node: a Node object
-        :return: a list of coordinates that represents the path between the
-        requested start and end.
-
-        The direction of connection is used to determine the coordinates to
-        move to in the current node.rect that results in a path trough the
-        node.rect that ends at a location that is open to the connecting rect.
-        """
+        The direction of connection is used to determine the coordinates to move to in the current node.rect that
+        results in a path trough the node.rect that ends at a location that is open to the connecting rect."""
         path = Path(start)
         prev_node = node
         node = node.parent
@@ -105,23 +107,30 @@ class PathFinder:
                      min(prev_node.rect.bottom, node.rect.bottom) - con.BLOCK_SIZE.height]
             else:
                 raise util.GameException("Invalid direction")
-            path.append((x, y))
+            path.append([x, y])
             prev_node = node
             node = node.parent
         return path
 
-    def pathfind(self, start, end):
+    def __pathfind(
+        self,
+        start: "pygame.Rect",
+        end: "pygame.Rect"
+    ) -> Union[None, "Node"]:
         """
-        Returns the final node in a pathfinding problem.
+        Find a path from a starting rectangle to an end rectangle by traversing the rectangle network using the A*
+        pathfinding algorithm aproach
+
+        Inspired and derived from:
         https://gist.github.com/Nicholas-Swift/003e1932ef2804bebef2710527008f44#file-astar-py
         """
 
         # Create start and end node
         start_node = Node(None, start, None)
-        start_node.g = start_node.f = 0
+        start_node.distance_from_start = start_node.total_for_both = 0
         end_node = Node(None, end, None)
-        end_node.g = end_node.h = end_node.f = 0
-        start_node.h = util.manhattan_distance(start_node.position, end_node.position)
+        end_node.distance_from_start = end_node.distance_to_end = end_node.total_for_both = 0
+        start_node.distance_to_end = util.manhattan_distance(start_node.position, end_node.position)
         if start == end:
             return end_node
         # Initialize both open and closed list
@@ -138,7 +147,7 @@ class PathFinder:
             current_node = open_list[0]
             current_index = 0
             for index, item in enumerate(open_list):
-                if item.f < current_node.f:
+                if item.total_for_both < current_node.total_for_both:
                     current_node = item
                     current_index = index
 
@@ -167,18 +176,16 @@ class PathFinder:
             for child in children:
 
                 # Child is on the closed list
-                if len([closed_child for closed_child in closed_list if
-                        closed_child == child]) > 0:
+                if len([closed_child for closed_child in closed_list if closed_child.position == child.position]) > 0:
                     continue
 
-                # Create the f, g, and h values
-                child.g = current_node.g + util.manhattan_distance(child.position, current_node.position)
-                child.h = util.manhattan_distance(child.position, end_node.position)
-                child.f = child.g + child.h
+                child.distance_from_start = current_node.distance_from_start +\
+                                util.manhattan_distance(child.position, current_node.position) # noqa --> this shit is stupid
+                child.distance_to_end = util.manhattan_distance(child.position, end_node.position)
+                child.total_for_both = child.distance_from_start + child.distance_to_end
 
                 # Child is already in the open list
-                if len([open_node for open_node in open_list if
-                        child.position == open_node.position]) > 0:
+                if len([open_node for open_node in open_list if child.position == open_node.position]) > 0:
                     continue
 
                 # Add the child to the open list
@@ -187,67 +194,76 @@ class PathFinder:
 
 
 class Path:
-    """
-    Track a path and its lenght
-    """
-    def __init__(self, start):
+    """Track a path and its lenght"""
+    start_location: Union[Tuple[int, int], List[int]]
+    __coordiantes: List[List[List[int]]]
+    __length: float
+
+    def __init__(
+        self,
+        start: Union[Tuple[int, int], List[int]]
+    ):
         self.start_location = start
-        self.__coordinates = []
+        self.__coordinates = []  # coordinates that give an allowed range
         self.__lenght = 0
 
-    def append(self, point):
+    def append(
+        self,
+        point: List[List[int]]
+    ):
+        """Add a value to the path"""
         self.__coordinates.append(point)
         # distance will be zero for the first addition
         point1 = (sum(point[0]) / 2, sum(point[1]) / 2)
         point2 = (sum(self.__coordinates[-1][0]) / 2, sum(self.__coordinates[-1][1]) / 2)
         self.__lenght += util.manhattan_distance(point1, point2)
 
-    def pop(self, index=-1):
+    def pop(
+        self,
+        index: int = -1
+    ) -> List[List[int]]:
+        """Pop the last item of the list"""
         return self.__coordinates.pop(index)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> Any:
         return self.__coordinates[item]
 
-    def __len__(self):
+    def __len__(self) -> float:
         return len(self.__coordinates)
 
     @property
     def path_lenght(self):
+        """Give the length of the full path from the location of the path that is available"""
         return self.__lenght + util.manhattan_distance(self.__coordinates[-1], self.start_location)
 
 
 class Node:
-    """
-    Node class for the A* pathfinding. Saves nodes with an AirRectangle Object
-    and a direction index for tracing back the path
-    """
-    def __init__(self, parent, rect, direction_index):
-        """
-        :param parent: The parent Node object this Node comes from
-        :param rect: an AirRectangle object that is on the location of the node
-        :param direction_index: an direction index fro the list [N, E, S, W]
-        """
-        self.parent = parent
-        # in order y, x
-        self.rect = rect
-        # value that tells the direction between the parent node en this node seen from the parent
-        self.direction_index = direction_index
+    """Node class for the A* pathfinding. Saves nodes with an AirRectangle Object and a direction index for tracing
+    back the path"""
+    parent: Union[None, "Node"]
+    rect: Union["AirRectangle", "pygame.Rect"]
+    direction_index: Union[None, int]
+    distance_from_start: int
+    distance_to_end: int
+    total_for_both: int
 
-        # used for the A* algorithm calculation of distance
-        self.g = 0
-        self.h = 0
-        self.f = 0
+    def __init__(
+        self,
+        parent: Union[None, "Node"],
+        rect: Union["AirRectangle", "pygame.Rect"],
+        direction_index: Union[int, None]
+    ):
+        self.parent = parent  # node that comes before this node
+        self.rect = rect  # the rectangle of this node
+        self.direction_index = direction_index  # the direction from the parent node to this Node
+
+        self.distance_from_start = 0
+        self.distance_to_end = 0
+        self.total_for_both = 0
 
     @property
-    def position(self):
-        """
-        The position used for calculating the distance measures.
-
-        Note: the center of the rectangle is not always the most informative
-        measure when it comes to distance of the path over this node
-
-        :return: the center of the AirRectangle
-        """
+    def position(self) -> Tuple[int, int]:
+        """Give the topleft position of the entity within this node based on the parent node"""
         if self.direction_index is None:
             return self.rect.center
         elif self.direction_index == 0:
@@ -259,47 +275,59 @@ class Node:
         elif self.direction_index == 3:
             return self.rect.left - con.BLOCK_SIZE.width, self.rect.centery
 
-    def __str__(self):
-        return str(self.position[::-1])
-
-    def __eq__(self, other):
-        return self.position == other.position
-
 
 class PathfindingTree:
-    """
-    Tree that is continiously recalculated for the pathfinding algorithm to use
-
-    Note: the self.rectangles could be a more efficient format then a list
-    """
+    """Collections of all rectangle chunks into one tree to be accessed by the pathfinding class"""
     rectangle_network: List[Dict]
+    pathfinding_chunks: List["PathfindingChunk"]
 
     def __init__(self):
         # shared dictionary that acts as the tree of connections between rectangles in the chunks
         self.rectangle_network = [{}, {}, {}, {}]
         self.pathfinding_chunks = []
 
-    def add_chunk(self, pf_chunk):
+    def add_chunk(
+        self,
+        pf_chunk: "PathfindingChunk"
+    ):
         self.pathfinding_chunks.append(pf_chunk)
         pf_chunk.configure(self.rectangle_network)
 
 
 class PathfindingChunk:
-    matrix: List[List["blocks.Block"]]
-    rectangle_network: Union[None, List[Dict]]
+    """Class for tracking rectangles used in pathfinding trough the chunk associated with this pathfinding chunk. This
+    class needs updates and is updated from the board.
 
-    def __init__(self, matrix: List[List["blocks.Block"]]):
+    TODO: see if it is possible to avoid recalculating the full chunk every so often. At the moment the fast methods
+     are not consistent enough en will create to many rectangles. On the other hand the performance seems to not be
+     affected to much
+    """
+    matrix: List[List["blocks.Block"]]
+    rectangle_network: Union[List[Dict], None]
+    __local_rectangles: Set["AirRectangle"]
+    added_rects: List["pygame.Rect"]
+    removed_rects: List["pygame.Rect"]
+    __time_passed: List[int, int]
+
+    def __init__(
+        self,
+        matrix: List[List["blocks.Block"]]
+    ):
         # matrix of a chunk
         self.matrix = matrix
         self.rectangle_network = None
 
-        # rectangles only present in this chunk
-        self.__local_rectangles = set()
-        self.added_rects = []
-        self.removed_rects = []
-        self.__times_passed = [random.randint(0, con.PF_UPDATE_TIME), con.PF_UPDATE_TIME]
+        self.__local_rectangles = set()  # rectangles only present in this chunk
+        self.added_rects = []  # list where rectangles can be added that need to be updated
+        self.removed_rects = []  # list where rectangles can be added that need to be removed
+        # make sure that the updates are not synchronized
+        self.__time_passed = [random.randint(0, con.PF_UPDATE_TIME), con.PF_UPDATE_TIME]
 
-    def configure(self, rectangles):
+    def configure(
+        self,
+        rectangles: List[Dict]
+    ):
+        """Innitially configure this pathfindign chunk"""
         self.rectangle_network = rectangles
         covered_coordinates = [[False for _ in range(len(self.matrix[0]))] for _ in range(len(self.matrix))]
 
@@ -307,12 +335,13 @@ class PathfindingChunk:
         self.get_air_rectangles(self.matrix, covered_coordinates)
 
     def update(self):
-        self.__times_passed[0] += con.GAME_TIME.get_time()
+        """Add rectangles when they are available and recalculate the pathfinding chunk every second to fix small
+        mistakes that the fast adding makes"""
+        self.__time_passed[0] += con.GAME_TIME.get_time()
         # fix mistakes in the fast updating
-        if self.__times_passed[0] > self.__times_passed[1] and \
+        if self.__time_passed[0] > self.__time_passed[1] and \
                 (len(self.removed_rects) > 0 or len(self.added_rects) > 0):
-            # TODO make this a less temporary fix, is kind of crude right now --> works pretty good
-            self.__times_passed[0] = 0
+            self.__time_passed[0] = 0
             for rect in self.__local_rectangles.copy():
                 self.__remove_rectangle(rect)
             covered_coordinates = [[False for _ in range(len(self.matrix[0]))] for _ in range(len(self.matrix))]
@@ -333,11 +362,13 @@ class PathfindingChunk:
                     self.get_air_rectangles(sub_matrix, covered_coordinates)
                     self.added_rects.remove(rect)
 
-    def __find_add_sub_matrix(self, rect):
+    def __find_add_sub_matrix(
+        self,
+        rect: "pygame.Rect"
+    ) -> Tuple[List[List], List[List[bool]]]:
         adjacent_rectangles = []
 
-        corners = [rect.left, rect.top,
-                   rect.bottom, rect.right]
+        corners = [rect.left, rect.top, rect.bottom, rect.right]
         direction_index = interface_util.relative_closest_direction(rect.center)
         all_found = False
         for key in self.rectangle_network[direction_index]:
@@ -369,12 +400,14 @@ class PathfindingChunk:
         all_rectangles = [rect] + adjacent_rectangles
         return self.__sub_matrix_from_corners(corners, all_rectangles)
 
-    def __find_removal_sub_matrix(self, rect):
+    def __find_removal_sub_matrix(
+        self,
+        rect: "pygame.Rect"
+    ) -> Tuple[List[List], List[List[bool]]]:
         adjacent_rectangles = []
 
         # find all adacent rectangles and the box that contains them all
-        corners = [rect.left, rect.top,
-                   rect.bottom, rect.right]
+        corners = [rect.left, rect.top, rect.bottom, rect.right]
         for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
             if direction_size not in self.rectangle_network[index - 2]:
                 continue
@@ -398,7 +431,11 @@ class PathfindingChunk:
         all_rectangles = [rect] + adjacent_rectangles
         return self.__sub_matrix_from_corners(corners, all_rectangles)
 
-    def __sub_matrix_from_corners(self, corners, all_rectangles):
+    def __sub_matrix_from_corners(
+        self,
+        corners: List[int],
+        all_rectangles: List["pygame.Rect"]
+    ) -> Tuple[List[List], List[List[bool]]]:
         start_column, start_row = (int((corners[0] % con.CHUNK_SIZE.width) / con.BLOCK_SIZE.width),
                                    int((corners[1] % con.CHUNK_SIZE.height) / con.BLOCK_SIZE.height))
         row_lenght = interface_util.p_to_r(corners[3] - corners[0])
@@ -414,7 +451,10 @@ class PathfindingChunk:
                     covered_coordinates[row_index][col_index] = True
         return sub_matrix, covered_coordinates
 
-    def __add_rectangle(self, rect):
+    def __add_rectangle(
+        self,
+        rect: "AirRectangle"
+    ):
         self.__local_rectangles.add(rect)
         for index, direction_size in enumerate((rect.top, rect.right, rect.bottom, rect.left)):
             if direction_size in self.rectangle_network[index]:
@@ -428,7 +468,10 @@ class PathfindingChunk:
                         rect.connecting_rects[index].add(adj_rect)
                         adj_rect.connecting_rects[index - 2].add(rect)
 
-    def __remove_rectangle(self, rect):
+    def __remove_rectangle(
+        self,
+        rect: "AirRectangle"
+    ):
         # TODO this failsafe should not be neccesairy
         if rect in self.__local_rectangles:
             self.__local_rectangles.remove(rect)
@@ -466,11 +509,13 @@ class PathfindingChunk:
                 rect = AirRectangle(util.rect_from_block_matrix(air_matrix))
                 self.__add_rectangle(rect)
 
-    def __find_air_rectangle(self, block_matrix, covered_coordinates):
-        """
-        Find starting from a transparant block all the same transparant  block_classes in a rectangle given
-         a certain matrix
-        """
+    def __find_air_rectangle(
+        self,
+        block_matrix: List[List["blocks.Block"]],
+        covered_coordinates: List[List[bool]]
+    ) -> List[int]:
+        """Find starting from a transparant block all the same transparant  block_classes in a rectangle given
+         a certain matrix"""
         # first find how far the column is filled cannot fill on 0 since 0 is guaranteed to be a air block
         x_size = 0
         group = block_matrix[0][0].transparant_group
@@ -483,6 +528,7 @@ class PathfindingChunk:
         # skip the first row since this was checked already
         block = None
         for n_row, row in enumerate(block_matrix[1:]):
+            n_col = 0
             for n_col, block in enumerate(row[:x_size + 1]):
                 if block.transparant_group != group or covered_coordinates[n_row][n_col]:
                     break
@@ -493,27 +539,27 @@ class PathfindingChunk:
 
 
 class AirRectangle:
-    """
-    Class for trackign rectangles with adjacent rectangles. This rectangle
-    essentialy is a node in a network of air rectangles that are connected to
-    one another
-    """
-    def __init__(self, rect):
-        """
-        :param rect: a pygame Rect object
-        """
+    """Pygame rectangle that tracks the rectangles it is connected to in a network of rectangles. This is a simple
+    wrapper of a pygame rectangle that includes connecting rectangles."""
+    rect: "pygame.Rect"
+    connected_rects: List[Set]
+
+    def __init__(
+        self,
+        rect: "pygame.Rect"
+    ):
         self.rect = rect
-        # a list of lists representing N, E, S, W connections
+        # all AirRectangles connected to this one. Connections are always 2 ways in the order N, E, S, W
         self.connecting_rects = [set() for _ in range(4)]
 
     def delete(self):
-        # delete any reference from connectiing rectangles
+        """delete any reference from connecting rectangles"""
         for direction_index in range(len(self.connecting_rects)):
             for connection in self.connecting_rects[direction_index]:
                 connection.connecting_rects[direction_index - 2].remove(self)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> Any:
         return getattr(self.rect, item)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.rect)
