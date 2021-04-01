@@ -9,6 +9,8 @@ from pygame.locals import *
 # own imports
 import utility.utilities as util
 
+TESTING = True  # can be used to cheat in items at certain places for easier testing
+
 
 # debug controls
 class DebugValues(util.ConsoleReadable):
@@ -18,7 +20,7 @@ class DebugValues(util.ConsoleReadable):
         self.AIR_RECTANGLES = False
         self.WARNINGS = True
         self.SHOW_ZOOM = True
-        self.NO_LIGHTING = True
+        self.NO_LIGHTING = True and TESTING
         self.SHOW_THREADS = True
         self.SHOW_BELT_ITEMS = True
         self.PRINT_TIMING_BREAKDOWN = False
@@ -26,7 +28,6 @@ class DebugValues(util.ConsoleReadable):
 
 DEBUG = DebugValues()
 
-TESTING = True  # can be used to cheat in items at certain places for easier testing
 SHOW_BLOCK_BORDER = True
 TEST_BOARD = TESTING
 SEED = 8  # use this as a seed when testing

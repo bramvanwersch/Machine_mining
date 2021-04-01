@@ -49,6 +49,7 @@ class PathFinder:
                 continue
             for rect in adjacent_rects:
                 if rect.collidepoint(start_rect.center):
+                    start_rect = rect
                     found = True
                     break
             if found:
@@ -56,7 +57,7 @@ class PathFinder:
         if not found:
             return None
 
-        # heck if there is a rectangle next to the end rectangle
+        # check if there is a rectangle next to the end rectangle
         can_find = False
         for index, direction_size in enumerate((end_rect.top, end_rect.right, end_rect.bottom, end_rect.left)):
             if direction_size in self.pathfinding_tree.rectangle_network[index - 2]:
@@ -307,7 +308,7 @@ class PathfindingChunk:
     __local_rectangles: Set["AirRectangle"]
     added_rects: List["pygame.Rect"]
     removed_rects: List["pygame.Rect"]
-    __time_passed: List[int, int]
+    __time_passed: List[int]
 
     def __init__(
         self,
