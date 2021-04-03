@@ -208,18 +208,23 @@ class MovingEntity(ZoomableSprite):
     """
     Base class for moving entities
     """
-    MAX_SPEED = 10  # pixels/s
 
-    def __init__(self, pos, size, *groups, max_speed=MAX_SPEED, speed=None, **kwargs):
+    def __init__(self, pos, size, *groups, max_speed, speed=None, **kwargs):
         ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
         self.max_speed = max_speed
         self.speed = pygame.Vector2(*speed) if speed else pygame.Vector2(0, 0)
+        self.__exact_movement_values = [0, 0]
 
     def to_dict(self):
         return super().to_dict().update({
             "max_speed": self.max_speed,
             "speed": (self.speed.x, self.speed.y)
         })
+
+    def _max_frame_speed(self) -> float:
+        """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame"""
+        elapsed_time = con.GAME_TIME.get_time()
+        return (elapsed_time / 1000) * self.max_speed
 
     def update(self, *args):
         """
@@ -229,13 +234,23 @@ class MovingEntity(ZoomableSprite):
         self.move()
 
     def move(self):
-        """
-        Method for moving something based on an x and y speed
-        """
         x, y = self._collision_adjusted_values()
-        self.orig_rect.centerx = x
-
-        self.orig_rect.centery = y
+        self.__exact_movement_values[0] += x - self.orig_rect.centerx
+        self.__exact_movement_values[1] += y - self.orig_rect.centery
+        while abs(self.__exact_movement_values[0]) > 1:
+            if self.__exact_movement_values[0] > 0:
+                self.orig_rect.centerx += 1
+                self.__exact_movement_values[0] -= 1
+            else:
+                self.orig_rect.centerx -= 1
+                self.__exact_movement_values[0] += 1
+        while abs(self.__exact_movement_values[1]) > 1:
+            if self.__exact_movement_values[1] > 0:
+                self.orig_rect.centery += 1
+                self.__exact_movement_values[1] -= 1
+            else:
+                self.orig_rect.centery -= 1
+                self.__exact_movement_values[1] += 1
 
     def _collision_adjusted_values(self):
         """
@@ -257,7 +272,7 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
     The camera center where the camera centers on
     """
     def __init__(self, pos, size, *groups, **kwargs):
-        MovingEntity.__init__(self, pos, size, *groups, max_speed = 20, **kwargs)
+        MovingEntity.__init__(self, pos, size, *groups, max_speed=1000, **kwargs)
         event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
         self.orig_rect = pygame.Rect(*pos, *size)
 
@@ -266,22 +281,23 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
         Handle events for moving the camera around the board
         """
         leftover_events = event_handling.EventHandler.handle_events(self, events)
+        max_frame_speed = self._max_frame_speed()
         if self.pressed(con.RIGHT, continious=True) and self.pressed(con.LEFT, continious=True):
             self.speed.x = 0
         else:
             if self.pressed(con.RIGHT, continious=True):
-                self.speed.x = min(self.max_speed, self.speed.x + self.max_speed)
+                self.speed.x = min(max_frame_speed, self.speed.x + max_frame_speed)
             if self.pressed(con.LEFT, continious=True):
-                self.speed.x = max(-self.max_speed, self.speed.x - self.max_speed)
+                self.speed.x = max(-max_frame_speed, self.speed.x - max_frame_speed)
             if not self.pressed(con.LEFT, continious=True) and not self.pressed(con.RIGHT, continious=True):
                 self.speed.x = 0
         if self.pressed(con.DOWN, continious=True) and self.pressed(con.UP, continious=True):
             self.speed.y = 0
         else:
             if self.pressed(con.UP, continious=True):
-                self.speed.y = max(-self.max_speed, self.speed.y - self.max_speed)
+                self.speed.y = max(-max_frame_speed, self.speed.y - max_frame_speed)
             if self.pressed(con.DOWN, continious=True):
-                self.speed.y = min(self.max_speed, self.speed.y + self.max_speed)
+                self.speed.y = min(max_frame_speed, self.speed.y + max_frame_speed)
             if not self.pressed(con.UP, continious=True) and not self.pressed(con.DOWN, continious=True):
                 self.speed.y = 0
         return leftover_events
@@ -310,7 +326,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
          ]
 
     def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
-        MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
+        MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=150, **kwargs)
         self.number = next(Worker.NUMBER)
         self.board = board
         self.task_control = task_control
@@ -440,21 +456,22 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.dest = self.path.pop()
 
         # x move
+        max_frame_speed = self._max_frame_speed()
         x_direction = self.__previous_x_direction
         if self.orig_rect.x < self.dest[0][0]:
-            self.speed.x = min(self.max_speed, self.dest[0][0] - self.orig_rect.x)
+            self.speed.x = min(max_frame_speed, self.dest[0][0] - self.orig_rect.x)
             x_direction = 1
         elif self.orig_rect.x > self.dest[0][1]:
-            self.speed.x = max(- self.max_speed, self.dest[0][1] - self.orig_rect.x)
+            self.speed.x = max(- max_frame_speed, self.dest[0][1] - self.orig_rect.x)
             x_direction = -1
         else:
             self.speed.x = 0
 
         # y move
         if self.orig_rect.y < self.dest[1][0]:
-            self.speed.y = min(self.max_speed, self.dest[1][0] - self.orig_rect.y)
+            self.speed.y = min(max_frame_speed, self.dest[1][0] - self.orig_rect.y)
         elif self.orig_rect.y > self.dest[1][1]:
-            self.speed.y = max(- self.max_speed, self.dest[1][1] - self.orig_rect.y)
+            self.speed.y = max(- max_frame_speed, self.dest[1][1] - self.orig_rect.y)
         else:
             self.speed.y = 0
 
