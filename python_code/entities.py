@@ -11,25 +11,38 @@ import tasks
 import utility.event_handling as event_handling
 if TYPE_CHECKING:
     from board.sprite_groups import CameraAwareLayeredUpdates
+    import board.board
+    from board.pathfinding import Path
 
 
 class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
-    """
-    Basic entity class is a sprite with an image.
-    """
-    COLOR = (255, 255, 255)
+    """Surface tracked by a rectangle"""
+    _layer: int
+    surface: pygame.Surface
+    orig_surface: pygame.Surface
+    orig_rect: pygame.Rect
+    _visible: bool
+    zoomable: bool
+    static: bool
 
-    def __init__(self, pos, size, *groups, color=COLOR, layer=con.HIGHLIGHT_LAYER, static=True, zoomable=False,
-                 visible=True, **kwargs):
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        *groups: "CameraAwareLayeredUpdates",
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int]] = (255, 255, 255),
+        layer: int = con.HIGHLIGHT_LAYER,
+        static: bool = True,
+        visible: bool = True,
+        **kwargs
+    ):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, *groups)
         self.surface = self._create_surface(size, color)
         self.orig_surface = self.surface
         self.orig_rect = self.surface.get_rect(topleft=pos)
         self._visible = visible
-        self.zoomable = zoomable
-        # should the entity move with the camera or not
-        self.static = static
+        self.static = static  # if static do not move the entity when camera moves
 
     def to_dict(self):
         return {
@@ -48,13 +61,22 @@ class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
             **arguments,
         )
 
-    def show(self, value: bool):
+    def show(
+        self,
+        value: bool
+    ):
+        """Toggle showing this sprite"""
         self._visible = value
 
-    def is_showing(self):
+    def is_showing(self) -> bool:
+        """Is the sprite showing"""
         return self._visible
 
-    def _create_surface(self, size, color):
+    def _create_surface(
+        self,
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int]]
+    ) -> pygame.Surface:
         """Create the innitial surface forn this entity"""
         if len(color) == 3:
             image = pygame.Surface(size).convert()
@@ -67,46 +89,38 @@ class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
         return image
 
     @property
-    def rect(self):
-        """
-        The original rectangle. This method is here to support zoomable entity
-        method
-
-        :return pygame Rect object
-        """
+    def rect(self) -> pygame.Rect:
+        """The original rectangle. This method is here to support zoomable entity method"""
         return self.orig_rect
 
     @rect.setter
     def rect(self, rect):
-        """
-        Set the orig_rect using the rect value. Support for zoomable entity
-
-        :param rect: a pygame Rect object
-        """
+        """Set the orig_rect using the rect value. Support for zoomable entity"""
         self.orig_rect = rect
 
 
 class ZoomableSprite(MySprite):
-    """
-    Basic zoomable entity class
-    """
-    def __init__(self, pos, size, *groups, zoom=1, **kwargs):
-        MySprite.__init__(self, pos, size, *groups, zoomable=True, **kwargs)
-        # zoom variables
+    """Sprite that is zoomed when the user zooms the game"""
+    zoom: int
+
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        *groups: "CameraAwareLayeredUpdates",
+        zoom: int = 1,
+        **kwargs
+    ):
+        super().__init__(pos, size, *groups, **kwargs)
         self._zoom = zoom
-        # if an entity is created after zooming make sure it is zoomed to the
-        # right proportions
         if self._zoom != 1:
             self.set_zoom(self._zoom)
 
-    def set_zoom(self, zoom):
-        """
-        Safe a zoom value so distance measures know how to change, also change
-        the image size to make sure that this is not done every request.
-
-        :param increase: a small integer that tells how much bigger the zoom
-        should be
-        """
+    def set_zoom(
+        self,
+        zoom: int
+    ):
+        """Set the zoom value of this sprite"""
         self._zoom = zoom
         if self._zoom == 1:
             self.surface = self.orig_surface.copy()
@@ -121,19 +135,14 @@ class ZoomableSprite(MySprite):
         self.set_zoom(self._zoom)
 
     @property
-    def rect(self):
-        """
-        Returns a rectangle that represents the zoomed version of the
-        self.orig_rect
-
-        :return: a pygame Rect object
-        """
+    def rect(self) -> pygame.Rect:
+        """Returns a rectangle that represents the zoomed version of the self.orig_rect"""
         if self._zoom == 1:
             return self.orig_rect
         orig_pos = list(self.orig_rect.center)
         orig_pos[0] = round(orig_pos[0] * self._zoom)
         orig_pos[1] = round(orig_pos[1] * self._zoom)
-        rect = self.surface.get_rect(center = orig_pos)
+        rect = self.surface.get_rect(center=orig_pos)
         return rect
 
     @rect.setter
@@ -142,25 +151,30 @@ class ZoomableSprite(MySprite):
 
 
 class SelectionRectangle(ZoomableSprite):
-    """
-    Creates a rectangle by draging the mouse. To highlight certain areas.
-    """
-    def __init__(self, pos, size, mouse_pos, *groups, **kwargs):
-        ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
+    """Creates a rectangle by draging the mouse. To highlight certain areas."""
+    __start_pos: List[int]
+    __prev_screen_pos: List[int]
+    __size: util.Size
+
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        mouse_pos: Union[Tuple[int, int], List[int]],
+        *groups: "CameraAwareLayeredUpdates",
+        **kwargs
+    ):
+        super().__init__(pos, size, *groups, **kwargs)
         self.__start_pos = list(pos)
         self.__prev_screen_pos = list(mouse_pos)
         self.__size = util.Size(*size)
         self.__update_image()
 
     def to_dict(self):
-        return super().to_dict().update({
-            "mouse_pos": self.__prev_screen_pos,
-        })
+        return
 
     def __update_image(self):
-        """
-        Update the rectangle image that represents a highlighted area.
-        """
+        """Update the rectangle image that represents the highlighted area."""
         pos = self.__start_pos.copy()
         size = self.__size.size
         if self.__size.width < 0:
@@ -170,8 +184,8 @@ class SelectionRectangle(ZoomableSprite):
             pos[1] += self.__size.height
             size[1] = -1 * self.__size.height
         self.surface = pygame.Surface(size).convert_alpha()
-        self.surface.fill((255,255,255,100))
-        self.orig_rect = self.surface.get_rect(topleft = pos)
+        self.surface.fill((255, 255, 255, 100))
+        self.orig_rect = self.surface.get_rect(topleft=pos)
 
         self.orig_surface = self.surface
         # make sure to update the zoomed image aswell
@@ -188,15 +202,13 @@ class SelectionRectangle(ZoomableSprite):
         """
         Every update recalculate if the size of the rectangle should change
         """
-        #figure out the distance the mouse was moved compared to the previous
-        #position
+        # figure out the distance the mouse was moved compared to the previous position
         x_move = pygame.mouse.get_pos()[0] - self.__prev_screen_pos[0]
         y_move = pygame.mouse.get_pos()[1] - self.__prev_screen_pos[1]
         self.__prev_screen_pos[0] += x_move
         self.__prev_screen_pos[1] += y_move
 
-        #adjust the size to be of orig_board coordinate size sinze the mouse
-        #screen position is in zoomed sizes.
+        # adjust the size to be of orig_board coordinate size sinze the mouse screen position is in zoomed sizes.
         self.__size.width += x_move / self._zoom
         self.__size.height += y_move / self._zoom
 
@@ -205,14 +217,22 @@ class SelectionRectangle(ZoomableSprite):
 
 
 class MovingEntity(ZoomableSprite):
-    """
-    Base class for moving entities
-    """
+    """Base class for moving entities that have a move method to """
+    max_speed: int
+    speed: pygame.Vector2
+    __exact_movement_values: List[float]
 
-    def __init__(self, pos, size, *groups, max_speed, speed=None, **kwargs):
-        ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
-        self.max_speed = max_speed
-        self.speed = pygame.Vector2(*speed) if speed else pygame.Vector2(0, 0)
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        max_speed: int,
+        *groups: "CameraAwareLayeredUpdates",
+        **kwargs
+    ):
+        super().__init__(pos, size, *groups, **kwargs)
+        self.max_speed = max_speed  # in pixels per second moved
+        self.speed = pygame.Vector2(0, 0)
         self.__exact_movement_values = [0, 0]
 
     def to_dict(self):
@@ -222,7 +242,10 @@ class MovingEntity(ZoomableSprite):
         })
 
     def _max_frame_speed(self) -> float:
-        """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame"""
+        """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame
+
+        This allows inheriting classes to define movement without collision checks
+        """
         elapsed_time = con.GAME_TIME.get_time()
         return (elapsed_time / 1000) * self.max_speed
 
@@ -234,6 +257,7 @@ class MovingEntity(ZoomableSprite):
         self.move()
 
     def move(self):
+        """Move if the exact tracked movement is more than 1"""
         x, y = self._collision_adjusted_values()
         self.__exact_movement_values[0] += x - self.orig_rect.centerx
         self.__exact_movement_values[1] += y - self.orig_rect.centery
@@ -252,11 +276,8 @@ class MovingEntity(ZoomableSprite):
                 self.orig_rect.centery -= 1
                 self.__exact_movement_values[1] += 1
 
-    def _collision_adjusted_values(self):
-        """
-        Adjust the movement values to be inside the board when needed
-        :return: new x and y
-        """
+    def _collision_adjusted_values(self) -> Tuple[float, float]:
+        """Get a new x an y value that are inside the board"""
         new_centerx = max(0.5 * self.orig_rect.width,
                           min(self.orig_rect.centerx + self.speed.x,
                               con.ORIGINAL_BOARD_SIZE.width - 0.5 * self.orig_rect.width))
@@ -271,15 +292,22 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
     """
     The camera center where the camera centers on
     """
-    def __init__(self, pos, size, *groups, **kwargs):
-        MovingEntity.__init__(self, pos, size, *groups, max_speed=1000, **kwargs)
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        *groups: "CameraAwareLayeredUpdates",
+        **kwargs
+    ):
+        MovingEntity.__init__(self, pos, size, 1000, *groups, **kwargs)
         event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
-        self.orig_rect = pygame.Rect(*pos, *size)
 
-    def handle_events(self, events):
-        """
-        Handle events for moving the camera around the board
-        """
+    def handle_events(
+        self,
+        events: List["pygame.event.Event"],
+        consume_events: bool = True
+    ) -> List["pygame.event.Event"]:
+        """Handle events for moving the camera around the board"""
         leftover_events = event_handling.EventHandler.handle_events(self, events)
         max_frame_speed = self._max_frame_speed()
         if self.pressed(con.RIGHT, continious=True) and self.pressed(con.LEFT, continious=True):
@@ -307,13 +335,11 @@ class Worker(MovingEntity, util.ConsoleReadable):
     """
     A worker class that can perform tasks
     """
-    COLOR = (255, 0, 0, 100)
-    SIZE = (20, 20)
-    # in wheight
-    INVENTORY_SIZE = 2
-    NUMBER = count(1, 1)
-    VISON_RADIUS = 8 * con.BLOCK_SIZE.width
-    EMITTED_LIGTH = 10
+    SIZE: ClassVar[Union[Tuple[int, int], List[int], util.Size]] = (20, 20)
+    INVENTORY_SIZE: ClassVar[int] = 2  # in wheight
+    NUMBER: ClassVar[int] = count(1, 1)
+    VISON_RADIUS: ClassVar[int] = 8 * con.BLOCK_SIZE.width
+    EMITTED_LIGTH: ClassVar[int] = 10
     WORKER_IMAGES: ClassVar[List[image_handling.ImageDefinition]] = \
         [image_handling.ImageDefinition("general", (0, 40), size=util.Size(20, 20), image_size=util.Size(20, 20),
                                         flip=(True, False)),
@@ -325,15 +351,33 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                         flip=(True, False))
          ]
 
-    def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
-        MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=150, **kwargs)
+    number: int
+    board: Union["board.board.Board", None]
+    task_control: Union[tasks.TaskControl, None]
+    task_queue: tasks.TaskQueue
+    path: Union[None, "Path"]
+    dest: Union[List[List[int]], None]
+    inventory: inventories.Inventory
+    __previous_x_direction: int
+    __turn_rigth_animation: image_handling.Animation
+    __turn_left_animation: image_handling.Animation
+
+    def __init__(
+        self,
+        pos: Union[List[int], Tuple[int, int]],
+        *groups: "CameraAwareLayeredUpdates",
+        board_: Union["board.board.Board", None] = None,
+        task_control: Union["tasks.TaskControl", None] = None,
+        **kwargs
+    ):
+        MovingEntity.__init__(self, pos, self.SIZE, 150, *groups, **kwargs)
         self.number = next(Worker.NUMBER)
-        self.board = board
+        self.board = board_
         self.task_control = task_control
 
         # tasks
         self.task_queue = tasks.TaskQueue()
-        self.path = []
+        self.path = None
         self.dest = None
 
         # inventory
@@ -359,7 +403,11 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                self.WORKER_IMAGES[1].images()[0],
                                                                self.WORKER_IMAGES[0].images()[0]], 15)
 
-    def _create_surface(self, size, color):
+    def _create_surface(
+        self,
+        size: Union[util.Size, List[int], Tuple[int, int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int]]
+    ) -> pygame.Surface:
         return self.WORKER_IMAGES[0].images()[0]
 
     def printables(self) -> Set[str]:
@@ -380,18 +428,17 @@ class Worker(MovingEntity, util.ConsoleReadable):
     def move(self):
         pre_move_loc = self.orig_rect.center
         super().move()
-        if pre_move_loc != self.orig_rect.center:
+        # only move when a full block is moved
+        if int(pre_move_loc[0] / con.BLOCK_SIZE.width) != int(self.orig_rect.centerx / con.BLOCK_SIZE.width) or \
+                int(pre_move_loc[1] / con.BLOCK_SIZE.height) != int(self.orig_rect.centery / con.BLOCK_SIZE.height):
             self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, 10)
 
     def __perform_commands(self):
-        """
-        Perform commands issued by the user. This function shows the priority
-        of certain commands.
-        """
-        #as long as there is a path or the entity is still moving keep moving
+        """Perform commands issued by the user"""
+        # as long as there is a path or the entity is still moving keep moving
         if not len(self.path) == self.speed.x == self.speed.y == 0:
             self.__move_along_path()
-        #perform a task if available
+        # perform a task if available
         elif not self.task_queue.empty():
             if self.task_queue.task.canceled():
                 self.__next_task()
@@ -403,31 +450,31 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.task_queue.add(tasks.EmptyInventoryTask(self))
         elif self.task_queue.empty():
             task = self.task_control.get_task(self.rect.center)
-            if task != None:
+            if task is not None:
                 self.task_queue.add(task)
             elif not self.inventory.empty:
                 self.task_queue.add(tasks.EmptyInventoryTask(self))
 
     def __start_task(self):
         self.task_queue.task.start(self)
-        if self.task_queue.task.block == None:
+        if self.task_queue.task.block is None:
             self.task_queue.task.cancel()
             self.__next_task()
         else:
             path = self.board.pathfinding.get_path(self.orig_rect, self.task_queue.task.block.rect)
-            if path != None:
+            if path is not None:
                 self.path = path
             else:
                 self.task_queue.task.cancel()
                 self.__next_task()
 
-    ##task management functions:
+    # task management functions:
     def __next_task(self):
 
         f_task, f_block = self.task_queue.next()
         # make sure that the entity stops when the task is sudenly finshed
         self.speed.x = self.speed.y = 0
-        #make sure to move the last step if needed, so the worker does not potentially stop in a block
+        # make sure to move the last step if needed, so the worker does not potentially stop in a block
         if len(self.path) > 0:
             self.path = self.path[-1]
         if f_task.canceled():
@@ -437,17 +484,13 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.task_control.remove_tasks(f_task)
 
     def __perform_task(self):
-        """
-        Perform a given task and finish it if that is the case
-        """
+        """Perform a given task and finish it if that is the case"""
         self.task_queue.task.task_progress[0] += con.GAME_TIME.get_time()
         if self.task_queue.task.finished:
             self.__next_task()
 
     def __move_along_path(self):
-        """
-        move along the self.path
-        """
+        """move along the self.path"""
 
         if self.__run_animation() is True:
             return
@@ -477,7 +520,10 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         self.__check_animation_start(x_direction)
 
-    def __check_animation_start(self, x_direction):
+    def __check_animation_start(
+        self,
+        x_direction: int
+    ):
         if x_direction != self.__previous_x_direction:
             self.__previous_x_direction = x_direction
             if x_direction == -1:
@@ -487,7 +533,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
             self.path.append(self.dest)
             self.speed.x = self.speed.y = 0
 
-    def __run_animation(self):
+    def __run_animation(self) -> bool:
         if self.__turn_left_animation.active:
             self.__turn_left_animation.update()
             if self.__turn_left_animation.new_frame_started:
@@ -506,9 +552,8 @@ class TextSprite(ZoomableSprite):
     Entity for drawing text on the screen
     """
 
-    TOTAL_LIFE_SPAN = 1000  # in ms
-    FONT = 30
-    COLOR = (255, 18, 18, 150)
+    TOTAL_LIFE_SPAN: ClassVar[int] = 1000  # in ms
+    FONT: ClassVar[int] = 30
 
     text: str
     __font_size: int
@@ -521,7 +566,7 @@ class TextSprite(ZoomableSprite):
         text: str,
         *groups: "CameraAwareLayeredUpdates",
         font: int = FONT,
-        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]] = COLOR,
+        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]] = (255, 18, 18, 150),
         lifespan: int = TOTAL_LIFE_SPAN,
         **kwargs
     ):
@@ -537,7 +582,7 @@ class TextSprite(ZoomableSprite):
     def _create_surface(
         self,
         size: Union[util.Size, List[int], Tuple[int, int]],
-        color: Union[List[int], Tuple[int, int, int], Tuple[int, int, int, int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int]]
     ) -> pygame.Surface:
         """Create some tect using a string, font and color"""
         image = con.FONTS[self.__font_size].render(self.text, False, self.__color)
