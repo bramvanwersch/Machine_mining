@@ -116,6 +116,10 @@ class ZoomableSprite(MySprite):
             new_height = round(orig_rect.height * zoom)
             self.surface = pygame.transform.scale(self.orig_surface, (int(new_width), int(new_height)))
 
+    def set_surface(self, surface):
+        self.orig_surface = surface
+        self.set_zoom(self._zoom)
+
     @property
     def rect(self):
         """
@@ -294,8 +298,16 @@ class Worker(MovingEntity, util.ConsoleReadable):
     NUMBER = count(1, 1)
     VISON_RADIUS = 8 * con.BLOCK_SIZE.width
     EMITTED_LIGTH = 10
-    WORKER_IMAGE: ClassVar[image_handling.ImageDefinition] = \
-        image_handling.ImageDefinition("general", (0, 40), size=util.Size(20, 20), image_size=util.Size(20, 20))
+    WORKER_IMAGES: ClassVar[List[image_handling.ImageDefinition]] = \
+        [image_handling.ImageDefinition("general", (0, 40), size=util.Size(20, 20), image_size=util.Size(20, 20),
+                                        flip=(True, False)),
+         image_handling.ImageDefinition("general", (20, 40), size=util.Size(20, 20), image_size=util.Size(20, 20),
+                                        flip=(True, False)),
+         image_handling.ImageDefinition("general", (40, 40), size=util.Size(20, 20), image_size=util.Size(20, 20),
+                                        flip=(True, False)),
+         image_handling.ImageDefinition("general", (60, 40), size=util.Size(20, 20), image_size=util.Size(20, 20),
+                                        flip=(True, False))
+         ]
 
     def __init__(self, pos, *groups, board=None, task_control=None, **kwargs):
         MovingEntity.__init__(self, pos, self.SIZE, *groups, color=self.COLOR, max_speed=5, **kwargs)
@@ -310,13 +322,29 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         # inventory
         self.inventory = inventories.Inventory(self.INVENTORY_SIZE)
+        self.__previous_x_direction = -1
 
         # for loading purposes
         if self.board:
             self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, self.EMITTED_LIGTH)
 
+        self.__turn_rigth_animation = image_handling.Animation([self.WORKER_IMAGES[0].images()[0],
+                                                                self.WORKER_IMAGES[1].images()[0],
+                                                                self.WORKER_IMAGES[2].images()[0],
+                                                                self.WORKER_IMAGES[3].images()[0],
+                                                                self.WORKER_IMAGES[2].images()[1],
+                                                                self.WORKER_IMAGES[1].images()[1],
+                                                                self.WORKER_IMAGES[0].images()[1]], 15)
+        self.__turn_left_animation = image_handling.Animation([self.WORKER_IMAGES[0].images()[1],
+                                                               self.WORKER_IMAGES[1].images()[1],
+                                                               self.WORKER_IMAGES[2].images()[1],
+                                                               self.WORKER_IMAGES[3].images()[1],
+                                                               self.WORKER_IMAGES[2].images()[0],
+                                                               self.WORKER_IMAGES[1].images()[0],
+                                                               self.WORKER_IMAGES[0].images()[0]], 15)
+
     def _create_surface(self, size, color):
-        return self.WORKER_IMAGE.images()[0]
+        return self.WORKER_IMAGES[0].images()[0]
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
@@ -404,15 +432,21 @@ class Worker(MovingEntity, util.ConsoleReadable):
         """
         move along the self.path
         """
+
+        if self.__run_animation() is True:
+            return
+
         if self.speed.x == self.speed.y == 0:
             self.dest = self.path.pop()
 
         # x move
+        x_direction = self.__previous_x_direction
         if self.orig_rect.x < self.dest[0][0]:
             self.speed.x = min(self.max_speed, self.dest[0][0] - self.orig_rect.x)
+            x_direction = 1
         elif self.orig_rect.x > self.dest[0][1]:
             self.speed.x = max(- self.max_speed, self.dest[0][1] - self.orig_rect.x)
-        #destination achieved
+            x_direction = -1
         else:
             self.speed.x = 0
 
@@ -424,11 +458,30 @@ class Worker(MovingEntity, util.ConsoleReadable):
         else:
             self.speed.y = 0
 
-        # #check for collision
-        # if not self.board.transparant_collide((self.orig_rect.centerx + self.speed.x, self.orig_rect.centery)):
-        #     self.speed.x = 0
-        # if not self.board.transparant_collide((self.orig_rect.centerx, self.orig_rect.centery + self.speed.y)):
-        #     self.speed.y = 0
+        self.__check_animation_start(x_direction)
+
+    def __check_animation_start(self, x_direction):
+        if x_direction != self.__previous_x_direction:
+            self.__previous_x_direction = x_direction
+            if x_direction == -1:
+                self.__turn_left_animation.start()
+            else:
+                self.__turn_rigth_animation.start()
+            self.path.append(self.dest)
+            self.speed.x = self.speed.y = 0
+
+    def __run_animation(self):
+        if self.__turn_left_animation.active:
+            self.__turn_left_animation.update()
+            if self.__turn_left_animation.new_frame_started:
+                self.set_surface(self.__turn_left_animation.current_image())
+            return True
+        elif self.__turn_rigth_animation.active:
+            self.__turn_rigth_animation.update()
+            if self.__turn_rigth_animation.new_frame_started:
+                self.set_surface(self.__turn_rigth_animation.current_image())
+            return True
+        return False
 
 
 class TextSprite(ZoomableSprite):

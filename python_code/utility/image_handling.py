@@ -126,3 +126,40 @@ class ImageDefinition:
             vertical_flip_image = pygame.transform.flip(norm_image, False, True)
             self.__images.append(vertical_flip_image)
         return self.__images
+
+
+class Animation:
+    def __init__(self, images, frame_time):
+        self.active = False
+        self.__images = images
+        self.__elapsed_time = 0
+        self.__frame_time = frame_time
+        self.__total_time = len(self.__images) * self.__frame_time
+        self.new_frame_started = False
+
+    def start(self):
+        self.__elapsed_time = 0
+        self.active = True
+        self.new_frame_started = False
+
+    def stop(self):
+        self.active = False
+        self.new_frame_started = False
+
+    def current_image(self):
+        if not self.active:
+            return self.__images[-1]
+        frame = self.__get_frame()
+        return self.__images[frame]
+
+    def update(self):
+        self.new_frame_started = False
+        current_frame = self.__get_frame()
+        self.__elapsed_time += con.GAME_TIME.get_time()
+        new_frame = self.__get_frame()
+        self.new_frame_started = current_frame != new_frame
+        if self.__elapsed_time >= self.__total_time:
+            self.active = False
+
+    def __get_frame(self):
+        return int(self.__elapsed_time / self.__frame_time)
