@@ -499,12 +499,21 @@ class Game(Scene, util.Serializer):
         self.load_unload_sprites()
         if con.DEBUG.AIR_RECTANGLES:
             self.draw_air_rectangles()
+        if con.DEBUG.SHOW_CHUNK_BORDERS:
+            self.__draw_chunk_borders()
         self.board.update_board()
 
     def draw_air_rectangles(self):
         for key in self.board.pathfinding.pathfinding_tree.rectangle_network[0]:
             for rect in self.board.pathfinding.pathfinding_tree.rectangle_network[0][key]:
                 self.board.add_rectangle(rect, (0,0,0), layer=1, border=2)
+
+    def __draw_chunk_borders(self):
+        for row in self.board.chunk_matrix:
+            for chunk in row:
+                if chunk is None:
+                    continue
+                self.board.add_rectangle(chunk.rect, (255, 255, 255), layer=0, border=2)
 
     def draw(self):
         super().draw()
