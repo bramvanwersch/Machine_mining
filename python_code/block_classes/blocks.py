@@ -288,8 +288,8 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
             return 3  # west direction
 
     def __set_item_position(
-            self,
-            direction: int
+        self,
+        direction: int
     ):
         """Set the position of an item based on the direction an item is moving. With 0-3 representing north, east,
          south, west"""

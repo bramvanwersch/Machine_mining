@@ -72,7 +72,7 @@ class User(utility.event_handling.EventHandler):
             (int(start_chunk.START_RECTANGLE.centerx / con.BLOCK_SIZE.width) * con.BLOCK_SIZE.width +
              start_chunk.rect.left, + start_chunk.START_RECTANGLE.bottom - con.BLOCK_SIZE.height + start_chunk.rect.top)
         for _ in range(con.STARTING_ENTITIES):
-            new_worker = entities.Worker(appropriate_location, self.__sprite_group, board=self.board,
+            new_worker = entities.Worker(appropriate_location, self.__sprite_group, board_=self.board,
                                          task_control=self.task_control)
             self.workers.append(new_worker)
 

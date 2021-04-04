@@ -355,7 +355,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
     board: Union["board.board.Board", None]
     task_control: Union[tasks.TaskControl, None]
     task_queue: tasks.TaskQueue
-    path: Union[None, "Path"]
+    path: Union[List, "Path"]
     dest: Union[List[List[int]], None]
     inventory: inventories.Inventory
     __previous_x_direction: int
@@ -377,7 +377,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         # tasks
         self.task_queue = tasks.TaskQueue()
-        self.path = None
+        self.path = []
         self.dest = None
 
         # inventory

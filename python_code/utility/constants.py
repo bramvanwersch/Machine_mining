@@ -9,7 +9,7 @@ from pygame.locals import *
 # own imports
 import utility.utilities as util
 
-TESTING = True  # can be used to cheat in items at certain places for easier testing
+TESTING = False  # can be used to cheat in items at certain places for easier testing
 
 
 # debug controls
