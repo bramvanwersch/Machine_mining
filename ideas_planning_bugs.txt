@@ -8,6 +8,8 @@ BUGS:
 - couple of issues with the start settings leading to some errors when generating the map.
 - Low priority: chunks generated while zoomed dont show up until updated
 - Bug with plants being removed by removing the block they are attached to and pathfinding
+- There seems to be a strange bug with pathfinding where the worker does the first step within a new chunk when only 2
+  blocks are carved out
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
@@ -27,9 +29,9 @@ SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
 - make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
-- add a penalty moving in the y direction
-- have speed be constant instead of scale with fps
+- add a seed feature to the game settings --> low prio
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
-- add numpy arrays for the chunks instead of the current lists of lists
+- add numpy arrays for the chunks instead of the current lists of lists --> better memoty efficiency and manipulation
+  efficiency presumably --> not completely sure

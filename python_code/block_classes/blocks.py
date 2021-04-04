@@ -3,7 +3,7 @@
 # library imports
 import pygame
 from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable
-from abc import ABC, abstractmethod
+from abc import ABC
 
 # own imports
 import utility.constants as con
@@ -70,7 +70,10 @@ class Block(ABC):
         return self.material.transparant_group
 
     @transparant_group.setter
-    def transparant_group(self, value):
+    def transparant_group(
+        self,
+        value: int
+    ):
         self.material.transparant_group = value
 
     def is_task_allowded(
