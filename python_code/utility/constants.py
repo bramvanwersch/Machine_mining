@@ -9,7 +9,7 @@ from pygame.locals import *
 # own imports
 import utility.utilities as util
 
-TESTING = False  # Set a bunch of varaibles for testing
+TESTING = True  # Set a bunch of varaibles for testing
 
 
 # debug controls

@@ -193,6 +193,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         """Add an incomming item to allow it to be drawn"""
         self.incomming_item = item
         self.__previous_incomming_position = item.rect.topleft
+        self._set_changed(True)
 
     def remove_item(self):
         """Remove the current item"""
@@ -267,7 +268,8 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         """Check of the block that is marked as next block needs to receibe a incomming item or a current item"""
         current_item_rect = self.current_item.rect
         direction = self.__get_next_block_direction()
-        if not self.rect.contains(current_item_rect) and isinstance(self.next_block.block, ConveyorNetworkBlock):
+        if not self.rect.contains(current_item_rect) and isinstance(self.next_block.block, ConveyorNetworkBlock) and \
+                self.next_block.incomming_item is None:
             self.next_block.put_incomming_item(self.current_item)
         if (direction == 0 and self.next_block.rect.bottom >= current_item_rect.bottom) or \
                 (direction == 1 and self.next_block.rect.left <= current_item_rect.left) or \
@@ -414,7 +416,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
             relative_position = (self.current_item.rect.left - self.rect.left,
                                  self.current_item.rect.top - self.rect.top)
             self.__item_surface.blit(self.current_item.material.transport_surface, relative_position)  # noqa
-        elif self.incomming_item is not None:
+        if self.incomming_item is not None:
             relative_position = (self.incomming_item.rect.left - self.rect.left,
                                  self.incomming_item.rect.top - self.rect.top)
             self.__item_surface.blit(self.incomming_item.material.transport_surface, relative_position)  # noqa
