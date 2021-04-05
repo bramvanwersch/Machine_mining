@@ -9,7 +9,7 @@ from pygame.locals import *
 # own imports
 import utility.utilities as util
 
-TESTING = True  # Set a bunch of varaibles for testing
+TESTING = False  # Set a bunch of varaibles for testing
 
 
 # debug controls
@@ -24,7 +24,7 @@ class DebugValues(util.ConsoleReadable):
         self.SHOW_THREADS = True
         self.SHOW_BELT_ITEMS = True
         self.PRINT_TIMING_BREAKDOWN = False
-        self.SHOW_CHUNK_BORDERS = True and TESTING
+        self.SHOW_CHUNK_BORDERS = False and TESTING
 
 
 DEBUG = DebugValues()

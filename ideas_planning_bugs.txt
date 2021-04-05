@@ -8,8 +8,7 @@ BUGS:
 - couple of issues with the start settings leading to some errors when generating the map.
 - Low priority: chunks generated while zoomed dont show up until updated
 - Bug with plants being removed by removing the block they are attached to and pathfinding
-- There seems to be a strange bug with pathfinding where the worker does the first step within a new chunk when only 2
-  blocks are carved out
+- There seems to be a bug with geenration along chunk borders
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes

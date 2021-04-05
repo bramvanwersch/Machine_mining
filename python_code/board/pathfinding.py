@@ -177,7 +177,7 @@ class PathFinder:
             for child in children:
 
                 # Child is on the closed list
-                if len([closed_child for closed_child in closed_list if closed_child.position == child.position]) > 0:
+                if len([closed_child for closed_child in closed_list if closed_child.rect == child.rect]) > 0:
                     continue
 
                 child.distance_from_start = current_node.distance_from_start +\
@@ -186,7 +186,7 @@ class PathFinder:
                 child.total_for_both = child.distance_from_start + child.distance_to_end
 
                 # Child is already in the open list
-                if len([open_node for open_node in open_list if child.position == open_node.position]) > 0:
+                if len([open_node for open_node in open_list if child.rect == open_node.rect]) > 0:
                     continue
 
                 # Add the child to the open list
@@ -268,11 +268,11 @@ class Node:
         if self.direction_index is None:
             return self.rect.center
         elif self.direction_index == 0:
-            return self.rect.centerx, self.rect.bottom + con.BLOCK_SIZE.height
+            return self.rect.centerx, self.rect.bottom
         elif self.direction_index == 1:
             return self.rect.right, self.rect.centery
         elif self.direction_index == 2:
-            return self.rect.centerx, self.rect.top
+            return self.rect.centerx, self.rect.top - con.BLOCK_SIZE.height
         elif self.direction_index == 3:
             return self.rect.left - con.BLOCK_SIZE.width, self.rect.centery
 
@@ -464,7 +464,7 @@ class PathfindingChunk:
                 self.rectangle_network[index][direction_size] = {rect}
             # add connections
             if direction_size in self.rectangle_network[index - 2]:
-                for adj_rect in self.rectangle_network[index - 2][direction_size]:
+                for adj_rect in self.rectangle_network[index - 2][direction_size].copy():
                     if util.side_by_side(rect, adj_rect) is not None:
                         rect.connecting_rects[index].add(adj_rect)
                         adj_rect.connecting_rects[index - 2].add(rect)
