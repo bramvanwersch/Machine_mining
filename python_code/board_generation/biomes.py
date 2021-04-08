@@ -181,8 +181,10 @@ class IceBiome(Biome):
 class SlimeBiome(Biome):
     DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(60, 10)
     FILLER_MATERIALS: ClassVar[List["DepthMaterial"]] = [
-        ground_materials.SlimeBlock1,
-        ground_materials.SlimeBlock2,
+        ground_materials.DirtSlimeCollection(),
+        ground_materials.StoneSlimeCollection(),
+        ground_materials.GraniteSlimeCollection(),
+        ground_materials.FinalSlimeCollection()
     ]
     ORE_MATERIALS: ClassVar[List["DepthMaterial"]] = [
         ground_materials.Oralchium,

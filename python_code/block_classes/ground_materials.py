@@ -152,6 +152,30 @@ class SlimeBlock2(base_materials.DepthMaterial, base_materials.ImageMaterial, ba
                                                image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
+class DirtSlimeCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {SlimeBlock1: 0.48, SlimeBlock2: 0.48, Dirt: 0.04}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(0, 10)
+
+
+class StoneSlimeCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {SlimeBlock1: 0.48, SlimeBlock2: 0.48, Stone: 0.04}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
+
+
+class GraniteSlimeCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {SlimeBlock1: 0.46, SlimeBlock2: 0.46, Granite: 0.08}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 7)
+
+
+class FinalSlimeCollection(base_materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
+        {SlimeBlock1: 0.45, SlimeBlock2: 0.45, FinalStone: 0.10}
+    DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
+
+
 class BackSlime1(base_materials.DepthMaterial, base_materials.ColorMaterial):
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(50, 50)
     COLOR_DEFINITIONS: ClassVar[base_materials.ColorDefinition] = base_materials.ColorDefinition((6, 99, 31))
