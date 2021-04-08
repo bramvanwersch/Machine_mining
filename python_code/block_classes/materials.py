@@ -306,7 +306,7 @@ class MultiImageMaterial(ImageMaterial, ABC):
     IMAGE_DEFINITIONS: ClassVar[Dict[Any, ImageDefinition]]
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Union[Dict[Any, ImageDefinition], None]] = None
 
-    image_key: int
+    image_key: Union[int, str]
     _surface: Dict[Any, List[pygame.Surface]]
     _active_surface: Dict[Any, List[pygame.Surface]]
 

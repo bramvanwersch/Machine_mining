@@ -1,5 +1,3 @@
-
-
 BUGS:
 - Windows dont close when buildings are destroyed
 - Windows dont appear when opening in zoomed in mode.
@@ -22,7 +20,6 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - allow plants to have berries oid
 - add structures while terrain generating
 - add ghost buildings when building
-
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.

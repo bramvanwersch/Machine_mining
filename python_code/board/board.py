@@ -97,7 +97,7 @@ class Board(util.Serializer):
     @game_timing.time_function("conveyor calcluation update")
     def __update_conveyor_network(self):
         for belt in self.conveyor_network:
-            belt.check_item_movement()
+            belt.update()
 
     @game_timing.time_function("variable block updates")
     def __update_variable_blocks(self):

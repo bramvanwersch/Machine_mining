@@ -113,6 +113,10 @@ class VariableSurfaceBlock(ABC):
     def __init__(self):
         self.__changed = False
 
+    def update(self):
+        """Function to be called when updating the surface"""
+        pass
+
     def _set_changed(
         self,
         value: bool
@@ -141,13 +145,13 @@ class SurroundableBlock(Block, ABC):
         **kwargs
     ):
         super().__init__(pos, material, **kwargs)
-        self.surrounging_blocks = (None, None, None, None)
+        self.surrounding_blocks = (None, None, None, None)
 
 
 class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     """Conveyor bloks that transport items"""
     __slots__ = "current_item", "__current_push_direction", "__item_surface", "__exact_item_position",\
-                "incomming_item", "next_block", "__previous_incomming_position"
+                "incomming_item", "next_block", "__previous_incomming_position", "_previous_surrounding_block_names"
 
     material: "building_materials.ConveyorBelt"
     current_item: Union[inventories.TransportItem, None]
@@ -173,6 +177,8 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         self.__exact_item_position = [0, 0]
         self.__previous_incomming_position = (0, 0)  # track the previous position of the incomming item for efficiency
         self.next_block = None  # the block selected to push an item to
+        # track the previous block names for updating reasons
+        self._previous_surrounding_block_names = [None for _ in range(len(self.surrounding_blocks))]
 
     def put_current_item(
         self,
@@ -202,6 +208,12 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         self.__item_surface = None
         self._set_changed(True)
 
+    def update(self):
+        self.check_item_movement()
+        if [block.name() for block in self.surrounding_blocks] != self._previous_surrounding_block_names:
+            self._previous_surrounding_block_names = [block.name() for block in self.surrounding_blocks]
+            self.__change_material_image_key()
+
     def check_item_movement(self):
         """Move items within the conveyor belt"""
         if self.current_item is not None:
@@ -217,22 +229,22 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     def __move_item_forward(self):
         """Determine if an item needs to move to the center or to the next block"""
         previous_position = self.current_item.rect.topleft
-        if self.material.image_key == 0:
+        if self.material.direction == 0:
             if self.current_item.rect.centery > self.rect.centery:
                 self.__move_towards_center()
             else:
                 self.__move_towards_next_block()
-        elif self.material.image_key == 1:
+        elif self.material.direction == 1:
             if self.current_item.rect.centerx < self.rect.centerx:
                 self.__move_towards_center()
             else:
                 self.__move_towards_next_block()
-        elif self.material.image_key == 2:
+        elif self.material.direction == 2:
             if self.current_item.rect.centery < self.rect.centery:
                 self.__move_towards_center()
             else:
                 self.__move_towards_next_block()
-        elif self.material.image_key == 3:
+        elif self.material.direction == 3:
             if self.current_item.rect.centerx > self.rect.centerx:
                 self.__move_towards_center()
             else:
@@ -244,7 +256,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
 
     def __move_towards_center(self):
         """Move toward the center of a belt"""
-        self.__set_item_position(self.material.image_key)
+        self.__set_item_position(self.material.direction)
 
     def __move_towards_next_block(self):
         """Move from the center of belt to an other belt of inventory"""
@@ -343,39 +355,39 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         is_inventorys = [False, False, False]
 
         # block 1
-        block_index = (self.material.image_key - 1) % 4
+        block_index = (self.material.direction - 1) % 4
         block = self.surrounding_blocks[block_index]
         if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
-                self.material.image_key == block_index):
+                self.material.direction == block_index):
             elligible_blocks[0] = block
             is_inventorys[0] = True
         elif (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
               (block.incomming_item is None or self.current_item == block.incomming_item)
-              and block.material.image_key == block_index):
+              and block.material.direction == block_index):
             elligible_blocks[0] = block
 
         # block 2
-        block_index = self.material.image_key
+        block_index = self.material.direction
         block = self.surrounding_blocks[block_index]
         if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
-                self.material.image_key == block_index):
+                self.material.direction == block_index):
             elligible_blocks[1] = block
             is_inventorys[1] = True
         if (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
                 (block.incomming_item is None or self.current_item == block.incomming_item) and
-                block.material.image_key in [block_index, (block_index + 1) % 4, (block_index - 1) % 4]):
+                block.material.direction in [block_index, (block_index + 1) % 4, (block_index - 1) % 4]):
             elligible_blocks[1] = block
 
         # block 3
-        block_index = (self.material.image_key + 1) % 4
+        block_index = (self.material.direction + 1) % 4
         block = self.surrounding_blocks[block_index]
         if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
-                self.material.image_key == block_index):
+                self.material.direction == block_index):
             elligible_blocks[2] = block
             is_inventorys[2] = True
         if (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
                 (block.incomming_item is None or self.current_item == block.incomming_item)
-                and block.material.image_key == block_index):
+                and block.material.direction == block_index):
             elligible_blocks[2] = block
 
         # check if an inventory was encountered and if so make sure to set all non-inventories as invalid (None)
@@ -388,19 +400,19 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     @game_timing.time_function("conveyor calcluation update", "take item")
     def __take_item(self):
         """Take an item from an inventory and set it as the current_item"""
-        opposite_block = self.surrounding_blocks[self.material.image_key - 2]  # block that is opposite belt direction
+        opposite_block = self.surrounding_blocks[self.material.direction - 2]  # block that is opposite belt direction
         if not isinstance(opposite_block.block, ContainerBlock):
             return
         item = opposite_block.get_transport_item(self.material.STACK_SIZE)
         if item is not None:
             self.current_item = item
-            if self.material.image_key == 0:
+            if self.material.direction == 0:
                 self.current_item.rect.top = self.rect.bottom
-            elif self.material.image_key == 1:
+            elif self.material.direction == 1:
                 self.current_item.rect.right = self.rect.left
-            elif self.material.image_key == 2:
+            elif self.material.direction == 2:
                 self.current_item.rect.bottom = self.rect.top
-            elif self.material.image_key == 3:
+            elif self.material.direction == 3:
                 self.current_item.rect.left = self.rect.right
             if con.DEBUG.SHOW_BELT_ITEMS:
                 self._set_changed(True)
@@ -421,6 +433,38 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
                                  self.incomming_item.rect.top - self.rect.top)
             self.__item_surface.blit(self.incomming_item.material.transport_surface, relative_position)  # noqa
         return self.__item_surface
+
+    def __change_material_image_key(self):
+        """Set the image key of the material to match the surrounding conveyorbelts"""
+        belt_directions = [None for _ in range(4)]
+        belt_directions[(self.material.direction + 2) % 4] = self.material.direction  # noqa --> very weird typing error that makes not sense
+        own_direction = self.material.direction
+        for index, block in enumerate(self.surrounding_blocks):
+            if isinstance(block.block, ContainerBlock):
+                belt_directions[index] = index  # noqa --> very weird typing error that makes not sense
+            elif isinstance(block.block, ConveyorNetworkBlock):
+                # only save a direction when there is potential for a continuation
+                if index == own_direction and block.direction != (own_direction + 2) % 4:
+                    belt_directions[index] = block.direction
+                elif index == (own_direction + 1) % 4 or index == (own_direction + 3) % 4:
+                    if block.direction == (own_direction + 1) % 4 or block.direction == (own_direction + 3) % 4:
+                        belt_directions[index] = block.direction
+        print(belt_directions, self.material.direction, self.rect)
+        total_valid_surrounding = len([direction for direction in belt_directions if direction is not None])
+        if total_valid_surrounding > 2:
+            second_part = [str(index) for index in range(len(belt_directions)) if belt_directions[index] is not None]
+            self.material.image_key = f"{total_valid_surrounding}_{''.join(second_part)}"
+            self._set_changed(True)
+        elif total_valid_surrounding == 2:
+            # get the belt that continues the conveyorline
+            next_connecting_direction = [index for index, direction in enumerate(belt_directions)
+                                         if direction is not None and
+                                         index not in [(own_direction + 2) % 4, own_direction]]
+            # no valid connector simply keep the image that was present
+            if len(next_connecting_direction) == 0:
+                return
+            self.material.image_key = f"2_{(own_direction + 2) % 4}{next_connecting_direction[0]}"
+            self._set_changed(True)
 
     def destroy(self) -> List[inventories.Item]:
         items = super().destroy()

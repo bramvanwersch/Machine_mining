@@ -173,10 +173,10 @@ class StoneChest(InterfaceBuilding):
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
     def __init__(
-            self,
-            pos: Union[Tuple[int, int], List[int]],
-            spite_group: "sprite_groups.CameraAwareLayeredUpdates",
-            **kwargs
+        self,
+        pos: Union[Tuple[int, int], List[int]],
+        spite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
     ):
         InterfaceBuilding.__init__(self, pos, spite_group, size=100, **kwargs)
 
@@ -221,7 +221,6 @@ class Factory(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
         CraftingInterfaceBuilding.__init__(self, pos, r_constants.recipe_books["factory"], sprite_group, size=300,
                                            in_filter=inventories.Filter(whitelist=[]), **kwargs)
         block_classes.VariableSurfaceBlock.__init__(self)
-
 
 
 material_mapping = {"TerminalMaterial": Terminal,
