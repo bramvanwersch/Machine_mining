@@ -440,12 +440,13 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         belt_directions[(self.material.direction + 2) % 4] = self.material.direction  # noqa --> very weird typing error that makes not sense
         own_direction = self.material.direction
         for index, block in enumerate(self.surrounding_blocks):
-            if isinstance(block.block, ContainerBlock):
+            if isinstance(block.block, ContainerBlock) and \
+                    (index == self.material.direction or index == (self.material.direction + 2) % 4):
                 belt_directions[index] = index  # noqa --> very weird typing error that makes not sense
             elif isinstance(block.block, ConveyorNetworkBlock):
                 # only save a direction when there is potential for a continuation
                 if index == own_direction and block.direction != (own_direction + 2) % 4:
-                    belt_directions[index] = block.direction
+                    belt_directions[index] = index  # noqa
                 elif index == (own_direction + 1) % 4 or index == (own_direction + 3) % 4:
                     if block.direction == (own_direction + 1) % 4 or block.direction == (own_direction + 3) % 4:
                         belt_directions[index] = block.direction
@@ -457,12 +458,21 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         else:
             self.__change_material_key_to_straight()
 
-    def __change_material_key_to_intersection(self, belt_directions, total_valid_surrounding):
+    def __change_material_key_to_intersection(
+        self,
+        belt_directions: List[Union[int, None]],
+        total_valid_surrounding: int
+    ):
+        """Add an intersection between 3 or 4 belts based on surrounding belt connections"""
         second_part = [str(index) for index in range(len(belt_directions)) if belt_directions[index] is not None]
         self.material.image_key = f"{total_valid_surrounding}_{''.join(second_part)}_{self.material.direction}"
         self._set_changed(True)
 
-    def __change_material_key_to_corner(self, belt_directions):
+    def __change_material_key_to_corner(
+        self,
+        belt_directions: List[Union[int, None]]
+    ):
+        """Add a corner connection between 2 belts based on belt direction"""
         own_direction = self.material.direction
         # get the belt that continues the conveyorline
         next_connecting_direction = [index for index, direction in enumerate(belt_directions)
@@ -482,6 +492,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
             self._set_changed(True)
 
     def __change_material_key_to_straight(self):
+        """Add a simple straigh piece of belt"""
         self.material.image_key = f"1_{self.material.direction}"
         self._set_changed(True)
 
