@@ -131,11 +131,11 @@ class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMateria
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
-        utility.image_handling.ImageDefinition("materials", (0, 60))
+        utility.image_handling.ImageDefinition("materials", (0, 70))
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
-        utility.image_handling.ImageDefinition("materials", (0, 60))
+        utility.image_handling.ImageDefinition("materials", (0, 70))
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
-        utility.image_handling.ImageDefinition("materials", (0, 60), image_size=con.TRANSPORT_BLOCK_SIZE)
+        utility.image_handling.ImageDefinition("materials", (0, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class StoneBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
@@ -191,11 +191,26 @@ class BasicConveyorBelt(ConveyorBelt):
          "2_01": utility.image_handling.ImageDefinition("materials", (70, 40)),
          "2_12": utility.image_handling.ImageDefinition("materials", (80, 40)),
          "2_21": utility.image_handling.ImageDefinition("materials", (90, 40)),
-         "3_023": utility.image_handling.ImageDefinition("materials", (0, 50)),
-         "3_123": utility.image_handling.ImageDefinition("materials", (10, 50)),
-         "3_012": utility.image_handling.ImageDefinition("materials", (20, 50)),
-         "3_013": utility.image_handling.ImageDefinition("materials", (30, 50)),
-         "4_0123": utility.image_handling.ImageDefinition("materials", (40, 50))}
+         "3_023_0": utility.image_handling.ImageDefinition("materials", (0, 50)),
+         "3_023_1": utility.image_handling.ImageDefinition("materials", (10, 50)),
+         "3_023_2": utility.image_handling.ImageDefinition("materials", (20, 50)),
+         "3_023_3": utility.image_handling.ImageDefinition("materials", (30, 50)),
+         "3_123_0": utility.image_handling.ImageDefinition("materials", (40, 50)),
+         "3_123_1": utility.image_handling.ImageDefinition("materials", (50, 50)),
+         "3_123_2": utility.image_handling.ImageDefinition("materials", (60, 50)),
+         "3_123_3": utility.image_handling.ImageDefinition("materials", (70, 50)),
+         "3_012_0": utility.image_handling.ImageDefinition("materials", (80, 50)),
+         "3_012_1": utility.image_handling.ImageDefinition("materials", (90, 50)),
+         "3_012_2": utility.image_handling.ImageDefinition("materials", (0, 60)),
+         "3_012_3": utility.image_handling.ImageDefinition("materials", (10, 60)),
+         "3_013_0": utility.image_handling.ImageDefinition("materials", (20, 60)),
+         "3_013_1": utility.image_handling.ImageDefinition("materials", (30, 60)),
+         "3_013_2": utility.image_handling.ImageDefinition("materials", (40, 60)),
+         "3_013_3": utility.image_handling.ImageDefinition("materials", (50, 60)),
+         "4_0123_0": utility.image_handling.ImageDefinition("materials", (60, 60)),
+         "4_0123_1": utility.image_handling.ImageDefinition("materials", (70, 60)),
+         "4_0123_2": utility.image_handling.ImageDefinition("materials", (80, 60)),
+         "4_0123_3": utility.image_handling.ImageDefinition("materials", (90, 60))}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("materials", (0, 40), image_size=con.TRANSPORT_BLOCK_SIZE)
 

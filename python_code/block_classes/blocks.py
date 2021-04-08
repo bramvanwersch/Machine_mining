@@ -459,7 +459,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
 
     def __change_material_key_to_intersection(self, belt_directions, total_valid_surrounding):
         second_part = [str(index) for index in range(len(belt_directions)) if belt_directions[index] is not None]
-        self.material.image_key = f"{total_valid_surrounding}_{''.join(second_part)}"
+        self.material.image_key = f"{total_valid_surrounding}_{''.join(second_part)}_{self.material.direction}"
         self._set_changed(True)
 
     def __change_material_key_to_corner(self, belt_directions):
