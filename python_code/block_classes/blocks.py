@@ -449,22 +449,41 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
                 elif index == (own_direction + 1) % 4 or index == (own_direction + 3) % 4:
                     if block.direction == (own_direction + 1) % 4 or block.direction == (own_direction + 3) % 4:
                         belt_directions[index] = block.direction
-        print(belt_directions, self.material.direction, self.rect)
         total_valid_surrounding = len([direction for direction in belt_directions if direction is not None])
         if total_valid_surrounding > 2:
-            second_part = [str(index) for index in range(len(belt_directions)) if belt_directions[index] is not None]
-            self.material.image_key = f"{total_valid_surrounding}_{''.join(second_part)}"
-            self._set_changed(True)
+            self.__change_material_key_to_intersection(belt_directions, total_valid_surrounding)
         elif total_valid_surrounding == 2:
-            # get the belt that continues the conveyorline
-            next_connecting_direction = [index for index, direction in enumerate(belt_directions)
-                                         if direction is not None and
-                                         index not in [(own_direction + 2) % 4, own_direction]]
-            # no valid connector simply keep the image that was present
-            if len(next_connecting_direction) == 0:
-                return
-            self.material.image_key = f"2_{(own_direction + 2) % 4}{next_connecting_direction[0]}"
+            self.__change_material_key_to_corner(belt_directions)
+        else:
+            self.__change_material_key_to_straight()
+
+    def __change_material_key_to_intersection(self, belt_directions, total_valid_surrounding):
+        second_part = [str(index) for index in range(len(belt_directions)) if belt_directions[index] is not None]
+        self.material.image_key = f"{total_valid_surrounding}_{''.join(second_part)}"
+        self._set_changed(True)
+
+    def __change_material_key_to_corner(self, belt_directions):
+        own_direction = self.material.direction
+        # get the belt that continues the conveyorline
+        next_connecting_direction = [index for index, direction in enumerate(belt_directions)
+                                     if direction is not None and
+                                     index not in [(own_direction + 2) % 4, own_direction]]
+        # no valid connector simply keep the image that was present
+        if len(next_connecting_direction) == 0:
+            self.__change_material_key_to_straight()
+            return
+        connecting_index = next_connecting_direction[0]
+        # if the belt points into this belt then it is an intersection
+        if connecting_index == (belt_directions[connecting_index] + 2) % 4:
+            belt_directions[self.material.direction] = self.material.direction
+            self.__change_material_key_to_intersection(belt_directions, 3)
+        else:
+            self.material.image_key = f"2_{(own_direction + 2) % 4}{connecting_index}"
             self._set_changed(True)
+
+    def __change_material_key_to_straight(self):
+        self.material.image_key = f"1_{self.material.direction}"
+        self._set_changed(True)
 
     def destroy(self) -> List[inventories.Item]:
         items = super().destroy()

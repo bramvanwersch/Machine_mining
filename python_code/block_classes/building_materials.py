@@ -154,7 +154,7 @@ class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, 
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.direction = self.image_key  # direction the belt is facing. Intersections are only visual
+        self.direction = 0  # direction the belt is facing. Intersections are only visual
 
     # noinspection PyPep8Naming
     @property
