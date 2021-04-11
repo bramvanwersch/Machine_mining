@@ -259,7 +259,7 @@ class BoardGenerator:
         # TODO temporary test remove later
         mine = board_generation.structures.abandoned_mine.AbandonedMineStructure()
         matrix = mine.get_structure_matrix()
-        coord = [50, 50]
+        coord = [25, 25]
         for r_index, row in enumerate(matrix):
             for c_index, material in enumerate(row):
                 self.__predefined_blocks.add((coord[0] + c_index, coord[1] + r_index), material)
@@ -401,7 +401,7 @@ class BoardGenerator:
             return
         flora = choices(list(flora_likelyhoods[chosen_index].keys()),
                         list(flora_likelyhoods[chosen_index].values()), k=1)[0]
-        self.__predefined_blocks.add((block_x_coord, block_y_coord), flora, overwrite=False)
+        self.__predefined_blocks.add((block_x_coord, block_y_coord), flora)
 
     def __add_ore_cluster(
         self,

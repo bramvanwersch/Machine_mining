@@ -31,6 +31,7 @@ DEBUG = DebugValues()
 
 SHOW_BLOCK_BORDER = True
 TEST_BOARD = TESTING
+USE_SEED = False
 SEED = 123  # use this as a seed when testing
 
 # innitialize fonts to pre load a font

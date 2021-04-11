@@ -6,7 +6,7 @@ from block_classes import materials
 
 class StoneBrickCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        "StoneBrickMaterial": 0.2, "MossBrickMaterial": 0.4, "ManyMossBrickMaterial": 0.4
+        "StoneBrickMaterial": 0.39, "MossBrickMaterial": 0.3, "ManyMossBrickMaterial": 0.3, "Air": 0.01
     }
 
 
@@ -22,11 +22,11 @@ class HorizontalMinePart(StructurePart):
         [],
         [("HorizontalMinePart", 0), ("CornerNorthWestMinePart", 0), ("CornerSouthWestMinePart", 0),
          ("JunctionNorthEastWest", 0), ("JunctionNorthSouthWest", 0), ("JunctionEastSouthWest", 0),
-         ("JunctionNorthEastSouthWest", 0)],
+         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)],
         [],
         [("HorizontalMinePart", 0), ("CornerNorthEastMinePart", 0), ("CornerSouthEastMinePart", 0),
          ("JunctionNorthEastWest", 0), ("JunctionNorthEastSouth", 0), ("JunctionEastSouthWest", 0),
-         ("JunctionNorthEastSouthWest", 0)]
+         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)]
     )
 
 
@@ -41,12 +41,11 @@ class VerticalMinePart(StructurePart):
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
         [("VerticalMinePart", 0), ("CornerSouthWestMinePart", 0), ("CornerSouthEastMinePart", 0),
          ("JunctionNorthEastSouth", 0), ("JunctionNorthSouthWest", 0), ("JunctionEastSouthWest", 0),
-         ("JunctionNorthEastSouthWest", 0)],
+         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)],
         [],
         [("VerticalMinePart", 0), ("CornerNorthWestMinePart", 0), ("CornerNorthEastMinePart", 0),
          ("JunctionNorthEastSouth", 0), ("JunctionNorthSouthWest", 0), ("JunctionNorthEastWest", 0),
-         ("JunctionNorthEastSouthWest", 0)
-         ],
+         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)],
         []
     )
 
@@ -195,11 +194,43 @@ class JunctionNorthEastSouthWest(StructurePart):
     )
 
 
+class FurnaceRoom(StructurePart):
+    FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
+        [StoneBrickCollection, "Air", "Air", StoneBrickCollection, StoneBrickCollection, StoneBrickCollection,
+         StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, "Air", "Air", StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        [StoneBrickCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air",
+         StoneBrickCollection],
+        ["Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air"],
+        ["Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air", "Air"],
+        [StoneBrickCollection, "Air", "Air", StoneBrickCollection, StoneBrickCollection, StoneBrickCollection,
+         StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, "Air", "Air", StoneBrickCollection],
+    ]
+    CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
+                                         List[Tuple[str, int]], List[Tuple[str, int]]]] = (
+        [("VerticalMinePart", 8)],
+        [("HorizontalMinePart", 0), ("HorizontalMinePart", 8)],
+        [("VerticalMinePart", 8)],
+        [("HorizontalMinePart", 0), ("HorizontalMinePart", 8)],
+    )
+
+
 class AbandonedMineStructure(Structure):
     STRUCTURE_START_PARTS: ClassVar[List["StructurePart"]] = [
-        HorizontalMinePart,
-        VerticalMinePart,
-        CornerNorthWestMinePart
+        FurnaceRoom
     ]
     MAX_PARTS: ClassVar[int] = 100
 
