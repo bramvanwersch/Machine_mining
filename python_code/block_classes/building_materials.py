@@ -147,6 +147,24 @@ class StoneBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (0, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
+class MossBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
+
+    HARDNESS: ClassVar[int] = 4
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (10, 70))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (10, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
+
+
+class ManyMossBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
+
+    HARDNESS: ClassVar[int] = 4
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("materials", (20, 70))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("materials", (20, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
+
+
 class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, ABC):
     __slots__ = "direction"
 

@@ -31,7 +31,7 @@ DEBUG = DebugValues()
 
 SHOW_BLOCK_BORDER = True
 TEST_BOARD = TESTING
-SEED = 9  # use this as a seed when testing
+SEED = 42  # use this as a seed when testing
 
 # innitialize fonts to pre load a font
 pygame.font.init()

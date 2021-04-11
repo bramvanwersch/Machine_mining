@@ -54,7 +54,7 @@ class YellowStone(base_materials.ColorMaterial, base_materials.TransportableMate
         base_materials.ColorDefinition((155, 155, 126), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class StoneCollection(base_materials.MaterialCollection):
+class StoneCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {Stone: 0.95, GreenStone: 0.01, RedStone:  0.01, BlueStone: 0.01, YellowStone: 0.01}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
@@ -90,25 +90,25 @@ class Snow(base_materials.ColorMaterial, base_materials.TransportableMaterial):
         base_materials.ColorDefinition((193, 197, 199), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class DirtIceCollection(base_materials.MaterialCollection):
+class DirtIceCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {BasicIce: 0.5, Snow: 0.45, Dirt: 0.05}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(0, 10)
 
 
-class StoneIceCollection(base_materials.MaterialCollection):
+class StoneIceCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {BasicIce: 0.5, Snow: 0.45, Stone: 0.05}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
 
 
-class GraniteIceCollection(base_materials.MaterialCollection):
+class GraniteIceCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {BasicIce: 0.45, Snow: 0.40, Granite: 0.15}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 7)
 
 
-class FinalIceCollection(base_materials.MaterialCollection):
+class FinalIceCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {BasicIce: 0.40, Snow: 0.35, FinalStone: 0.25}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)
@@ -152,25 +152,25 @@ class SlimeBlock2(base_materials.DepthMaterial, base_materials.ImageMaterial, ba
                                                image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class DirtSlimeCollection(base_materials.MaterialCollection):
+class DirtSlimeCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {SlimeBlock1: 0.48, SlimeBlock2: 0.48, Dirt: 0.04}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(0, 10)
 
 
-class StoneSlimeCollection(base_materials.MaterialCollection):
+class StoneSlimeCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {SlimeBlock1: 0.48, SlimeBlock2: 0.48, Stone: 0.04}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(30, 10)
 
 
-class GraniteSlimeCollection(base_materials.MaterialCollection):
+class GraniteSlimeCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {SlimeBlock1: 0.46, SlimeBlock2: 0.46, Granite: 0.08}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(70, 7)
 
 
-class FinalSlimeCollection(base_materials.MaterialCollection):
+class FinalSlimeCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {SlimeBlock1: 0.45, SlimeBlock2: 0.45, FinalStone: 0.10}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(100, 2)

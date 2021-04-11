@@ -373,7 +373,7 @@ class DepthMaterial(ABC):
         pass
 
 
-class MaterialCollection(DepthMaterial, ABC):
+class MaterialCollection(ABC):
     """class that holds a collection of items that are randomly returned based on wheights this is mainly meant for
      board generation purposes"""
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]]
@@ -381,10 +381,31 @@ class MaterialCollection(DepthMaterial, ABC):
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def MATERIAL_PROBABILITIES(self) -> Dict[DepthMaterial, float]:
+    def MATERIAL_PROBABILITIES(self) -> Dict[str, float]:
         """Dictionary linking material type to to a probability of returning that name when the name() metod is
          called"""
         pass
+
+    @classmethod
+    def name(cls):
+        # noinspection PyUnresolvedReferences
+        return choices([k for k in cls.MATERIAL_PROBABILITIES.keys()],
+                       cls.MATERIAL_PROBABILITIES.values(), k=1)[0]
+
+    def __getattr__(self, item):
+        """Allow inheritting methods to get a property from something shared by a collection"""
+        try:
+            return getattr(list(self.MATERIAL_PROBABILITIES.keys())[0], item)
+        except AttributeError:
+            raise AttributeError(f"'{self.__name__}' object has no attribute '{item}'")
+
+    def __contains__(self, item):
+        return item in self.MATERIAL_PROBABILITIES
+
+
+class MaterialDepthCollection(DepthMaterial, MaterialCollection, ABC):
+    """Forces a material collection to also have a dept distribution"""
+    MATERIAL_PROBABILITIES: ClassVar[Dict[DepthMaterial, float]]
 
     @classmethod
     def name(cls) -> str:
@@ -392,12 +413,6 @@ class MaterialCollection(DepthMaterial, ABC):
         # noinspection PyUnresolvedReferences
         return choices([k.name() for k in cls.MATERIAL_PROBABILITIES.keys()],
                        cls.MATERIAL_PROBABILITIES.values(), k=1)[0]
-
-    def __getattr__(self, item):
-        return getattr(list(self.MATERIAL_PROBABILITIES.keys())[0], item)
-
-    def __contains__(self, item):
-        return item in self.MATERIAL_PROBABILITIES
 
 
 class InventoryMaterial:

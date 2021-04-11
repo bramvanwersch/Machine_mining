@@ -91,7 +91,7 @@ class RedShroomers(EnvironmentMaterial, base_materials.ImageMaterial):
                                                image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class ShroomCollection(base_materials.MaterialCollection):
+class ShroomCollection(base_materials.MaterialDepthCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[base_materials.BaseMaterial, float]] = \
         {BrownShroom: 0.4, BrownShroomers: 0.1, RedShroom: 0.4, RedShroomers: 0.1}
     DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(80, 10)

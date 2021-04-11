@@ -27,7 +27,6 @@ class Main:
 
         pygame.display.set_caption("MACHINE MINING!!")
         pygame.mouse.set_visible(True)
-
         self.__innitialize_game_varaibles()
         if con.TESTING:
             seed(con.SEED)

@@ -7,6 +7,7 @@ from utility import constants as con, utilities as util
 import interfaces.interface_utility as interface_util
 from block_classes import ground_materials, block_utility as block_util
 import board_generation.biomes as biome_classes
+import board_generation.structures.abandoned_mine
 
 
 class BoardGenerator:
@@ -254,7 +255,14 @@ class BoardGenerator:
                 y_coord = randint(int(row_i * self.__cave_quadrant_size.width),
                                   int((row_i + 1) * self.__cave_quadrant_size.width))
                 self.__generate_cave([x_coord, y_coord])
-        # TODO add structures here, after the caves
+
+        # TODO temporary test remove later
+        mine = board_generation.structures.abandoned_mine.AbandonedMineStructure()
+        matrix = mine.get_structure_matrix()
+        coord = [50, 50]
+        for r_index, row in enumerate(matrix):
+            for c_index, material in enumerate(row):
+                self.__predefined_blocks.add((coord[0] + c_index, coord[1] + r_index), material)
 
     def __generate_cave(
         self,
@@ -574,10 +582,10 @@ class PredefinedBlocks:
         overwrite=True
     ) -> None:
         if coord[1] in self.__internal_tree:
+            # do not overwrite if requested
+            if not overwrite and coord[0] in self.__internal_tree[coord[1]]:
+                return
             self.__internal_tree[coord[1]][coord[0]] = value
-        # do not overwrite if requested
-        elif not overwrite and coord[1] in self.__internal_tree and coord[0] in self.__internal_tree[coord[1]]:
-            return
         else:
             if coord[1] > con.MAX_DEPTH:
                 print("Carefull {} is outside the board".format(coord))
