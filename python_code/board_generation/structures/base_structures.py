@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 class Structure(ABC):
-    STRUCTURE_PARTS: ClassVar[List["StructurePart"]]
+    STRUCTURE_START_PARTS: ClassVar[List["StructurePart"]]
     MAX_PARTS: ClassVar[int]
 
     def __init__(self):
@@ -19,7 +19,7 @@ class Structure(ABC):
     # noinspection PyPep8Naming
     @property
     @abstractmethod
-    def STRUCTURE_PARTS(self) -> List[Type["StructurePart"]]:
+    def STRUCTURE_START_PARTS(self) -> List[Type["StructurePart"]]:
         pass
 
     # noinspection PyPep8Naming
@@ -29,7 +29,7 @@ class Structure(ABC):
         pass
 
     def get_structure_matrix(self):
-        start_class = choice(self.STRUCTURE_PARTS)
+        start_class = choice(self.STRUCTURE_START_PARTS)
         start_instance = start_class((0, 0))
         extend_parts = {start_instance}
         rectangles = [start_instance.rect]
@@ -56,8 +56,6 @@ class Structure(ABC):
                         continue
                     extend_parts.add(part_instance)
                     all_parts.add(part_instance)
-                    part_instance.connections[index - 2] = part
-                    part.connections[index] = part_instance
                     rectangles.append(part_instance.rect)
                     count += 1
                 extend_parts.remove(part)
