@@ -170,9 +170,9 @@ class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, 
 
     direction: int
 
-    def __init__(self, **kwargs):
+    def __init__(self, direction=0, **kwargs):
         super().__init__(**kwargs)
-        self.direction = 0  # direction the belt is facing. Intersections are only visual
+        self.direction = direction  # direction the belt is facing. Intersections are only visual th
 
     # noinspection PyPep8Naming
     @property
@@ -232,8 +232,8 @@ class BasicConveyorBelt(ConveyorBelt):
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("materials", (0, 40), image_size=con.TRANSPORT_BLOCK_SIZE)
 
-    def __init__(self, **kwargs):
-        super().__init__(image_key="1_0", **kwargs)
+    def __init__(self, image_key=None, **kwargs):
+        super().__init__(image_key=image_key if image_key is not None else "1_0", **kwargs)
 
     def rotate(
         self,
