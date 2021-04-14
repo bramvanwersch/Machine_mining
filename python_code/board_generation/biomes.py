@@ -221,20 +221,30 @@ class BiomeGenerationDefinition(ABC):
         return {}
 
     @classmethod
-    def get_biome(cls, depth: int) -> Type[Biome]:
+    def get_biome(
+        cls,
+        depth: int
+    ) -> Type[Biome]:
         """Calculate the likelyhood of a biome for a given depth based on the frequency of the biome overall and a
         likelyhood given the depth"""
-        biome_lhs_at_depth = {biome: biome.get_likelyhood_at_depth(depth) * frequencey
-                              for biome, frequencey in cls.BIOME_PROBABILITIES.items()}  # noqa
+        # noinspection PyUnresolvedReferences
+        biome_lhs_at_depth = {biome: biome.get_likelyhood_at_depth(depth) * frequency
+                              for biome, frequency in cls.BIOME_PROBABILITIES.items()}
         biome_type = choices(list(biome_lhs_at_depth.keys()), list(biome_lhs_at_depth.values()), k=1)[0]
         return biome_type
 
     @classmethod
-    def get_structure(cls) -> Union[Type[base_structures.Structure], None]:
+    def get_structure(
+        cls,
+        depth: int
+    ) -> Union[Type[base_structures.Structure], None]:
         # noinspection PyTypeChecker
         if len(cls.STRUCTURE_PROBABILITIES) > 0:
             # noinspection PyUnresolvedReferences
-            return choices(list(cls.STRUCTURE_PROBABILITIES.keys()), list(cls.STRUCTURE_PROBABILITIES.values()), k=1)[0]
+            structure_lhs_at_depth = {structure: structure.get_likelyhood_at_depth(depth) * frequency
+                                      for structure, frequency in cls.STRUCTURE_PROBABILITIES.items()}
+            # noinspection PyUnresolvedReferences
+            return choices(list(structure_lhs_at_depth.keys()), list(structure_lhs_at_depth.values()), k=1)[0]
         return None
 
 

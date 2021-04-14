@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, ClassVar, Union, List, TYPE_CHECKING, Tuple, Type
+from typing import ClassVar, Union, List, TYPE_CHECKING, Tuple, Type
 from random import randint, choice
 import pygame
 
 import utility.utilities as util
+import utility.constants as con
 
 if TYPE_CHECKING:
     from block_classes import materials
@@ -12,6 +13,7 @@ if TYPE_CHECKING:
 class Structure(ABC):
     STRUCTURE_START_PARTS: ClassVar[List["StructurePart"]]
     MAX_PARTS: ClassVar[int]
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian]
 
     def __init__(self):
         self.__total_parts = max(1, randint(int(self.MAX_PARTS * 0.66), self.MAX_PARTS))
@@ -21,6 +23,22 @@ class Structure(ABC):
     @abstractmethod
     def STRUCTURE_START_PARTS(self) -> List[Type["StructurePart"]]:
         pass
+
+    # noinspection PyPep8Naming
+    @property
+    @abstractmethod
+    def DEPTH_DISTRIBUTION(self) -> ClassVar[util.Gaussian]:
+        pass
+
+    @classmethod
+    def get_likelyhood_at_depth(
+        cls,
+        depth: int
+    ) -> float:
+        """Likelyhood of this biome occuring at exactly depth"""
+        # make sure that the depth is expressed between 1 and 100
+        norm_depth = depth / con.MAX_DEPTH * 100
+        return cls.DEPTH_DISTRIBUTION.probability(norm_depth)  # noqa
 
     # noinspection PyPep8Naming
     @property
@@ -38,7 +56,7 @@ class Structure(ABC):
         while count <= self.__total_parts and len(extend_parts) != 0:
             for part in extend_parts.copy():
                 for index, connection_options in enumerate(part.CONNECTION_DIRECIONS):
-                    if len(connection_options) == 0: #or part.connections[index] is not None:
+                    if len(connection_options) == 0:
                         continue
                     str_part, start_index = choice(connection_options)
                     part_class = self._str_to_part_class(str_part)
@@ -72,7 +90,10 @@ class Structure(ABC):
                 matrix_coord[0] -= len(row)
         return full_material_matrix
 
-    def union_rect(self, rectangles: List[pygame.Rect]):
+    def union_rect(
+        self,
+        rectangles: List[pygame.Rect]
+    ) -> pygame.Rect:
         corner_coords: List[Union[None, int]] = [None for _ in range(4)]
         for rect in rectangles:
             if corner_coords[0] is None or rect.left < corner_coords[0]:
@@ -134,4 +155,4 @@ class StructurePart(ABC):
 
     @classmethod
     def size(cls) -> util.Size:
-        return util.Size(len(cls.FORM_DEFINITION[0]), len(cls.FORM_DEFINITION))
+        return util.Size(len(cls.FORM_DEFINITION[0]), len(cls.FORM_DEFINITION))  # noqa

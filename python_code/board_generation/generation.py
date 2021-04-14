@@ -264,7 +264,7 @@ class BoardGenerator:
         self,
         coord: Tuple[int, int]
     ):
-        structure_class = self.__biome_definition.get_structure()
+        structure_class = self.__biome_definition.get_structure(coord[1])
         if structure_class is None:
             return
         structure_instance = structure_class()

@@ -1,7 +1,8 @@
-from typing import List, ClassVar, Dict, Union, Tuple
+from typing import List, ClassVar, Dict, Union, Tuple, Type
 
 from board_generation.structures.base_structures import StructurePart, Structure
 from block_classes import materials
+import utility.utilities as util
 
 
 class StoneBrickCollection(materials.MaterialCollection):
@@ -250,6 +251,10 @@ class AbandonedMineStructure(Structure):
         FurnaceRoom
     ]
     MAX_PARTS: ClassVar[int] = 100
+    DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 10)
 
-    def _str_to_part_class(self, part_name):
+    def _str_to_part_class(
+        self,
+        part_name: str
+    ) -> Type["StructurePart"]:
         return globals()[part_name]
