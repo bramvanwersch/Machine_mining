@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar
+from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar, Type
 from random import choices
 
 from utility import utilities as util, constants as con
 import block_classes.environment_materials as environment_materials
 import block_classes.ground_materials as ground_materials
+from board_generation.structures import base_structures, abandoned_mine
 if TYPE_CHECKING:
     from block_classes.materials import DepthMaterial
     from block_classes.environment_materials import EnvironmentMaterial
@@ -203,7 +204,8 @@ class SlimeBiome(Biome):
 
 
 class BiomeGenerationDefinition(ABC):
-    BIOME_PROBABILITIES: ClassVar[Dict[type, float]]
+    BIOME_PROBABILITIES: ClassVar[Dict[Type[Biome], float]]
+    STRUCTURE_PROBABILITIES: ClassVar[Dict[Type[base_structures.Structure], float]]
 
     # noinspection PyPep8Naming
     @property
@@ -212,8 +214,14 @@ class BiomeGenerationDefinition(ABC):
         """Dictionary linking biome to a gaussian expressing the frequency of the biome over the generation"""
         pass
 
+    # noinspection PyPep8Naming
+    @property
+    def STRUCTURE_PROBABILITIES(self) -> Dict[type, float]:
+        """Probabilities of structures for this map"""
+        return {}
+
     @classmethod
-    def get_biome(cls, depth: int) -> type:
+    def get_biome(cls, depth: int) -> Type[Biome]:
         """Calculate the likelyhood of a biome for a given depth based on the frequency of the biome overall and a
         likelyhood given the depth"""
         biome_lhs_at_depth = {biome: biome.get_likelyhood_at_depth(depth) * frequencey
@@ -221,8 +229,19 @@ class BiomeGenerationDefinition(ABC):
         biome_type = choices(list(biome_lhs_at_depth.keys()), list(biome_lhs_at_depth.values()), k=1)[0]
         return biome_type
 
+    @classmethod
+    def get_structure(cls) -> Union[Type[base_structures.Structure], None]:
+        # noinspection PyTypeChecker
+        if len(cls.STRUCTURE_PROBABILITIES) > 0:
+            # noinspection PyUnresolvedReferences
+            return choices(list(cls.STRUCTURE_PROBABILITIES.keys()), list(cls.STRUCTURE_PROBABILITIES.values()), k=1)[0]
+        return None
+
 
 class NormalBiomeGeneration(BiomeGenerationDefinition):
     BIOME_PROBABILITIES: ClassVar[Dict[type, float]] = {
         NormalBiome: 0.80, IceBiome: 0.10, SlimeBiome: 0.10
+    }
+    STRUCTURE_PROBABILITIES: ClassVar[Dict[type, float]] = {
+        abandoned_mine.AbandonedMineStructure: 1
     }

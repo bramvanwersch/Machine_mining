@@ -7,7 +7,6 @@ from utility import constants as con, utilities as util
 import interfaces.interface_utility as interface_util
 from block_classes import ground_materials, block_utility as block_util
 import board_generation.biomes as biome_classes
-import board_generation.structures.abandoned_mine
 
 
 class BoardGenerator:
@@ -113,7 +112,7 @@ class BoardGenerator:
                                for _ in range(ceil(con.ORIGINAL_BOARD_SIZE.height / self.__biome_size.height))]
 
         self.__generate_biomes(self.__generation_rect, progress_var)
-        self.__generate_structures(self.__generation_rect, progress_var)
+        self.__generate_surroundings(self.__generation_rect, progress_var)
 
     def generate_chunk(
         self,
@@ -199,7 +198,7 @@ class BoardGenerator:
         else:
             raise util.GameException("Expected N, E, S or W not {}".format(direction))
         self.__generate_biomes(rect)
-        self.__generate_structures(rect)
+        self.__generate_surroundings(rect)
         self.__generation_rect.union_ip(rect)
 
     def __generate_biomes(
@@ -233,7 +232,7 @@ class BoardGenerator:
                 biome_instance = biome_type(util.Gaussian(mean_x, sd_x), util.Gaussian(mean_y, sd_y), cov1, cov2)
                 self.__biome_matrix[row_i][col_i] = biome_instance
 
-    def __generate_structures(
+    def __generate_surroundings(
         self,
         rect: Rect,
         progress_var: Union[None, List[str]] = None
@@ -255,14 +254,25 @@ class BoardGenerator:
                 y_coord = randint(int(row_i * self.__cave_quadrant_size.width),
                                   int((row_i + 1) * self.__cave_quadrant_size.width))
                 self.__generate_cave([x_coord, y_coord])
+                x_coord = randint(int(col_i * self.__cave_quadrant_size.height),
+                                  int((col_i + 1) * self.__cave_quadrant_size.height))
+                y_coord = randint(int(row_i * self.__cave_quadrant_size.width),
+                                  int((row_i + 1) * self.__cave_quadrant_size.width))
+                self.__generate_structure((x_coord, y_coord))
 
-        # TODO temporary test remove later
-        mine = board_generation.structures.abandoned_mine.AbandonedMineStructure()
-        matrix = mine.get_structure_matrix()
-        coord = [25, 25]
-        for r_index, row in enumerate(matrix):
+    def __generate_structure(
+        self,
+        coord: Tuple[int, int]
+    ):
+        structure_class = self.__biome_definition.get_structure()
+        if structure_class is None:
+            return
+        structure_instance = structure_class()
+        structure_matrix = structure_instance.get_structure_matrix()
+        matrix_coord = int(coord[0] / con.BLOCK_SIZE.width), int(coord[1] / con.BLOCK_SIZE.height)
+        for r_index, row in enumerate(structure_matrix):
             for c_index, material in enumerate(row):
-                self.__predefined_blocks.add((coord[0] + c_index, coord[1] + r_index), material)
+                self.__predefined_blocks.add((matrix_coord[0] + c_index, matrix_coord[1] + r_index), material)
 
     def __generate_cave(
         self,
