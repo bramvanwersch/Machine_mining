@@ -7,6 +7,8 @@ import json
 from time import time_ns
 from numpy import array, linalg, exp
 import inspect
+
+
 if TYPE_CHECKING:
     from block_classes.blocks import Block
 
@@ -154,7 +156,7 @@ def rect_from_block_matrix(block_matrix):
     start_pos = block_matrix[0][0].rect.topleft
     end_pos = block_matrix[-1][-1].rect.bottomright
     size = (end_pos[0] - start_pos[0], end_pos[1] - start_pos[1])
-    return Rect((*start_pos, *size))
+    return Rect((start_pos[0], start_pos[1], size[0], size[1]))
 
 
 def line_from_points(point1, point2):

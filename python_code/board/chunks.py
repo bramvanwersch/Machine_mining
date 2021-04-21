@@ -155,26 +155,14 @@ class Chunk(util.Serializer):
                 # create position
                 pos = (self.rect.left + column_i * con.BLOCK_SIZE.width,
                        self.rect.top + row_i * con.BLOCK_SIZE.height)
-                full_material_info = s_matrix[row_i][column_i].split(":")
-                material_string = full_material_info[0]
-                kwargs = {}
-                if len(full_material_info) > 1:
-                    kwargs = self.__get_info(full_material_info[1])
-                material_instance = block_util.material_instance_from_string(material_string, depth=row_i, **kwargs)
+                material_class_definition = s_matrix[row_i][column_i]
+                material_instance = material_class_definition.to_instance(depth=row_i)
                 block = material_instance.to_block(pos)
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
                     plant = flora.Plant(block, self)
                     self.all_plants.add(plant)
                 s_matrix[row_i][column_i] = util.BlockPointer(block)
         return s_matrix
-
-    def __get_info(self, string_information):
-        information_pieces = string_information.split(",")
-        kwargs = {}
-        for piece in information_pieces:
-            info = piece.split("=")
-            kwargs[info[0]] = info[1]
-        return kwargs
 
 
 class StartChunk(Chunk):
@@ -191,7 +179,7 @@ class StartChunk(Chunk):
         # generate the air space at the start position
         for row_i in range(interface_util.p_to_r(self.START_RECTANGLE.top), interface_util.p_to_r(self.START_RECTANGLE.bottom)):
             for column_i in range(interface_util.p_to_c(self.START_RECTANGLE.left), interface_util.p_to_c(self.START_RECTANGLE.right)):
-                matrix[row_i][column_i] = "Air"
+                matrix[row_i][column_i] = block_util.MCD("Air")
         return matrix
 
 

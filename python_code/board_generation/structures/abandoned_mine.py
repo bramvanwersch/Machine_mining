@@ -3,30 +3,32 @@ from typing import List, ClassVar, Dict, Union, Tuple, Type
 from board_generation.structures.base_structures import StructurePart, Structure
 from block_classes import materials
 import utility.utilities as util
+import block_classes.block_utility as block_util
 
 
 class StoneBrickCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        "StoneBrickMaterial": 0.39, "MossBrickMaterial": 0.3, "ManyMossBrickMaterial": 0.3, "Air": 0.01
+        block_util.MCD("StoneBrickMaterial"): 0.39, block_util.MCD("MossBrickMaterial"): 0.3,
+        block_util.MCD("ManyMossBrickMaterial"): 0.3, block_util.MCD("Air"): 0.01
     }
 
 
 class HorizontalBeltCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        "Air": 0.9, "BasicConveyorBelt:image_key=1_1": 0.1
+        block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", image_key="1_1"): 0.1
     }
 
 
 class VerticalBeltCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        "Air": 0.9, "BasicConveyorBelt:image_key=1_0": 0.1
+        block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", image_key="1_0"): 0.1
     }
 
 
 class HorizontalMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection],
-        ["Air", "Air", "Air", "Air"],
+        [block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air")],
         [HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection],
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection]
     ]
@@ -45,10 +47,10 @@ class HorizontalMinePart(StructurePart):
 
 class VerticalMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -65,8 +67,8 @@ class VerticalMinePart(StructurePart):
 
 class CornerNorthWestMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        ["Air", "Air", VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
         [HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, StoneBrickCollection],
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection]
     ]
@@ -81,9 +83,9 @@ class CornerNorthWestMinePart(StructurePart):
 
 class CornerNorthEastMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air"],
-        [StoneBrickCollection, "Air", HorizontalBeltCollection, HorizontalBeltCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air")],
+        [StoneBrickCollection, block_util.MCD("Air"), HorizontalBeltCollection, HorizontalBeltCollection],
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
@@ -98,9 +100,9 @@ class CornerNorthEastMinePart(StructurePart):
 class CornerSouthWestMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection],
-        ["Air", "Air", "Air", StoneBrickCollection],
+        [block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), StoneBrickCollection],
         [HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -114,9 +116,9 @@ class CornerSouthWestMinePart(StructurePart):
 class CornerSouthEastMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", "Air", "Air"],
+        [StoneBrickCollection, block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air")],
         [StoneBrickCollection, VerticalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -130,9 +132,9 @@ class CornerSouthEastMinePart(StructurePart):
 class JunctionEastSouthWest(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection],
-        ["Air", "Air", "Air", "Air"],
+        [block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air")],
         [HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -145,10 +147,10 @@ class JunctionEastSouthWest(StructurePart):
 
 class JunctionNorthEastSouth(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air"],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, HorizontalBeltCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air")],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, HorizontalBeltCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -161,8 +163,8 @@ class JunctionNorthEastSouth(StructurePart):
 
 class JunctionNorthEastWest(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        ["Air", "Air", VerticalBeltCollection, "Air"],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air")],
         [HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection],
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection],
     ]
@@ -177,10 +179,10 @@ class JunctionNorthEastWest(StructurePart):
 
 class JunctionNorthSouthWest(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        ["Air", "Air", VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
         [HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -193,10 +195,10 @@ class JunctionNorthSouthWest(StructurePart):
 
 class JunctionNorthEastSouthWest(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection],
-        ["Air", "Air", VerticalBeltCollection, "Air"],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air")],
         [HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection]
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
@@ -209,33 +211,42 @@ class JunctionNorthEastSouthWest(StructurePart):
 
 class FurnaceRoom(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection, StoneBrickCollection,
-         StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, "Air",
-         VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air",
-         "Air", VerticalBeltCollection, StoneBrickCollection],
-        ["Air", "Air", VerticalBeltCollection, "Air", "Air", "Air", "Air", "Air", "Air", "Air", VerticalBeltCollection,
-         "Air"],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection,
+         StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection,
+         block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+        [block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air")],
         [HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection, HorizontalBeltCollection,
          HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection,
          HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection, HorizontalBeltCollection],
-        [StoneBrickCollection, "Air", VerticalBeltCollection, StoneBrickCollection, StoneBrickCollection,
-         StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, "Air",
-         VerticalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection,
+         StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection,
+         block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (

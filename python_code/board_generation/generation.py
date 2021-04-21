@@ -272,6 +272,8 @@ class BoardGenerator:
         matrix_coord = int(coord[0] / con.BLOCK_SIZE.width), int(coord[1] / con.BLOCK_SIZE.height)
         for r_index, row in enumerate(structure_matrix):
             for c_index, material in enumerate(row):
+                if material is None:
+                    continue
                 self.__predefined_blocks.add((matrix_coord[0] + c_index, matrix_coord[1] + r_index), material)
 
     def __generate_cave(
@@ -346,7 +348,7 @@ class BoardGenerator:
                 block_y_coord = int(rect.top / con.BLOCK_SIZE.height) + row_i
                 # add pre_defined_blocks
                 if (block_x_coord, block_y_coord) in self.__predefined_blocks:
-                    matrix[row_i][col_i] = self.__predefined_blocks.get((block_x_coord, block_y_coord))
+                    matrix[row_i][col_i] = self.__predefined_blocks.pop((block_x_coord, block_y_coord))
 
 # LAYER2: special block generation that can cross chunk borders
     def __add_special_blocks(
@@ -468,13 +470,13 @@ class BoardGenerator:
                 if block is None:
                     filler_likelyhoods = biome.get_filler_lh_at_depth(block_y_coord)
                     filler = choices(list(filler_likelyhoods.keys()), list(filler_likelyhoods.values()), k=1)[0]
-                    matrix[row_i][col_i] = filler
+                    matrix[row_i][col_i] = block_util.MCD(filler)
                 # reget the biome to get slightly different front and backgrounds
                 biome = choices(list(biome_liklyhoods.keys()), list(biome_liklyhoods.values()), k=1)[0]
                 background_likelyhoods = biome.get_background_lh_at_depth(block_y_coord)
                 background_mat = choices(list(background_likelyhoods.keys()),
                                          list(background_likelyhoods.values()), k=1)[0]
-                background_matrix[row_i][col_i] = background_mat
+                background_matrix[row_i][col_i] = block_util.MCD(background_mat)
 
     def __add_border(
         self,
@@ -503,26 +505,26 @@ class BoardGenerator:
                 border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(row_i)
                 for col_i in range(len(matrix[row_i])):
                     if uniform(0, 1) < border_block_chance:
-                        matrix[row_i][col_i] = "BorderMaterial"
+                        matrix[row_i][col_i] = block_util.MCD("BorderMaterial")
         elif direction == "south":
             rows = matrix[- (self.MAX_BORDER_SPREAD_DISTANCE + 1):-1]
             for row_i in range(len(rows)):
                 border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(row_i)
                 for col_i in range(len(matrix[row_i])):
                     if uniform(0, 1) < border_block_chance:
-                        matrix[-(row_i + 1)][- (col_i + 1)] = "BorderMaterial"
+                        matrix[-(row_i + 1)][- (col_i + 1)] = block_util.MCD("BorderMaterial")
         elif direction == "west":
             for row_i in range(len(matrix)):
                 for col_i in range(len(matrix[row_i][0:self.MAX_BORDER_SPREAD_DISTANCE])):
                     border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
                     if uniform(0, 1) < border_block_chance:
-                        matrix[row_i][col_i] = "BorderMaterial"
+                        matrix[row_i][col_i] = block_util.MCD("BorderMaterial")
         elif direction == "east":
             for row_i in range(len(matrix)):
                 for col_i in range(len(matrix[row_i][- (self.MAX_BORDER_SPREAD_DISTANCE + 1):-1])):
                     border_block_chance = self.BORDER_SPREAD_LIKELYHOOD.cumulative_probability(col_i)
                     if uniform(0, 1) < border_block_chance:
-                        matrix[- (row_i + 1)][- (col_i + 1)] = "BorderMaterial"
+                        matrix[- (row_i + 1)][- (col_i + 1)] = block_util.MCD("BorderMaterial")
         else:
             raise util.GameException("Unrecognized direction for border: {}".format(direction))
 
@@ -580,7 +582,7 @@ class BoardGenerator:
 class PredefinedBlocks:
     """Save at what coordinate there are pre_defined materials for blocks generated outside the matrixes directly
     generated"""
-    __internal_tree: Dict[int, Dict[int, str]]
+    __internal_tree: Dict[int, Dict[int, block_util.MCD]]
 
     def __init__(self):
         self.__internal_tree = {}
@@ -595,14 +597,14 @@ class PredefinedBlocks:
             # do not overwrite if requested
             if not overwrite and coord[0] in self.__internal_tree[coord[1]]:
                 return
-            self.__internal_tree[coord[1]][coord[0]] = value
+            self.__internal_tree[coord[1]][coord[0]] = block_util.MCD(value)
         else:
             if coord[1] > con.MAX_DEPTH:
                 print("Carefull {} is outside the board".format(coord))
                 return
-            self.__internal_tree[coord[1]] = {coord[0]: value}
+            self.__internal_tree[coord[1]] = {coord[0]: block_util.MCD(value)}
 
-    def get(
+    def pop(
         self,
         coord: Union[Tuple[int, int], List[int]]
     ) -> str:
@@ -614,7 +616,7 @@ class PredefinedBlocks:
         coord: Union[Tuple[int, int], List[int]],
         values: Iterable
     ) -> bool:
-        return coord in self and any(value == self.__internal_tree[coord[1]][coord[0]] for value in values)
+        return coord in self and any(value == self.__internal_tree[coord[1]][coord[0]].name() for value in values)
 
     def __contains__(
         self,
