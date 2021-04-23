@@ -15,13 +15,14 @@ class StoneBrickCollection(materials.MaterialCollection):
 
 class HorizontalBeltCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", image_key="1_1"): 0.1
+        block_util.MCD("Air"): 0.1, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_1",
+                                                   direction=1): 0.9
     }
 
 
 class VerticalBeltCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", image_key="1_0"): 0.1
+        block_util.MCD("Air"): 0.1, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_0"): 0.9
     }
 
 

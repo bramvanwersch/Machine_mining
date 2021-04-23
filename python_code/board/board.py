@@ -30,6 +30,14 @@ class Board(util.Serializer):
         self.pathfinding = pathfinding.PathFinder()
         self.all_plants = flora.Flora()
 
+        # pipe network
+        progress_var[0] = "Innitialising pipe network..."
+        self.conveyor_network = network.conveynetwork.ConveyorNetwork()
+
+        self.buildings = {}
+        self.variable_blocks = set()
+        self.changed_light_blocks = set()
+
         self.board_generator = board_generator
         self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
                              for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
@@ -41,14 +49,6 @@ class Board(util.Serializer):
 
         # last placed highlighted rectangle
         self.__highlight_rectangle = None
-
-        # pipe network
-        progress_var[0] = "Innitialising pipe network..."
-        self.conveyor_network = network.conveynetwork.ConveyorNetwork()
-
-        self.buildings = {}
-        self.varaible_blocks = set()
-        self.changed_light_blocks = set()
 
         self.__grow_update_time = grow_update_time
         self.__terminal = None
@@ -103,7 +103,7 @@ class Board(util.Serializer):
     def __update_variable_blocks(self):
         """Check all blocks with varaible surfaces that potentially need to be changed if that is the case redraw the
         surface"""
-        for block in self.varaible_blocks:
+        for block in self.variable_blocks:
             if block.changed:
                 self.add_blocks(block, update=False)
 
@@ -162,6 +162,8 @@ class Board(util.Serializer):
         self.loaded_chunks.add(chunk)
         self.pathfinding.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
         self._loading_chunks.remove((col_i, row_i))
+        update_blocks = chunk.get_board_update_blocks()
+        self.add_blocks(*update_blocks)
 
     def get_start_chunk(self):
         return self.chunk_matrix[con.START_CHUNK_POS[1]][con.START_CHUNK_POS[0]]
@@ -259,7 +261,7 @@ class Board(util.Serializer):
                 if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
                 if isinstance(block, block_classes.VariableSurfaceBlock):
-                    self.varaible_blocks.remove(block)
+                    self.variable_blocks.remove(block)
                 chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
@@ -314,13 +316,13 @@ class Board(util.Serializer):
                 block = block.block
             if isinstance(block.material, build_materials.Building):
                 if update and isinstance(block, block_classes.VariableSurfaceBlock):
-                    self.varaible_blocks.add(block)
+                    self.variable_blocks.add(block)
                 self.add_building(block)
                 return
             if isinstance(block.material, build_materials.ConveyorBelt):
                 self.conveyor_network.add(block)
             if update and isinstance(block, block_classes.VariableSurfaceBlock):
-                self.varaible_blocks.add(block)
+                self.variable_blocks.add(block)
             if update and isinstance(block, block_classes.SurroundableBlock):
                 block.surrounding_blocks = self.surrounding_blocks(block)
             chunk = self.chunk_from_point(block.coord)

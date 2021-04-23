@@ -210,8 +210,10 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
 
     def update(self):
         self.check_item_movement()
-        if [block.name() for block in self.surrounding_blocks] != self._previous_surrounding_block_names:
-            self._previous_surrounding_block_names = [block.name() for block in self.surrounding_blocks]
+        if [block.name() for block in self.surrounding_blocks if block is not None] !=\
+                self._previous_surrounding_block_names:
+            self._previous_surrounding_block_names = [block.name() for block in self.surrounding_blocks
+                                                      if block is not None]
             self.__change_material_image_key()
 
     def check_item_movement(self):
@@ -357,8 +359,10 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         # block 1
         block_index = (self.material.direction - 1) % 4
         block = self.surrounding_blocks[block_index]
-        if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
-                self.material.direction == block_index):
+        if block is None:
+            pass
+        elif (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name())
+              and self.material.direction == block_index):
             elligible_blocks[0] = block
             is_inventorys[0] = True
         elif (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
@@ -369,11 +373,13 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         # block 2
         block_index = self.material.direction
         block = self.surrounding_blocks[block_index]
-        if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
-                self.material.direction == block_index):
+        if block is None:
+            pass
+        elif (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name())
+              and self.material.direction == block_index):
             elligible_blocks[1] = block
             is_inventorys[1] = True
-        if (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
+        elif (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
                 (block.incomming_item is None or self.current_item == block.incomming_item) and
                 block.material.direction in [block_index, (block_index + 1) % 4, (block_index - 1) % 4]):
             elligible_blocks[1] = block
@@ -381,11 +387,13 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         # block 3
         block_index = (self.material.direction + 1) % 4
         block = self.surrounding_blocks[block_index]
-        if (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name()) and
-                self.material.direction == block_index):
+        if block is None:
+            pass
+        elif (isinstance(block.block, ContainerBlock) and block.inventory.check_item_deposit(self.current_item.name())
+              and self.material.direction == block_index):
             elligible_blocks[2] = block
             is_inventorys[2] = True
-        if (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
+        elif (isinstance(block.block, ConveyorNetworkBlock) and block.current_item is None and
                 (block.incomming_item is None or self.current_item == block.incomming_item)
                 and block.material.direction == block_index):
             elligible_blocks[2] = block
@@ -401,7 +409,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     def __take_item(self):
         """Take an item from an inventory and set it as the current_item"""
         opposite_block = self.surrounding_blocks[self.material.direction - 2]  # block that is opposite belt direction
-        if not isinstance(opposite_block.block, ContainerBlock):
+        if opposite_block is None or not isinstance(opposite_block.block, ContainerBlock):
             return
         item = opposite_block.get_transport_item(self.material.STACK_SIZE)
         if item is not None:
@@ -440,7 +448,9 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         belt_directions[(self.material.direction + 2) % 4] = self.material.direction  # noqa --> very weird typing error that makes not sense
         own_direction = self.material.direction
         for index, block in enumerate(self.surrounding_blocks):
-            if isinstance(block.block, ContainerBlock) and \
+            if block is None:
+                continue
+            elif isinstance(block.block, ContainerBlock) and \
                     (index == self.material.direction or index == (self.material.direction + 2) % 4):
                 belt_directions[index] = index  # noqa --> very weird typing error that makes not sense
             elif isinstance(block.block, ConveyorNetworkBlock):

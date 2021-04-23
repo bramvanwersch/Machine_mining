@@ -22,21 +22,31 @@ class MCD:
 
     This allows for the definition of a material without instantiation to be done on a later moment. The instantiation
     is flexible and can be done with a string a material type or an MCD"""
-    def __init__(self, material: Union[Type[base_materials.BaseMaterial], str, "MCD"], **arguments):
+    def __init__(
+        self,
+        material: Union[Type[base_materials.BaseMaterial], str, "MCD"],
+        needs_board_update=False,
+        **arguments
+    ):
         if isinstance(material, MCD):
             self.material = material.material
             self.kwargs = material.kwargs
+            self.needs_board_update = material.needs_board_update
         else:
             self.material = material
             self.kwargs = arguments
+            self.needs_board_update = needs_board_update
         self.__is_string = isinstance(self.material, str)
 
-    def to_instance(self, **additional_kwargs):
+    def to_instance(
+        self,
+        **additional_kwargs
+    ) -> base_materials.BaseMaterial:
         if self.__is_string:
             return material_instance_from_string(self.material, **self.kwargs, **additional_kwargs)
         return self.material(**self.kwargs)
 
-    def name(self):
+    def name(self) -> str:
         if self.__is_string:
             return self.material
         return self.material.name()

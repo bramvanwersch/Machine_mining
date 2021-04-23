@@ -22,6 +22,10 @@ class Chunk(util.Serializer):
         self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
 
         self.all_plants = all_plants
+        # blocks are added here that the board has to place because they can go across chunk borders or rely on a
+        # network or something else that is ultamately managed by the board. The attribute is deleted after it is
+        # requested
+        self.__board_update_blocks = []
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
         # changed, if it is the first time --> tracking for loading purposes of new chunks
@@ -162,7 +166,20 @@ class Chunk(util.Serializer):
                     plant = flora.Plant(block, self)
                     self.all_plants.add(plant)
                 s_matrix[row_i][column_i] = util.BlockPointer(block)
+                if material_class_definition.needs_board_update:
+                    self.__board_update_blocks.append(s_matrix[row_i][column_i])
         return s_matrix
+
+    def get_board_update_blocks(self):
+        try:
+            update_blocks = self.__board_update_blocks
+        except AttributeError:
+            if con.DEBUG.WARNINGS:
+                print("Warning: get_board_update_blocks method was called a second time. "
+                      "This method should be called once per chunk right after instantiation")
+            return []
+        del self.__board_update_blocks
+        return update_blocks
 
 
 class StartChunk(Chunk):

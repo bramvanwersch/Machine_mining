@@ -11,6 +11,8 @@ BUGS:
 - Low priority: chunks generated while zoomed dont show up until updated
 - Bug with plants being removed by removing the block they are attached to and pathfinding
 - There seems to be a bug with generation along chunk borders --> only noticed on the small map
+- structure generation seems not to work with a seed for some reason --> start location is constant but the rest of the
+  structure is not
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes

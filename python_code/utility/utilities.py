@@ -41,6 +41,8 @@ class BlockPointer:
     block: "Block"
 
     def __init__(self, block: "Block"):
+        if isinstance(block, BlockPointer):
+            block = block.block
         super().__setattr__("block", block)
 
     def __getattr__(self, item: str):
