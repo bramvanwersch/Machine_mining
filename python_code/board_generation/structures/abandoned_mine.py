@@ -198,7 +198,7 @@ class JunctionNorthEastSouthWest(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
         [block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air")],
-        [HorizontalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection],
+        [HorizontalBeltCollection, HorizontalBeltCollection, VerticalBeltCollection, HorizontalBeltCollection],
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],

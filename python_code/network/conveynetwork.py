@@ -19,7 +19,8 @@ class ConveyorNetwork:
         self.__belts.remove(belt)
 
     def __iter__(self):
-        return iter(self.__belts)
+        # the copy is neccesairy because loading chunks are able to add belts and that would crash the game
+        return iter(self.__belts.copy())
 
     def __len__(self):
         return len(self.__belts)
