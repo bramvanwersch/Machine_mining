@@ -15,14 +15,14 @@ class StoneBrickCollection(materials.MaterialCollection):
 
 class HorizontalBeltCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        block_util.MCD("Air"): 0.1, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_1",
-                                                   direction=1): 0.9
+        block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_1",
+                                                   direction=1): 0.1
     }
 
 
 class VerticalBeltCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
-        block_util.MCD("Air"): 0.1, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_0"): 0.9
+        block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_0"): 0.1
     }
 
 
@@ -118,7 +118,7 @@ class CornerSouthEastMinePart(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection],
         [StoneBrickCollection, block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air")],
-        [StoneBrickCollection, VerticalBeltCollection, HorizontalBeltCollection, HorizontalBeltCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), HorizontalBeltCollection, HorizontalBeltCollection],
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection]
     ]
     CONNECTION_DIRECIONS: ClassVar[Tuple[List[Tuple[str, int]], List[Tuple[str, int]],

@@ -69,22 +69,20 @@ class Chunk(util.Serializer):
     def from_dict(cls, sprite_group=None, **arguments):
         super().from_dict(main_sprite_group=sprite_group, **arguments)
 
-    def add_rectangle(self, rect, color, layer=2, border=0):
-        self.changed[0] = True
+    def add_rectangle(self, rect, color, layer=2, border=0, trigger_change=True):
+        self.changed[0] = trigger_change
         local_rect = self.__local_adjusted_rect(rect)
         image = self.layers[layer]
         image.add_rect(local_rect, color, border)
 
     def add_blocks(self, *blocks):
-        self.changed[0] = True
         for block in blocks:
             local_block_rect = self.__local_adjusted_rect(block.rect)
-            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
-            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1, trigger_change=False)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2, trigger_change=False)
 
             # dont update for growing plants
             if isinstance(block.material, environment_materials.MultiFloraMaterial):
-                self.changed[0] = False
                 # check if a new plant, if so make sure the start is unique also
                 if block not in self.all_plants:
                     plant = flora.Plant(block, self)
@@ -98,14 +96,13 @@ class Chunk(util.Serializer):
             self.pathfinding_chunk.added_rects.append(block.rect)
 
     def remove_blocks(self, *blocks):
-        self.changed[0] = True
         removed_items = []
         for block in blocks:
             removed_items.extend(block.destroy())
             local_block_rect = self.__local_adjusted_rect(block.rect)
-            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=2, trigger_change=False)
             # remove the highlight
-            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1)
+            self.add_rectangle(local_block_rect, con.INVISIBLE_COLOR, layer=1, trigger_change=False)
             column, row = self.__local_adusted_block_coordinate(block.rect.topleft)
             self.__matrix[row][column].set_block(base_materials.Air().to_block(block.rect.topleft))
             self.pathfinding_chunk.removed_rects.append(block.rect)
@@ -136,7 +133,7 @@ class Chunk(util.Serializer):
         return overlapping_blocks
 
     def __local_adusted_block_coordinate(self, point):
-        #get the coordinate of a block in the local self.matrix grid
+        # get the coordinate of a block in the local self.matrix grid
         row = interface_util.p_to_r(point[1]) - interface_util.p_to_r(self.rect.y)
         column = interface_util.p_to_c(point[0]) - interface_util.p_to_r(self.rect.x)
         return [column, row]
