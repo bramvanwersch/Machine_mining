@@ -599,7 +599,7 @@ class PredefinedBlocks:
                 return
             self.__internal_tree[coord[1]][coord[0]] = block_util.MCD(value)
         else:
-            if coord[1] > con.MAX_DEPTH:
+            if coord[1] > con.MAX_DEPTH and con.DEBUG.WARNINGS:
                 print("Carefull {} is outside the board".format(coord))
                 return
             self.__internal_tree[coord[1]] = {coord[0]: block_util.MCD(value)}

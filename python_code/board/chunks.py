@@ -159,12 +159,13 @@ class Chunk(util.Serializer):
                 material_class_definition = s_matrix[row_i][column_i]
                 material_instance = material_class_definition.to_instance(depth=row_i)
                 block = material_instance.to_block(pos)
+                if material_class_definition.needs_board_update:
+                    self.__board_update_blocks.append(block)
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
                     plant = flora.Plant(block, self)
                     self.all_plants.add(plant)
                 s_matrix[row_i][column_i] = util.BlockPointer(block)
-                if material_class_definition.needs_board_update:
-                    self.__board_update_blocks.append(s_matrix[row_i][column_i])
+
         return s_matrix
 
     def get_board_update_blocks(self):

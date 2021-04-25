@@ -210,10 +210,9 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
 
     def update(self):
         self.check_item_movement()
-        if [block.name() for block in self.surrounding_blocks if block is not None] !=\
-                self._previous_surrounding_block_names:
-            self._previous_surrounding_block_names = [block.name() for block in self.surrounding_blocks
-                                                      if block is not None]
+        current_block_names = [block.name() for block in self.surrounding_blocks if block is not None]
+        if current_block_names != self._previous_surrounding_block_names:
+            self._previous_surrounding_block_names = current_block_names
             self.__change_material_image_key()
 
     def check_item_movement(self):

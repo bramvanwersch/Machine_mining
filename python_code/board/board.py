@@ -103,7 +103,8 @@ class Board(util.Serializer):
     def __update_variable_blocks(self):
         """Check all blocks with varaible surfaces that potentially need to be changed if that is the case redraw the
         surface"""
-        for block in self.variable_blocks:
+        # copy is required because of generation potentially adding blocks while looping
+        for block in self.variable_blocks.copy():
             if block.changed:
                 self.add_blocks(block, update=False)
 
@@ -318,7 +319,7 @@ class Board(util.Serializer):
                 if update and isinstance(block, block_classes.VariableSurfaceBlock):
                     self.variable_blocks.add(block)
                 self.add_building(block)
-                return
+                continue
             if isinstance(block.material, build_materials.ConveyorBelt):
                 self.conveyor_network.add(block)
             if update and isinstance(block, block_classes.VariableSurfaceBlock):
@@ -343,9 +344,12 @@ class Board(util.Serializer):
         change = con.DECREASE_SPEED_SOLID if max_light_block.is_solid() else con.DECREASE_SPEED
         block.light_level = max_light_block.light_level - change
 
-    def add_building(self, building_instance):
-        self.buildings[building_instance.id] = building_instance
-        for row in building_instance.blocks:
+    def add_building(self, block_of_building: Union[block_classes.Block, buildings.Building]):
+        # if the incomming block is a single block part of a building, create the full building first
+        if not isinstance(block_of_building, buildings.Building):
+            block_of_building = buildings.material_mapping[block_of_building.material.name()](block_of_building.rect.topleft, self.main_sprite_group)
+        self.buildings[block_of_building.id] = block_of_building
+        for row in block_of_building.blocks:
             for block in row:
                 if hasattr(block, "inventory"):
                     self.inventorie_blocks.append(block)

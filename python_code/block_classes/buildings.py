@@ -65,6 +65,7 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, ABC):
 class InterfaceBuilding(Building, ABC):
     """abstraction level of buidlings with interfaces and inventory"""
     INTERFACE_TYPE: base_interface.Window
+
     inventory: inventories.Inventory
     window_manager: "game_window_manager"
     interface: base_interface.Window
@@ -169,7 +170,7 @@ class StoneChest(InterfaceBuilding):
     Terminal building. The main interaction centrum for the workers
     """
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.StoneChestMaterial
-    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
+    MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1]]
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
 
     def __init__(

@@ -27,12 +27,13 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - add structures while terrain generating
 - add ghost buildings when building
 - have the game start at the surface
+- add an interface for workers where a task list and other things are visible
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
 - make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
-- add a seed feature to the game settings --> low prio
+- add the seed feature to the game settings, as well as a way to control the amount of buildings
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs

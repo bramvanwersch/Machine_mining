@@ -18,7 +18,7 @@ class DebugValues(util.ConsoleReadable):
         self.FPS = True
         self.ENTITY_NMBR = True
         self.AIR_RECTANGLES = False
-        self.WARNINGS = True
+        self.WARNINGS = False
         self.SHOW_ZOOM = True
         self.NO_LIGHTING = True and TESTING
         self.SHOW_THREADS = True

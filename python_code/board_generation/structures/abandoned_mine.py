@@ -7,22 +7,31 @@ import block_classes.block_utility as block_util
 
 
 class StoneBrickCollection(materials.MaterialCollection):
-    MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
+    MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
         block_util.MCD("StoneBrickMaterial"): 0.39, block_util.MCD("MossBrickMaterial"): 0.3,
         block_util.MCD("ManyMossBrickMaterial"): 0.3, block_util.MCD("Air"): 0.01
     }
 
 
 class HorizontalBeltCollection(materials.MaterialCollection):
-    MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
+    MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
         block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_1",
                                                    direction=1): 0.1
     }
 
 
 class VerticalBeltCollection(materials.MaterialCollection):
-    MATERIAL_PROBABILITIES: ClassVar[Dict[str, float]] = {
+    MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
         block_util.MCD("Air"): 0.9, block_util.MCD("BasicConveyorBelt", needs_board_update=True, image_key="1_0"): 0.1
+    }
+
+
+class MachineCollection(materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
+        block_util.MCD("FurnaceMaterial", needs_board_update=True): 0.2,
+        block_util.MCD("FactoryMaterial", needs_board_update=True): 0.2,
+        block_util.MCD("StoneChestMaterial", needs_board_update=True): 0.3,
+        block_util.MCD("Air"): 0.3
     }
 
 
@@ -224,9 +233,9 @@ class FurnaceRoom(StructurePart):
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, MachineCollection,
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
-         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+         MachineCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
