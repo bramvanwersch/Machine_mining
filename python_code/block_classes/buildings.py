@@ -77,6 +77,7 @@ class InterfaceBuilding(Building, ABC):
         size: int = -1,
         in_filter: inventories.Filter = None,
         out_filter: inventories.Filter = None,
+        starting_items: inventories.Inventory = None,
         **kwargs
     ):
         self.inventory = inventories.Inventory(size, in_filter=in_filter, out_filter=out_filter)
@@ -85,12 +86,23 @@ class InterfaceBuilding(Building, ABC):
         self.window_manager = game_window_manager
 
         self.interface = self.create_interface(sprite_group)
+        self._add_starting_items(starting_items)
 
     # noinspection PyPep8Naming
     @property
     @abstractmethod
     def INTERFACE_TYPE(self) -> type:
         pass
+
+    def _add_starting_items(
+        self,
+        starting_items: Union[None, inventories.Inventory]
+    ):
+        if starting_items is None:
+            return
+        print(starting_items)
+        for item in starting_items.get_all_items(ignore_filter=True):
+            self.inventory.add_items(item)
 
     def create_interface(
         self,

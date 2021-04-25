@@ -1,9 +1,9 @@
 from typing import List, ClassVar, Dict, Union, Tuple, Type
 
 from board_generation.structures.base_structures import StructurePart, Structure
-from block_classes import materials
-import utility.utilities as util
+from block_classes import materials, ground_materials
 import block_classes.block_utility as block_util
+from utility import utilities as util, loot_pools
 
 
 class StoneBrickCollection(materials.MaterialCollection):
@@ -30,7 +30,14 @@ class MachineCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
         block_util.MCD("FurnaceMaterial", needs_board_update=True): 0.2,
         block_util.MCD("FactoryMaterial", needs_board_update=True): 0.2,
-        block_util.MCD("StoneChestMaterial", needs_board_update=True): 0.3,
+        block_util.MCD("StoneChestMaterial", needs_board_update=True,
+                       block_kwargs={
+                           "starting_items": loot_pools.ItemLootPool(5, {ground_materials.IronIngot: 0.2,
+                                                                         ground_materials.GoldIngot: 0.1,
+                                                                         ground_materials.ZincIngot: 0.4,
+                                                                         ground_materials.CopperIngot: 0.25,
+                                                                         ground_materials.TitaniumIngot: 0.05})
+                       }): 0.3,
         block_util.MCD("Air"): 0.3
     }
 

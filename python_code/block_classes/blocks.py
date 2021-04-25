@@ -8,7 +8,7 @@ from abc import ABC
 # own imports
 import utility.constants as con
 import utility.utilities as util
-from utility import inventories, game_timing
+from utility import inventories, game_timing, loot_pools
 if TYPE_CHECKING:
     import block_classes.materials as base_materials
     import block_classes.building_materials as building_materials
@@ -540,10 +540,21 @@ class ContainerBlock(NetworkEdgeBlock):
         pos: List[int],
         material: "base_materials.BaseMaterial",
         inventory: "inventories.Inventory" = None,
+        starting_items: loot_pools.ItemLootPool = None,
         **kwargs
     ):
         super().__init__(pos, material, **kwargs)
-        self.inventory = inventory
+        self.inventory = inventory if inventory is not None else inventories.Inventory(1)
+        self._add_starting_items(starting_items)
+
+    def _add_starting_items(
+        self,
+        starting_items: Union[None, loot_pools.ItemLootPool]
+    ):
+        if starting_items is None:
+            return
+        for item in starting_items.roll_all_items():
+            self.inventory.add_items(item)
 
     def get_transport_item(
         self,

@@ -347,7 +347,12 @@ class Board(util.Serializer):
     def add_building(self, block_of_building: Union[block_classes.Block, buildings.Building]):
         # if the incomming block is a single block part of a building, create the full building first
         if not isinstance(block_of_building, buildings.Building):
-            block_of_building = buildings.material_mapping[block_of_building.material.name()](block_of_building.rect.topleft, self.main_sprite_group)
+            if isinstance(block_of_building, block_classes.ContainerBlock):
+                block_of_building = buildings.material_mapping[block_of_building.material.name()](
+                    block_of_building.rect.topleft, self.main_sprite_group, starting_items=block_of_building.inventory)
+            else:
+                block_of_building = buildings.material_mapping[block_of_building.material.name()](
+                    block_of_building.rect.topleft, self.main_sprite_group, )
         self.buildings[block_of_building.id] = block_of_building
         for row in block_of_building.blocks:
             for block in row:

@@ -84,19 +84,19 @@ class Filter:
 
 class Inventory(util.ConsoleReadable):
     """Inventory for managing items within"""
-    __slots__ = "__container", "in_filter", "out_filter", "wheight"
-    __container: Dict[str, "Item"]
+    __slots__ = "_container", "in_filter", "out_filter", "wheight"
+    _container: Dict[str, "Item"]
     wheight: List[int]
     in_filter: Union[Filter]
     out_filter: Union[Filter]
 
     def __init__(
         self,
-        max_wheight,
+        max_wheight: int,
         in_filter: Union[Filter, None] = None,
         out_filter: Union[Filter, None] = None
     ):
-        self.__container = {}
+        self._container = {}
         self.wheight = [0, max_wheight]
 
         self.in_filter = in_filter if in_filter is not None else Filter()
@@ -114,7 +114,7 @@ class Inventory(util.ConsoleReadable):
         if not ignore_filter and not self.check_item_get(item_name):
             return
         else:
-            item = self.__container[item_name]
+            item = self._container[item_name]
             available_amnt = self.__remove_quantity(item, amnt)
             if available_amnt > 0:
                 return Item(item.material, available_amnt)
@@ -125,7 +125,7 @@ class Inventory(util.ConsoleReadable):
         amnt: int
     ) -> Union["Item", None]:
         """Get the first item from the inventory that is allowed."""
-        allowed_items = [item.name() for item in self.__container.values() if self.check_item_get(item.name(), 1)]
+        allowed_items = [item.name() for item in self._container.values() if self.check_item_get(item.name(), 1)]
         if len(allowed_items) == 0:
             return None
         chosen_item_name = random.choice(allowed_items)
@@ -137,8 +137,8 @@ class Inventory(util.ConsoleReadable):
     ) -> List["Item"]:
         """Get al items from the inventory meaning all items are removed with this action"""
         items = []
-        for key in list(self.__container.keys()):
-            item = self.get(key, self.__container[key].quantity, ignore_filter=ignore_filter)
+        for key in list(self._container.keys()):
+            item = self.get(key, self._container[key].quantity, ignore_filter=ignore_filter)
             if item:
                 items.append(item)
         return items
@@ -149,8 +149,8 @@ class Inventory(util.ConsoleReadable):
         quantity: int = 1
     ) -> bool:
         """Check if it is allowed to get a certain items based on filters and a provided amount"""
-        if not self.out_filter.allowed(item_name) or item_name not in self.__container or\
-                self.__container[item_name].quantity < quantity:
+        if not self.out_filter.allowed(item_name) or item_name not in self._container or\
+                self._container[item_name].quantity < quantity:
             return False
         return True
 
@@ -212,17 +212,17 @@ class Inventory(util.ConsoleReadable):
         otherwise"""
         if not ignore_filter and not self.check_item_deposit(item.name()):
             return
-        if not item.name() in self.__container:
-            self.__container[item.name()] = item
+        if not item.name() in self._container:
+            self._container[item.name()] = item
         else:
-            self.__container[item.name()].quantity += item.quantity
-        self.wheight[0] += self.__container[item.name()].WHEIGHT * item.quantity
+            self._container[item.name()].quantity += item.quantity
+        self.wheight[0] += self._container[item.name()].WHEIGHT * item.quantity
 
     def __contains__(
         self,
         name: str
     ) -> bool:
-        return name in self.__container
+        return name in self._container
 
     @property
     def full(self) -> bool:
@@ -234,28 +234,28 @@ class Inventory(util.ConsoleReadable):
 
     @property
     def item_names(self) -> Iterable[str]:
-        return self.__container.keys()
+        return self._container.keys()
 
     @property
     def number_of_items(self) -> int:
-        return len(self.__container)
+        return len(self._container)
 
     @property
     def items(self) -> Iterable["Item"]:
-        return self.__container.values()
+        return self._container.values()
 
     def item_pointer(
         self,
         name: str
     ) -> Union[None, "Item"]:
         """Return a pointer to an item in the invetory."""
-        if name in self.__container:
-            return self.__container[name]
+        if name in self._container:
+            return self._container[name]
         return None
 
     def __str__(self) -> str:
         final_str = "Inventory:\n"
-        for item in self.__container.values():
+        for item in self._container.values():
             final_str += f"{str(item)}\n"
         return final_str[:-1]
 

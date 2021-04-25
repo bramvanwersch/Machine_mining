@@ -2,7 +2,7 @@
 
 # library imports
 import inspect
-from typing import Set, Union, Type
+from typing import Set, Union, Type, Dict, Any
 
 # own imports
 import block_classes.materials as base_materials
@@ -22,19 +22,30 @@ class MCD:
 
     This allows for the definition of a material without instantiation to be done on a later moment. The instantiation
     is flexible and can be done with a string a material type or an MCD"""
+    __slots__ = "material", "needs_board_update", "kwargs", "block_kwargs", "__is_string"
+
+    material: Union[Type[base_materials.BaseMaterial], str]
+    kwargs: Dict[str, Any]
+    needs_board_update: bool
+    block_kwargs: Dict[str, Any]
+    __is_string: bool
+
     def __init__(
         self,
         material: Union[Type[base_materials.BaseMaterial], str, "MCD"],
-        needs_board_update=False,
+        needs_board_update: bool = False,
+        block_kwargs: Dict[str, Any] = None,
         **arguments
     ):
         if isinstance(material, MCD):
             self.material = material.material
             self.kwargs = material.kwargs
+            self.block_kwargs = material.block_kwargs
             self.needs_board_update = material.needs_board_update
         else:
             self.material = material
             self.kwargs = arguments
+            self.block_kwargs = {} if block_kwargs is None else block_kwargs
             self.needs_board_update = needs_board_update
         self.__is_string = isinstance(self.material, str)
 
@@ -44,7 +55,7 @@ class MCD:
     ) -> base_materials.BaseMaterial:
         if self.__is_string:
             return material_instance_from_string(self.material, **self.kwargs, **additional_kwargs)
-        return self.material(**self.kwargs)
+        return self.material(**self.kwargs, **additional_kwargs)
 
     def name(self) -> str:
         if self.__is_string:

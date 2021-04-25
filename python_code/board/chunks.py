@@ -158,7 +158,7 @@ class Chunk(util.Serializer):
                        self.rect.top + row_i * con.BLOCK_SIZE.height)
                 material_class_definition = s_matrix[row_i][column_i]
                 material_instance = material_class_definition.to_instance(depth=row_i)
-                block = material_instance.to_block(pos)
+                block = material_instance.to_block(pos, **material_class_definition.block_kwargs)
                 if material_class_definition.needs_board_update:
                     self.__board_update_blocks.append(block)
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
