@@ -60,11 +60,11 @@ class HorizontalMinePart(StructurePart):
         [],
         [("HorizontalMinePart", 0), ("CornerNorthWestMinePart", 0), ("CornerSouthWestMinePart", 0),
          ("JunctionNorthEastWest", 0), ("JunctionNorthSouthWest", 0), ("JunctionEastSouthWest", 0),
-         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)],
+         ("JunctionNorthEastSouthWest", 0), ("MachineRoom", 0)],
         [],
         [("HorizontalMinePart", 0), ("CornerNorthEastMinePart", 0), ("CornerSouthEastMinePart", 0),
          ("JunctionNorthEastWest", 0), ("JunctionNorthEastSouth", 0), ("JunctionEastSouthWest", 0),
-         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)]
+         ("JunctionNorthEastSouthWest", 0), ("MachineRoom", 0)]
     )
 
 
@@ -79,11 +79,11 @@ class VerticalMinePart(StructurePart):
                                          List[Tuple[str, int]], List[Tuple[str, int]]]] = (
         [("VerticalMinePart", 0), ("CornerSouthWestMinePart", 0), ("CornerSouthEastMinePart", 0),
          ("JunctionNorthEastSouth", 0), ("JunctionNorthSouthWest", 0), ("JunctionEastSouthWest", 0),
-         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)],
+         ("JunctionNorthEastSouthWest", 0), ("MachineRoom", 0)],
         [],
         [("VerticalMinePart", 0), ("CornerNorthWestMinePart", 0), ("CornerNorthEastMinePart", 0),
          ("JunctionNorthEastSouth", 0), ("JunctionNorthSouthWest", 0), ("JunctionNorthEastWest", 0),
-         ("JunctionNorthEastSouthWest", 0), ("FurnaceRoom", 0)],
+         ("JunctionNorthEastSouthWest", 0), ("MachineRoom", 0)],
         []
     )
 
@@ -232,7 +232,7 @@ class JunctionNorthEastSouthWest(StructurePart):
     )
 
 
-class FurnaceRoom(StructurePart):
+class MachineRoom(StructurePart):
     FORM_DEFINITION: ClassVar[List[List[Union[materials.MaterialCollection, str]]]] = [
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection,
          StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection, StoneBrickCollection,
@@ -282,7 +282,7 @@ class FurnaceRoom(StructurePart):
 
 class AbandonedMineStructure(Structure):
     STRUCTURE_START_PARTS: ClassVar[List["StructurePart"]] = [
-        FurnaceRoom
+        MachineRoom
     ]
     MAX_PARTS: ClassVar[int] = 100
     DEPTH_DISTRIBUTION: ClassVar[util.Gaussian] = util.Gaussian(10, 10)

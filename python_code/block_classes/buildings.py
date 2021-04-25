@@ -100,7 +100,6 @@ class InterfaceBuilding(Building, ABC):
     ):
         if starting_items is None:
             return
-        print(starting_items)
         for item in starting_items.get_all_items(ignore_filter=True):
             self.inventory.add_items(item)
 

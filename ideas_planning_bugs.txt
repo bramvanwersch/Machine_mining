@@ -13,6 +13,8 @@ BUGS:
 - There seems to be a bug with generation along chunk borders --> only noticed on the small map
 - structure generation seems not to work with a seed for some reason --> start location is constant but the rest of the
   structure is not
+- On generation a vine can visually overlap part of a machine
+- Machines spawning during generation on a chunk border cause the application to crash
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
