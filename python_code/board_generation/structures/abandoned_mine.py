@@ -28,8 +28,14 @@ class VerticalBeltCollection(materials.MaterialCollection):
 
 class MachineCollection(materials.MaterialCollection):
     MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
-        block_util.MCD("FurnaceMaterial", needs_board_update=True): 0.2,
-        block_util.MCD("FactoryMaterial", needs_board_update=True): 0.2,
+        block_util.MCD("FurnaceMaterial", needs_board_update=True): 0.3,
+        block_util.MCD("FactoryMaterial", needs_board_update=True): 0.3,
+        block_util.MCD("Air"): 0.4
+    }
+
+
+class ChestCollection(materials.MaterialCollection):
+    MATERIAL_PROBABILITIES: ClassVar[Dict[block_util.MCD, float]] = {
         block_util.MCD("StoneChestMaterial", needs_board_update=True,
                        block_kwargs={
                            "starting_items": loot_pools.ItemLootPool(5, {ground_materials.IronIngot: 0.2,
@@ -37,8 +43,8 @@ class MachineCollection(materials.MaterialCollection):
                                                                          ground_materials.ZincIngot: 0.4,
                                                                          ground_materials.CopperIngot: 0.25,
                                                                          ground_materials.TitaniumIngot: 0.05})
-                       }): 0.3,
-        block_util.MCD("Air"): 0.3
+                       }): 0.5,
+        block_util.MCD("Air"): 0.5
     }
 
 
@@ -240,15 +246,15 @@ class FurnaceRoom(StructurePart):
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, MachineCollection,
-         block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
-         MachineCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
-        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
+        [StoneBrickCollection, block_util.MCD("Air"), HorizontalBeltCollection, MachineCollection,
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
-         block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
+         ChestCollection, ChestCollection, HorizontalBeltCollection, StoneBrickCollection],
+        [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection,
+         StoneBrickCollection, block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
+         StoneBrickCollection, StoneBrickCollection, VerticalBeltCollection, StoneBrickCollection],
         [StoneBrickCollection, block_util.MCD("Air"), VerticalBeltCollection, block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"), block_util.MCD("Air"),
          block_util.MCD("Air"), block_util.MCD("Air"), VerticalBeltCollection, StoneBrickCollection],
