@@ -5,7 +5,7 @@ from random import choices
 from utility import utilities as util, constants as con
 import block_classes.environment_materials as environment_materials
 import block_classes.ground_materials as ground_materials
-from board_generation.structures import base_structures, abandoned_mine
+from board_generation.structures import base_structures, abandoned_mine, protected_vault
 if TYPE_CHECKING:
     from block_classes.materials import DepthMaterial
     from block_classes.environment_materials import EnvironmentMaterial
@@ -253,5 +253,6 @@ class NormalBiomeGeneration(BiomeGenerationDefinition):
         NormalBiome: 0.80, IceBiome: 0.10, SlimeBiome: 0.10
     }
     STRUCTURE_PROBABILITIES: ClassVar[Dict[type, float]] = {
-        abandoned_mine.AbandonedMineStructure: 1
+        abandoned_mine.AbandonedMineStructure: 0.5,
+        protected_vault.ProtectedVaultStructure: 0.5
     }
