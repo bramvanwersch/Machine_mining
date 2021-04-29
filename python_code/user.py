@@ -8,7 +8,8 @@ import utility.event_handling
 import interfaces.other_interfaces as small_interface
 import interfaces.interface_utility as interface_util
 import utility.utilities as util
-from block_classes import buildings, environment_materials, building_materials
+from block_classes import buildings
+from block_classes.materials import building_materials, environment_materials
 
 if TYPE_CHECKING:
     from board.board import Board

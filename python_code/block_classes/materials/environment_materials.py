@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, List, Dict
 
 # own imports
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import utility.image_handling
 import utility.utilities as util
 import utility.constants as con

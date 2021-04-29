@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from typing import Union, List, Tuple, Type, TYPE_CHECKING
 
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import utility.utilities as util
 from utility import inventories
 if TYPE_CHECKING:

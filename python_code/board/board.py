@@ -8,9 +8,8 @@ import utility.utilities as util
 import utility.constants as con
 import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
-import block_classes.building_materials as build_materials
-import block_classes.ground_materials as ground_materials
-import block_classes.environment_materials as environment_materials
+import block_classes.materials.building_materials as build_materials
+import block_classes.materials.environment_materials as environment_materials
 import interfaces.interface_utility as interface_util
 from board import flora, chunks, pathfinding
 import network.conveynetwork

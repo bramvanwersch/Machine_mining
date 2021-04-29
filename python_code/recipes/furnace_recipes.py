@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
-import block_classes.ground_materials as ground_materials
+import block_classes.materials.ground_materials as ground_materials
 import recipes.base_recipes as base_recipes
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import utility.utilities as util
 
 

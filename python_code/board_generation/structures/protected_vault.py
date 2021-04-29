@@ -1,7 +1,8 @@
 from typing import ClassVar, List, Type, Union, Dict, Tuple
 
 from utility import utilities as util, loot_pools
-from block_classes import materials, block_utility as block_util, ground_materials
+from block_classes import block_utility as block_util
+from block_classes.materials import ground_materials, materials
 from board_generation.structures.base_structures import Structure, StructurePart
 
 

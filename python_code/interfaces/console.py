@@ -14,7 +14,9 @@ import utility.constants as con
 from utility.constants import DEBUG
 from utility import game_timing
 import interfaces.widgets as widgets
-from block_classes import building_materials, environment_materials, ground_materials, machine_materials, materials
+from block_classes.materials import building_materials, environment_materials, ground_materials,\
+    machine_materials, materials
+
 if TYPE_CHECKING:
     from board.sprite_groups import CameraAwareLayeredUpdates
     from board.board import Board

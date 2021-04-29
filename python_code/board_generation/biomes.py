@@ -3,12 +3,12 @@ from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar, Type
 from random import choices
 
 from utility import utilities as util, constants as con
-import block_classes.environment_materials as environment_materials
-import block_classes.ground_materials as ground_materials
+import block_classes.materials.environment_materials as environment_materials
+import block_classes.materials.ground_materials as ground_materials
 from board_generation.structures import base_structures, abandoned_mine, protected_vault
 if TYPE_CHECKING:
     from block_classes.materials import DepthMaterial
-    from block_classes.environment_materials import EnvironmentMaterial
+    from block_classes.materials.environment_materials import EnvironmentMaterial
 
 
 all_biomes: List[type]

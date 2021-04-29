@@ -9,7 +9,7 @@ import pygame
 import utility.image_handling
 import utility.utilities as util
 import block_classes.blocks as blocks
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import utility.constants as con
 
 

@@ -5,7 +5,8 @@ from pygame import Rect
 
 from utility import constants as con, utilities as util
 import interfaces.interface_utility as interface_util
-from block_classes import ground_materials, block_utility as block_util
+from block_classes import block_utility as block_util
+from block_classes.materials import ground_materials
 import board_generation.biomes as biome_classes
 
 

@@ -1,6 +1,6 @@
 import utility.constants as con
 import block_classes.blocks as block_classes
-import block_classes.environment_materials as environment_materials
+import block_classes.materials.environment_materials as environment_materials
 
 
 class Flora:

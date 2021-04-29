@@ -11,7 +11,7 @@ import utility.utilities as util
 from utility import inventories, game_timing, loot_pools
 if TYPE_CHECKING:
     import block_classes.materials as base_materials
-    import block_classes.building_materials as building_materials
+    import block_classes.materials.building_materials as building_materials
 
 
 class Block(ABC):

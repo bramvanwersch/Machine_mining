@@ -5,8 +5,8 @@ from abc import ABC, abstractmethod
 from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type, Hashable
 
 # own imports
-import block_classes.building_materials as build_materials
-import block_classes.materials as base_materials
+import block_classes.materials.building_materials as build_materials
+import block_classes.materials.materials as base_materials
 import block_classes.blocks as block_classes
 from utility import inventories
 import utility.utilities as util

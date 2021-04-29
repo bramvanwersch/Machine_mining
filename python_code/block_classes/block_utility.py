@@ -5,10 +5,10 @@ import inspect
 from typing import Set, Union, Type, Dict, Any
 
 # own imports
-import block_classes.materials as base_materials
-import block_classes.ground_materials as ground_m
-import block_classes.environment_materials as env_m
-import block_classes.building_materials as build_m
+import block_classes.materials.materials as base_materials
+import block_classes.materials.ground_materials as ground_m
+import block_classes.materials.environment_materials as env_m
+import block_classes.materials.building_materials as build_m
 import utility.utilities as util
 
 # Collections used for getting all type of a certain material for conventience

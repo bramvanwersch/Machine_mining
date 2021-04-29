@@ -1,9 +1,9 @@
 from abc import ABC
 
-import block_classes.building_materials
-import block_classes.ground_materials as ground_materials
+import block_classes.materials.building_materials
+import block_classes.materials.ground_materials as ground_materials
 import recipes.base_recipes as base_recipes
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import utility.utilities as util
 
 
@@ -15,7 +15,7 @@ class FurnaceRecipe(base_recipes.BaseRecipe, BaseFactoryRecipe):
     CRAFTING_TIME = 1000
 
     def __init__(self):
-        mat = block_classes.building_materials.FurnaceMaterial
+        mat = block_classes.materials.building_materials.FurnaceMaterial
         base_recipes.BaseRecipe.__init__(self, mat)
 
     def _create_recipe_grid(self):
@@ -32,7 +32,7 @@ class CompactStoneRecipe(base_recipes.BaseRecipe, BaseFactoryRecipe):
     CRAFTING_TIME = 100
 
     def __init__(self):
-        mat = block_classes.building_materials.StoneBrickMaterial
+        mat = block_classes.materials.building_materials.StoneBrickMaterial
         base_recipes.BaseRecipe.__init__(self, mat)
         self.quantity = 2
 
@@ -48,7 +48,7 @@ class StonePipe(base_recipes.BaseRecipe, BaseFactoryRecipe):
     CRAFTING_TIME = 1000
 
     def __init__(self):
-        mat = block_classes.building_materials.StonePipeMaterial
+        mat = block_classes.materials.building_materials.StonePipeMaterial
         base_recipes.BaseRecipe.__init__(self, mat)
         self.quantity = 2
 

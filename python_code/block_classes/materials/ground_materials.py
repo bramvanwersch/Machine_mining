@@ -6,7 +6,7 @@ from typing import Tuple, ClassVar, Dict, List
 from random import randint
 
 # own imports
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import utility.image_handling
 import utility.utilities as util
 import utility.constants as con
