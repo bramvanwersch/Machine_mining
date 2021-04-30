@@ -113,6 +113,11 @@ class User(utility.event_handling.EventHandler):
             if self._mode.name == "Selecting":
                 board_coord = interface_util.screen_to_board_coordinate(self.get_key(1).event.pos,
                                                                         self.__sprite_group.target, self.zoom)
+                for worker in self.workers:
+                    if worker.orig_rect.collidepoint(*board_coord):
+                        worker.open_interface()
+                        self.__remove_selection_rectangle()
+                        return
                 chunk = self.board.chunk_from_point(board_coord)
                 if chunk is None:
                     return

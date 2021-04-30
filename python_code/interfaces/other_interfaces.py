@@ -139,20 +139,19 @@ class InventoryWindow(base_interfaces.Window):
 
     def __init__(
         self,
-        inventory_building: "buildings.InterfaceBuilding",
+        rect: pygame.Rect,
+        inventory: "inventories.Inventory",
         *groups: "sprite_groups.CameraAwareLayeredUpdates",
         title: str = ""
     ):
-        self.__inventory = inventory_building.blocks[0][0].inventory
-        fr = inventory_building.rect
-        location = fr.bottomleft
-        super().__init__(location, self.SIZE, *groups, layer=con.INTERFACE_LAYER, title=title,
+        self.__inventory = inventory
+        super().__init__(rect.bottomleft, util.Size(*rect.size), *groups, layer=con.INTERFACE_LAYER, title=title,
                          allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
         self.__prev_no_items = self.__inventory.number_of_items
 
-        self.__innit_widgets()
+        self._innit_widgets()
 
-    def __innit_widgets(self):
+    def _innit_widgets(self):
         self.__inventory_pane = widgets.ScrollPane(self.SIZE - (20, 20), color=self.COLOR)
         self.add_widget((10, 10), self.__inventory_pane)
         self.add_border(self.__inventory_pane)

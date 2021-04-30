@@ -3,6 +3,7 @@
 # library imports
 from abc import ABC, abstractmethod
 from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type, Hashable
+import pygame
 
 # own imports
 import block_classes.materials.building_materials as build_materials
@@ -173,7 +174,8 @@ class Terminal(InterfaceBuilding):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
     ) -> base_interface.Window:
         """Innitiate the interface window"""
-        return self.INTERFACE_TYPE(self, sprite_group, title="TERMINAL")
+        return self.INTERFACE_TYPE(pygame.Rect(self.rect.left, self.rect.bottom, 300, 200),
+                                   self.blocks[0][0].inventory, sprite_group, title="TERMINAL")
 
 
 class StoneChest(InterfaceBuilding):
@@ -197,7 +199,8 @@ class StoneChest(InterfaceBuilding):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
     ) -> base_interface.Window:
         """Innitiate the interface window"""
-        return self.INTERFACE_TYPE(self, sprite_group, title="STONE CHEST")
+        return self.INTERFACE_TYPE(pygame.Rect(self.rect.left, self.rect.bottom, 300, 200),
+                                   self.blocks[0][0].inventory, sprite_group, title="STONE CHEST")
 
 
 class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):

@@ -3,7 +3,7 @@ from typing import Tuple, List, Union, TYPE_CHECKING
 from abc import ABC
 
 import block_classes.materials.environment_materials as environment_materials
-import block_classes.materials as base_materials
+import block_classes.materials.materials as base_materials
 import block_classes.block_utility as block_util
 import utility.constants as con
 import utility.utilities as util

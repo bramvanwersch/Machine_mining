@@ -402,6 +402,12 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                self.WORKER_IMAGES[2].images()[0],
                                                                self.WORKER_IMAGES[1].images()[0],
                                                                self.WORKER_IMAGES[0].images()[0]], 15)
+        from interfaces import worker_interface
+        from interfaces.managers import game_window_manager
+
+        self.window_manager = game_window_manager
+        self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
+                                                                   200), self.inventory, *groups)
 
     def _create_surface(
         self,
@@ -409,6 +415,13 @@ class Worker(MovingEntity, util.ConsoleReadable):
         color: Union[Tuple[int, int, int], Tuple[int, int, int, int]]
     ) -> pygame.Surface:
         return self.WORKER_IMAGES[0].images()[0]
+
+    def open_interface(self):
+        if self.window_manager is None:
+            from interfaces.managers import game_window_manager
+            self.window_manager = game_window_manager
+        self.window_manager.add(self.interface)
+        self.interface.set_location(self.orig_rect.bottomleft)
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
