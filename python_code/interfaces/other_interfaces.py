@@ -136,6 +136,7 @@ class InventoryWindow(base_interfaces.Window):
 
     __inventory: "inventories.Inventory"
     __prev_no_items: int
+    _inventory_pane: Union[widgets.ScrollPane, None]
 
     def __init__(
         self,
@@ -145,16 +146,17 @@ class InventoryWindow(base_interfaces.Window):
         title: str = ""
     ):
         self.__inventory = inventory
-        super().__init__(rect.bottomleft, util.Size(*rect.size), *groups, layer=con.INTERFACE_LAYER, title=title,
+        super().__init__(rect.topleft, util.Size(*rect.size), *groups, layer=con.INTERFACE_LAYER, title=title,
                          allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
-        self.__prev_no_items = self.__inventory.number_of_items
+        self.__prev_no_items = 0
+        self._inventory_pane = None
 
-        self._innit_widgets()
+        self._init_widgets()
 
-    def _innit_widgets(self):
-        self.__inventory_pane = widgets.ScrollPane(self.SIZE - (20, 20), color=self.COLOR)
-        self.add_widget((10, 10), self.__inventory_pane)
-        self.add_border(self.__inventory_pane)
+    def _init_widgets(self):
+        self._inventory_pane = widgets.ScrollPane(self.SIZE - (20, 20), color=self.COLOR)
+        self.add_widget((10, 10), self._inventory_pane)
+        self.add_border(self._inventory_pane)
 
     def update(self, *args):
         """Entity update method, add labels to the scroll pane when needed."""
@@ -169,10 +171,10 @@ class InventoryWindow(base_interfaces.Window):
 
         First it is figured out what items are new and then a label for each is constructed"""
         # should always be a ItemDisplay
-        covered_items = [widget.item.name() for widget in self.__inventory_pane.widgets]   # noqa
+        covered_items = [widget.item.name() for widget in self._inventory_pane.widgets]   # noqa
         for item in self.__inventory.items:
             if item.name() not in covered_items:
                 tooltip = widgets.Tooltip(self.groups()[0], text=item.tooltip_text())
                 lbl = widgets.ItemDisplay((42, 42), item, color=self.COLOR, tooltip=tooltip)
 
-                self.__inventory_pane.add_widget(lbl)
+                self._inventory_pane.add_widget(lbl)

@@ -20,11 +20,11 @@ class WorkerWindow(other_interfaces.InventoryWindow):
     ):
         super().__init__(rect, worker_inventory, *sprite_group, title="WORKER:")
 
-    def _innit_widgets(self):
-        self.__scrollable_inventory_widget = widgets.ScrollPane(util.Size(*self.orig_rect.size) - (50, 100),
-                                                                color=self.COLOR)
-        self.add_widget((25, 25), self.__scrollable_inventory_widget)
-        self.add_border(self.__scrollable_inventory_widget)
+    def _init_widgets(self):
+        self._inventory_pane = widgets.ScrollPane(util.Size(*self.orig_rect.size) - (50, 60),
+                                                  color=self.COLOR)
+        self.add_widget((25, 25), self._inventory_pane, adjust=True)
+        self.add_border(self._inventory_pane)
 
     def set_location(self, location: Tuple[int, int]):
         self.orig_rect.topleft = location

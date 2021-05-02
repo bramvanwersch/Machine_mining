@@ -431,8 +431,7 @@ class Game(Scene, util.Serializer):
 
         # ready made windows
         self.window_manager = None
-        self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
-                                                                  self.sprite_group) if self.board else None
+        self.building_interface = None
 
     def start(self):
         # function for setting up a Game
@@ -462,7 +461,7 @@ class Game(Scene, util.Serializer):
 
         # add one of the imventories of the terminal
         if self.building_interface is None:
-            self.building_interface = small_interfaces.BuildingWindow(self.board.inventorie_blocks[0].inventory,
+            self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
                                                                       self.sprite_group)
 
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center

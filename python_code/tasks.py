@@ -9,11 +9,11 @@ class TaskControl:
     Holds a list of block_classes that contain tasks that the workers can accept
     """
     def __init__(self, board):
-        #variable to track tasks by name and allow for fast search and destroy
+        # variable to track tasks by name and allow for fast search and destroy
         self.reachable_block_tasks = {}
         self.unreachable_block_tasks = {}
         self.board = board
-        self.__terminal_inv = board.inventorie_blocks[0].inventory
+        self.__terminal_inv = board.terminal.inventory
 
     def add(self, type, *blocks, priority = 1, **kwargs):
         """

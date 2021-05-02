@@ -50,7 +50,7 @@ class Board(util.Serializer):
         self.__highlight_rectangle = None
 
         self.__grow_update_time = grow_update_time
-        self.__terminal = None
+        self.terminal = None
 
     def setup_board(self):
         self.__add_starter_buildings()
@@ -517,7 +517,7 @@ class Board(util.Serializer):
         self.add_blocks(t)
         self.add_blocks(c)
         self.add_blocks(f)
-        self.__terminal = t
+        self.terminal = t
 
     def add_to_terminal_inventory(self, item):
-        self.__terminal.inventory.add_items(item)
+        self.terminal.inventory.add_items(item)

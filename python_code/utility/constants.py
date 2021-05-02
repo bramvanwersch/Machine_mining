@@ -32,7 +32,7 @@ DEBUG = DebugValues()
 SHOW_BLOCK_BORDER = True
 TEST_BOARD = TESTING
 USE_SEED = True
-SEED = 2  # use this as a seed when testing
+SEED = 1234  # use this as a seed when testing
 
 # innitialize fonts to pre load a font
 pygame.font.init()
