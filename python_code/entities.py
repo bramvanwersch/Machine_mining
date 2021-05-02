@@ -407,7 +407,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         self.window_manager = game_window_manager
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
-                                                                   200), self.inventory, *groups)
+                                                                   400), self, *groups)
 
     def _create_surface(
         self,

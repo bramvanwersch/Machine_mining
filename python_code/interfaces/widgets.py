@@ -132,7 +132,7 @@ class WidgetPosition:
 
     def __convert_location(
         self,
-        pos: Union[List[Union[str, int, float]], Tuple[Union[str, int, float],Union[str, int, float]]]
+        pos: Union[List[Union[str, int, float]], Tuple[Union[str, int, float], Union[str, int, float]]]
     ) -> List[int]:
         pos = list(pos)
         if type(pos[0]) in [float, int]:
@@ -143,15 +143,19 @@ class WidgetPosition:
             pos[0] = self.__west()
         elif pos[0] in ["east", "E"]:
             pos[0] = self.__east()
+        else:
+            raise util.GameException(f"Invalid x position {pos[0]} for widget.")
 
         if type(pos[1]) in [float, int]:
             pos[1] = round(pos[1])
-        if pos[1] in ["center", "C"]:
+        elif pos[1] in ["center", "C"]:
             pos[1] = self.__centery()
         elif pos[1] in ["north", "N"]:
             pos[1] = self.__north()
         elif pos[1] in ["south", "S"]:
             pos[1] = self.__south()
+        else:
+            raise util.GameException(f"Invalid y position {pos[1]} for widget.")
         return pos
 
     def __centerx(self) -> int:
