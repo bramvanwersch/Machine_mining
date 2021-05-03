@@ -165,22 +165,25 @@ class WidgetPosition:
         return round(self.__outer_rect.height / 2 - self.__inner_rect.height / 2)
 
     def __west(self) -> int:
-        return self.__outer_rect.left
+        return 0
 
     def __east(self) -> int:
-        return self.__outer_rect.right - self.__inner_rect.width
+        return self.__outer_rect.right - self.__inner_rect.left
 
     def __north(self) -> int:
-        return self.__outer_rect.top
+        return 0
 
     def __south(self) -> int:
-        return self.__outer_rect.bottom - self.__inner_rect.height
+        return self.__outer_rect.bottom - self.__inner_rect.top
 
     def __getitem__(self, item):
         return self.position[item]
 
     def __len__(self):
         return len(self.position)
+
+    def __repr__(self):
+        return f"<interfaces.widgets.WidgetPosition object with x: {self.position[0]} and y: {self.position[1]}>"
 
 
 class Widget(event_handlers.EventHandler, ABC):

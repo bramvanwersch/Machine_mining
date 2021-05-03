@@ -336,7 +336,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
     A worker class that can perform tasks
     """
     SIZE: ClassVar[Union[Tuple[int, int], List[int], util.Size]] = (20, 20)
-    INVENTORY_SIZE: ClassVar[int] = 2  # in wheight
+    INVENTORY_SIZE: ClassVar[int] = 10  # in wheight
     NUMBER: ClassVar[int] = count(1, 1)
     VISON_RADIUS: ClassVar[int] = 8 * con.BLOCK_SIZE.width
     EMITTED_LIGTH: ClassVar[int] = 10
@@ -407,7 +407,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         self.window_manager = game_window_manager
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
-                                                                   400), self, *groups)
+                                                                   250), self, *groups)
 
     def _create_surface(
         self,
@@ -421,7 +421,6 @@ class Worker(MovingEntity, util.ConsoleReadable):
             from interfaces.managers import game_window_manager
             self.window_manager = game_window_manager
         self.window_manager.add(self.interface)
-        self.interface.set_location(self.orig_rect.bottomleft)
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
