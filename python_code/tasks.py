@@ -222,6 +222,9 @@ class TaskQueue:
         finished_task = self.tasks.pop()
         return finished_task, finished_task.block
 
+    def __len__(self):
+        return len(self.tasks)
+
 
 class Task(ABC):
     """
@@ -282,8 +285,7 @@ class Task(ABC):
         return self.task_progress[0] >= self.task_progress[1] or self.__handed_in
 
     def __str__(self):
-        return "Task object {}:\nBlock: {}\nPriority: {}\nSelected: {}\nStarted: {}\nProgress: {}\nFinished: {}\nCanceled: {}\n".\
-            format(super().__str__(), self.block, self.priority, self.selected, self.started_task, self.task_progress, self.finished, self.__canceled)
+        return f"{self.name()}"
     
 
 class MultiTask(Task, ABC):
@@ -315,9 +317,6 @@ class MultiTask(Task, ABC):
 
     def _get_max_retries(self):
         return self.MAX_RETRIES
-
-    def __str__(self):
-        return "{}Finished subtasks: {}\n".format(super().__str__(), self.finished_subtasks)
 
 
 class MiningTask(Task):
@@ -468,9 +467,6 @@ class RequestTask(MultiTask):
             else:
                 entity.inventory.add_items(item)
 
-    def __str__(self):
-        return "{}Requested item: {}\n".format(super().__str__(), self.req_item)
-
 
 class DeliverTask(MultiTask):
     MAX_RETRIES = 5
@@ -498,6 +494,3 @@ class DeliverTask(MultiTask):
     def _set_task_progress(self, entity):
         #no task to perform
         self.task_progress = [0, 1]
-
-    def __str__(self):
-        return "{}Deliver item: {}\n".format(super().__str__(), self.pushed_item)
