@@ -372,6 +372,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
     ):
         MovingEntity.__init__(self, pos, self.SIZE, 150, *groups, **kwargs)
         self.number = next(Worker.NUMBER)
+        self.name = f"worker{self.number}"
         self.board = board_
         self.task_control = task_control
 
