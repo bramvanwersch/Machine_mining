@@ -56,74 +56,77 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         super().__init__(rect, worker.inventory, *sprite_group, title="WORKER:")
 
     def _init_widgets(self):
-        print("inniting")
+        # general information
         self._general_information_pane = widgets.Pane(util.Size(150, self.orig_rect.height / 2) - (30, 30),
-                                                      selectable=False)
+                                                      selectable=False, color=(150, 150, 150))
         self.add_widget((15, 15), self._general_information_pane, adjust=True)
         self.add_border(self._general_information_pane)
 
         y = 0
-
         info_name_lbl = widgets.Label(util.Size(150, 15), text="INFO", text_pos=(43, "center"), font_size=20,
                                       selectable=False)
         self._general_information_pane.add_widget((0, 0), info_name_lbl)
         self._general_information_pane.add_border(info_name_lbl)
 
         y += 25
-        name_name_lbl = widgets.Label(util.Size(60, 10), text="Name: ", text_pos=("west", "center"), selectable=False)
+        name_name_lbl = widgets.Label(util.Size(60, 10), text="Name: ", text_pos=("west", "center"), selectable=False,
+                                      color=(150, 150, 150))
         self._general_information_pane.add_widget((5, y), name_name_lbl)
 
-        self._name_lbl = widgets.MultilineTextBox(util.Size(80, 15))
+        self._name_lbl = widgets.MultilineTextBox(util.Size(80, 13))
         self._name_lbl.active_line.set_line_text(self._worker.name)
         self._general_information_pane.add_widget((38, y-2), self._name_lbl)
 
         y += 15
-        speed_name_lbl = widgets.Label(util.Size(60, 10), text="Speed: ", text_pos=("west", "center"), selectable=False)
+        speed_name_lbl = widgets.Label(util.Size(60, 10), text="Speed: ", text_pos=("west", "center"), selectable=False,
+                                       color=(150, 150, 150))
         self._general_information_pane.add_widget((5, y), speed_name_lbl)
 
         self._speed_lbl = widgets.Label(util.Size(75, 10),
                                         text=f"{self._previous_speed[0]}, {self._previous_speed[1]}",
-                                        text_pos=("west", "center"), selectable=False)
+                                        text_pos=("west", "center"), selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((45, y), self._speed_lbl)
 
         y += 15
         max_speed_name_lbl = widgets.Label(util.Size(60, 10), text="Max speed: ", text_pos=("west", "center"),
-                                           selectable=False)
+                                           selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((5, y), max_speed_name_lbl)
 
         self._max_speed_lbl = widgets.Label(util.Size(75, 10), text=str(self._worker.max_speed),
-                                            text_pos=("west", "center"), selectable=False)
+                                            text_pos=("west", "center"), selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((65, y), self._max_speed_lbl)
 
         y += 15
         location_name_lbl = widgets.Label(util.Size(60, 10), text="Location: ", text_pos=("west", "center"),
-                                          selectable=False)
+                                          selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((5, y), location_name_lbl)
 
         self._location_lbl = widgets.Label(util.Size(75, 10),
                                            text=f"{self._worker.orig_rect.left}, {self._worker.orig_rect.right}",
-                                           text_pos=("west", "center"), selectable=False)
+                                           text_pos=("west", "center"), selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((52, y), self._location_lbl)
 
         y += 15
         wheight_name_lbl = widgets.Label(util.Size(60, 10), text="Wheight: ", text_pos=("west", "center"),
-                                         selectable=False)
+                                         selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((5, y), wheight_name_lbl)
 
         self._wheight_lbl = widgets.Label(util.Size(75, 10), text=str(self._previous_wheight),
-                                          text_pos=("west", "center"), selectable=False)
+                                          text_pos=("west", "center"), selectable=False, color=(150, 150, 150))
         self._general_information_pane.add_widget((50, y), self._wheight_lbl)
 
         task_name_lbl = widgets.Label(util.Size(120, 15), text="TASK QUEUE", text_pos=(20, "center"), font_size=20,
-                                      selectable=False)
+                                      selectable=False, color=(150, 150, 150))
         self.add_widget((165, 15), task_name_lbl, adjust=True)
         self.add_border(task_name_lbl)
 
+        # task information
         self._task_information_pane = widgets.ScrollPane(util.Size(150, self.orig_rect.height / 2) - (30, 48),
                                                          selectable=False)
         self.add_widget((165, 33), self._task_information_pane, adjust=True)
         self.add_border(self._task_information_pane)
 
+        # inventory pane
         self._inventory_pane = widgets.ScrollPane(util.Size(300, self.orig_rect.height / 2) - (30, 50),
                                                   color=self.COLOR, selectable=False)
         self.add_widget((15, int(self.orig_rect.height / 2) + 10), self._inventory_pane, adjust=True)
