@@ -7,7 +7,6 @@ if TYPE_CHECKING:
     from entities import Worker
     from board import sprite_groups
     import pygame
-    import tasks
 
 
 class WorkerWindow(other_interfaces.InventoryWindow):
@@ -47,7 +46,13 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         self.add_widget((15, 15), self._general_information_pane, adjust=True)
         self.add_border(self._general_information_pane)
 
-        y = 5
+        y = 0
+
+        info_name_lbl = widgets.Label(util.Size(150, 15), text="INFO", text_pos=(43, "center"), font_size=20)
+        self._general_information_pane.add_widget((0, 0), info_name_lbl)
+        self._general_information_pane.add_border(info_name_lbl)
+
+        y += 25
         name_name_lbl = widgets.Label(util.Size(60, 10), text="Name: ", text_pos=("west", "center"))
         self._general_information_pane.add_widget((5, y), name_name_lbl)
 
@@ -88,8 +93,12 @@ class WorkerWindow(other_interfaces.InventoryWindow):
                                           text_pos=("west", "center"))
         self._general_information_pane.add_widget((70, y), self._wheight_lbl)
 
-        self._task_information_pane = widgets.ScrollPane(util.Size(150, self.orig_rect.height / 2) - (30, 30))
-        self.add_widget((165, 15), self._task_information_pane, adjust=True)
+        task_name_lbl = widgets.Label(util.Size(120, 15), text="TASK QUEUE", text_pos=(20, "center"), font_size=20)
+        self.add_widget((165, 15), task_name_lbl, adjust=True)
+        self.add_border(task_name_lbl)
+
+        self._task_information_pane = widgets.ScrollPane(util.Size(150, self.orig_rect.height / 2) - (30, 48))
+        self.add_widget((165, 33), self._task_information_pane, adjust=True)
         self.add_border(self._task_information_pane)
 
         self._inventory_pane = widgets.ScrollPane(util.Size(300, self.orig_rect.height / 2) - (30, 50),
