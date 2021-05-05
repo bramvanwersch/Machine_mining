@@ -15,6 +15,7 @@ BUGS:
   structure is not
 - On generation a vine can visually overlap part of a machine
 - Machines spawning during generation on a chunk border cause the application to crash
+- Some mining tasks dont dissapear properly and are reassigned into eternity
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
@@ -26,16 +27,14 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - allow the game to be paused by pressing space
 - add a filter options for the belts for allot better stuff
 - allow plants to have berries oid
-- add structures while terrain generating
 - add ghost buildings when building
 - have the game start at the surface
-- add an interface for workers where a task list and other things are visible
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
 - make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
-- add the seed feature to the game settings, as well as a way to control the amount of buildings
+- add the seed feature to the game settings, as well as a way to control the amount of structures
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
