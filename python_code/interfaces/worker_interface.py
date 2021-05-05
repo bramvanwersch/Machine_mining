@@ -14,7 +14,7 @@ class WorkerWindow(other_interfaces.InventoryWindow):
     _worker: "Worker"
     _general_information_pane: Union[widgets.Pane, None]
     _previous_name: str
-    _name_lbl: Union[widgets.Label, None]
+    _name_lbl: Union[widgets.MultilineTextBox, None]
     _previous_speed: Tuple[int, int]
     _speed_lbl: Union[widgets.Label, None]
     _previous_max_speed: int
@@ -56,6 +56,7 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         super().__init__(rect, worker.inventory, *sprite_group, title="WORKER:")
 
     def _init_widgets(self):
+        print("inniting")
         self._general_information_pane = widgets.Pane(util.Size(150, self.orig_rect.height / 2) - (30, 30),
                                                       selectable=False)
         self.add_widget((15, 15), self._general_information_pane, adjust=True)
@@ -72,9 +73,9 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         name_name_lbl = widgets.Label(util.Size(60, 10), text="Name: ", text_pos=("west", "center"), selectable=False)
         self._general_information_pane.add_widget((5, y), name_name_lbl)
 
-        self._name_lbl = widgets.Label(util.Size(75, 10), text=str(self._worker.number), text_pos=("west", "center"),
-                                       selectable=False)
-        self._general_information_pane.add_widget((70, y), self._name_lbl)
+        self._name_lbl = widgets.MultilineTextBox(util.Size(80, 15))
+        self._name_lbl.active_line.set_line_text(self._worker.name)
+        self._general_information_pane.add_widget((38, y-2), self._name_lbl)
 
         y += 15
         speed_name_lbl = widgets.Label(util.Size(60, 10), text="Speed: ", text_pos=("west", "center"), selectable=False)
@@ -83,7 +84,7 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         self._speed_lbl = widgets.Label(util.Size(75, 10),
                                         text=f"{self._previous_speed[0]}, {self._previous_speed[1]}",
                                         text_pos=("west", "center"), selectable=False)
-        self._general_information_pane.add_widget((70, y), self._speed_lbl)
+        self._general_information_pane.add_widget((45, y), self._speed_lbl)
 
         y += 15
         max_speed_name_lbl = widgets.Label(util.Size(60, 10), text="Max speed: ", text_pos=("west", "center"),
@@ -92,7 +93,7 @@ class WorkerWindow(other_interfaces.InventoryWindow):
 
         self._max_speed_lbl = widgets.Label(util.Size(75, 10), text=str(self._worker.max_speed),
                                             text_pos=("west", "center"), selectable=False)
-        self._general_information_pane.add_widget((70, y), self._max_speed_lbl)
+        self._general_information_pane.add_widget((65, y), self._max_speed_lbl)
 
         y += 15
         location_name_lbl = widgets.Label(util.Size(60, 10), text="Location: ", text_pos=("west", "center"),
@@ -102,7 +103,7 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         self._location_lbl = widgets.Label(util.Size(75, 10),
                                            text=f"{self._worker.orig_rect.left}, {self._worker.orig_rect.right}",
                                            text_pos=("west", "center"), selectable=False)
-        self._general_information_pane.add_widget((70, y), self._location_lbl)
+        self._general_information_pane.add_widget((52, y), self._location_lbl)
 
         y += 15
         wheight_name_lbl = widgets.Label(util.Size(60, 10), text="Wheight: ", text_pos=("west", "center"),
@@ -111,7 +112,7 @@ class WorkerWindow(other_interfaces.InventoryWindow):
 
         self._wheight_lbl = widgets.Label(util.Size(75, 10), text=str(self._previous_wheight),
                                           text_pos=("west", "center"), selectable=False)
-        self._general_information_pane.add_widget((70, y), self._wheight_lbl)
+        self._general_information_pane.add_widget((50, y), self._wheight_lbl)
 
         task_name_lbl = widgets.Label(util.Size(120, 15), text="TASK QUEUE", text_pos=(20, "center"), font_size=20,
                                       selectable=False)
@@ -145,9 +146,11 @@ class WorkerWindow(other_interfaces.InventoryWindow):
         self.__check_tasks()
 
     def __check_name(self):
-        if self._worker.number != self._previous_name:
+        if self._name_lbl.active_line.text != self._worker.name:
+            self._worker.name = self._name_lbl.active_line.text
+        if self._worker.name != self._previous_name:
             self._previous_name = self._worker.name
-            self._name_lbl.set_text(self._previous_name, pos=("west", "center"))
+            self._name_lbl.active_line.set_line_text(self._previous_name)
 
     def __check_speed(self):
         if self._worker.speed != self._previous_speed:
