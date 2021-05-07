@@ -406,7 +406,7 @@ class LoadingScreen(Scene):
             super().draw()
 
 
-class Game(Scene, util.Serializer):
+class Game(Scene):
     def __init__(self, screen, options, camera_center=None, board_=None, task_control=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
@@ -467,26 +467,6 @@ class Game(Scene, util.Serializer):
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
-
-    def to_dict(self):
-        return {
-            "camera_center": self.camera_center.to_dict(),
-            "entities": [sprite.to_dict() for sprite in self.sprite_group.sprites()
-                         if not isinstance(sprite, widgets.Frame) and not
-                         isinstance(sprite, chunks.BoardImage) and sprite is not self.camera_center],
-            "board": self.board.to_dict()
-        }
-
-    @classmethod
-    def from_dict(cls, screen=None, **arguments):
-        arguments["camera_center"] = entities.CameraCentre.from_dict(**arguments["camera_center"])
-        board_dct = arguments.pop("board")
-        ents = arguments.pop("entities")
-        inst = super().from_dict(screen=screen, **arguments)
-        entity_objects = [getattr(entities, dct["type"]).from_dict(**dct) for dct in ents]
-        inst.sprite_group.add(entity_objects)
-        inst.board = board.board.Board.from_dict(sprite_group=inst.sprite_group, **board_dct)
-        return inst
 
     def save(self):
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "w") as fp:

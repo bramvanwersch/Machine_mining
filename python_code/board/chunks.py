@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from block_classes.blocks import Block
 
 
-class Chunk(util.Serializer):
+class Chunk:
 
     def __init__(self, pos, foreground, background, main_sprite_group, all_plants, first_time=False):
         self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
@@ -63,10 +63,6 @@ class Chunk(util.Serializer):
             "foreground": [block.name() for row in self.__matrix for block in row],
             "backgrounc": [block.name() for row in self.__back_matrix for block in row]
         }
-
-    @classmethod
-    def from_dict(cls, sprite_group=None, **arguments):
-        super().from_dict(main_sprite_group=sprite_group, **arguments)
 
     def add_rectangle(self, rect, color, layer=2, border=0, trigger_change=True):
         self.changed[0] = trigger_change

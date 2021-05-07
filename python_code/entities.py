@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from board.pathfinding import Path
 
 
-class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
+class MySprite(pygame.sprite.Sprite, ABC):
     """Surface tracked by a rectangle"""
     _layer: int
     surface: pygame.Surface
@@ -43,23 +43,6 @@ class MySprite(pygame.sprite.Sprite, util.Serializer, ABC):
         self.orig_rect = self.surface.get_rect(topleft=pos)
         self._visible = visible
         self.static = static  # if static do not move the entity when camera moves
-
-    def to_dict(self):
-        return {
-            "pos": self.orig_rect.topleft,
-            "size": self.orig_rect.size,
-            "layer": self._layer,
-            "static": self.static,
-            "zoomable": self.zoomable,
-            "visible": self._visible
-        }
-
-    @classmethod
-    def from_dict(cls, **arguments):
-        return super().from_dict(
-            type=cls.__name__,
-            **arguments,
-        )
 
     def show(
         self,

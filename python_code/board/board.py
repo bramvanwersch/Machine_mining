@@ -16,7 +16,7 @@ import network.conveynetwork
 from utility import game_timing
 
 
-class Board(util.Serializer):
+class Board:
 
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
@@ -106,23 +106,6 @@ class Board(util.Serializer):
         for block in self.variable_blocks.copy():
             if block.changed:
                 self.add_blocks(block, update=False)
-
-    def to_dict(self):
-        return {
-            "chunk_matrix": [chunk.to_dict() for row in self.chunk_matrix for chunk in row],
-            "buildings": [building.to_dict() for building in self.buildings.values()],
-            "grow_update_time": self.__grow_update_time
-        }
-
-    @classmethod
-    def from_dict(cls, sprite_group=None, **arguments):
-        arguments["chunk_matrix"] = [chunks.Chunk.from_dict(sprite_group=sprite_group, **kwargs) for row in arguments["chunk_matrix"] for kwargs in row]
-        pipe_coords = arguments["pipe_coordinates"]
-        builds = arguments.pop("buildings")
-        inst = super().from_dict(**arguments)
-        building_objects = [getattr(buildings, dct["type"]).from_dict(**dct) for dct in builds]
-        [inst.add_building(build) for build in building_objects]
-        # add the network blocks back
 
     def generate_chunks(
         self,
