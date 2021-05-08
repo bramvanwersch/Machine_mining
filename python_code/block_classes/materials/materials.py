@@ -8,13 +8,13 @@ from random import randint, choices, choice
 from typing import Set, Tuple, ClassVar, List, Dict, Any, Union
 
 # own imports
-import utility.constants as con
+from utility import constants as con, loading_saving
 import block_classes.blocks as blocks
 import utility.utilities as util
 from utility.image_handling import ImageDefinition
 
 
-class BaseMaterial(ABC):
+class BaseMaterial(loading_saving.Savable, ABC):
     """
     Base material class that defines the behaviour of a block
     """
@@ -45,6 +45,9 @@ class BaseMaterial(ABC):
 
         # flag that controls if the active or the normal surfaces are returned. Surfaces have to actively be redrawn
         self._active = False
+
+    def to_dict(self):
+        return {}
 
     @property
     def hardness(self) -> int:
@@ -313,6 +316,11 @@ class MultiImageMaterial(ImageMaterial, ABC):
     def __init__(self, image_key: Any = None, **kwargs):
         super().__init__(**kwargs)
         self.image_key = image_key if image_key else list(self.IMAGE_DEFINITIONS.keys())[0]
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["image_key"] = self.image_key
+        return d
 
     def _configure_surface(self) -> Dict[Any, List[pygame.Surface]]:
         return self.__get_definition_surfaces(self.IMAGE_DEFINITIONS)

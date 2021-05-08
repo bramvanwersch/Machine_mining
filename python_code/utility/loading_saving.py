@@ -39,7 +39,10 @@ class Savable(ABC):
     def to_dict(self):
         pass
 
+
+class Loadable(ABC):
+
     @classmethod
     @abstractmethod
-    def from_dict(cls, dct):
+    def from_dict(cls, dct, **kwargs):
         pass

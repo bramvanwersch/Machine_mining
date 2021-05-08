@@ -11,16 +11,17 @@ import entities
 import interfaces.interface_utility as interface_util
 import board.pathfinding as pathfinding
 import board.flora as flora
+from utility import loading_saving
 if TYPE_CHECKING:
     from block_classes.blocks import Block
 
 
-class Chunk:
+class Chunk(loading_saving.Savable):
 
-    def __init__(self, pos, foreground, background, main_sprite_group, all_plants, first_time=False):
+    def __init__(self, pos, foreground, background, main_sprite_group, plants, changed=(False, False)):
         self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
 
-        self.all_plants = all_plants
+        self.all_plants = plants
         # blocks are added here that the board has to place because they can go across chunk borders or rely on a
         # network or something else that is ultamately managed by the board. The attribute is deleted after it is
         # requested
@@ -28,7 +29,7 @@ class Chunk:
         self.__matrix = self.__create_blocks_from_string(foreground)
         self.__back_matrix = self.__create_blocks_from_string(background)
         # changed, if it is the first time --> tracking for loading purposes of new chunks
-        self.changed = [False, first_time]
+        self.changed = list(changed)
 
         offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
         foreground_image = BoardImage(self.rect.topleft, block_matrix=self.__matrix, layer=con.BOARD_LAYER,
@@ -60,9 +61,22 @@ class Chunk:
     def to_dict(self):
         return {
             "pos": self.rect.topleft,
-            "foreground": [block.name() for row in self.__matrix for block in row],
-            "backgrounc": [block.name() for row in self.__back_matrix for block in row]
+            "matrix": [block.to_dict() for row in self.__matrix for block in row],
+            "back_matrix": [block.to_dict() for row in self.__back_matrix for block in row],
+            "plants": [plant.to_dict() for plant in self.all_plants],
+            "changed": self.changed,
         }
+
+    @classmethod
+    def from_dict(cls, dct, sprite_group=None, **kwargs):
+        return cls(
+            dct["pos"],
+            dct["matrix"],
+            dct["back_matrix"],
+            sprite_group,
+            plants=dct["plants"],
+            changed=dct["changed"]
+        )
 
     def add_rectangle(self, rect, color, layer=2, border=0, trigger_change=True):
         self.changed[0] = trigger_change

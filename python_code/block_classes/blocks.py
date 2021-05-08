@@ -6,15 +6,15 @@ from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashab
 from abc import ABC
 
 # own imports
-import utility.constants as con
+from utility import constants as con, loading_saving
 import utility.utilities as util
 from utility import inventories, game_timing, loot_pools
 if TYPE_CHECKING:
-    import block_classes.materials as base_materials
+    import block_classes.materials.materials as base_materials
     import block_classes.materials.building_materials as building_materials
 
 
-class Block(ABC):
+class Block(loading_saving.Savable, ABC):
     """
     Base class for the block_classes in image matrices
     """
@@ -44,6 +44,17 @@ class Block(ABC):
 
     def __getattr__(self, item):
         return getattr(self.material, item)
+
+    def to_dict(self):
+        # return a dict that can be loaded into an MCD
+        return {
+            "material": self.material.name(),
+            "block_kwargs": {
+                "id": self.id,
+                "light_level": self.light_level
+            },
+            "arguments": self.material.to_dict()
+        }
 
     @property
     def surface(self) -> pygame.Surface:
@@ -106,12 +117,17 @@ class Block(ABC):
         self.material.set_active(value)
 
 
-class VariableSurfaceBlock(ABC):
+class VariableSurfaceBlock(loading_saving.Savable, ABC):
 
     __changed: bool
 
-    def __init__(self):
-        self.__changed = False
+    def __init__(self, changed: bool = False):
+        self.__changed = changed
+
+    def to_dict(self):
+        return {
+            "changed": self.__changed
+        }
 
     def update(self):
         """Function to be called when updating the surface"""
@@ -166,10 +182,11 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         self,
         pos: Union[Tuple[int, int], List[int]],
         material: "building_materials.ConveyorBelt",
+        changed: bool = False,
         **kwargs
     ):
         SurroundableBlock.__init__(self, pos, material, **kwargs)
-        VariableSurfaceBlock.__init__(self)
+        VariableSurfaceBlock.__init__(self, changed)
         self.current_item = None
         self.incomming_item = None
         self.__current_push_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
@@ -179,6 +196,13 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         self.next_block = None  # the block selected to push an item to
         # track the previous block names for updating reasons
         self._previous_surrounding_block_names = [None for _ in range(len(self.surrounding_blocks))]
+
+    def to_dict(self):
+        d1 = SurroundableBlock.to_dict(self)
+        d2 = VariableSurfaceBlock.to_dict(self)
+        d1["block_kwargs"]["changed"] = d2["changed"]
+        d1["block_kwargs"]["current_item"] = None
+        return d1
 
     def put_current_item(
         self,
