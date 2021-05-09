@@ -2,7 +2,7 @@
 
 # library imports
 import pygame
-from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable
+from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable, Dict, Any
 from abc import ABC
 
 # own imports
@@ -197,11 +197,15 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         # track the previous block names for updating reasons
         self._previous_surrounding_block_names = [None for _ in range(len(self.surrounding_blocks))]
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         d1 = SurroundableBlock.to_dict(self)
         d2 = VariableSurfaceBlock.to_dict(self)
         d1["block_kwargs"]["changed"] = d2["changed"]
-        d1["block_kwargs"]["current_item"] = None
+        d1["block_kwargs"]["current_item"] = self.current_item.to_dict()
+        d1["block_kwargs"]["incomming_item"] = self.incomming_item.to_dict()
+        d1["block_kwargs"]["current_push_direction"] = self.__current_push_direction
+        d1["block_kwargs"]["exact_item_position"] = self.__exact_item_position
+        d1["block_kwargs"]["previous_incomming_position"] = self.__previous_incomming_position
         return d1
 
     def put_current_item(
@@ -571,6 +575,11 @@ class ContainerBlock(NetworkEdgeBlock):
         self.inventory = inventory if inventory is not None else inventories.Inventory(1)
         self._add_starting_items(starting_items)
 
+    def to_dict(self):
+        d = super().to_dict()
+        d["inventory"] = self.inventory.to_dict()
+        return d
+
     def _add_starting_items(
         self,
         starting_items: Union[None, loot_pools.ItemLootPool]
@@ -613,6 +622,11 @@ class MultiBlock(Block, ABC):
     ):
         super().__init__(pos, material, **kwargs)
         self.blocks = self._get_blocks()
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["blocks"] = [[block.to_dict() for block in row] for row in self.blocks]
+        return d
 
     @classmethod
     def size(cls) -> ClassVar[util.Size]:

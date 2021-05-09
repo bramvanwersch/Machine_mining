@@ -1,14 +1,14 @@
 from typing import Union, List, Set, Dict, TYPE_CHECKING, Iterable, Any
 import random
 
-import utility.utilities as util
+from utility import utilities as util, loading_saving
 if TYPE_CHECKING:
     import pygame
     from block_classes.blocks import Block
-    from block_classes.materials import BaseMaterial
+    from block_classes.materials.materials import BaseMaterial
 
 
-class Filter:
+class Filter(loading_saving.Savable):
     """Inventory filter that can tell if an item is allowed or not"""
     __slots__ = "__whitelist", "__blacklist"
 
@@ -22,6 +22,12 @@ class Filter:
     ):
         self.__blacklist = set(blacklist if blacklist is not None else [])
         self.__whitelist = whitelist if whitelist is None else set(whitelist)
+
+    def to_dict(self):
+        return {
+            "blacklist": list(self.__blacklist) if self.__blacklist is not None else [],
+            "whitelist": list(self.__whitelist) if self.__whitelist is not None else []
+        }
 
     def allowed(
         self,
@@ -82,7 +88,7 @@ class Filter:
         return info_str
 
 
-class Inventory(util.ConsoleReadable):
+class Inventory(loading_saving.Savable, util.ConsoleReadable):
     """Inventory for managing items within"""
     __slots__ = "_container", "in_filter", "out_filter", "wheight"
     _container: Dict[str, "Item"]
@@ -94,13 +100,22 @@ class Inventory(util.ConsoleReadable):
         self,
         max_wheight: int,
         in_filter: Union[Filter, None] = None,
-        out_filter: Union[Filter, None] = None
+        out_filter: Union[Filter, None] = None,
+        items: List["Item"] = None
     ):
-        self._container = {}
+        self._container = {item.name() for item in items} if items else {}
         self.wheight = [0, max_wheight]
 
         self.in_filter = in_filter if in_filter is not None else Filter()
         self.out_filter = out_filter if out_filter is not None else Filter()
+
+    def to_dict(self):
+        return {
+            "items": [item.to_dict() for item in self._container.values()],
+            "wheight": self.wheight,
+            "in_filter": self.in_filter.to_dict(),
+            "out_filter": self.out_filter.to_dict()
+        }
 
     def get(
         self,
@@ -260,7 +275,7 @@ class Inventory(util.ConsoleReadable):
         return final_str[:-1]
 
 
-class Item:
+class Item(loading_saving.Savable):
     """Tracks a single item using the __material of the item and a quantity"""
     __slots__ = "material", "quantity"
     material: "BaseMaterial"
@@ -273,6 +288,12 @@ class Item:
     ):
         self.material = material
         self.quantity = quantity
+
+    def to_dict(self):
+        return {
+            "material": self.material.to_dict(),
+            "quantity": self.quantity
+        }
 
     def __getattr__(
         self,
@@ -300,6 +321,11 @@ class TransportItem(Item):
     ):
         super().__init__(material, quantity)
         self.rect = rect
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["rect"] = (self.rect.left, self.rect.top, self.rect.width, self.rect.height)
+        return d
 
     def __str__(self) -> str:
         return f"{super().__str__()}({self.rect})"

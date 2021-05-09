@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import json
+from typing import Dict, Any
 
 
 class Serializer(ABC):
@@ -36,7 +37,7 @@ class Serializer(ABC):
 class Savable(ABC):
 
     @abstractmethod
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         pass
 
 

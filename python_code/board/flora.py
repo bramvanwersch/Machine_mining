@@ -1,4 +1,6 @@
-import utility.constants as con
+from typing import Dict, Any
+
+from utility import constants as con, loading_saving
 import block_classes.blocks as block_classes
 import block_classes.materials.environment_materials as environment_materials
 
@@ -23,7 +25,7 @@ class Flora:
         return iter(self.__plants.values())
 
 
-class Plant:
+class Plant(loading_saving.Savable):
 
     DIRECTION_ADDITON = [(0, -1), (1, 0), (0, 1), (-1, 0)]
     ID = 0
@@ -35,6 +37,12 @@ class Plant:
         self.__blocks = [start_block]
         self.grow_block.id = self.id
         self.__residing_chunk = residing_chunk
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "blocks": [block.to_dict() for block in self.__blocks],
+            "id": self.id,
+        }
 
     def is_loaded(self):
         return self.__residing_chunk.is_loaded()

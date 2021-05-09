@@ -1,16 +1,16 @@
 from random import randint, choices, uniform, choice
 from math import pi, cos, sin, ceil, sqrt
-from typing import List, Dict, Union, ClassVar, Set, Tuple, Iterable
+from typing import List, Dict, Union, ClassVar, Set, Tuple, Iterable, Any
 from pygame import Rect
 
-from utility import constants as con, utilities as util
+from utility import constants as con, utilities as util, loading_saving
 import interfaces.interface_utility as interface_util
 from block_classes import block_utility as block_util
 from block_classes.materials import ground_materials
 import board_generation.biomes as biome_classes
 
 
-class BoardGenerator:
+class BoardGenerator(loading_saving.Savable):
     """
     This class has 3 separate layers of generation:
     1. a broad layer that generates caves and environment far outside the visible surroudings. This is done to ensure
@@ -114,6 +114,25 @@ class BoardGenerator:
 
         self.__generate_biomes(self.__generation_rect, progress_var)
         self.__generate_surroundings(self.__generation_rect, progress_var)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "generated_chunk_matrix": self.__generated_chunks_matrix,
+            "predefined_blocks": self.__predefined_blocks.to_dict(),
+            "minimum_generation_lenght": self.__minimum_generation_length,
+            "generation_rect": (self.__generation_rect.left, self.__generation_rect.top,
+                                self.__generation_rect.width, self.__generation_rect.height),
+
+            "cave_lenght": self.__cave_length,
+            "cave_quadrant_size": self.__cave_quadrant_size.to_dict(),
+            "cave_stop_spread": self.__cave_stop_spread_chance,
+
+            "biome_definition": self.__biome_definition.to_dict(),
+            "biome_size": self.__biome_size.to_dict(),
+            "biome_blend": self.__biome_blend,
+            "biome_matrix": [[biome.to_dict() if biome is not None else None for biome in row]
+                             for row in self.__biome_matrix]
+        }
 
     def generate_chunk(
         self,
@@ -580,13 +599,19 @@ class BoardGenerator:
         return surrounding_coords
 
 
-class PredefinedBlocks:
+class PredefinedBlocks(loading_saving.Savable):
     """Save at what coordinate there are pre_defined materials for blocks generated outside the matrixes directly
     generated"""
     __internal_tree: Dict[int, Dict[int, block_util.MCD]]
 
     def __init__(self):
         self.__internal_tree = {}
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "internal_tree": {outer_name: {name: value.to_dict() for name, value in inner_dict.items()}
+                              for outer_name, inner_dict in self.__internal_tree.items()}
+        }
 
     def add(
         self,
@@ -610,7 +635,10 @@ class PredefinedBlocks:
         coord: Union[Tuple[int, int], List[int]]
     ) -> str:
         """Get and remove an item from this collection, for checking use check or 'in'"""
-        return self.__internal_tree[coord[1]].pop(coord[0])
+        item = self.__internal_tree[coord[1]].pop(coord[0])
+        if len(self.__internal_tree[coord[1]]) == 0:
+            del self.__internal_tree[coord[1]]
+        return item
 
     def check(
         self,

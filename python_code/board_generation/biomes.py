@@ -1,20 +1,20 @@
 from abc import ABC, abstractmethod
-from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar, Type
+from typing import List, Union, Set, Dict, TYPE_CHECKING, ClassVar, Type, Any
 from random import choices
 
-from utility import utilities as util, constants as con
+from utility import utilities as util, constants as con, loading_saving
 import block_classes.materials.environment_materials as environment_materials
 import block_classes.materials.ground_materials as ground_materials
 from board_generation.structures import base_structures, abandoned_mine, protected_vault
 if TYPE_CHECKING:
-    from block_classes.materials import DepthMaterial
+    from block_classes.materials.materials import DepthMaterial
     from block_classes.materials.environment_materials import EnvironmentMaterial
 
 
 all_biomes: List[type]
 
 
-class Biome(ABC):
+class Biome(loading_saving.Savable, ABC):
     CLUSTER_LIKELYHOOD: float = 1 / 120
     # max distance of ores from the center of a cluster 49 max ores in a cluster
     MAX_CLUSTER_SIZE: int = 3
@@ -37,6 +37,9 @@ class Biome(ABC):
         covariance2: float = 0.0,
     ):
         self.distribution = util.TwoDimensionalGaussian(x_gaussian, y_gaussian, covariance1, covariance2)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return self.distribution.to_dict()
 
     def get_likelyhood_at_coord(self, x: int, y: int) -> float:
         """The likelyhood of the given coordinate being part of this biome"""
@@ -203,9 +206,12 @@ class SlimeBiome(Biome):
     ]
 
 
-class BiomeGenerationDefinition(ABC):
+class BiomeGenerationDefinition(loading_saving.Savable, ABC):
     BIOME_PROBABILITIES: ClassVar[Dict[Type[Biome], float]]
     STRUCTURE_PROBABILITIES: ClassVar[Dict[Type[base_structures.Structure], float]]
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {}
 
     # noinspection PyPep8Naming
     @property

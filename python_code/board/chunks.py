@@ -61,8 +61,8 @@ class Chunk(loading_saving.Savable):
     def to_dict(self):
         return {
             "pos": self.rect.topleft,
-            "matrix": [block.to_dict() for row in self.__matrix for block in row],
-            "back_matrix": [block.to_dict() for row in self.__back_matrix for block in row],
+            "matrix": [[block.to_dict() for block in row] for row in self.__matrix],
+            "back_matrix": [[block.to_dict() for block in row] for row in self.__back_matrix],
             "plants": [plant.to_dict() for plant in self.all_plants],
             "changed": self.changed,
         }

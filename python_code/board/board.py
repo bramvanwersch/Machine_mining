@@ -1,11 +1,9 @@
 from random import uniform
 import pygame
 from math import ceil
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict, Any
 from threading import Thread
 
-import utility.utilities as util
-import utility.constants as con
 import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.materials.building_materials as build_materials
@@ -13,10 +11,10 @@ import block_classes.materials.environment_materials as environment_materials
 import interfaces.interface_utility as interface_util
 from board import flora, chunks, pathfinding
 import network.conveynetwork
-from utility import game_timing
+from utility import game_timing, loading_saving, utilities as util, constants as con
 
 
-class Board:
+class Board(loading_saving.Savable):
 
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
@@ -51,6 +49,16 @@ class Board:
 
         self.__grow_update_time = grow_update_time
         self.terminal = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        # TODO handle chunks currently being loaded
+        return {
+            "board_generator": self.board_generator.to_dict(),
+            "chunk_matrix": [[chunk.to_dict() if chunk is not None else None for chunk in row]
+                             for row in self.chunk_matrix],
+            # "loaded_chunks": list(self.loaded_chunks),
+            "grow_update_time": self.__grow_update_time,
+        }
 
     def setup_board(self):
         self.__add_starter_buildings()
@@ -137,7 +145,7 @@ class Board:
         for_string_matrix, back_string_matrix = self.board_generator.generate_chunk(point_pos)
         if (col_i, row_i) == con.START_CHUNK_POS:
             chunk = chunks.StartChunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
-                                      self.all_plants, first_time=True)
+                                      self.all_plants, changed=(False, True))
         else:
             chunk = chunks.Chunk(point_pos, for_string_matrix, back_string_matrix, self.main_sprite_group,
                                  self.all_plants)

@@ -9,14 +9,14 @@ import block_classes.materials.materials as base_materials
 import block_classes.materials.ground_materials as ground_m
 import block_classes.materials.environment_materials as env_m
 import block_classes.materials.building_materials as build_m
-import utility.utilities as util
+from utility import utilities as util, loading_saving
 
 # Collections used for getting all type of a certain material for conventience
 fuel_materials: Set = set()
 environment_materials: Set = set()
 
 
-class MCD:
+class MCD(loading_saving.Savable):
     """Allows to define a MaterialClassDefinition where you can save a material class linked to arguments needed for
     instantiation.
 
@@ -48,6 +48,16 @@ class MCD:
             self.block_kwargs = {} if block_kwargs is None else block_kwargs
             self.needs_board_update = needs_board_update
         self.__is_string = isinstance(self.material, str)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "material": self.material if self.__is_string else self.material.name(),
+            "needs_board_update": self.needs_board_update,
+            "arguments": {name: value.to_dict() if isinstance(value, loading_saving.Savable) else value
+                          for name, value in self.kwargs.items()},
+            "block_kwargs": {name: value.to_dict() if isinstance(value, loading_saving.Savable) else value
+                             for name, value in self.block_kwargs.items()}
+        }
 
     def to_instance(
         self,

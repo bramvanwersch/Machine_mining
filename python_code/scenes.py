@@ -2,10 +2,11 @@
 
 # library imports
 import os
+import json
 import warnings
 from abc import ABC
 import pygame
-from typing import Union
+from typing import Union, Dict, Any
 
 # own imports
 import board.board
@@ -17,7 +18,7 @@ from interfaces import widgets as widgets, interface_utility as interface_util, 
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
 import user
-from utility import game_timing
+from utility import game_timing, loading_saving
 
 
 # defined below SceneManager
@@ -406,7 +407,7 @@ class LoadingScreen(Scene):
             super().draw()
 
 
-class Game(Scene):
+class Game(loading_saving.Savable, Scene):
     def __init__(self, screen, options, camera_center=None, board_=None, task_control=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
@@ -468,9 +469,19 @@ class Game(Scene):
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            # "camera_center": self.camera_center.to_dict(),
+            # "user": self.user.to_dict(),
+            # "window_manager": self.window_manager.to_dict(),
+            "board": self.board.to_dict()
+
+        }
+
     def save(self):
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "w") as fp:
-            self.to_json(fp)
+            d = self.to_dict()
+            json.dump(d, fp, indent=True)
         warnings.warn("Save is not implemented yet", util.NotImplementedWarning)
 
     def scene_updates(self):

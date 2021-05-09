@@ -6,30 +6,16 @@ from abc import ABC
 from time import time_ns
 from numpy import array, linalg, exp
 import inspect
+import uuid
 
 
 if TYPE_CHECKING:
     from block_classes.blocks import Block
 
 
-LAST_IDS = set()
-
-
 def unique_id():
     """Create a unique ID based using the time module"""
-    global LAST_IDS
-    time_stamp = str(time_ns())
-    if time_stamp not in LAST_IDS:
-        LAST_IDS = {time_stamp}
-        return time_stamp
-    else:
-        new_stamp = time_stamp
-        cycle = 1
-        while new_stamp in LAST_IDS:
-            new_stamp = f"{new_stamp}.{cycle}"
-            cycle += 1
-        LAST_IDS.add(new_stamp)
-        return new_stamp
+    return str(uuid.uuid4())
 
 
 class BlockPointer:
@@ -185,6 +171,12 @@ class Size:
         self.height = height
         self.width = width
 
+    def to_dict(self):
+        return {
+            "width": self.width,
+            "height": self.height
+        }
+
     @property
     def size(self):
         return [self.width, self.height]
@@ -277,6 +269,12 @@ class Gaussian:
         self.mean = mean
         self.sd = sd
 
+    def to_dict(self):
+        return {
+            "mean": self.mean,
+            "sd": self.sd
+        }
+
     def probability(self, x):
         """Give the probability of encountering x exactly"""
         probability = (1 / sqrt(2 * pi * self.sd ** 2)) * (e ** (- 0.5 * (x - self.mean) ** 2 / self.sd ** 2))
@@ -302,6 +300,14 @@ class TwoDimensionalGaussian:
         self.inv_covariance_matrix = linalg.inv(self.covariance_matrix)
         self.determinant = linalg.det(self.covariance_matrix)
         self.norm_constant = 1 / (((2 * pi) ** (len(self.means) / 2)) * (self.determinant ** 0.5))
+
+    def to_dict(self):
+        return {
+            "gaussian1": {"mean": self.means[0][0], "sd": self.sigmas[0][0]},
+            "gaussian2": {"mean": self.means[1][0], "sd": self.sigmas[1][0]},
+            "covariance1": self.covariance_matrix[0][1],
+            "covariance2": self.covariance_matrix[1][0],
+        }
 
     def probability(self, x, y):
         x = array([[x], [y]])
