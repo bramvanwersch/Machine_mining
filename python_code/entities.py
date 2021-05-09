@@ -1,12 +1,9 @@
 from abc import ABC
 from itertools import count
 import pygame
-from typing import List, Tuple, Union, TYPE_CHECKING, Set, ClassVar
+from typing import List, Tuple, Union, TYPE_CHECKING, Set, ClassVar, Dict, Any
 
-import utility.constants as con
-import utility.utilities as util
-from utility import image_handling
-from utility import inventories
+from utility import image_handling, inventories, constants as con, utilities as util, loading_saving
 import tasks
 import utility.event_handling as event_handling
 if TYPE_CHECKING:
@@ -15,7 +12,7 @@ if TYPE_CHECKING:
     from board.pathfinding import Path
 
 
-class MySprite(pygame.sprite.Sprite, ABC):
+class MySprite(pygame.sprite.Sprite, loading_saving.Savable, ABC):
     """Surface tracked by a rectangle"""
     _layer: int
     surface: pygame.Surface
@@ -43,6 +40,14 @@ class MySprite(pygame.sprite.Sprite, ABC):
         self.orig_rect = self.surface.get_rect(topleft=pos)
         self._visible = visible
         self.static = static  # if static do not move the entity when camera moves
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "layer": self._layer,
+            "visible": self._visible,
+            "static": self.static,
+            "orig_rect": (self.orig_rect.left, self.orig_rect.top, self.orig_rect.width, self.orig_rect.height)
+        }
 
     def show(
         self,
@@ -219,10 +224,11 @@ class MovingEntity(ZoomableSprite):
         self.__exact_movement_values = [0, 0]
 
     def to_dict(self):
-        return super().to_dict().update({
-            "max_speed": self.max_speed,
-            "speed": (self.speed.x, self.speed.y)
-        })
+        d = super().to_dict()
+        d["max_speed"] = self.max_speed
+        d["speed"] = (self.speed.x, self.speed.y)
+        d["exact_movement_values"] = self.__exact_movement_values
+        return d
 
     def _max_frame_speed(self) -> float:
         """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame
@@ -284,6 +290,12 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
     ):
         MovingEntity.__init__(self, pos, size, 1000, *groups, **kwargs)
         event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
+
+    def to_dict(self):
+        d = super().to_dict()
+        del d["speed"]
+        del d["exact_movement_values"]
+        return d
 
     def handle_events(
         self,
@@ -392,6 +404,15 @@ class Worker(MovingEntity, util.ConsoleReadable):
         self.window_manager = game_window_manager
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
                                                                    250), self, *groups)
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["number"] = self.number
+        d["name"] = self.name
+        d["inventory"] = self.inventory.to_dict()
+        d["previous_x_direction"] = self.__previous_x_direction
+        d["task_queue"] = self.task_queue.to_dict()
+        return d
 
     def _create_surface(
         self,

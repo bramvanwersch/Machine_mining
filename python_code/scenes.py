@@ -408,7 +408,7 @@ class LoadingScreen(Scene):
 
 
 class Game(loading_saving.Savable, Scene):
-    def __init__(self, screen, options, camera_center=None, board_=None, task_control=None):
+    def __init__(self, screen, options, camera_center=None, board_=None):
         # camera center position is chnaged before starting the game
         # TODO make the size 0,0
         self.__selected_options = options
@@ -425,7 +425,6 @@ class Game(loading_saving.Savable, Scene):
         self._zoom = 1.0
         self.progress_var = [""]
         self.board = board_
-        self.task_control = task_control
         self.user = None
         self.pause_window = None
         self.console_window = None
@@ -470,19 +469,18 @@ class Game(loading_saving.Savable, Scene):
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
 
     def to_dict(self) -> Dict[str, Any]:
+        board_dict = self.board.to_dict()
         return {
-            # "camera_center": self.camera_center.to_dict(),
-            # "user": self.user.to_dict(),
-            # "window_manager": self.window_manager.to_dict(),
-            "board": self.board.to_dict()
-
+            "camera_center": self.camera_center.to_dict(),
+            "user": self.user.to_dict(),
+            "board": board_dict
         }
 
     def save(self):
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "w") as fp:
             d = self.to_dict()
             json.dump(d, fp, indent=True)
-        warnings.warn("Save is not implemented yet", util.NotImplementedWarning)
+        print("gamestate has been saved")
 
     def scene_updates(self):
         super().scene_updates()

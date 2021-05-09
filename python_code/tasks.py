@@ -1,10 +1,10 @@
 from abc import ABC
+from typing import Dict, Any
 
-import utility.utilities as util
-import utility.constants as con
+from utility import utilities as util, constants as con, loading_saving
 
 
-class TaskControl:
+class TaskControl(loading_saving.Savable):
     """
     Holds a list of block_classes that contain tasks that the workers can accept
     """
@@ -14,6 +14,14 @@ class TaskControl:
         self.unreachable_block_tasks = {}
         self.board = board
         self.__terminal_inv = board.terminal.inventory
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "reachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict}
+                                      for block_id, task_dict in self.reachable_block_tasks},
+            "unreachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict}
+                                        for block_id, task_dict in self.unreachable_block_tasks}
+        }
 
     def add(self, type, *blocks, priority = 1, **kwargs):
         """
@@ -35,32 +43,33 @@ class TaskControl:
                 raise Exception("Invalid task name {}".format(type))
 
             surrounding_blocks = self.board.surrounding_blocks(block)
-            if len([b for b in surrounding_blocks if b != None and b.transparant_group != 0]) > 0:
-                if block not in self.reachable_block_tasks:
-                    self.reachable_block_tasks[block] = {}
-                if task.name() in self.reachable_block_tasks[block] and con.MULTI_TASKS[type].multi:
-                    self.reachable_block_tasks[block][task.name()].append(task)
+            if len([b for b in surrounding_blocks if b is not None and b.transparant_group != 0]) > 0:
+                if block.id not in self.reachable_block_tasks:
+                    self.reachable_block_tasks[block.id] = {}
+                if task.name() in self.reachable_block_tasks[block.id] and con.MULTI_TASKS[type].multi:
+                    self.reachable_block_tasks[block.id][task.name()].append(task)
                 else:
-                    self.reachable_block_tasks[block][task.name()] = MultipleTaskList(task)
+                    self.reachable_block_tasks[block.id][task.name()] = MultipleTaskList(task)
             else:
-                if block not in self.unreachable_block_tasks:
-                    self.unreachable_block_tasks[block] = {}
-                if task.name() in self.unreachable_block_tasks[block] and con.MULTI_TASKS[type].multi:
-                    self.unreachable_block_tasks[block][task.name()].append(task)
+                if block.id not in self.unreachable_block_tasks:
+                    self.unreachable_block_tasks[block.id] = {}
+                if task.name() in self.unreachable_block_tasks[block.id] and con.MULTI_TASKS[type].multi:
+                    self.unreachable_block_tasks[block.id][task.name()].append(task)
                 else:
-                    self.unreachable_block_tasks[block][task.name()] = MultipleTaskList(task)
+                    self.unreachable_block_tasks[block.id][task.name()] = MultipleTaskList(task)
 
     def remove_tasks(self, *tasks):
         for task in tasks:
             #a block can be none for tasks not added to the task control
-            if task.block not in self.reachable_block_tasks or task.name() not in self.reachable_block_tasks[task.block]:
+            if task.block.id not in self.reachable_block_tasks or\
+                    task.name() not in self.reachable_block_tasks[task.block.id]:
                 continue
-            self.reachable_block_tasks[task.block][task.name()].remove(task)
+            self.reachable_block_tasks[task.block.id][task.name()].remove(task)
 
-            if len(self.reachable_block_tasks[task.block][task.name()]) == 0:
-                del self.reachable_block_tasks[task.block][task.name()]
-            if len(self.reachable_block_tasks[task.block]) == 0:
-                del self.reachable_block_tasks[task.block]
+            if len(self.reachable_block_tasks[task.block.id][task.name()]) == 0:
+                del self.reachable_block_tasks[task.block.id][task.name()]
+            if len(self.reachable_block_tasks[task.block.id]) == 0:
+                del self.reachable_block_tasks[task.block.id]
 
             if isinstance(task, MiningTask):
                 self.__check_surrounding_tasks(task.block)
@@ -75,7 +84,7 @@ class TaskControl:
         :param blocks: a list of block_classes for which tasks need to be removed
         """
         for block in blocks:
-            removed_tasks = self.reachable_block_tasks.pop(block, None)
+            removed_tasks = self.reachable_block_tasks.pop(block.id, None)
             if removed_tasks != None:
                 for tasks in removed_tasks.values():
                     for task in tasks:
@@ -84,7 +93,7 @@ class TaskControl:
                         #make sure that entitties still performing the task stop
                         task.cancel()
             else:
-                removed_tasks = self.unreachable_block_tasks.pop(block, None)
+                removed_tasks = self.unreachable_block_tasks.pop(block.id, None)
             if removed_tasks != None:
                 for tasks in removed_tasks.values():
                     for task in tasks:
@@ -95,9 +104,9 @@ class TaskControl:
         surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
         for block in surrounding_task_blocks:
             block = block.block
-            b = self.unreachable_block_tasks.pop(block, None)
+            b = self.unreachable_block_tasks.pop(block.id, None)
             if b:
-                self.reachable_block_tasks[block] = b
+                self.reachable_block_tasks[block.id] = b
 
     def get_task(self, worker_pos):
 
@@ -178,12 +187,17 @@ class MultipleTaskList:
         return len(self.tasks)
 
 
-class TaskQueue:
+class TaskQueue(loading_saving.Savable):
     """
     acts as a queue of tasks that are performed from last to first by a worker
     """
     def __init__(self):
         self.tasks = []
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tasks": [task.to_dict() for task in self.tasks]
+        }
 
     def add(self, task):
         """
@@ -226,20 +240,31 @@ class TaskQueue:
         return len(self.tasks)
 
 
-class Task(ABC):
+class Task(loading_saving.Savable, ABC):
     """
     Object for storing a task and its progress
     """
-    def __init__(self, block, priority = 1, **kwargs):
+    def __init__(self, block, priority=1, **kwargs):
         self.block = block
         self.priority = priority
 
         self.started_task = False
         self.selected = False
-        #determined by material
+        # determined by material
         self.task_progress = [val for val in [0, 1000]]
         self.__handed_in = False
         self.__canceled = False
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "block": self.block.to_dict(),
+            "priority": self.priority,
+            "started_task": self.started_task,
+            "selected": self.selected,
+            "task_progress": self.task_progress,
+            "handed_in": self.__handed_in,
+            "canceled": self.__canceled
+        }
 
     def start(self, entity, **kwargs):
         self.started_task = True
@@ -290,11 +315,19 @@ class Task(ABC):
 
 class MultiTask(Task, ABC):
     MAX_RETRIES = 5
+
     def __init__(self, block, **kwargs):
         Task.__init__(self, block, **kwargs)
         self._subtask_count = 0
         self.finished_subtasks = False
         self._max_retries = self._get_max_retries()
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["subtask_count"] = self._subtask_count
+        d["finished_subtasks"] = self.finished_subtasks
+        d["max_retries"] = self._max_retries
+        return d
 
     def start(self, entity, **kwargs):
         self._subtask_count += 1
@@ -336,6 +369,13 @@ class BuildTask(MultiTask):
         self.original_group = original_group
         self.removed_blocks = [block for block in removed_blocks if block.name() != "Air"]
 
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["finish_block"] = self.finish_block.to_dict()
+        d["original_group"] = self.original_group
+        d["removed_blocks"] = [block.to_dict() for block in self.removed_blocks]
+        return d
+
     def start(self, entity, **kwargs):
         if not entity.inventory.check_item_get(self.finish_block.name()):
             task = FetchTask(entity, self.finish_block.name(), **kwargs)
@@ -362,11 +402,18 @@ class FetchTask(Task):
         self.req_block_name = req_block_name
         self.quantity = quantity
         self.ignore_filter = ignore_filter
-        if inventory_block != None:
+        if inventory_block is not None:
             block = inventory_block
         else:
             block = entity.board.closest_inventory(entity.orig_rect, self.req_block_name, deposit=False)
         super().__init__(block, **kwargs)
+
+    def to_dict(self) -> Dict[str, Any]:
+        d = super().to_dict()
+        d["req_block_name"] = self.req_block_name
+        d["quantity"] = self.quantity
+        d["ignore_filter"] = self.ignore_filter
+        return d
 
     def start(self, entity, inventory_block=None, **kwargs):
         if self.block != None:

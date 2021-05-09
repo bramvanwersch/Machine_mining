@@ -56,7 +56,6 @@ class Board(loading_saving.Savable):
             "board_generator": self.board_generator.to_dict(),
             "chunk_matrix": [[chunk.to_dict() if chunk is not None else None for chunk in row]
                              for row in self.chunk_matrix],
-            # "loaded_chunks": list(self.loaded_chunks),
             "grow_update_time": self.__grow_update_time,
         }
 

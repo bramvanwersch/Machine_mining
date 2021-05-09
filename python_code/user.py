@@ -1,13 +1,11 @@
 import pygame
-from typing import Union, List, Tuple, TYPE_CHECKING, Type
+from typing import Union, List, Tuple, TYPE_CHECKING, Type, Dict, Any
 
 import tasks
-import utility.constants as con
 import entities
-import utility.event_handling
 import interfaces.other_interfaces as small_interface
 import interfaces.interface_utility as interface_util
-import utility.utilities as util
+from utility import utilities as util, constants as con, event_handling, loading_saving
 from block_classes import buildings
 from block_classes.materials import building_materials, environment_materials
 
@@ -17,7 +15,7 @@ if TYPE_CHECKING:
     from block_classes.blocks import Block
 
 
-class User(utility.event_handling.EventHandler):
+class User(event_handling.EventHandler, loading_saving.Savable):
     """The user of a game, assigning tasks to workers and directing interaction between workers the board and the
     taks management"""
 
@@ -52,6 +50,12 @@ class User(utility.event_handling.EventHandler):
         self._mode = con.MODES[con.BOARD_KEYS.SELECTING]
         self.zoom = 1.0
         self.__rotate = 0  # track the amount of times that the rotate key was pressed
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "task_control": self.task_control.to_dict(),
+            "workers": [worker.to_dict() for worker in self.workers],
+        }
 
     def __init_task_control(
         self,
