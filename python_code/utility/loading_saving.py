@@ -1,37 +1,5 @@
 from abc import ABC, abstractmethod
-import json
 from typing import Dict, Any
-
-
-class Serializer(ABC):
-    """
-    adapted from gamci/cblaster :)
-    """
-
-    @abstractmethod
-    def to_dict(self):
-        pass
-
-    @classmethod
-    def from_dict(cls, **arguments):
-        return cls(**arguments)
-
-    def to_json(self, fp=None, **kwargs):
-        """Serialises class to JSON."""
-        d = self.to_dict()
-        if fp:
-            json.dump(d, fp, **kwargs)
-        else:
-            return json.dumps(d, **kwargs)
-
-    @classmethod
-    def from_json(cls, js):
-        """Instantiates class from JSON handle."""
-        if isinstance(js, str):
-            d = json.loads(js)
-        else:
-            d = json.load(js)
-        return cls.from_dict(**d)
 
 
 class Savable(ABC):
@@ -43,7 +11,18 @@ class Savable(ABC):
 
 class Loadable(ABC):
 
+    def __init_load__(self, **kwargs):
+        # method that can be defined that will be run as the init when loading the class from json. Dont overwrite if
+        # no __init__ is needed
+        pass
+
     @classmethod
     @abstractmethod
-    def from_dict(cls, dct, **kwargs):
+    def from_dict(cls, dct):
         pass
+
+    @classmethod
+    def load(cls, **init_arguments):
+        obj = cls.__new__(cls)
+        obj.__init_load__(**init_arguments)
+        return obj

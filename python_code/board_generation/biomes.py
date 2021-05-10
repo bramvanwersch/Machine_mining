@@ -206,12 +206,17 @@ class SlimeBiome(Biome):
     ]
 
 
-class BiomeGenerationDefinition(loading_saving.Savable, ABC):
+class BiomeGenerationDefinition(loading_saving.Savable,loading_saving.Loadable, ABC):
     BIOME_PROBABILITIES: ClassVar[Dict[Type[Biome], float]]
     STRUCTURE_PROBABILITIES: ClassVar[Dict[Type[base_structures.Structure], float]]
 
     def to_dict(self) -> Dict[str, Any]:
-        return {}
+        return {"instance_name": self.__name__}
+
+    @classmethod
+    def from_dict(cls, dct):
+        cls_type = globals()[dct["instance_name"]]
+        return cls_type.load()
 
     # noinspection PyPep8Naming
     @property

@@ -67,17 +67,6 @@ class Chunk(loading_saving.Savable):
             "changed": self.changed,
         }
 
-    @classmethod
-    def from_dict(cls, dct, sprite_group=None, **kwargs):
-        return cls(
-            dct["pos"],
-            dct["matrix"],
-            dct["back_matrix"],
-            sprite_group,
-            plants=dct["plants"],
-            changed=dct["changed"]
-        )
-
     def add_rectangle(self, rect, color, layer=2, border=0, trigger_change=True):
         self.changed[0] = trigger_change
         local_rect = self.__local_adjusted_rect(rect)

@@ -168,10 +168,12 @@ class MainMenu(Scene):
 
     def __load_game(self):
         global scenes
-        warnings.warn("Game loading is not avaialable yet", util.NotImplementedWarning)
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "r") as fp:
-            game = Game.from_json(fp)
+            dct = json.load(fp)
+        # TODO make this properly load
+        game = Game.from_dict(dct, self.screen)
         scenes[Game.name()] = game
+        scenes.set_active_scene(Game.name())
 
     def __open_settings(self):
         warnings.warn("No settings available yet", util.NotImplementedWarning)
@@ -407,12 +409,12 @@ class LoadingScreen(Scene):
             super().draw()
 
 
-class Game(loading_saving.Savable, Scene):
-    def __init__(self, screen, options, camera_center=None, board_=None):
-        # camera center position is chnaged before starting the game
-        # TODO make the size 0,0
+class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
+    def __init__(self, screen, options):
         self.__selected_options = options
-        self.camera_center = camera_center if camera_center else entities.CameraCentre((0, 0), (5, 5))
+        # camera center position is changed before starting the game
+        # TODO make the size 0,0
+        self.camera_center = entities.CameraCentre((0, 0), (5, 5))
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
         super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
         # update rectangles
@@ -432,6 +434,32 @@ class Game(loading_saving.Savable, Scene):
         # ready made windows
         self.window_manager = None
         self.building_interface = None
+
+    def __init_load__(self, screen, sprite_group, camera_center, board_, user_):
+        # camera center position is changed before starting the game
+        # TODO make the size 0,0
+        self.camera_center = camera_center
+        super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
+        # update rectangles
+        self.__vision_rectangles = []
+        self.__debug_rectangle = (0, 0, 0, 0)
+
+        self._visible_entities = 0
+
+        # zoom variables
+        self._zoom = 1.0
+        self.progress_var = [""]
+        self.board = board_
+        self.user = user_
+        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
+        self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
+
+        # ready made windows
+        window_managers.create_window_managers(self.camera_center)
+        from interfaces.managers import game_window_manager
+        self.window_manager = game_window_manager
+        self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
+                                                                  self.sprite_group)
 
     def start(self):
         # function for setting up a Game
@@ -469,12 +497,21 @@ class Game(loading_saving.Savable, Scene):
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
 
     def to_dict(self) -> Dict[str, Any]:
-        board_dict = self.board.to_dict()
         return {
             "camera_center": self.camera_center.to_dict(),
             "user": self.user.to_dict(),
-            "board": board_dict
+            "board": self.board.to_dict()
         }
+
+    @classmethod
+    def from_dict(cls, dct, screen=None):
+        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
+        sprite_group = sprite_groups.CameraAwareLayeredUpdates(camera_center, con.BOARD_SIZE)
+        board_ = board.board.Board.from_dict(dct["board"], sprite_group)
+        user_ = user.User.from_dict(dct["user"])
+        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
+        return cls.load(screen=screen, sprite_group=sprite_group, board_=board_, user_=user_,
+                        camera_center=camera_center)
 
     def save(self):
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "w") as fp:

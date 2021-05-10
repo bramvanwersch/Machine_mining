@@ -10,7 +10,7 @@ from block_classes.materials import ground_materials
 import board_generation.biomes as biome_classes
 
 
-class BoardGenerator(loading_saving.Savable):
+class BoardGenerator(loading_saving.Savable, loading_saving.Loadable):
     """
     This class has 3 separate layers of generation:
     1. a broad layer that generates caves and environment far outside the visible surroudings. This is done to ensure
@@ -74,7 +74,7 @@ class BoardGenerator(loading_saving.Savable):
         nr_caves: Union[str, int] = "normal",
         cave_length: Union[str, int] = "normal",
         cave_broadness: Union[str, float] = "normal",
-        progress_var: Union[None, List[str]] = None
+        progress_var: Union[None, List[str]] = None,
     ):
         self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
 
@@ -115,6 +115,35 @@ class BoardGenerator(loading_saving.Savable):
         self.__generate_biomes(self.__generation_rect, progress_var)
         self.__generate_surroundings(self.__generation_rect, progress_var)
 
+    def __init_load__(self, generated_chunk_matrix=None, predefined_blocks=None, minimum_generation_length=None,
+                      generation_rect=None, cave_lenght=None, cave_quadrant_size=None, cave_stop_spread_chance=None,
+                      biome_size=None, biome_blend=None, biome_matrix=None, biome_definition=None):
+        self.__environment_material_names = {mat.name() for mat in block_util.environment_materials}
+
+        # for tracking what chunks have been covered by generation 0 is not covered 1 is covered by ores and environment
+        # 2 is covered with filler blocks
+        self.__generated_chunks_matrix = generated_chunk_matrix
+        # structure for efficiently storing a variable number of blocks from a matrix that are not neccesairily
+        # consecutive
+        self.__predefined_blocks = predefined_blocks
+
+        # amount of cave points
+        self.__cave_length = cave_lenght
+        # the square where one cave occurs
+        self.__cave_quadrant_size = cave_quadrant_size
+        self.__cave_stop_spread_chance = cave_stop_spread_chance
+
+        # minimum distance (x and y) between the closest generated chunk and the non-generated structures and biomes
+        self.__minimum_generation_length = minimum_generation_length
+        # tracks what part of the board the structures and biomes have been generated for.
+        self.__generation_rect = generation_rect
+
+        self.__biome_definition = biome_definition
+        self.__biome_size = self.BIOME_SIZES.get(biome_size, biome_size)
+        self.__biome_blend = self.BIOME_BLEND.get(biome_blend, biome_blend)
+        # fill the biome matrix with empty values
+        self.__biome_matrix = biome_matrix
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "generated_chunk_matrix": self.__generated_chunks_matrix,
@@ -133,6 +162,22 @@ class BoardGenerator(loading_saving.Savable):
             "biome_matrix": [[biome.to_dict() if biome is not None else None for biome in row]
                              for row in self.__biome_matrix]
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        predefined_blocks = PredefinedBlocks.from_dict(dct["predefined_blocks"])
+        generation_rect = Rect(dct["generation_rect"])
+        cave_quadrant_size = util.Size.from_dict(dct["cave_quadrant_size"])
+        biome_definition = biome_classes.BiomeGenerationDefinition.from_dict()
+        biome_size = util.Size.from_dict(dct["biome_size"])
+        biome_matrix = [[biome_classes.Biome.from_dict(biome)if biome is not None else None for biome in row]
+                        for row in dct["biome_matrix"]]
+
+        return cls.load(generated_chunk_matrix=dct["generated_chunk_matrix"], predefined_blocks=predefined_blocks,
+                        minimum_generation_length=dct["minimum_generation_length"], generation_rect=generation_rect,
+                        cave_lenght=dct["cave_lenght"], cave_quadrant_size=cave_quadrant_size,
+                        cave_stop_spread_chance=dct["cave_stop_spread"], biome_size=biome_size,
+                        biome_blend=dct["biome_blend"], biome_matrix=biome_matrix, biome_definition=biome_definition)
 
     def generate_chunk(
         self,
@@ -599,7 +644,7 @@ class BoardGenerator(loading_saving.Savable):
         return surrounding_coords
 
 
-class PredefinedBlocks(loading_saving.Savable):
+class PredefinedBlocks(loading_saving.Savable, loading_saving.Loadable):
     """Save at what coordinate there are pre_defined materials for blocks generated outside the matrixes directly
     generated"""
     __internal_tree: Dict[int, Dict[int, block_util.MCD]]
@@ -607,11 +652,20 @@ class PredefinedBlocks(loading_saving.Savable):
     def __init__(self):
         self.__internal_tree = {}
 
+    def __init_load__(self, interal_tree=None):
+        self.__internal_tree = interal_tree
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "internal_tree": {outer_name: {name: value.to_dict() for name, value in inner_dict.items()}
                               for outer_name, inner_dict in self.__internal_tree.items()}
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        internal_tree = {outer_name: {name: block_util.MCD.from_dict(value) for name, value in inner_dict.items()}
+                         for outer_name, inner_dict in dct["internal_tree"]}
+        return cls.load(internal_tree=internal_tree)
 
     def add(
         self,

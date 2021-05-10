@@ -16,7 +16,7 @@ fuel_materials: Set = set()
 environment_materials: Set = set()
 
 
-class MCD(loading_saving.Savable):
+class MCD(loading_saving.Savable, loading_saving.Loadable):
     """Allows to define a MaterialClassDefinition where you can save a material class linked to arguments needed for
     instantiation.
 
@@ -49,6 +49,9 @@ class MCD(loading_saving.Savable):
             self.needs_board_update = needs_board_update
         self.__is_string = isinstance(self.material, str)
 
+    def __init_load__(self, **kwargs):
+        self.__init__(**kwargs)
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "material": self.material if self.__is_string else self.material.name(),
@@ -58,6 +61,10 @@ class MCD(loading_saving.Savable):
             "block_kwargs": {name: value.to_dict() if isinstance(value, loading_saving.Savable) else value
                              for name, value in self.block_kwargs.items()}
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls.load(**dct)
 
     def to_instance(
         self,

@@ -177,6 +177,10 @@ class Size:
             "height": self.height
         }
 
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(**dct)
+
     @property
     def size(self):
         return [self.width, self.height]
