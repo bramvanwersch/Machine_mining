@@ -9,7 +9,7 @@ import pygame
 import block_classes.materials.building_materials as build_materials
 import block_classes.materials.materials as base_materials
 import block_classes.blocks as block_classes
-from utility import inventories
+from utility import inventories, loading_saving
 import utility.utilities as util
 import interfaces.base_interface as base_interface
 import interfaces.other_interfaces as small_interfaces
@@ -25,7 +25,7 @@ def building_type_from_material(material):
     return material_mapping[material.name()]
 
 
-class Building(block_classes.MultiBlock, util.ConsoleReadable, ABC):
+class Building(block_classes.MultiBlock, util.ConsoleReadable, loading_saving.Loadable, ABC):
     """
     Abstract class for buildings. Buildings are multiblock (can be 1) structures
     that contain an image
@@ -38,6 +38,18 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, ABC):
         **kwargs
     ):
         super().__init__(pos, self.MATERIAL(), **kwargs)
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["block_kwargs"]["pos"] = self.rect.topleft
+        return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        mcd = super().from_dict(dct)
+        material = mcd.to_instance()
+        building = material.to_block(**mcd.block_kwargs)
+        return building
 
     # noinspection PyPep8Naming
     @property
@@ -88,6 +100,11 @@ class InterfaceBuilding(Building, ABC):
 
         self.interface = self.create_interface(sprite_group)
         self._add_starting_items(starting_items)
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["block_kwargs"]["inventory"] = self.inventory.to_dict()
+        return d
 
     # noinspection PyPep8Naming
     @property

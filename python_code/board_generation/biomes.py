@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 all_biomes: List[type]
 
 
-class Biome(loading_saving.Savable, ABC):
+class Biome(loading_saving.Savable, loading_saving.Loadable, ABC):
     CLUSTER_LIKELYHOOD: float = 1 / 120
     # max distance of ores from the center of a cluster 49 max ores in a cluster
     MAX_CLUSTER_SIZE: int = 3
@@ -38,8 +38,20 @@ class Biome(loading_saving.Savable, ABC):
     ):
         self.distribution = util.TwoDimensionalGaussian(x_gaussian, y_gaussian, covariance1, covariance2)
 
+    def __init_load__(self, distribution=None):
+        self.distribution = distribution
+
     def to_dict(self) -> Dict[str, Any]:
-        return self.distribution.to_dict()
+        return {
+            "distribution": self.distribution.to_dict(),
+            "instance_name": type(self).__name__
+        }
+
+    @classmethod
+    def from_dict(cls, dct):
+        distribution = util.TwoDimensionalGaussian.from_dict(dct["distribution"])
+        cls_type = globals()[dct["instance_name"]]
+        return cls_type.load(distribution=distribution)
 
     def get_likelyhood_at_coord(self, x: int, y: int) -> float:
         """The likelyhood of the given coordinate being part of this biome"""
@@ -206,12 +218,12 @@ class SlimeBiome(Biome):
     ]
 
 
-class BiomeGenerationDefinition(loading_saving.Savable,loading_saving.Loadable, ABC):
+class BiomeGenerationDefinition(loading_saving.Savable, loading_saving.Loadable, ABC):
     BIOME_PROBABILITIES: ClassVar[Dict[Type[Biome], float]]
     STRUCTURE_PROBABILITIES: ClassVar[Dict[Type[base_structures.Structure], float]]
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"instance_name": self.__name__}
+        return {"instance_name": type(self).__name__}
 
     @classmethod
     def from_dict(cls, dct):

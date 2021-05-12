@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     import block_classes.materials.building_materials as building_materials
 
 
-class Block(loading_saving.Savable, ABC):
+class Block(loading_saving.Savable, loading_saving.Loadable, ABC):
     """
     Base class for the block_classes in image matrices
     """
@@ -55,6 +55,12 @@ class Block(loading_saving.Savable, ABC):
             },
             "arguments": self.material.to_dict()
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        import block_classes.block_utility as block_utility
+        mcd = block_utility.MCD.from_dict(dct)
+        return mcd
 
     @property
     def surface(self) -> pygame.Surface:

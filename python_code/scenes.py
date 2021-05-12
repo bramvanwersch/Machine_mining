@@ -426,7 +426,7 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         # zoom variables
         self._zoom = 1.0
         self.progress_var = [""]
-        self.board = board_
+        self.board = None
         self.user = None
         self.pause_window = None
         self.console_window = None

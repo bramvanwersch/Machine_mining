@@ -279,6 +279,10 @@ class Gaussian:
             "sd": self.sd
         }
 
+    @classmethod
+    def from_dict(cls, dct):
+        return cls(dct["mean"], dct["sd"])
+
     def probability(self, x):
         """Give the probability of encountering x exactly"""
         probability = (1 / sqrt(2 * pi * self.sd ** 2)) * (e ** (- 0.5 * (x - self.mean) ** 2 / self.sd ** 2))
@@ -312,6 +316,12 @@ class TwoDimensionalGaussian:
             "covariance1": self.covariance_matrix[0][1],
             "covariance2": self.covariance_matrix[1][0],
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        gaussian1 = Gaussian.from_dict(dct["gaussian1"])
+        gaussian2 = Gaussian.from_dict(dct["gaussian2"])
+        return cls(gaussian1, gaussian2, dct["covariance1"], dct["covariance2"])
 
     def probability(self, x, y):
         x = array([[x], [y]])

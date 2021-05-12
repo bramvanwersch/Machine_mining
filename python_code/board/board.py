@@ -18,11 +18,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
 
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
-    def __init__(self, board_generator=None, main_sprite_group=None, progress_var=None,
-                 chunk_matrix=None, grow_update_time=0, load=False):
-        if load:
-            self.__init_load__(main_sprite_group)
-            return
+    def __init__(self, board_generator, main_sprite_group, progress_var):
         self.inventorie_blocks = []
         self.main_sprite_group = main_sprite_group
 
@@ -45,8 +41,35 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.loaded_chunks = set()
         # chunks that are currently loading to make sure that no double chunks are generated
         self._loading_chunks = set()
-        self.main_sprite_group = main_sprite_group
         self.generate_chunks(*con.START_LOAD_AREA, thread_it=False, progress_var=progress_var)
+
+        # last placed highlighted rectangle
+        self.__highlight_rectangle = None
+
+        self.__grow_update_time = 0
+        self.terminal = None
+
+    def __init_load__(self, board_generator=None, sprite_group=None, chunk_matrix=None, grow_update_time=None):
+        self.inventorie_blocks = []
+        self.main_sprite_group = sprite_group
+
+        # setup the board
+        self.pathfinding = pathfinding.PathFinder()
+        self.all_plants = flora.Flora()
+
+        # pipe network
+        self.conveyor_network = network.conveynetwork.ConveyorNetwork()
+
+        self.buildings = {}
+        self.variable_blocks = set()
+        self.changed_light_blocks = set()
+
+        self.board_generator = board_generator
+        self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
+                             for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
+        self.loaded_chunks = [chunk for chunk in self.chunk_matrix if chunk is not None]
+        # chunks that are currently loading to make sure that no double chunks are generated
+        self._loading_chunks = set()
 
         # last placed highlighted rectangle
         self.__highlight_rectangle = None
@@ -54,15 +77,13 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.__grow_update_time = grow_update_time
         self.terminal = None
 
-    def __init_load__(self, sprite_group, ):
-        pass
-
     def to_dict(self) -> Dict[str, Any]:
         # TODO handle chunks currently being loaded
         return {
             "board_generator": self.board_generator.to_dict(),
             "chunk_matrix": [[chunk.to_dict() if chunk is not None else None for chunk in row]
                              for row in self.chunk_matrix],
+            "buildings": {name: building.to_dict() for name, building in self.buildings.items()},
             "grow_update_time": self.__grow_update_time,
         }
 
@@ -70,10 +91,11 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
     def from_dict(cls, dct, sprite_group=None):
         from board_generation import generation
         board_generator = generation.BoardGenerator.from_dict(dct["board_generator"])
-        chunk_matrix = [[chunks.Chunk.from_dict() if chunk is not None else None for chunk in row]
+        chunk_matrix = [[chunks.Chunk.from_dict(chunk_d) if chunk_d is not None else None for chunk_d in row]
                         for row in dct["chunk_matrix"]]
-        return cls(main_sprite_group=sprite_group, board_generator=board_generator, chunk_matrix=chunk_matrix,
-                   grow_update_time=dct["grow_update_time"], load=True)
+        buildings_ = {name: building.from_dict() for name, building in dct["buildings"]}
+        return cls.load(main_sprite_group=sprite_group, board_generator=board_generator, chunk_matrix=chunk_matrix,
+                        buildings=buildings_, grow_update_time=dct["grow_update_time"])
 
     def setup_board(self):
         self.__add_starter_buildings()

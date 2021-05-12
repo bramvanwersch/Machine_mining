@@ -168,9 +168,9 @@ class BoardGenerator(loading_saving.Savable, loading_saving.Loadable):
         predefined_blocks = PredefinedBlocks.from_dict(dct["predefined_blocks"])
         generation_rect = Rect(dct["generation_rect"])
         cave_quadrant_size = util.Size.from_dict(dct["cave_quadrant_size"])
-        biome_definition = biome_classes.BiomeGenerationDefinition.from_dict()
+        biome_definition = biome_classes.BiomeGenerationDefinition.from_dict(dct["biome_defenition"])
         biome_size = util.Size.from_dict(dct["biome_size"])
-        biome_matrix = [[biome_classes.Biome.from_dict(biome)if biome is not None else None for biome in row]
+        biome_matrix = [[biome_classes.Biome.from_dict(biome_d)if biome_d is not None else None for biome_d in row]
                         for row in dct["biome_matrix"]]
 
         return cls.load(generated_chunk_matrix=dct["generated_chunk_matrix"], predefined_blocks=predefined_blocks,
