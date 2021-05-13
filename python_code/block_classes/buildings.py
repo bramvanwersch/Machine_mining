@@ -42,14 +42,16 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, loading_saving.Lo
     def to_dict(self):
         d = super().to_dict()
         d["block_kwargs"]["pos"] = self.rect.topleft
+        d["block_kwargs"]["instance_name"] = type(self).__name__
         return d
 
     @classmethod
-    def from_dict(cls, dct):
+    def from_dict(cls, dct, sprite_group=None):
         mcd = super().from_dict(dct)
         material = mcd.to_instance()
-        building = material.to_block(**mcd.block_kwargs)
-        return building
+        cls_type = globals()[mcd.block_kwargs.pop("instance_name")]
+
+        return cls_type.__init_load__(**mcd.block_kwargs, material=material)
 
     # noinspection PyPep8Naming
     @property
@@ -101,10 +103,26 @@ class InterfaceBuilding(Building, ABC):
         self.interface = self.create_interface(sprite_group)
         self._add_starting_items(starting_items)
 
+    def __init_load__(self, pos=None, sprite_group=None, inventory=None):
+        self.inventory = inventory
+        Building.__init__(self, pos, action=self.__select_buidling_action)
+        from interfaces.managers import game_window_manager
+        self.window_manager = game_window_manager
+
+        self.interface = self.create_interface(sprite_group)
+
     def to_dict(self):
         d = super().to_dict()
         d["block_kwargs"]["inventory"] = self.inventory.to_dict()
         return d
+
+    @classmethod
+    def from_dict(cls, dct, sprite_group=None):
+        mcd = super().from_dict(dct)
+        material = mcd.to_instance()
+        cls_type = globals()[mcd.block_kwargs.pop("instance_name")]
+        inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
+        return cls_type.__init_load__(**mcd.block_kwargs, material=material, inventory=inventory)
 
     # noinspection PyPep8Naming
     @property
@@ -147,27 +165,6 @@ class InterfaceBuilding(Building, ABC):
             for block in row:
                 block.inventory = self.inventory
         return blocks_
-
-
-class CraftingInterfaceBuilding(InterfaceBuilding, ABC):
-    def __init__(
-        self,
-        pos: Union[Tuple[int, int], List[int]],
-        recipes: r_constants.RecipeBook,
-        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
-        size: int = -1,
-        in_filter: inventories.Filter = None,
-        out_filter: inventories.Filter = None,
-        **kwargs
-    ):
-        self.__recipes = recipes
-        super().__init__(pos, sprite_group, size, in_filter, out_filter, **kwargs)
-
-    def create_interface(
-        self,
-        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
-    ) -> base_interface.Window:
-        return self.INTERFACE_TYPE(self, self.__recipes, sprite_group)
 
 
 class Terminal(InterfaceBuilding):
@@ -220,6 +217,38 @@ class StoneChest(InterfaceBuilding):
                                    self.blocks[0][0].inventory, sprite_group, title="STONE CHEST")
 
 
+class CraftingInterfaceBuilding(InterfaceBuilding, ABC):
+    __recipes: r_constants.RecipeBook
+
+    def __init__(
+        self,
+        pos: Union[Tuple[int, int], List[int]],
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        size: int = -1,
+        in_filter: inventories.Filter = None,
+        out_filter: inventories.Filter = None,
+        **kwargs
+    ):
+        self.__recipes = type(self).get_recipe_book()
+        super().__init__(pos, sprite_group, size, in_filter, out_filter, **kwargs)
+
+    def __init_load__(self, pos=None, sprite_group=None, inventory=None):
+        self.__recipes = type(self).get_recipe_book()
+        super().__init_load__(pos=pos, sprite_group=sprite_group, inventory=inventory)
+
+    @staticmethod
+    @abstractmethod
+    def get_recipe_book() -> r_constants.RecipeBook:
+        # this method is here instead of a class value because it is loaded on startup of the game
+        pass
+
+    def create_interface(
+        self,
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+    ) -> base_interface.Window:
+        return self.INTERFACE_TYPE(self, self.__recipes, sprite_group)
+
+
 class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
     """
     Terminal building. The main interaction centrum for the workers
@@ -234,9 +263,19 @@ class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        CraftingInterfaceBuilding.__init__(self, pos, r_constants.recipe_books["furnace"], sprite_group,
+        CraftingInterfaceBuilding.__init__(self, pos, sprite_group,
                                            in_filter=inventories.Filter(whitelist=[]), size=200, **kwargs)
         block_classes.VariableSurfaceBlock.__init__(self)
+
+    def to_dict(self):
+        d1 = super().to_dict()
+        d2 = block_classes.VariableSurfaceBlock.to_dict(self)
+        d1["block_kwargs"]["changed"] = d2["changed"]
+        return d1
+
+    @staticmethod
+    def get_recipe_book():
+        return r_constants.recipe_books["furnace"]
 
 
 class Factory(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
@@ -250,9 +289,19 @@ class Factory(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        CraftingInterfaceBuilding.__init__(self, pos, r_constants.recipe_books["factory"], sprite_group, size=300,
+        CraftingInterfaceBuilding.__init__(self, pos, sprite_group, size=300,
                                            in_filter=inventories.Filter(whitelist=[]), **kwargs)
         block_classes.VariableSurfaceBlock.__init__(self)
+
+    def to_dict(self):
+        d1 = super().to_dict()
+        d2 = block_classes.VariableSurfaceBlock.to_dict(self)
+        d1["block_kwargs"]["changed"] = d2["changed"]
+        return d1
+
+    @staticmethod
+    def get_recipe_book():
+        return r_constants.recipe_books["factory"]
 
 
 material_mapping = {"TerminalMaterial": Terminal,

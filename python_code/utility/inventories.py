@@ -4,11 +4,11 @@ import random
 from utility import utilities as util, loading_saving
 if TYPE_CHECKING:
     import pygame
-    from block_classes.blocks import Block
     from block_classes.materials.materials import BaseMaterial
+    from block_classes.blocks import Block
 
 
-class Filter(loading_saving.Savable):
+class Filter(loading_saving.Savable, loading_saving.Loadable):
     """Inventory filter that can tell if an item is allowed or not"""
     __slots__ = "__whitelist", "__blacklist"
 
@@ -23,11 +23,20 @@ class Filter(loading_saving.Savable):
         self.__blacklist = set(blacklist if blacklist is not None else [])
         self.__whitelist = whitelist if whitelist is None else set(whitelist)
 
+    def __init_load__(self, blacklist=None, whitelist=None):
+        self.__init__(blacklist, whitelist)
+
     def to_dict(self):
         return {
             "blacklist": list(self.__blacklist) if self.__blacklist is not None else [],
             "whitelist": list(self.__whitelist) if self.__whitelist is not None else []
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        blacklist = set(dct["blacklist"])
+        whitelist = set(dct["whitelist"])
+        return cls.load(blacklist=blacklist, whitelist=whitelist)
 
     def allowed(
         self,
@@ -88,7 +97,7 @@ class Filter(loading_saving.Savable):
         return info_str
 
 
-class Inventory(loading_saving.Savable, util.ConsoleReadable):
+class Inventory(loading_saving.Savable, loading_saving.Loadable, util.ConsoleReadable):
     """Inventory for managing items within"""
     __slots__ = "_container", "in_filter", "out_filter", "wheight"
     _container: Dict[str, "Item"]
@@ -103,11 +112,18 @@ class Inventory(loading_saving.Savable, util.ConsoleReadable):
         out_filter: Union[Filter, None] = None,
         items: List["Item"] = None
     ):
-        self._container = {item.name() for item in items} if items else {}
+        self._container = {item.name(): item for item in items} if items else {}
         self.wheight = [0, max_wheight]
 
         self.in_filter = in_filter if in_filter is not None else Filter()
         self.out_filter = out_filter if out_filter is not None else Filter()
+
+    def __init_load__(self, items=None, wheight=None, in_filter=None, out_filter=None):
+        self._container = {item.name(): item for item in items}
+        self.wheight = wheight
+
+        self.in_filter = in_filter
+        self.out_filter = out_filter
 
     def to_dict(self):
         return {
@@ -116,6 +132,13 @@ class Inventory(loading_saving.Savable, util.ConsoleReadable):
             "in_filter": self.in_filter.to_dict(),
             "out_filter": self.out_filter.to_dict()
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        items = [Item.from_dict(d) for d in dct["items"]]
+        in_filter = Filter.from_dict(dct["in_filter"])
+        out_filter = Filter.from_dict(dct["out_filter"])
+        return cls.load(items=items, wheight=dct["wheight"], in_filter=in_filter, out_filter=out_filter)
 
     def get(
         self,
@@ -275,7 +298,7 @@ class Inventory(loading_saving.Savable, util.ConsoleReadable):
         return final_str[:-1]
 
 
-class Item(loading_saving.Savable):
+class Item(loading_saving.Savable, loading_saving.Loadable):
     """Tracks a single item using the __material of the item and a quantity"""
     __slots__ = "material", "quantity"
     material: "BaseMaterial"
@@ -289,11 +312,20 @@ class Item(loading_saving.Savable):
         self.material = material
         self.quantity = quantity
 
+    def __init_load__(self, material=None, quantity=None):
+        self.__init__(material, quantity)
+
     def to_dict(self):
         return {
             "material": self.material.to_dict(),
             "quantity": self.quantity
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        from block_classes.materials.materials import BaseMaterial
+        material = BaseMaterial.from_dict(dct["material"])
+        return cls.load(material=material, quantity=dct["quantity"])
 
     def __getattr__(
         self,
@@ -322,10 +354,20 @@ class TransportItem(Item):
         super().__init__(material, quantity)
         self.rect = rect
 
+    def __init_load__(self, material=None, quantity=None, rect=None):
+        self.__init__(rect, material, quantity)
+
     def to_dict(self):
         d = super().to_dict()
         d["rect"] = (self.rect.left, self.rect.top, self.rect.width, self.rect.height)
         return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        from block_classes.materials.materials import BaseMaterial
+        rect = pygame.Rect(dct["rect"])
+        material = BaseMaterial.from_dict(dct["material"])
+        return cls.load(rect=rect, material=material, quantity=dct["quantity"])
 
     def __str__(self) -> str:
         return f"{super().__str__()}({self.rect})"

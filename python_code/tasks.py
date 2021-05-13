@@ -2,6 +2,7 @@ from abc import ABC
 from typing import Dict, Any
 
 from utility import utilities as util, constants as con, loading_saving
+from block_classes import blocks as block_classes
 
 
 class TaskControl(loading_saving.Savable):
@@ -187,17 +188,25 @@ class MultipleTaskList:
         return len(self.tasks)
 
 
-class TaskQueue(loading_saving.Savable):
+class TaskQueue(loading_saving.Savable, loading_saving.Loadable):
     """
     acts as a queue of tasks that are performed from last to first by a worker
     """
     def __init__(self):
         self.tasks = []
 
+    def __init_load__(self, tasks):
+        self.tasks = tasks
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "tasks": [task.to_dict() for task in self.tasks]
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        tasks = [Task.from_dict(d) for d in dct["tasks"]]
+        return cls.load(tasks=tasks)
 
     def add(self, task):
         """
@@ -240,7 +249,7 @@ class TaskQueue(loading_saving.Savable):
         return len(self.tasks)
 
 
-class Task(loading_saving.Savable, ABC):
+class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
     """
     Object for storing a task and its progress
     """
@@ -255,6 +264,18 @@ class Task(loading_saving.Savable, ABC):
         self.__handed_in = False
         self.__canceled = False
 
+    def __init_load__(self, block=None, priority=None, started_task=None, selected=None, task_progress=None,
+                      handed_in=None, canceled=None):
+        self.block = block
+        self.priority = priority
+
+        self.started_task = started_task
+        self.selected = selected
+        # determined by material
+        self.task_progress = task_progress
+        self.__handed_in = handed_in
+        self.__canceled = canceled
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "block": self.block.to_dict(),
@@ -265,6 +286,21 @@ class Task(loading_saving.Savable, ABC):
             "handed_in": self.__handed_in,
             "canceled": self.__canceled
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        block = cls.block_dict_to_block(dct["block"])
+        return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
+                        selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
+                        canceled=dct["canceled"])
+
+    @staticmethod
+    def block_dict_to_block(dct):
+        mcd = block_classes.Block.from_dict(dct)
+        pos = mcd.block_kwargs.pop("pos")
+        material = mcd.to_instance()
+        block = material.to_block(pos)
+        return block
 
     def start(self, entity, **kwargs):
         self.started_task = True
@@ -297,8 +333,8 @@ class Task(loading_saving.Savable, ABC):
         return self.__canceled
 
     @classmethod
-    def name(self):
-        return self.__name__
+    def name(cls):
+        return cls.__name__
 
     @property
     def finished(self):
@@ -322,12 +358,26 @@ class MultiTask(Task, ABC):
         self.finished_subtasks = False
         self._max_retries = self._get_max_retries()
 
+    def __init_load__(self, subtask_count=None, finished_subtasks=None, max_retries=None, **kwargs):
+        super().__init_load__(**kwargs)
+        self._subtask_count = subtask_count
+        self.finished_subtasks = finished_subtasks
+        self._max_retries = max_retries
+
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         d["subtask_count"] = self._subtask_count
         d["finished_subtasks"] = self.finished_subtasks
         d["max_retries"] = self._max_retries
         return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        block = cls.block_dict_to_block(dct["block"])
+        return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
+                        selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
+                        canceled=dct["canceled"], subtask_count=dct["subtask_count"],
+                        finished_subtasks=dct["finished_subtasks"], max_retries=dct["max_retries"])
 
     def start(self, entity, **kwargs):
         self._subtask_count += 1
@@ -369,12 +419,28 @@ class BuildTask(MultiTask):
         self.original_group = original_group
         self.removed_blocks = [block for block in removed_blocks if block.name() != "Air"]
 
+    def __init_load__(self, finish_block=None, original_group=None, removed_blocks=None, **kwargs):
+        super().__init_load__(**kwargs)
+        self.finish_block = finish_block
+        self.original_group = original_group
+        self.removed_blocks = removed_blocks
+
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         d["finish_block"] = self.finish_block.to_dict()
         d["original_group"] = self.original_group
         d["removed_blocks"] = [block.to_dict() for block in self.removed_blocks]
         return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        block = cls.block_dict_to_block(dct["block"])
+        finish_block = cls.block_dict_to_block(dct["finish_block"])
+        removed_blocks = [cls.block_dict_to_block(d["blocks"]) for d in dct["removed_blocks"]]
+        return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
+                        selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
+                        canceled=dct["canceled"], original_group=dct["original_group"],
+                        finished_block=finish_block, removed_blocks=removed_blocks)
 
     def start(self, entity, **kwargs):
         if not entity.inventory.check_item_get(self.finish_block.name()):
@@ -408,12 +474,27 @@ class FetchTask(Task):
             block = entity.board.closest_inventory(entity.orig_rect, self.req_block_name, deposit=False)
         super().__init__(block, **kwargs)
 
+    def __init_load__(self, required_block_name=None, quantity=None, ignore_filter=None, **kwargs):
+        super().__init_load__(**kwargs)
+        self.req_block_name = required_block_name
+        self.quantity = quantity
+        self.ignore_filter = ignore_filter
+
     def to_dict(self) -> Dict[str, Any]:
         d = super().to_dict()
         d["req_block_name"] = self.req_block_name
         d["quantity"] = self.quantity
         d["ignore_filter"] = self.ignore_filter
         return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        block = cls.block_dict_to_block(dct["block"])
+
+        return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
+                        selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
+                        canceled=dct["canceled"], required_block_name=dct["required_block_name"],
+                        quantity=dct["quantity"], ignore_filter=dct["ignore_filter"])
 
     def start(self, entity, inventory_block=None, **kwargs):
         if self.block != None:

@@ -14,7 +14,7 @@ import utility.utilities as util
 from utility.image_handling import ImageDefinition
 
 
-class BaseMaterial(loading_saving.Savable, ABC):
+class BaseMaterial(loading_saving.Savable, loading_saving.Loadable, ABC):
     """
     Base material class that defines the behaviour of a block
     """
@@ -36,7 +36,7 @@ class BaseMaterial(loading_saving.Savable, ABC):
     _surface: pygame.Surface
     __transparant_group: int
 
-    def __init__(self, **kwargs):
+    def __init__(self, active=False, **kwargs):
         self._surface = self._configure_surface()
         self._active_surface = self._configure_active_surface()
 
@@ -44,10 +44,19 @@ class BaseMaterial(loading_saving.Savable, ABC):
         self.__transparant_group = self._BASE_TRANSPARANT_GROUP
 
         # flag that controls if the active or the normal surfaces are returned. Surfaces have to actively be redrawn
-        self._active = False
+        self._active = active
 
     def to_dict(self):
-        return {}
+        return {
+            "instance_name": type(self).__name__,
+            "active": self._active
+        }
+
+    @classmethod
+    def from_dict(cls, dct):
+        import block_classes.block_utility
+        cls_type = block_classes.block_utility.material_instance_from_string(dct.pop("instance_name"))
+        return cls_type.__init__(**dct)
 
     @property
     def hardness(self) -> int:

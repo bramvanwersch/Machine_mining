@@ -12,14 +12,13 @@ import interfaces.interface_utility as interface_util
 import board.pathfinding as pathfinding
 import board.flora as flora
 from utility import loading_saving
-if TYPE_CHECKING:
-    from block_classes.blocks import Block
+from block_classes.blocks import Block
 
 
-class Chunk(loading_saving.Savable):
-
+class Chunk(loading_saving.Savable, loading_saving.Loadable):
     def __init__(self, pos, foreground, background, main_sprite_group, plants, changed=(False, False)):
         self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
+        self.id = util.unique_id()
 
         self.all_plants = plants
         # blocks are added here that the board has to place because they can go across chunk borders or rely on a
@@ -47,6 +46,54 @@ class Chunk(loading_saving.Savable):
         main_sprite_group.add(light_image)
         main_sprite_group.add(selection_image)
 
+    def __init_load__(self, pos=None, plants=None, front_matrix=None, back_matrix=None, main_sprite_group=None,
+                      changed=None, id_=None):
+        self.rect = pygame.Rect((pos[0], pos[1], con.CHUNK_SIZE.width, con.CHUNK_SIZE.height))
+
+        self.id = id_
+        self.all_plants = plants
+        # blocks are added here that the board has to place because they can go across chunk borders or rely on a
+        # network or something else that is ultamately managed by the board. The attribute is deleted after it is
+        # requested
+        self.__board_update_blocks = []
+        self.__matrix = self.__create_blocks_from_string(front_matrix)
+        self.__back_matrix = self.__create_blocks_from_string(back_matrix)
+        # changed, if it is the first time --> tracking for loading purposes of new chunks
+        self.changed = changed
+
+        offset = [int(pos[0] / con.CHUNK_SIZE.width), int(pos[1] / con.CHUNK_SIZE.height)]
+        foreground_image = BoardImage(self.rect.topleft, block_matrix=self.__matrix, layer=con.BOARD_LAYER,
+                                      offset=offset)
+        background_image = BoardImage(self.rect.topleft, block_matrix=self.__back_matrix, layer=con.BACKGROUND_LAYER,
+                                      offset=offset)
+        light_image = LightImage(self.rect.topleft, layer=con.LIGHT_LAYER,
+                                 color=con.INVISIBLE_COLOR if con.DEBUG.NO_LIGHTING else (0, 0, 0, 255))
+        selection_image = TransparantBoardImage(self.rect.topleft, layer=con.HIGHLIGHT_LAYER, color=con.INVISIBLE_COLOR)
+
+        self.layers = [light_image, selection_image, foreground_image, background_image]
+        self.pathfinding_chunk = pathfinding.PathfindingChunk(self.__matrix)
+        main_sprite_group.add(foreground_image)
+        main_sprite_group.add(background_image)
+        main_sprite_group.add(light_image)
+        main_sprite_group.add(selection_image)
+
+    def to_dict(self):
+        return {
+            "pos": self.rect.topleft,
+            "matrix": [[block.to_dict() for block in row] for row in self.__matrix],
+            "back_matrix": [[block.to_dict() for block in row] for row in self.__back_matrix],
+            "changed": self.changed,
+            "id": self.id
+        }
+
+    @classmethod
+    def from_dict(cls, dct, sprite_group=None, plants=None):
+        # create matrices of MCD's that can then in turn be made into images
+        matrix = [[Block.from_dict(d) for d in row] for row in dct["matrix"]]
+        back_matrix = [[Block.from_dict(d) for d in row] for row in dct["back_matrix"]]
+        return cls.load(pos=dct["pos"], plants=plants, front_matrix=matrix, back_matrix=back_matrix,
+                        changed=dct["changed"], main_sprite_group=sprite_group, id_=dct["id"])
+
     @property
     def coord(self):
         return int(self.rect.left / self.rect.width), int(self.rect.top / self.rect.height)
@@ -57,15 +104,6 @@ class Chunk(loading_saving.Savable):
     def is_loaded(self) -> bool:
         # TODO make this respond to the location of workers and the player
         return self.changed[1]
-
-    def to_dict(self):
-        return {
-            "pos": self.rect.topleft,
-            "matrix": [[block.to_dict() for block in row] for row in self.__matrix],
-            "back_matrix": [[block.to_dict() for block in row] for row in self.__back_matrix],
-            "plants": [plant.to_dict() for plant in self.all_plants],
-            "changed": self.changed,
-        }
 
     def add_rectangle(self, rect, color, layer=2, border=0, trigger_change=True):
         self.changed[0] = trigger_change
@@ -83,7 +121,7 @@ class Chunk(loading_saving.Savable):
             if isinstance(block.material, environment_materials.MultiFloraMaterial):
                 # check if a new plant, if so make sure the start is unique also
                 if block not in self.all_plants:
-                    plant = flora.Plant(block, self)
+                    plant = flora.Plant(block, self.id)
                     self.all_plants.add(plant)
                     block.material.image_key = -1
             # add the block
@@ -160,7 +198,7 @@ class Chunk(loading_saving.Savable):
                 if material_class_definition.needs_board_update:
                     self.__board_update_blocks.append(block)
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
-                    plant = flora.Plant(block, self)
+                    plant = flora.Plant(block, self.id)
                     self.all_plants.add(plant)
                 s_matrix[row_i][column_i] = util.BlockPointer(block)
 

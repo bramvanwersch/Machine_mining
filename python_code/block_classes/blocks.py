@@ -48,7 +48,8 @@ class Block(loading_saving.Savable, loading_saving.Loadable, ABC):
     def to_dict(self):
         # return a dict that can be loaded into an MCD
         return {
-            "material": self.material.name(),
+            "material": self.material.to_dict(),
+            "pos": (self.rect.left, self.rect.top),
             "block_kwargs": {
                 "id": self.id,
                 "light_level": self.light_level
@@ -59,7 +60,9 @@ class Block(loading_saving.Savable, loading_saving.Loadable, ABC):
     @classmethod
     def from_dict(cls, dct):
         import block_classes.block_utility as block_utility
-        mcd = block_utility.MCD.from_dict(dct)
+        material_dict = dct.pop("material")
+        del material_dict["pos"]
+        mcd = block_utility.MCD.from_dict(dct + material_dict)
         return mcd
 
     @property

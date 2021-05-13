@@ -85,15 +85,19 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                              for row in self.chunk_matrix],
             "buildings": {name: building.to_dict() for name, building in self.buildings.items()},
             "grow_update_time": self.__grow_update_time,
+            "plants": self.all_plants.to_dict()
         }
 
     @classmethod
     def from_dict(cls, dct, sprite_group=None):
         from board_generation import generation
         board_generator = generation.BoardGenerator.from_dict(dct["board_generator"])
-        chunk_matrix = [[chunks.Chunk.from_dict(chunk_d) if chunk_d is not None else None for chunk_d in row]
+        plants = flora.Flora.from_dict(dct["plants"])
+        chunk_matrix = [[chunks.Chunk.from_dict(chunk_d, sprite_group=sprite_group, plants=plants)
+                         if chunk_d is not None else None for chunk_d in row]
                         for row in dct["chunk_matrix"]]
-        buildings_ = {name: building.from_dict() for name, building in dct["buildings"]}
+        buildings_ = {name: buildings.Building.from_dict(building_dict, sprite_group=sprite_group)
+                      for name, building_dict in dct["buildings"]}
         return cls.load(main_sprite_group=sprite_group, board_generator=board_generator, chunk_matrix=chunk_matrix,
                         buildings=buildings_, grow_update_time=dct["grow_update_time"])
 

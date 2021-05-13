@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from board.pathfinding import Path
 
 
-class MySprite(pygame.sprite.Sprite, loading_saving.Savable, ABC):
+class MySprite(pygame.sprite.Sprite, loading_saving.Savable, loading_saving.Loadable, ABC):
     """Surface tracked by a rectangle"""
     _layer: int
     surface: pygame.Surface
@@ -41,6 +41,16 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, ABC):
         self._visible = visible
         self.static = static  # if static do not move the entity when camera moves
 
+    def __init_load__(self, layer=None, visible=None, static=None, orig_rect=None, sprite_group=None):
+        self._layer = layer
+        pygame.sprite.Sprite.__init__(self, sprite_group)
+        # color is now hardcoded and useless
+        self.surface = self._create_surface(orig_rect.size, (0, 0, 0))
+        self.orig_surface = self.surface
+        self.orig_rect = orig_rect
+        self._visible = visible
+        self.static = static
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "layer": self._layer,
@@ -48,6 +58,11 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, ABC):
             "static": self.static,
             "orig_rect": (self.orig_rect.left, self.orig_rect.top, self.orig_rect.width, self.orig_rect.height)
         }
+
+    @classmethod
+    def from_dict(cls, dct):
+        orig_rect = pygame.Rect(dct["orig_rect"])
+        return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect)
 
     def show(
         self,
@@ -158,9 +173,6 @@ class SelectionRectangle(ZoomableSprite):
         self.__size = util.Size(*size)
         self.__update_image()
 
-    def to_dict(self):
-        return
-
     def __update_image(self):
         """Update the rectangle image that represents the highlighted area."""
         pos = self.__start_pos.copy()
@@ -223,12 +235,25 @@ class MovingEntity(ZoomableSprite):
         self.speed = pygame.Vector2(0, 0)
         self.__exact_movement_values = [0, 0]
 
+    def __init_load__(self, max_speed=None, speed=None, exact_movement_values=None, **kwargs):
+        super().__init_load__(**kwargs)
+        self.max_speed = max_speed
+        self.speed = speed
+        self.__exact_movement_values = exact_movement_values
+
     def to_dict(self):
         d = super().to_dict()
         d["max_speed"] = self.max_speed
         d["speed"] = (self.speed.x, self.speed.y)
         d["exact_movement_values"] = self.__exact_movement_values
         return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        orig_rect = pygame.Rect(dct["orig_rect"])
+        speed = pygame.Vector2(*dct["speed"])
+        return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
+                        max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_speed"])
 
     def _max_frame_speed(self) -> float:
         """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame
@@ -291,11 +316,21 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
         MovingEntity.__init__(self, pos, size, 1000, *groups, **kwargs)
         event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
 
+    def __init_load__(self, max_speed=None, **kwargs):
+        ZoomableSprite.__init_load__(**kwargs)
+        self.max_speed = max_speed
+
     def to_dict(self):
         d = super().to_dict()
         del d["speed"]
         del d["exact_movement_values"]
         return d
+
+    @classmethod
+    def from_dict(cls, dct):
+        orig_rect = pygame.Rect(dct["orig_rect"])
+        return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
+                        max_speed=dct["max_speed"])
 
     def handle_events(
         self,
@@ -405,6 +440,47 @@ class Worker(MovingEntity, util.ConsoleReadable):
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
                                                                    250), self, *groups)
 
+    def __init_load__(self, number=None, name=None, board_=None, task_control=None, **kwargs):
+        super().__init_load__(**kwargs)
+        self.number = number
+        self.name = name
+        self.board = board_
+        self.task_control = task_control
+
+        # tasks
+        self.task_queue = tasks.TaskQueue()
+        self.path = []
+        self.dest = None
+
+        # inventory
+        self.inventory = inventories.Inventory(self.INVENTORY_SIZE)
+        self.__previous_x_direction = -1
+
+        # for loading purposes
+        if self.board:
+            self.board.adjust_lighting(self.orig_rect.center, self.VISON_RADIUS, self.EMITTED_LIGTH)
+
+        self.__turn_rigth_animation = image_handling.Animation([self.WORKER_IMAGES[0].images()[0],
+                                                                self.WORKER_IMAGES[1].images()[0],
+                                                                self.WORKER_IMAGES[2].images()[0],
+                                                                self.WORKER_IMAGES[3].images()[0],
+                                                                self.WORKER_IMAGES[2].images()[1],
+                                                                self.WORKER_IMAGES[1].images()[1],
+                                                                self.WORKER_IMAGES[0].images()[1]], 15)
+        self.__turn_left_animation = image_handling.Animation([self.WORKER_IMAGES[0].images()[1],
+                                                               self.WORKER_IMAGES[1].images()[1],
+                                                               self.WORKER_IMAGES[2].images()[1],
+                                                               self.WORKER_IMAGES[3].images()[1],
+                                                               self.WORKER_IMAGES[2].images()[0],
+                                                               self.WORKER_IMAGES[1].images()[0],
+                                                               self.WORKER_IMAGES[0].images()[0]], 15)
+        from interfaces import worker_interface
+        from interfaces.managers import game_window_manager
+
+        self.window_manager = game_window_manager
+        self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
+                                                                   250), self, kwargs["sprite_group"])
+
     def to_dict(self):
         d = super().to_dict()
         d["number"] = self.number
@@ -413,6 +489,13 @@ class Worker(MovingEntity, util.ConsoleReadable):
         d["previous_x_direction"] = self.__previous_x_direction
         d["task_queue"] = self.task_queue.to_dict()
         return d
+
+    @classmethod
+    def from_dict(cls, dct, sprite_group=None, board_=None, task_control=None):
+        inventory = inventories.Inventory.from_dict(dct["inventory"])
+        task_queue = tasks.TaskQueue.from_dict(dct["task_queue"])
+        return cls.load(name=dct["name"], number=dct["number"], inventory=inventory, task_queue=task_queue,
+                        board_=board_, sprite_group=sprite_group, task_control=task_control)
 
     def _create_surface(
         self,

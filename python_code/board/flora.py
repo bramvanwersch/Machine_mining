@@ -5,9 +5,22 @@ import block_classes.blocks as block_classes
 import block_classes.materials.environment_materials as environment_materials
 
 
-class Flora:
+class Flora(loading_saving.Savable, loading_saving.Loadable):
     def __init__(self):
         self.__plants = dict()
+
+    def __init_load__(self, plants=None):
+        self.__plants = plants
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "plants": {plant_id: plant.to_dict() for plant_id, plant in self.__plants.items()}
+        }
+
+    @classmethod
+    def from_dict(cls, dct):
+        plants = {plant_id: Plant.from_dict(d) for plant_id, d in dct["plants"]}
+        return cls.load(plants=plants)
 
     def add(self, plant: "Plant"):
         self.__plants[plant.id] = plant
@@ -25,7 +38,7 @@ class Flora:
         return iter(self.__plants.values())
 
 
-class Plant(loading_saving.Savable):
+class Plant(loading_saving.Savable, loading_saving.Loadable):
 
     DIRECTION_ADDITON = [(0, -1), (1, 0), (0, 1), (-1, 0)]
     ID = 0
@@ -36,16 +49,27 @@ class Plant(loading_saving.Savable):
         self.material = start_block.material
         self.__blocks = [start_block]
         self.grow_block.id = self.id
-        self.__residing_chunk = residing_chunk
+        self.__chunk_id = residing_chunk
+
+    def __init_load__(self, blocks=None, id_=None, chunk_id=None):
+        self.id = id_
+        Plant.ID += 1
+        self.material = blocks[0].material
+        self.__blocks = blocks
+        self.__chunk_id = chunk_id
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "blocks": [block.to_dict() for block in self.__blocks],
             "id": self.id,
+            "chunk_id": self.__chunk_id
         }
 
-    def is_loaded(self):
-        return self.__residing_chunk.is_loaded()
+    @classmethod
+    def from_dict(cls, dct, residing_chunk=None):
+        mcds = [block_classes.Block.from_dict(d) for d in dct["blocks"]]
+        blocks = [mcd.to_instance().to_block(**mcd.block_kwargs) for mcd in mcds]
+        return cls.load(blocks=blocks, id=dct["id"], chunk_id=dct["chunk_id"])
 
     def grow(self, surrounding_blocks):
         direction = self.material.CONTINUATION_DIRECTION

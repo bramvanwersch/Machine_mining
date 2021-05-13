@@ -461,6 +461,22 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
                                                                   self.sprite_group)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "camera_center": self.camera_center.to_dict(),
+            "user": self.user.to_dict(),
+            "board": self.board.to_dict()
+        }
+
+    @classmethod
+    def from_dict(cls, dct, screen=None):
+        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
+        sprite_group = sprite_groups.CameraAwareLayeredUpdates(camera_center, con.BOARD_SIZE)
+        board_ = board.board.Board.from_dict(dct["board"], sprite_group)
+        user_ = user.User.from_dict(dct["user"])
+        return cls.load(screen=screen, sprite_group=sprite_group, board_=board_, user_=user_,
+                        camera_center=camera_center)
+
     def start(self):
         # function for setting up a Game
         self.progress_var[0] = "Started loading..."
@@ -495,23 +511,6 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "camera_center": self.camera_center.to_dict(),
-            "user": self.user.to_dict(),
-            "board": self.board.to_dict()
-        }
-
-    @classmethod
-    def from_dict(cls, dct, screen=None):
-        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
-        sprite_group = sprite_groups.CameraAwareLayeredUpdates(camera_center, con.BOARD_SIZE)
-        board_ = board.board.Board.from_dict(dct["board"], sprite_group)
-        user_ = user.User.from_dict(dct["user"])
-        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
-        return cls.load(screen=screen, sprite_group=sprite_group, board_=board_, user_=user_,
-                        camera_center=camera_center)
 
     def save(self):
         with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "w") as fp:
