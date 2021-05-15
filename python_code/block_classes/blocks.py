@@ -633,7 +633,7 @@ class MultiBlock(Block, ABC):
         **kwargs
     ):
         super().__init__(pos, material, **kwargs)
-        self.blocks = self._get_blocks()
+        self.blocks = blocks if blocks is not None else self._get_blocks()
 
     def __init_load__(self, pos=None, material=None, id_=None, action=None, light_level=0, blocks=None):
         self.rect = pygame.Rect((pos[0], pos[1], self.size().width, self.size().height))

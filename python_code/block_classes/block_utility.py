@@ -49,8 +49,12 @@ class MCD(loading_saving.Savable, loading_saving.Loadable):
             self.needs_board_update = needs_board_update
         self.__is_string = isinstance(self.material, str)
 
-    def __init_load__(self, **kwargs):
-        self.__init__(**kwargs)
+    def __init_load__(self, material=None, kwargs=None, block_kwargs=None, needs_board_update=None):
+        self.material = material
+        self.kwargs = kwargs
+        self.block_kwargs = block_kwargs
+        self.needs_board_update = needs_board_update
+        self.__is_string = True
 
     def to_dict(self) -> Dict[str, Any]:
         return {

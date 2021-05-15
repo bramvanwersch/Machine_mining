@@ -79,7 +79,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         for building in self.buildings.values():
             if isinstance(building, buildings.Terminal):
                 self.terminal = building
-            # self.add_building(building)
+            self.add_building(building)
 
     def to_dict(self) -> Dict[str, Any]:
         # TODO handle chunks currently being loaded
@@ -394,7 +394,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 if hasattr(block, "inventory"):
                     self.inventorie_blocks.append(block)
                 chunk = self.chunk_from_point(block.coord)
-                chunk.add_blocks(block)
+                if chunk is not None:
+                    chunk.add_blocks(block)
 
     def adjust_lighting(
         self,
