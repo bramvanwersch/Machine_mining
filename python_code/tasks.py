@@ -429,7 +429,7 @@ class MiningTask(Task):
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
         removed_items = entity.board.remove_blocks(self.block)
-        entity.inventory.add_items(*removed_items)
+        entity.inventory.add_items(*removed_items, ignore_filter=True)
 
 
 class BuildTask(MultiTask):

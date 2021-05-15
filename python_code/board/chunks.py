@@ -187,6 +187,7 @@ class Chunk(loading_saving.Savable, loading_saving.Loadable):
         material classes
         :return: the s_matrix filled with block class instances
         """
+        from block_classes.blocks import ContainerBlock, Block
         for row_i, row in enumerate(s_matrix):
             for column_i, value in enumerate(row):
                 # create position
@@ -195,7 +196,7 @@ class Chunk(loading_saving.Savable, loading_saving.Loadable):
                 material_class_definition = s_matrix[row_i][column_i]
                 material_instance = material_class_definition.to_instance(depth=row_i)
                 block = material_instance.to_block(pos, **material_class_definition.block_kwargs)
-                if material_class_definition.needs_board_update:
+                if material_class_definition.needs_board_update or block.light_level > 0:
                     self.__board_update_blocks.append(block)
                 if isinstance(material_instance, environment_materials.MultiFloraMaterial):
                     plant = flora.Plant(block, self.id)

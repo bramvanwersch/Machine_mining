@@ -29,13 +29,13 @@ class Filter(loading_saving.Savable, loading_saving.Loadable):
     def to_dict(self):
         return {
             "blacklist": list(self.__blacklist) if self.__blacklist is not None else [],
-            "whitelist": list(self.__whitelist) if self.__whitelist is not None else []
+            "whitelist": list(self.__whitelist) if self.__whitelist is not None else None
         }
 
     @classmethod
     def from_dict(cls, dct):
-        blacklist = set(dct["blacklist"])
-        whitelist = set(dct["whitelist"])
+        blacklist = set(dct["blacklist"] if dct["blacklist"] is not None else [])
+        whitelist = dct["whitelist"] if dct["whitelist"] is None else set(dct["whitelist"])
         return cls.load(blacklist=blacklist, whitelist=whitelist)
 
     def allowed(

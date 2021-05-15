@@ -66,9 +66,17 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.changed_light_blocks = set()
 
         self.board_generator = board_generator
-        self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
-                             for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
-        self.loaded_chunks = [chunk for row in self.chunk_matrix for chunk in row if chunk is not None]
+        self.chunk_matrix = chunk_matrix
+        self.loaded_chunks = set()
+        for row in chunk_matrix:
+            for chunk in row:
+                if chunk is None:
+                    continue
+                self.loaded_chunks.add(chunk)
+                self.pathfinding.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
+                update_blocks = chunk.get_board_update_blocks()
+                self.add_blocks(*update_blocks, update=True)
+                self.changed_light_blocks.update(update_blocks)
         # chunks that are currently loading to make sure that no double chunks are generated
         self._loading_chunks = set()
 
@@ -79,7 +87,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         for building in self.buildings.values():
             if isinstance(building, buildings.Terminal):
                 self.terminal = building
-            self.add_building(building)
+            self.add_blocks(building)
 
     def to_dict(self) -> Dict[str, Any]:
         # TODO handle chunks currently being loaded
@@ -394,8 +402,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 if hasattr(block, "inventory"):
                     self.inventorie_blocks.append(block)
                 chunk = self.chunk_from_point(block.coord)
-                if chunk is not None:
-                    chunk.add_blocks(block)
+                chunk.add_blocks(block)
 
     def adjust_lighting(
         self,
@@ -473,7 +480,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
     def change_light_levels(self):
         for block in self.changed_light_blocks:
             chunk = self.chunk_from_point(block.rect.topleft)
-            alpha = 255 - block.light_level * int(255 / con.MAX_LIGHT)
+            alpha = max(min(255 - block.light_level * int(255 / con.MAX_LIGHT), 255), 0)
             chunk.add_rectangle(block.rect, (0, 0, 0, alpha), layer=0)
 
     def closest_inventory(self, start, *item_names, deposit=True):

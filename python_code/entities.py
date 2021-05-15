@@ -458,6 +458,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
         self.dest = None
 
         # inventory
+        print(inventory)
         self.inventory = inventory
         self.__previous_x_direction = -1
 

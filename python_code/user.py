@@ -55,7 +55,7 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
         super().__init__(recordable_keys=[1, 2, 3, 4, *con.BOARD_KEYS.all_keys()])
         self.board = board
         self.__sprite_group = sprite_group
-        self.task_control = workers
+        self.task_control = task_control
         self.selection_rectangle = None
         self.__highlight_rectangle = None
 
