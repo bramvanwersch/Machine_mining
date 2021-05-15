@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from block_classes.blocks import Block
 
 
-class User(event_handling.EventHandler, loading_saving.Savable):
+class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.Loadable):
     """The user of a game, assigning tasks to workers and directing interaction between workers the board and the
     taks management"""
 
@@ -51,11 +51,32 @@ class User(event_handling.EventHandler, loading_saving.Savable):
         self.zoom = 1.0
         self.__rotate = 0  # track the amount of times that the rotate key was pressed
 
+    def __init_load__(self, board=None, sprite_group=None, task_control=None, workers=None):
+        super().__init__(recordable_keys=[1, 2, 3, 4, *con.BOARD_KEYS.all_keys()])
+        self.board = board
+        self.__sprite_group = sprite_group
+        self.task_control = workers
+        self.selection_rectangle = None
+        self.__highlight_rectangle = None
+
+        self.workers = workers
+
+        self._mode = con.MODES[con.BOARD_KEYS.SELECTING]
+        self.zoom = 1.0
+        self.__rotate = 0  # track the amount of times that the rotate key was pressed
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "task_control": self.task_control.to_dict(),
             "workers": [worker.to_dict() for worker in self.workers],
         }
+
+    @classmethod
+    def from_dict(cls, dct, board=None, sprite_group=None, ):
+        task_control = tasks.TaskControl.from_dict(dct["task_control"], board=board)
+        workers = [entities.Worker.from_dict(d, sprite_group=sprite_group, board_=board, task_control=task_control)
+                   for d in dct["workers"]]
+        return cls.load(task_control=task_control, workers=workers, board=board, sprite_group=sprite_group)
 
     def __init_task_control(
         self,

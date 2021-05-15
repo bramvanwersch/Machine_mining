@@ -46,12 +46,18 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, loading_saving.Lo
         return d
 
     @classmethod
-    def from_dict(cls, dct, sprite_group=None):
-        mcd = super().from_dict(dct)
-        material = mcd.to_instance()
-        cls_type = globals()[mcd.block_kwargs.pop("instance_name")]
-
-        return cls_type.__init_load__(**mcd.block_kwargs, material=material)
+    def from_dict(cls, dct, sprite_group=None, first=True):
+        if first:
+            cls_type = globals()[dct["block_kwargs"].pop("instance_name")]
+            return cls_type.from_dict(dct, sprite_group=sprite_group, first=False)
+        else:
+            mcd = super().from_dict(dct)
+            material = mcd.to_instance()
+            posses = [[d["pos"] for d in row] for row in dct["blocks"]]
+            mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
+            blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
+                       for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
+            return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, sprite_group=sprite_group)
 
     # noinspection PyPep8Naming
     @property
@@ -103,9 +109,10 @@ class InterfaceBuilding(Building, ABC):
         self.interface = self.create_interface(sprite_group)
         self._add_starting_items(starting_items)
 
-    def __init_load__(self, pos=None, sprite_group=None, inventory=None):
+    def __init_load__(self, pos=None, sprite_group=None, inventory=None, **kwargs):
         self.inventory = inventory
-        Building.__init__(self, pos, action=self.__select_buidling_action)
+        del kwargs["material"]
+        Building.__init__(self, pos, action=self.__select_buidling_action, **kwargs)
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
 
@@ -117,12 +124,16 @@ class InterfaceBuilding(Building, ABC):
         return d
 
     @classmethod
-    def from_dict(cls, dct, sprite_group=None):
-        mcd = super().from_dict(dct)
+    def from_dict(cls, dct, sprite_group=None, first=True):
+        mcd = block_classes.Block.from_dict(dct)
         material = mcd.to_instance()
-        cls_type = globals()[mcd.block_kwargs.pop("instance_name")]
         inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
-        return cls_type.__init_load__(**mcd.block_kwargs, material=material, inventory=inventory)
+        posses = [[d["pos"] for d in row] for row in dct["blocks"]]
+        mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
+        blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
+                   for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
+        return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, inventory=inventory,
+                        sprite_group=sprite_group)
 
     # noinspection PyPep8Naming
     @property
@@ -217,7 +228,7 @@ class StoneChest(InterfaceBuilding):
                                    self.blocks[0][0].inventory, sprite_group, title="STONE CHEST")
 
 
-class CraftingInterfaceBuilding(InterfaceBuilding, ABC):
+class CraftingInterfaceBuilding(InterfaceBuilding, block_classes.VariableSurfaceBlock, ABC):
     __recipes: r_constants.RecipeBook
 
     def __init__(
@@ -231,10 +242,24 @@ class CraftingInterfaceBuilding(InterfaceBuilding, ABC):
     ):
         self.__recipes = type(self).get_recipe_book()
         super().__init__(pos, sprite_group, size, in_filter, out_filter, **kwargs)
+        block_classes.VariableSurfaceBlock.__init__(self)
 
-    def __init_load__(self, pos=None, sprite_group=None, inventory=None):
+    def __init_load__(self, pos=None, sprite_group=None, inventory=None, **kwargs):
         self.__recipes = type(self).get_recipe_book()
-        super().__init_load__(pos=pos, sprite_group=sprite_group, inventory=inventory)
+        block_classes.VariableSurfaceBlock.__init__(self, changed=kwargs.pop("changed"))
+        super().__init_load__(pos=pos, sprite_group=sprite_group, inventory=inventory, **kwargs)
+
+    @classmethod
+    def from_dict(cls, dct, sprite_group=None, first=True):
+        mcd = block_classes.Block.from_dict(dct)
+        material = mcd.to_instance()
+        inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
+        posses = [[d["pos"] for d in row] for row in dct["blocks"]]
+        mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
+        blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
+                   for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
+        return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, inventory=inventory,
+                        sprite_group=sprite_group)
 
     @staticmethod
     @abstractmethod
@@ -249,7 +274,7 @@ class CraftingInterfaceBuilding(InterfaceBuilding, ABC):
         return self.INTERFACE_TYPE(self, self.__recipes, sprite_group)
 
 
-class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
+class Furnace(CraftingInterfaceBuilding):
     """
     Terminal building. The main interaction centrum for the workers
     """
@@ -265,7 +290,6 @@ class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
     ):
         CraftingInterfaceBuilding.__init__(self, pos, sprite_group,
                                            in_filter=inventories.Filter(whitelist=[]), size=200, **kwargs)
-        block_classes.VariableSurfaceBlock.__init__(self)
 
     def to_dict(self):
         d1 = super().to_dict()
@@ -278,7 +302,7 @@ class Furnace(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
         return r_constants.recipe_books["furnace"]
 
 
-class Factory(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
+class Factory(CraftingInterfaceBuilding):
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FactoryMaterial
     MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FactoryWindow
@@ -291,7 +315,6 @@ class Factory(CraftingInterfaceBuilding, block_classes.VariableSurfaceBlock):
     ):
         CraftingInterfaceBuilding.__init__(self, pos, sprite_group, size=300,
                                            in_filter=inventories.Filter(whitelist=[]), **kwargs)
-        block_classes.VariableSurfaceBlock.__init__(self)
 
     def to_dict(self):
         d1 = super().to_dict()

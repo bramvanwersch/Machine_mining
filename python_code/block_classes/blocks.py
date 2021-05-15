@@ -47,22 +47,23 @@ class Block(loading_saving.Savable, loading_saving.Loadable, ABC):
 
     def to_dict(self):
         # return a dict that can be loaded into an MCD
+        material_dict = self.material.to_dict()
         return {
-            "material": self.material.to_dict(),
+            "material": material_dict.pop("instance_name"),
             "pos": (self.rect.left, self.rect.top),
+            "needs_board_update": False,
             "block_kwargs": {
-                "id": self.id,
+                "id_": self.id,
                 "light_level": self.light_level
             },
-            "arguments": self.material.to_dict()
+            "arguments": material_dict
         }
 
     @classmethod
     def from_dict(cls, dct):
         import block_classes.block_utility as block_utility
-        material_dict = dct.pop("material")
-        del material_dict["pos"]
-        mcd = block_utility.MCD.from_dict(dct + material_dict)
+        del dct["pos"]
+        mcd = block_utility.MCD.from_dict(dct)
         return mcd
 
     @property
@@ -209,6 +210,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     def to_dict(self) -> Dict[str, Any]:
         d1 = SurroundableBlock.to_dict(self)
         d2 = VariableSurfaceBlock.to_dict(self)
+        d1["needs_board_update"] = True
         d1["block_kwargs"]["changed"] = d2["changed"]
         d1["block_kwargs"]["current_item"] = self.current_item.to_dict()
         d1["block_kwargs"]["incomming_item"] = self.incomming_item.to_dict()
@@ -627,10 +629,19 @@ class MultiBlock(Block, ABC):
         self,
         pos: List[int],
         material: "base_materials.BaseMaterial",
+        blocks=None,
         **kwargs
     ):
         super().__init__(pos, material, **kwargs)
         self.blocks = self._get_blocks()
+
+    def __init_load__(self, pos=None, material=None, id_=None, action=None, light_level=0, blocks=None):
+        self.rect = pygame.Rect((pos[0], pos[1], self.size().width, self.size().height))
+        self.material = material
+        self._action_function = action
+        self.id = id_ if id_ else util.unique_id()
+        self.light_level = light_level
+        self.blocks = blocks
 
     def to_dict(self):
         d = super().to_dict()

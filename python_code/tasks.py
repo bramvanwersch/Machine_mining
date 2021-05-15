@@ -5,7 +5,7 @@ from utility import utilities as util, constants as con, loading_saving
 from block_classes import blocks as block_classes
 
 
-class TaskControl(loading_saving.Savable):
+class TaskControl(loading_saving.Savable, loading_saving.Loadable):
     """
     Holds a list of block_classes that contain tasks that the workers can accept
     """
@@ -16,6 +16,13 @@ class TaskControl(loading_saving.Savable):
         self.board = board
         self.__terminal_inv = board.terminal.inventory
 
+    def __init_load__(self, reachable_block_tasks=None, unreachable_block_tasks=None, board=None):
+        # variable to track tasks by name and allow for fast search and destroy
+        self.reachable_block_tasks = reachable_block_tasks
+        self.unreachable_block_tasks = unreachable_block_tasks
+        self.board = board
+        self.__terminal_inv = board.terminal.inventory
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "reachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict}
@@ -23,6 +30,15 @@ class TaskControl(loading_saving.Savable):
             "unreachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict}
                                         for block_id, task_dict in self.unreachable_block_tasks}
         }
+
+    @classmethod
+    def from_dict(cls, dct, board=None):
+        reachable_block_tasks = {block_id: {task_name: Task.from_dict(d) for task_name, d in outer_d}
+                                 for block_id, outer_d in dct["reachable_block_tasks"]}
+        unreachable_block_tasks = {block_id: {task_name: Task.from_dict(d) for task_name, d in outer_d}
+                                   for block_id, outer_d in dct["unreachable_block_tasks"]}
+        return cls.load(reachable_block_tasks=reachable_block_tasks, unreachable_block_tasks=unreachable_block_tasks,
+                        board=board)
 
     def add(self, type, *blocks, priority = 1, **kwargs):
         """
@@ -278,6 +294,7 @@ class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
 
     def to_dict(self) -> Dict[str, Any]:
         return {
+            "instance_name": type(self).__name__,
             "block": self.block.to_dict(),
             "priority": self.priority,
             "started_task": self.started_task,
@@ -288,11 +305,16 @@ class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
         }
 
     @classmethod
-    def from_dict(cls, dct):
-        block = cls.block_dict_to_block(dct["block"])
-        return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
-                        selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
-                        canceled=dct["canceled"])
+    def from_dict(cls, dct, first=True):
+        # since the from_dict method is shared with inheriting classes
+        if first:
+            cls_type = globals()[dct["instance_name"]]
+            return cls_type.from_dict(dct, first=False)
+        else:
+            block = cls.block_dict_to_block(dct["block"])
+            return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
+                            selected=dct["selected"], task_progress=dct["task_progress"],
+                            handed_in=dct["handed_in"], canceled=dct["canceled"])
 
     @staticmethod
     def block_dict_to_block(dct):
@@ -372,7 +394,7 @@ class MultiTask(Task, ABC):
         return d
 
     @classmethod
-    def from_dict(cls, dct):
+    def from_dict(cls, dct, first=True):
         block = cls.block_dict_to_block(dct["block"])
         return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
                         selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
@@ -433,7 +455,7 @@ class BuildTask(MultiTask):
         return d
 
     @classmethod
-    def from_dict(cls, dct):
+    def from_dict(cls, dct, first=True):
         block = cls.block_dict_to_block(dct["block"])
         finish_block = cls.block_dict_to_block(dct["finish_block"])
         removed_blocks = [cls.block_dict_to_block(d["blocks"]) for d in dct["removed_blocks"]]
@@ -488,7 +510,7 @@ class FetchTask(Task):
         return d
 
     @classmethod
-    def from_dict(cls, dct):
+    def from_dict(cls, dct, first=True):
         block = cls.block_dict_to_block(dct["block"])
 
         return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],

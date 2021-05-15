@@ -49,7 +49,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.__grow_update_time = 0
         self.terminal = None
 
-    def __init_load__(self, board_generator=None, sprite_group=None, chunk_matrix=None, grow_update_time=None):
+    def __init_load__(self, board_generator=None, sprite_group=None, chunk_matrix=None, grow_update_time=None,
+                      buildings_=None):
         self.inventorie_blocks = []
         self.main_sprite_group = sprite_group
 
@@ -60,14 +61,14 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         # pipe network
         self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
-        self.buildings = {}
+        self.buildings = buildings_
         self.variable_blocks = set()
         self.changed_light_blocks = set()
 
         self.board_generator = board_generator
         self.chunk_matrix = [[None for _ in range(int(con.BOARD_SIZE.width / con.CHUNK_SIZE.width))]
                              for _ in range(int(con.BOARD_SIZE.height / con.CHUNK_SIZE.height))]
-        self.loaded_chunks = [chunk for chunk in self.chunk_matrix if chunk is not None]
+        self.loaded_chunks = [chunk for row in self.chunk_matrix for chunk in row if chunk is not None]
         # chunks that are currently loading to make sure that no double chunks are generated
         self._loading_chunks = set()
 
@@ -75,7 +76,10 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.__highlight_rectangle = None
 
         self.__grow_update_time = grow_update_time
-        self.terminal = None
+        for building in self.buildings.values():
+            if isinstance(building, buildings.Terminal):
+                self.terminal = building
+            # self.add_building(building)
 
     def to_dict(self) -> Dict[str, Any]:
         # TODO handle chunks currently being loaded
@@ -97,9 +101,9 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                          if chunk_d is not None else None for chunk_d in row]
                         for row in dct["chunk_matrix"]]
         buildings_ = {name: buildings.Building.from_dict(building_dict, sprite_group=sprite_group)
-                      for name, building_dict in dct["buildings"]}
-        return cls.load(main_sprite_group=sprite_group, board_generator=board_generator, chunk_matrix=chunk_matrix,
-                        buildings=buildings_, grow_update_time=dct["grow_update_time"])
+                      for name, building_dict in dct["buildings"].items()}
+        return cls.load(sprite_group=sprite_group, board_generator=board_generator, chunk_matrix=chunk_matrix,
+                        buildings_=buildings_, grow_update_time=dct["grow_update_time"])
 
     def setup_board(self):
         self.__add_starter_buildings()

@@ -64,7 +64,8 @@ class MCD(loading_saving.Savable, loading_saving.Loadable):
 
     @classmethod
     def from_dict(cls, dct):
-        return cls.load(**dct)
+        return cls.load(material=dct["material"], kwargs=dct["arguments"], block_kwargs=dct["block_kwargs"],
+                        needs_board_update=dct["needs_board_update"])
 
     def to_instance(
         self,

@@ -43,7 +43,7 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, loading_saving.Load
 
     def __init_load__(self, layer=None, visible=None, static=None, orig_rect=None, sprite_group=None):
         self._layer = layer
-        pygame.sprite.Sprite.__init__(self, sprite_group)
+        pygame.sprite.Sprite.__init__(self, sprite_group if sprite_group is not None else [])
         # color is now hardcoded and useless
         self.surface = self._create_surface(orig_rect.size, (0, 0, 0))
         self.orig_surface = self.surface
@@ -118,6 +118,10 @@ class ZoomableSprite(MySprite):
         self._zoom = zoom
         if self._zoom != 1:
             self.set_zoom(self._zoom)
+
+    def __init_load__(self, **kwargs):
+        super().__init_load__(**kwargs)
+        self._zoom = 1
 
     def set_zoom(
         self,
@@ -253,7 +257,7 @@ class MovingEntity(ZoomableSprite):
         orig_rect = pygame.Rect(dct["orig_rect"])
         speed = pygame.Vector2(*dct["speed"])
         return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
-                        max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_speed"])
+                        max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_values"])
 
     def _max_frame_speed(self) -> float:
         """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame
@@ -317,8 +321,8 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
         event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
 
     def __init_load__(self, max_speed=None, **kwargs):
-        ZoomableSprite.__init_load__(**kwargs)
-        self.max_speed = max_speed
+        super().__init_load__(max_speed=max_speed, speed=pygame.Vector2(0, 0), exact_movement_values=[0, 0], **kwargs)
+        event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
 
     def to_dict(self):
         d = super().to_dict()
@@ -440,7 +444,8 @@ class Worker(MovingEntity, util.ConsoleReadable):
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
                                                                    250), self, *groups)
 
-    def __init_load__(self, number=None, name=None, board_=None, task_control=None, **kwargs):
+    def __init_load__(self, number=None, name=None, board_=None, task_control=None, inventory=None,
+                      task_queue=None, **kwargs):
         super().__init_load__(**kwargs)
         self.number = number
         self.name = name
@@ -448,12 +453,12 @@ class Worker(MovingEntity, util.ConsoleReadable):
         self.task_control = task_control
 
         # tasks
-        self.task_queue = tasks.TaskQueue()
+        self.task_queue = task_queue
         self.path = []
         self.dest = None
 
         # inventory
-        self.inventory = inventories.Inventory(self.INVENTORY_SIZE)
+        self.inventory = inventory
         self.__previous_x_direction = -1
 
         # for loading purposes
@@ -494,7 +499,11 @@ class Worker(MovingEntity, util.ConsoleReadable):
     def from_dict(cls, dct, sprite_group=None, board_=None, task_control=None):
         inventory = inventories.Inventory.from_dict(dct["inventory"])
         task_queue = tasks.TaskQueue.from_dict(dct["task_queue"])
-        return cls.load(name=dct["name"], number=dct["number"], inventory=inventory, task_queue=task_queue,
+        orig_rect = pygame.Rect(dct["orig_rect"])
+        speed = pygame.Vector2(*dct["speed"])
+        return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
+                        max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_values"],
+                        name=dct["name"], number=dct["number"], inventory=inventory, task_queue=task_queue,
                         board_=board_, sprite_group=sprite_group, task_control=task_control)
 
     def _create_surface(

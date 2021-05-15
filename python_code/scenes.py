@@ -473,7 +473,7 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
         sprite_group = sprite_groups.CameraAwareLayeredUpdates(camera_center, con.BOARD_SIZE)
         board_ = board.board.Board.from_dict(dct["board"], sprite_group)
-        user_ = user.User.from_dict(dct["user"])
+        user_ = user.User.from_dict(dct["user"], board=board_, sprite_group=sprite_group)
         return cls.load(screen=screen, sprite_group=sprite_group, board_=board_, user_=user_,
                         camera_center=camera_center)
 

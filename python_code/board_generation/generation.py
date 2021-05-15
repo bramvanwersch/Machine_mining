@@ -148,7 +148,7 @@ class BoardGenerator(loading_saving.Savable, loading_saving.Loadable):
         return {
             "generated_chunk_matrix": self.__generated_chunks_matrix,
             "predefined_blocks": self.__predefined_blocks.to_dict(),
-            "minimum_generation_lenght": self.__minimum_generation_length,
+            "minimum_generation_length": self.__minimum_generation_length,
             "generation_rect": (self.__generation_rect.left, self.__generation_rect.top,
                                 self.__generation_rect.width, self.__generation_rect.height),
 
@@ -168,7 +168,7 @@ class BoardGenerator(loading_saving.Savable, loading_saving.Loadable):
         predefined_blocks = PredefinedBlocks.from_dict(dct["predefined_blocks"])
         generation_rect = Rect(dct["generation_rect"])
         cave_quadrant_size = util.Size.from_dict(dct["cave_quadrant_size"])
-        biome_definition = biome_classes.BiomeGenerationDefinition.from_dict(dct["biome_defenition"])
+        biome_definition = biome_classes.BiomeGenerationDefinition.from_dict(dct["biome_definition"])
         biome_size = util.Size.from_dict(dct["biome_size"])
         biome_matrix = [[biome_classes.Biome.from_dict(biome_d)if biome_d is not None else None for biome_d in row]
                         for row in dct["biome_matrix"]]
@@ -652,8 +652,8 @@ class PredefinedBlocks(loading_saving.Savable, loading_saving.Loadable):
     def __init__(self):
         self.__internal_tree = {}
 
-    def __init_load__(self, interal_tree=None):
-        self.__internal_tree = interal_tree
+    def __init_load__(self, internal_tree=None):
+        self.__internal_tree = internal_tree
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -664,7 +664,7 @@ class PredefinedBlocks(loading_saving.Savable, loading_saving.Loadable):
     @classmethod
     def from_dict(cls, dct):
         internal_tree = {outer_name: {name: block_util.MCD.from_dict(value) for name, value in inner_dict.items()}
-                         for outer_name, inner_dict in dct["internal_tree"]}
+                         for outer_name, inner_dict in dct["internal_tree"].items()}
         return cls.load(internal_tree=internal_tree)
 
     def add(

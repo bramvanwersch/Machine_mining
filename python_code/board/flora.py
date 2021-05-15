@@ -19,7 +19,7 @@ class Flora(loading_saving.Savable, loading_saving.Loadable):
 
     @classmethod
     def from_dict(cls, dct):
-        plants = {plant_id: Plant.from_dict(d) for plant_id, d in dct["plants"]}
+        plants = {plant_id: Plant.from_dict(d) for plant_id, d in dct["plants"].items()}
         return cls.load(plants=plants)
 
     def add(self, plant: "Plant"):
@@ -67,9 +67,10 @@ class Plant(loading_saving.Savable, loading_saving.Loadable):
 
     @classmethod
     def from_dict(cls, dct, residing_chunk=None):
+        posses = [d["pos"] for d in dct["blocks"]]
         mcds = [block_classes.Block.from_dict(d) for d in dct["blocks"]]
-        blocks = [mcd.to_instance().to_block(**mcd.block_kwargs) for mcd in mcds]
-        return cls.load(blocks=blocks, id=dct["id"], chunk_id=dct["chunk_id"])
+        blocks = [mcd.to_instance().to_block(pos=posses[index], **mcd.block_kwargs) for index, mcd in enumerate(mcds)]
+        return cls.load(blocks=blocks, id_=dct["id"], chunk_id=dct["chunk_id"])
 
     def grow(self, surrounding_blocks):
         direction = self.material.CONTINUATION_DIRECTION

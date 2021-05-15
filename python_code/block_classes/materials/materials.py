@@ -46,6 +46,9 @@ class BaseMaterial(loading_saving.Savable, loading_saving.Loadable, ABC):
         # flag that controls if the active or the normal surfaces are returned. Surfaces have to actively be redrawn
         self._active = active
 
+    def __init_load__(self, **kwargs):
+        self.__init__(**kwargs)
+
     def to_dict(self):
         return {
             "instance_name": type(self).__name__,
@@ -56,7 +59,7 @@ class BaseMaterial(loading_saving.Savable, loading_saving.Loadable, ABC):
     def from_dict(cls, dct):
         import block_classes.block_utility
         cls_type = block_classes.block_utility.material_instance_from_string(dct.pop("instance_name"))
-        return cls_type.__init__(**dct)
+        return cls_type.load(**dct)
 
     @property
     def hardness(self) -> int:
