@@ -49,8 +49,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.__grow_update_time = 0
         self.terminal = None
 
-    def __init_load__(self, board_generator=None, sprite_group=None, chunk_matrix=None, grow_update_time=None,
-                      buildings_=None):
+    def __init_load__(self, board_generator=None, sprite_group=None, chunk_matrix=None, grow_update_time=None):
         self.inventorie_blocks = []
         self.main_sprite_group = sprite_group
 
@@ -61,7 +60,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         # pipe network
         self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
-        self.buildings = buildings_
+        self.buildings = {}
         self.variable_blocks = set()
         self.changed_light_blocks = set()
 
@@ -87,7 +86,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         for building in self.buildings.values():
             if isinstance(building, buildings.Terminal):
                 self.terminal = building
-            self.add_blocks(building)
+                break
+            # self.add_blocks(building)
 
     def to_dict(self) -> Dict[str, Any]:
         # TODO handle chunks currently being loaded
@@ -108,10 +108,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         chunk_matrix = [[chunks.Chunk.from_dict(chunk_d, sprite_group=sprite_group, plants=plants)
                          if chunk_d is not None else None for chunk_d in row]
                         for row in dct["chunk_matrix"]]
-        buildings_ = {name: buildings.Building.from_dict(building_dict, sprite_group=sprite_group)
-                      for name, building_dict in dct["buildings"].items()}
         return cls.load(sprite_group=sprite_group, board_generator=board_generator, chunk_matrix=chunk_matrix,
-                        buildings_=buildings_, grow_update_time=dct["grow_update_time"])
+                        grow_update_time=dct["grow_update_time"])
 
     def setup_board(self):
         self.__add_starter_buildings()
@@ -388,11 +386,15 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         block.light_level = max_light_block.light_level - change
 
     def add_building(self, block_of_building: Union[block_classes.Block, buildings.Building]):
+        # if the id is already present make sure that the building is not added repeadetly
+        if block_of_building.id in self.buildings:
+            return
         # if the incomming block is a single block part of a building, create the full building first
         if not isinstance(block_of_building, buildings.Building):
             if isinstance(block_of_building, block_classes.ContainerBlock):
                 block_of_building = buildings.material_mapping[block_of_building.material.name()](
-                    block_of_building.rect.topleft, self.main_sprite_group, starting_items=block_of_building.inventory)
+                    block_of_building.rect.topleft, self.main_sprite_group, id_=block_of_building.id,
+                    starting_items=block_of_building.inventory)
             else:
                 block_of_building = buildings.material_mapping[block_of_building.material.name()](
                     block_of_building.rect.topleft, self.main_sprite_group, )

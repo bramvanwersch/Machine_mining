@@ -43,6 +43,7 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, loading_saving.Lo
         d = super().to_dict()
         d["block_kwargs"]["pos"] = self.rect.topleft
         d["block_kwargs"]["instance_name"] = type(self).__name__
+        d["needs_board_update"] = True
         return d
 
     @classmethod

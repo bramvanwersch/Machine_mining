@@ -63,6 +63,9 @@ class Block(loading_saving.Savable, loading_saving.Loadable, ABC):
     def from_dict(cls, dct):
         import block_classes.block_utility as block_utility
         del dct["pos"]
+        # optional arguments that need converting back
+        if "inventory" in dct["block_kwargs"]:
+            dct["block_kwargs"]["inventory"] = inventories.Inventory.from_dict(dct["block_kwargs"]["inventory"])
         mcd = block_utility.MCD.from_dict(dct)
         return mcd
 
@@ -588,7 +591,7 @@ class ContainerBlock(NetworkEdgeBlock):
 
     def to_dict(self):
         d = super().to_dict()
-        d["inventory"] = self.inventory.to_dict()
+        d["block_kwargs"]["inventory"] = self.inventory.to_dict()
         return d
 
     def _add_starting_items(
