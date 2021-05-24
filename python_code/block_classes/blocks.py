@@ -2,13 +2,14 @@
 
 # library imports
 import pygame
-from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable, Dict, Any
+from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable, Dict, Any, Type
 from abc import ABC
 
 # own imports
 from utility import constants as con, loading_saving
 import utility.utilities as util
 from utility import inventories, game_timing, loot_pools
+import interfaces.base_interface as base_interface
 if TYPE_CHECKING:
     import block_classes.materials.materials as base_materials
     import block_classes.materials.building_materials as building_materials
@@ -621,6 +622,27 @@ class ContainerBlock(NetworkEdgeBlock):
         return items
 
 
+class InterfaceBlock(ContainerBlock):
+    """Block with an interface for the inventory"""
+    __slots__ = "interface"
+
+    def __init__(
+        self,
+        pos: List[int],
+        material: "base_materials.BaseMaterial",
+        interface: "base_interface.Window" = None,
+        **kwargs
+    ):
+        super().__init__(pos, material, action=self.__select_buidling_action, **kwargs)
+        self.interface = interface
+
+    def __select_buidling_action(self) -> None:
+        # make sure to update the window manager when needed
+        from interfaces.managers import game_window_manager
+        if self.interface is not None:
+            game_window_manager.add(self.interface)
+
+
 class MultiBlock(Block, ABC):
     MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1]]
     # this works fine with inheritance
@@ -666,7 +688,7 @@ class MultiBlock(Block, ABC):
             for column_i, image_key in enumerate(row):
                 material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key)
                 pos = [topleft[0] + column_i * con.BLOCK_SIZE.width, topleft[1] + row_i * con.BLOCK_SIZE.height]
-                block_row.append(material.to_block(pos, id_=self.id, action=self._action_function))
+                block_row.append(material.to_block(pos, id_=self.id))
             blocks.append(block_row)
         return blocks
 

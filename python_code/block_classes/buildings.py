@@ -39,26 +39,26 @@ class Building(block_classes.MultiBlock, util.ConsoleReadable, loading_saving.Lo
     ):
         super().__init__(pos, self.MATERIAL(), **kwargs)
 
-    def to_dict(self):
-        d = super().to_dict()
-        d["block_kwargs"]["pos"] = self.rect.topleft
-        d["block_kwargs"]["instance_name"] = type(self).__name__
-        d["needs_board_update"] = True
-        return d
-
-    @classmethod
-    def from_dict(cls, dct, sprite_group=None, first=True):
-        if first:
-            cls_type = globals()[dct["block_kwargs"].pop("instance_name")]
-            return cls_type.from_dict(dct, sprite_group=sprite_group, first=False)
-        else:
-            mcd = super().from_dict(dct)
-            material = mcd.to_instance()
-            posses = [[d["pos"] for d in row] for row in dct["blocks"]]
-            mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
-            blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
-                       for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
-            return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, sprite_group=sprite_group)
+    # def to_dict(self):
+    #     d = super().to_dict()
+    #     d["block_kwargs"]["pos"] = self.rect.topleft
+    #     d["block_kwargs"]["instance_name"] = type(self).__name__
+    #     d["needs_board_update"] = True
+    #     return d
+    #
+    # @classmethod
+    # def from_dict(cls, dct, sprite_group=None, first=True):
+    #     if first:
+    #         cls_type = globals()[dct["block_kwargs"].pop("instance_name")]
+    #         return cls_type.from_dict(dct, sprite_group=sprite_group, first=False)
+    #     else:
+    #         mcd = super().from_dict(dct)
+    #         material = mcd.to_instance()
+    #         posses = [[d["pos"] for d in row] for row in dct["blocks"]]
+    #         mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
+    #         blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
+    #                    for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
+    #         return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, sprite_group=sprite_group)
 
     # noinspection PyPep8Naming
     @property
@@ -102,39 +102,40 @@ class InterfaceBuilding(Building, ABC):
         starting_items: inventories.Inventory = None,
         **kwargs
     ):
+        self.sprite_group = sprite_group
         self.inventory = inventories.Inventory(size, in_filter=in_filter, out_filter=out_filter)
-        Building.__init__(self, pos, action=self.__select_buidling_action, **kwargs)
+        self.interface = None
+        Building.__init__(self, pos, **kwargs)
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
 
-        self.interface = self.create_interface(sprite_group)
         self._add_starting_items(starting_items)
 
-    def __init_load__(self, pos=None, sprite_group=None, inventory=None, **kwargs):
-        self.inventory = inventory
-        del kwargs["material"]
-        Building.__init__(self, pos, action=self.__select_buidling_action, **kwargs)
-        from interfaces.managers import game_window_manager
-        self.window_manager = game_window_manager
-
-        self.interface = self.create_interface(sprite_group)
-
-    def to_dict(self):
-        d = super().to_dict()
-        d["block_kwargs"]["inventory"] = self.inventory.to_dict()
-        return d
-
-    @classmethod
-    def from_dict(cls, dct, sprite_group=None, first=True):
-        mcd = block_classes.Block.from_dict(dct)
-        material = mcd.to_instance()
-        inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
-        posses = [[d["pos"] for d in row] for row in dct["blocks"]]
-        mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
-        blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
-                   for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
-        return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, inventory=inventory,
-                        sprite_group=sprite_group)
+    # def __init_load__(self, pos=None, sprite_group=None, inventory=None, **kwargs):
+    #     self.inventory = inventory
+    #     del kwargs["material"]
+    #     Building.__init__(self, pos, action=self.__select_buidling_action, **kwargs)
+    #     from interfaces.managers import game_window_manager
+    #     self.window_manager = game_window_manager
+    #
+    #     self.interface = self.create_interface(sprite_group)
+    #
+    # def to_dict(self):
+    #     d = super().to_dict()
+    #     d["block_kwargs"]["inventory"] = self.inventory.to_dict()
+    #     return d
+    #
+    # @classmethod
+    # def from_dict(cls, dct, sprite_group=None, first=True):
+    #     mcd = block_classes.Block.from_dict(dct)
+    #     material = mcd.to_instance()
+    #     inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
+    #     posses = [[d["pos"] for d in row] for row in dct["blocks"]]
+    #     mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
+    #     blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
+    #                for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
+    #     return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, inventory=inventory,
+    #                     sprite_group=sprite_group)
 
     # noinspection PyPep8Naming
     @property
@@ -164,18 +165,13 @@ class InterfaceBuilding(Building, ABC):
         attributes.remove("interface")
         return attributes
 
-    def __select_buidling_action(self) -> None:
-        # make sure to update the window manager when needed
-        if self.window_manager is None:
-            from interfaces.managers import game_window_manager
-            self.window_manager = game_window_manager
-        self.window_manager.add(self.interface)
-
     def _get_blocks(self) -> List[List[block_classes.Block]]:
         blocks_ = super()._get_blocks()
+        self.interface = self.create_interface(self.sprite_group) # Not happy with this
         for row in blocks_:
             for block in row:
                 block.inventory = self.inventory
+                block.interface = self.interface
         return blocks_
 
 
@@ -201,13 +197,11 @@ class Terminal(InterfaceBuilding):
     ) -> base_interface.Window:
         """Innitiate the interface window"""
         return self.INTERFACE_TYPE(pygame.Rect(self.rect.left, self.rect.bottom, 300, 200),
-                                   self.blocks[0][0].inventory, sprite_group, title="TERMINAL")
+                                   self.inventory, sprite_group, title="TERMINAL")
 
 
 class StoneChest(InterfaceBuilding):
-    """
-    Terminal building. The main interaction centrum for the workers
-    """
+
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.StoneChestMaterial
     MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1]]
     INTERFACE_TYPE: base_interface.Window = small_interfaces.InventoryWindow
@@ -226,7 +220,7 @@ class StoneChest(InterfaceBuilding):
     ) -> base_interface.Window:
         """Innitiate the interface window"""
         return self.INTERFACE_TYPE(pygame.Rect(self.rect.left, self.rect.bottom, 300, 200),
-                                   self.blocks[0][0].inventory, sprite_group, title="STONE CHEST")
+                                   self.inventory, sprite_group, title="STONE CHEST")
 
 
 class CraftingInterfaceBuilding(InterfaceBuilding, block_classes.VariableSurfaceBlock, ABC):
@@ -245,22 +239,22 @@ class CraftingInterfaceBuilding(InterfaceBuilding, block_classes.VariableSurface
         super().__init__(pos, sprite_group, size, in_filter, out_filter, **kwargs)
         block_classes.VariableSurfaceBlock.__init__(self)
 
-    def __init_load__(self, pos=None, sprite_group=None, inventory=None, **kwargs):
-        self.__recipes = type(self).get_recipe_book()
-        block_classes.VariableSurfaceBlock.__init__(self, changed=kwargs.pop("changed"))
-        super().__init_load__(pos=pos, sprite_group=sprite_group, inventory=inventory, **kwargs)
-
-    @classmethod
-    def from_dict(cls, dct, sprite_group=None, first=True):
-        mcd = block_classes.Block.from_dict(dct)
-        material = mcd.to_instance()
-        inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
-        posses = [[d["pos"] for d in row] for row in dct["blocks"]]
-        mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
-        blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
-                   for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
-        return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, inventory=inventory,
-                        sprite_group=sprite_group)
+    # def __init_load__(self, pos=None, sprite_group=None, inventory=None, **kwargs):
+    #     self.__recipes = type(self).get_recipe_book()
+    #     block_classes.VariableSurfaceBlock.__init__(self, changed=kwargs.pop("changed"))
+    #     super().__init_load__(pos=pos, sprite_group=sprite_group, inventory=inventory, **kwargs)
+    #
+    # @classmethod
+    # def from_dict(cls, dct, sprite_group=None, first=True):
+    #     mcd = block_classes.Block.from_dict(dct)
+    #     material = mcd.to_instance()
+    #     inventory = inventories.Inventory.from_dict(mcd.block_kwargs.pop("inventory"))
+    #     posses = [[d["pos"] for d in row] for row in dct["blocks"]]
+    #     mcds = [[block_classes.Block.from_dict(d) for d in row] for row in dct["blocks"]]
+    #     blocks = [[mcd.to_instance().to_block(pos=posses[index][index2], **mcd.block_kwargs)
+    #                for index2, mcd in enumerate(row)] for index, row in enumerate(mcds)]
+    #     return cls.load(**mcd.block_kwargs, blocks=blocks, material=material, inventory=inventory,
+    #                     sprite_group=sprite_group)
 
     @staticmethod
     @abstractmethod
@@ -276,9 +270,7 @@ class CraftingInterfaceBuilding(InterfaceBuilding, block_classes.VariableSurface
 
 
 class Furnace(CraftingInterfaceBuilding):
-    """
-    Terminal building. The main interaction centrum for the workers
-    """
+
     MATERIAL: Type[base_materials.BaseMaterial] = build_materials.FurnaceMaterial
     MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1, 2], [3, 4]]
     INTERFACE_TYPE: base_interface.Window = craft_interfaces.FurnaceWindow

@@ -43,7 +43,7 @@ class Building(ABC):
 
 class TerminalMaterial(Building, base_materials.Indestructable, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 2
-    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] =\
         utility.image_handling.ImageDefinition("buildings", (0, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
@@ -59,7 +59,7 @@ class TerminalMaterial(Building, base_materials.Indestructable, base_materials.M
 class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 3
-    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (20, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
@@ -80,7 +80,7 @@ class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
 class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 4
-    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (40, 0), size=util.Size(20, 20))
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
@@ -129,7 +129,7 @@ class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
 
 class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
-    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.ContainerBlock
+    _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("materials", (0, 70))
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
