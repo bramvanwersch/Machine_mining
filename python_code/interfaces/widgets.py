@@ -12,7 +12,7 @@ import utility.constants as con
 import utility.utilities as util
 import utility.event_handling as event_handlers
 import utility.image_handling as image_handling
-import interfaces.interface_utility as interface_util
+import interfaces.windows.interface_utility as interface_util
 if TYPE_CHECKING:
     from utility import inventories
 

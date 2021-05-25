@@ -1,7 +1,7 @@
 import pygame
 
 import utility.constants as con
-import interfaces.interface_utility as util
+import interfaces.windows.interface_utility as util
 
 
 game_window_manager = None

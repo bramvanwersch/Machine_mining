@@ -3,7 +3,7 @@ from pygame.locals import *
 from typing import List, Union, Tuple, TYPE_CHECKING
 
 import interfaces.managers as window_managers
-import interfaces.interface_utility as interfacer_util
+import interfaces.windows.interface_utility as interfacer_util
 import utility.utilities as util
 import utility.constants as con
 import interfaces.widgets as widgets

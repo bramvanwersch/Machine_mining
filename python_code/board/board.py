@@ -8,7 +8,7 @@ import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.materials.building_materials as build_materials
 import block_classes.materials.environment_materials as environment_materials
-import interfaces.interface_utility as interface_util
+import interfaces.windows.interface_utility as interface_util
 from board import flora, chunks, pathfinding
 import network.conveynetwork
 from utility import game_timing, loading_saving, utilities as util, constants as con

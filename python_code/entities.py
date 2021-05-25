@@ -437,7 +437,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                self.WORKER_IMAGES[2].images()[0],
                                                                self.WORKER_IMAGES[1].images()[0],
                                                                self.WORKER_IMAGES[0].images()[0]], 15)
-        from interfaces import worker_interface
+        from interfaces.windows import worker_interface
         from interfaces.managers import game_window_manager
 
         self.window_manager = game_window_manager
@@ -480,7 +480,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                self.WORKER_IMAGES[2].images()[0],
                                                                self.WORKER_IMAGES[1].images()[0],
                                                                self.WORKER_IMAGES[0].images()[0]], 15)
-        from interfaces import worker_interface
+        from interfaces.windows import worker_interface
         from interfaces.managers import game_window_manager
 
         self.window_manager = game_window_manager

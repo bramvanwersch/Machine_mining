@@ -3,13 +3,12 @@ from typing import List, Union, Tuple, TYPE_CHECKING
 
 import interfaces.widgets as widgets
 import utility.constants as con
-import interfaces.base_interface as base_interfaces
+import interfaces.windows.base_interface as base_interfaces
 import scenes
 import utility.utilities as util
 if TYPE_CHECKING:
     from utility import inventories
     from board import sprite_groups
-    from block_classes import buildings
 
 # globals
 SELECTED_WIDGET: Union[None, widgets.ItemDisplay] = None

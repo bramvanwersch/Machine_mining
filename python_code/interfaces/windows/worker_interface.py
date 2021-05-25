@@ -1,6 +1,7 @@
 from typing import Union, Tuple, TYPE_CHECKING
 
-from interfaces import other_interfaces, widgets
+from interfaces import widgets
+from interfaces.windows import other_interfaces
 import utility.utilities as util
 if TYPE_CHECKING:
     from entities import Worker

@@ -2,14 +2,14 @@
 
 # library imports
 import pygame
-from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable, Dict, Any, Type
+from typing import ClassVar, List, Tuple, Callable, TYPE_CHECKING, Union, Hashable, Dict, Any
 from abc import ABC
 
 # own imports
 from utility import constants as con, loading_saving
 import utility.utilities as util
 from utility import inventories, game_timing, loot_pools
-import interfaces.base_interface as base_interface
+import interfaces.windows.base_interface as base_interface
 if TYPE_CHECKING:
     import block_classes.materials.materials as base_materials
     import block_classes.materials.building_materials as building_materials

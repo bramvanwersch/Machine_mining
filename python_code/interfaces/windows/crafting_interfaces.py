@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Union, List, Tuple, TYPE_CHECKING, ClassVar
 
 import interfaces.widgets as widgets
-import interfaces.base_interface as base_interface
+import interfaces.windows.base_interface as base_interface
 import utility.constants as con
 import utility.utilities as util
 from utility import image_handling

@@ -3,8 +3,8 @@ from typing import Union, List, Tuple, TYPE_CHECKING, Type, Dict, Any
 
 import tasks
 import entities
-import interfaces.other_interfaces as small_interface
-import interfaces.interface_utility as interface_util
+import interfaces.windows.other_interfaces as small_interface
+import interfaces.windows.interface_utility as interface_util
 from utility import utilities as util, constants as con, event_handling, loading_saving
 from block_classes import buildings
 from block_classes.materials import building_materials, environment_materials

@@ -3,7 +3,7 @@ from typing import List, Dict, Union, ClassVar, Set, TYPE_CHECKING, Tuple, Any
 
 import utility.constants as con
 import utility.utilities as util
-import interfaces.interface_utility as interface_util
+import interfaces.windows.interface_utility as interface_util
 if TYPE_CHECKING:
     from block_classes import blocks
     import pygame

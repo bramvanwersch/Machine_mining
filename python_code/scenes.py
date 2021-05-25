@@ -11,10 +11,9 @@ from typing import Union, Dict, Any
 # own imports
 import board.board
 import entities
-import tasks
-from board import sprite_groups as sprite_groups, chunks as chunks
-from interfaces import widgets as widgets, interface_utility as interface_util, other_interfaces as small_interfaces, \
-    managers as window_managers, console
+from board import sprite_groups as sprite_groups
+from interfaces import widgets as widgets, managers as window_managers
+from interfaces.windows import interface_utility as interface_util, other_interfaces as small_interfaces, console
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
 import user

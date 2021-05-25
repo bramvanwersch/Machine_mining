@@ -1,5 +1,5 @@
 import pygame
-from typing import Tuple, List, Union, TYPE_CHECKING
+from typing import Tuple, List, Union
 from abc import ABC
 
 import block_classes.materials.environment_materials as environment_materials
@@ -8,7 +8,7 @@ import block_classes.block_utility as block_util
 import utility.constants as con
 import utility.utilities as util
 import entities
-import interfaces.interface_utility as interface_util
+import interfaces.windows.interface_utility as interface_util
 import board.pathfinding as pathfinding
 import board.flora as flora
 from utility import loading_saving
@@ -187,7 +187,6 @@ class Chunk(loading_saving.Savable, loading_saving.Loadable):
         material classes
         :return: the s_matrix filled with block class instances
         """
-        from block_classes.blocks import ContainerBlock, Block
         for row_i, row in enumerate(s_matrix):
             for column_i, value in enumerate(row):
                 # create position

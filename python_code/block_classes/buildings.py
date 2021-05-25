@@ -2,7 +2,7 @@
 
 # library imports
 from abc import ABC, abstractmethod
-from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type, Hashable, Dict, Any
+from typing import List, TYPE_CHECKING, Tuple, Union, Set, Type, Hashable
 import pygame
 
 # own imports
@@ -11,9 +11,9 @@ import block_classes.materials.materials as base_materials
 import block_classes.blocks as block_classes
 from utility import inventories, loading_saving
 import utility.utilities as util
-import interfaces.base_interface as base_interface
-import interfaces.other_interfaces as small_interfaces
-import interfaces.crafting_interfaces as craft_interfaces
+import interfaces.windows.base_interface as base_interface
+import interfaces.windows.other_interfaces as small_interfaces
+import interfaces.windows.crafting_interfaces as craft_interfaces
 import recipes.recipe_utility as r_constants
 if TYPE_CHECKING:
     import board.sprite_groups as sprite_groups

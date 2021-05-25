@@ -6,7 +6,7 @@ from typing import Union, Tuple, List, Dict, Any, TYPE_CHECKING
 import os
 import inspect
 
-from interfaces.base_interface import Window
+from interfaces.windows.base_interface import Window
 
 import utility.inventories
 import utility.utilities as util
