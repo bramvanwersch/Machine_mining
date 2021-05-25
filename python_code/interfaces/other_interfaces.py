@@ -142,11 +142,11 @@ class InventoryWindow(base_interfaces.Window):
         self,
         rect: pygame.Rect,
         inventory: "inventories.Inventory",
-        *groups: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         title: str = ""
     ):
         self.__inventory = inventory
-        super().__init__(rect.topleft, util.Size(*rect.size), *groups, layer=con.INTERFACE_LAYER, title=title,
+        super().__init__(rect.topleft, self.SIZE, sprite_group, layer=con.INTERFACE_LAYER, title=title,
                          allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
         self.__prev_no_items = 0
         self._inventory_pane = None

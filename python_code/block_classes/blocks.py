@@ -645,7 +645,6 @@ class InterfaceBlock(ContainerBlock):
 
 class MultiBlock(Block, ABC):
     MULTIBLOCK_LAYOUT: List[List[Hashable]] = [[1]]
-    # this works fine with inheritance
     __slots__ = "blocks"
 
     blocks: List[List[Block]]
@@ -654,43 +653,58 @@ class MultiBlock(Block, ABC):
         self,
         pos: List[int],
         material: "base_materials.BaseMaterial",
-        blocks=None,
+        blocks_kwargs: List[List[Dict[str, Any]]],
         **kwargs
     ):
         super().__init__(pos, material, **kwargs)
-        self.blocks = blocks if blocks is not None else self._get_blocks()
+        self.blocks = self._configure_blocks(blocks_kwargs)
 
-    def __init_load__(self, pos=None, material=None, id_=None, action=None, light_level=0, blocks=None):
-        self.rect = pygame.Rect((pos[0], pos[1], self.size().width, self.size().height))
-        self.material = material
-        self._action_function = action
-        self.id = id_ if id_ else util.unique_id()
-        self.light_level = light_level
-        self.blocks = blocks
-
-    def to_dict(self):
-        d = super().to_dict()
-        d["blocks"] = [[block.to_dict() for block in row] for row in self.blocks]
-        return d
+    # def __init_load__(self, pos=None, material=None, id_=None, action=None, light_level=0, blocks=None):
+    #     self.rect = pygame.Rect((pos[0], pos[1], self.size().width, self.size().height))
+    #     self.material = material
+    #     self._action_function = action
+    #     self.id = id_ if id_ else util.unique_id()
+    #     self.light_level = light_level
+    #     self.blocks = blocks
+    #
+    # def to_dict(self):
+    #     d = super().to_dict()
+    #     d["blocks"] = [[block.to_dict() for block in row] for row in self.blocks]
+    #     return d
 
     @classmethod
     def size(cls) -> ClassVar[util.Size]:
         return cls.SIZE * (len(cls.MULTIBLOCK_LAYOUT[0]), len(cls.MULTIBLOCK_LAYOUT))
 
-    def _get_blocks(self) -> List[List[Block]]:
+    def _configure_blocks(
+        self,
+        blocks_kwargs: List[List[Dict[str, Any]]]
+    ) -> List[List[Block]]:
         # has to be the case to prevent circular imports
         import block_classes.block_utility as block_utility
 
         blocks = []
-        topleft = self.rect.topleft
         for row_i, row in enumerate(self.MULTIBLOCK_LAYOUT):
             block_row = []
             for column_i, image_key in enumerate(row):
                 material = block_utility.material_instance_from_string(self.material.name(), image_key=image_key)
-                pos = [topleft[0] + column_i * con.BLOCK_SIZE.width, topleft[1] + row_i * con.BLOCK_SIZE.height]
-                block_row.append(material.to_block(pos, id_=self.id))
+                block = self._block_from_material(material, column_i, row_i, blocks_kwargs[row_i][column_i])
+                block_row.append(block)
             blocks.append(block_row)
         return blocks
+
+    def _block_from_material(
+        self,
+        material: "base_materials.BaseMaterial",
+        column_block_index: int,
+        row_block_index: int,
+        block_kwargs: Dict[str, Any]
+    ) -> Block:
+        topleft = self.rect.topleft
+        pos = [topleft[0] + column_block_index * con.BLOCK_SIZE.width,
+               topleft[1] + row_block_index * con.BLOCK_SIZE.height]
+        block = material.to_block(pos, id_=self.id, **block_kwargs)
+        return block
 
     def destroy(self) -> List[inventories.Item]:
         items = self.blocks[0][0].destroy()

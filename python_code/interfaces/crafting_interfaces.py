@@ -194,9 +194,10 @@ class FactoryWindow(CraftingWindow):
         self,
         craft_building: "buildings.Building",
         recipes: "recipe_utility.RecipeBook",
-        *sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
     ):
-        super().__init__(craft_building, recipes, *sprite_group, title="CRAFTING:")
+        super().__init__(craft_building, recipes, sprite_group, **kwargs)
         self.__init_widgets()
 
     def create_crafting_result_lbl(self) -> widgets.ItemDisplay:
@@ -230,9 +231,10 @@ class FurnaceWindow(CraftingWindow):
         self,
         craft_building: "buildings.Building",
         recipes: "recipe_utility.RecipeBook",
-        *sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        **kwargs
     ):
-        super().__init__(craft_building, recipes, *sprite_group, title="FURNACE")
+        super().__init__(craft_building, recipes, sprite_group, **kwargs)
         self.__fuel_meter = None
         self.__init_widgets()
 
