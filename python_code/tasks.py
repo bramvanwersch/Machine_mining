@@ -296,8 +296,16 @@ class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
         self.__handed_in = False
         self.__canceled = False
 
-    def __init_load__(self, block=None, priority=None, started_task=None, selected=None, task_progress=None,
-                      handed_in=None, canceled=None):
+    def __init_load__(
+         self,
+         block=None,
+         priority=None,
+         started_task=None,
+         selected=None,
+         task_progress=None,
+         handed_in=None,
+         canceled=None
+    ):
         self.block = block
         self.priority = priority
 
