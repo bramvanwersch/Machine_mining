@@ -266,6 +266,8 @@ class BiomeGenerationDefinition(loading_saving.Savable, loading_saving.Loadable,
             # noinspection PyUnresolvedReferences
             structure_lhs_at_depth = {structure: structure.get_likelyhood_at_depth(depth) * frequency
                                       for structure, frequency in cls.STRUCTURE_PROBABILITIES.items()}
+            if sum(structure_lhs_at_depth.values()) == 0:
+                structure_lhs_at_depth = {structure: 1.0 for structure in structure_lhs_at_depth}
             # noinspection PyUnresolvedReferences
             return choices(list(structure_lhs_at_depth.keys()), list(structure_lhs_at_depth.values()), k=1)[0]
         return None

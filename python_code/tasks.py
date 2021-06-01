@@ -25,18 +25,20 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "reachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict}
-                                      for block_id, task_dict in self.reachable_block_tasks},
-            "unreachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict}
-                                        for block_id, task_dict in self.unreachable_block_tasks}
+            "reachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict.items()}
+                                      for block_id, task_dict in self.reachable_block_tasks.items()},
+            "unreachable_block_tasks": {block_id: {task_name: task.to_dict() for task_name, task in task_dict.items()}
+                                        for block_id, task_dict in self.unreachable_block_tasks.items()}
         }
 
     @classmethod
     def from_dict(cls, dct, board=None):
-        reachable_block_tasks = {block_id: {task_name: Task.from_dict(d) for task_name, d in outer_d}
-                                 for block_id, outer_d in dct["reachable_block_tasks"]}
-        unreachable_block_tasks = {block_id: {task_name: Task.from_dict(d) for task_name, d in outer_d}
-                                   for block_id, outer_d in dct["unreachable_block_tasks"]}
+        reachable_block_tasks = {block_id: {task_name: MultipleTaskList.from_dict(d)
+                                            for task_name, d in outer_d.items()}
+                                 for block_id, outer_d in dct["reachable_block_tasks"].items()}
+        unreachable_block_tasks = {block_id: {task_name: MultipleTaskList.from_dict(d)
+                                              for task_name, d in outer_d.items()}
+                                   for block_id, outer_d in dct["unreachable_block_tasks"].items()}
         return cls.load(reachable_block_tasks=reachable_block_tasks, unreachable_block_tasks=unreachable_block_tasks,
                         board=board)
 
@@ -77,7 +79,7 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
 
     def remove_tasks(self, *tasks):
         for task in tasks:
-            #a block can be none for tasks not added to the task control
+            # a block can be none for tasks not added to the task control
             if task.block.id not in self.reachable_block_tasks or\
                     task.name() not in self.reachable_block_tasks[task.block.id]:
                 continue
@@ -161,12 +163,26 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
         return sorted(task_tuples)
 
 
-class MultipleTaskList:
+class MultipleTaskList(loading_saving.Savable, loading_saving.Loadable):
     """
     Object for tracking all tasks for a certain type and block
     """
     def __init__(self, task):
         self.tasks = [task]
+
+    def __init_load__(self, tasks):
+        self.tasks = tasks
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "tasks": [task.to_dict() for task in self.tasks]
+        }
+
+    @classmethod
+    def from_dict(cls, dct):
+        print(dct)
+        tasks = [Task.from_dict(d) for d in dct["tasks"]]
+        return cls.load(tasks=tasks)
 
     def task(self):
         return self.tasks[0]
@@ -318,8 +334,8 @@ class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
 
     @staticmethod
     def block_dict_to_block(dct):
+        pos = dct["pos"]
         mcd = block_classes.Block.from_dict(dct)
-        pos = mcd.block_kwargs.pop("pos")
         material = mcd.to_instance()
         block = material.to_block(pos)
         return block

@@ -85,16 +85,7 @@ class MCD(loading_saving.Savable, loading_saving.Loadable):
         return self.material.name()
 
 
-def material_instance_from_string(string: str, **kwargs) -> base_materials.BaseMaterial:
-    """Get the instance of the material named by string
-
-    Args:
-        string (str): name of the material you want the instance from
-        **kwargs: optional arguments
-
-    Returns:
-        material instance
-    """
+def material_class_from_string(string: str) -> Type[base_materials.BaseMaterial]:
     if string in dir(ground_m):
         material = getattr(ground_m, string)
     elif string in dir(env_m):
@@ -105,7 +96,15 @@ def material_instance_from_string(string: str, **kwargs) -> base_materials.BaseM
     #     material = getattr(block_classes.machine_materials, string)
     else:
         material = getattr(base_materials, string)
-    return material(**kwargs)
+    return material
+
+
+def material_instance_from_string(
+    string: str,
+    **kwargs
+) -> base_materials.BaseMaterial:
+    material_class = material_class_from_string(string)
+    return material_class(**kwargs)
 
 
 def configure_material_collections() -> None:

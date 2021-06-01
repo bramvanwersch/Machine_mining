@@ -216,8 +216,10 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         d2 = VariableSurfaceBlock.to_dict(self)
         d1["needs_board_update"] = True
         d1["block_kwargs"]["changed"] = d2["changed"]
-        d1["block_kwargs"]["current_item"] = self.current_item.to_dict()
-        d1["block_kwargs"]["incomming_item"] = self.incomming_item.to_dict()
+        d1["block_kwargs"]["current_item"] = \
+            self.current_item.to_dict() if self.current_item.to_dict() is not None else None
+        d1["block_kwargs"]["incomming_item"] = \
+            self.incomming_item.to_dict() if self.incomming_item.to_dict() is not None else None
         d1["block_kwargs"]["current_push_direction"] = self.__current_push_direction
         d1["block_kwargs"]["exact_item_position"] = self.__exact_item_position
         d1["block_kwargs"]["previous_incomming_position"] = self.__previous_incomming_position
