@@ -663,7 +663,8 @@ class PredefinedBlocks(loading_saving.Savable, loading_saving.Loadable):
 
     @classmethod
     def from_dict(cls, dct):
-        internal_tree = {outer_name: {name: block_util.MCD.from_dict(value) for name, value in inner_dict.items()}
+        internal_tree = {int(outer_name): {int(name): block_util.MCD.from_dict(value)
+                                           for name, value in inner_dict.items()}
                          for outer_name, inner_dict in dct["internal_tree"].items()}
         return cls.load(internal_tree=internal_tree)
 
