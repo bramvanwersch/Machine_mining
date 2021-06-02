@@ -235,8 +235,6 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         d1["block_kwargs"]["changed"] = d2["changed"]
         d1["block_kwargs"]["current_item"] = \
             self.current_item.to_dict() if self.current_item is not None else None
-        d1["block_kwargs"]["incomming_item"] = \
-            self.incomming_item.to_dict() if self.incomming_item is not None else None
         d1["block_kwargs"]["current_push_direction"] = self.__current_push_direction
         d1["block_kwargs"]["exact_item_position"] = self.__exact_item_position
         return d1
@@ -279,7 +277,6 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     def check_item_movement(self):
         """Move items within the conveyor belt"""
         if self.current_item is not None:
-            print(self.current_item.rect, self.rect)
             self.__move_item_forward()
         elif self.incomming_item is not None:
             if self.incomming_item.rect.topleft != self.__previous_incomming_position:
