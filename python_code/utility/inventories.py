@@ -1,5 +1,6 @@
 from typing import Union, List, Set, Dict, TYPE_CHECKING, Iterable, Any
 import random
+import pygame
 
 from utility import utilities as util, loading_saving
 if TYPE_CHECKING:

@@ -11,6 +11,7 @@ import utility.utilities as util
 import block_classes.blocks as blocks
 import block_classes.materials.materials as base_materials
 import utility.constants as con
+import utility.loading_saving
 
 
 class BuildingMaterial(base_materials.TransportableMaterial, ABC):
@@ -183,14 +184,19 @@ class RustedIronSheetWall(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (40, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, ABC):
+class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, utility.loading_saving.Savable, ABC):
     __slots__ = "direction"
 
     direction: int
 
     def __init__(self, direction=0, **kwargs):
         super().__init__(**kwargs)
-        self.direction = direction  # direction the belt is facing. Intersections are only visual th
+        self.direction = direction  # direction the belt is facing.
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["direction"] = self.direction
+        return d
 
     # noinspection PyPep8Naming
     @property

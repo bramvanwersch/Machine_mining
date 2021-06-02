@@ -62,11 +62,20 @@ class Block(loading_saving.Savable, loading_saving.Loadable, ABC):
 
     @classmethod
     def from_dict(cls, dct):
+        # TODO not the best solution for this at the moment but it works nice with chunks --> might be changed for
         import block_classes.block_utility as block_utility
         del dct["pos"]
         # optional arguments that need converting back
         if "inventory" in dct["block_kwargs"]:
             dct["block_kwargs"]["inventory"] = inventories.Inventory.from_dict(dct["block_kwargs"]["inventory"])
+        if "current_item" in dct["block_kwargs"]:
+            dct["block_kwargs"]["current_item"] = \
+                inventories.TransportItem.from_dict(dct["block_kwargs"]["current_item"]) if \
+                    dct["block_kwargs"]["current_item"] is not None else None  # noqa
+        if "incomming_item" in dct["block_kwargs"]:
+            dct["block_kwargs"]["incomming_item"] = \
+                inventories.TransportItem.from_dict(dct["block_kwargs"]["incomming_item"]) \
+                    if dct["block_kwargs"]["incomming_item"] is not None else None  # noqa
         mcd = block_utility.MCD.from_dict(dct)
         return mcd
 
@@ -197,16 +206,24 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         pos: Union[Tuple[int, int], List[int]],
         material: "building_materials.ConveyorBelt",
         changed: bool = False,
+        current_item: Union[inventories.TransportItem, None] = None,
+        incomming_item: Union[inventories.TransportItem, None] = None,
+        current_push_direction: int = 0,
+        exact_item_position: List[int] = None,
+        previous_incomming_position: Tuple[int] = None,
         **kwargs
     ):
         SurroundableBlock.__init__(self, pos, material, **kwargs)
         VariableSurfaceBlock.__init__(self, changed)
-        self.current_item = None
-        self.incomming_item = None
-        self.__current_push_direction = 0  # value that tracks the previous pushed direction can be 0, 1 or 2
+        self.current_item = current_item
+        self.incomming_item = incomming_item
+        # value that tracks the previous pushed direction can be 0, 1 or 2
+        self.__current_push_direction = current_push_direction
         self.__item_surface = None  # surface tracking for efficiency
-        self.__exact_item_position = [0, 0]
-        self.__previous_incomming_position = (0, 0)  # track the previous position of the incomming item for efficiency
+        self.__exact_item_position = [0, 0] if exact_item_position is None else exact_item_position
+        # track the previous position of the incomming item for efficiency
+        self.__previous_incomming_position = \
+            (0, 0) if previous_incomming_position is None else previous_incomming_position
         self.next_block = None  # the block selected to push an item to
         # track the previous block names for updating reasons
         self._previous_surrounding_block_names = [None for _ in range(len(self.surrounding_blocks))]
@@ -217,12 +234,11 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
         d1["needs_board_update"] = True
         d1["block_kwargs"]["changed"] = d2["changed"]
         d1["block_kwargs"]["current_item"] = \
-            self.current_item.to_dict() if self.current_item.to_dict() is not None else None
+            self.current_item.to_dict() if self.current_item is not None else None
         d1["block_kwargs"]["incomming_item"] = \
-            self.incomming_item.to_dict() if self.incomming_item.to_dict() is not None else None
+            self.incomming_item.to_dict() if self.incomming_item is not None else None
         d1["block_kwargs"]["current_push_direction"] = self.__current_push_direction
         d1["block_kwargs"]["exact_item_position"] = self.__exact_item_position
-        d1["block_kwargs"]["previous_incomming_position"] = self.__previous_incomming_position
         return d1
 
     def put_current_item(
@@ -263,6 +279,7 @@ class ConveyorNetworkBlock(SurroundableBlock, VariableSurfaceBlock):
     def check_item_movement(self):
         """Move items within the conveyor belt"""
         if self.current_item is not None:
+            print(self.current_item.rect, self.rect)
             self.__move_item_forward()
         elif self.incomming_item is not None:
             if self.incomming_item.rect.topleft != self.__previous_incomming_position:

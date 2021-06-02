@@ -445,7 +445,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                    250), self, *groups)
 
     def __init_load__(self, number=None, name=None, board_=None, task_control=None, inventory=None,
-                      task_queue=None, **kwargs):
+                      task_queue=None, path=None, dest=None, **kwargs):
         super().__init_load__(**kwargs)
         self.number = number
         self.name = name
@@ -454,11 +454,10 @@ class Worker(MovingEntity, util.ConsoleReadable):
 
         # tasks
         self.task_queue = task_queue
-        self.path = []
-        self.dest = None
+        self.path = path
+        self.dest = dest
 
         # inventory
-        print(inventory)
         self.inventory = inventory
         self.__previous_x_direction = -1
 
@@ -488,24 +487,30 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                    250), self, kwargs["sprite_group"])
 
     def to_dict(self):
+        from board import pathfinding
         d = super().to_dict()
         d["number"] = self.number
         d["name"] = self.name
         d["inventory"] = self.inventory.to_dict()
         d["previous_x_direction"] = self.__previous_x_direction
         d["task_queue"] = self.task_queue.to_dict()
+        d["path"] = self.path.to_dict() if isinstance(self.path, pathfinding.Path) else None
+        d["dest"] = self.dest
         return d
 
     @classmethod
     def from_dict(cls, dct, sprite_group=None, board_=None, task_control=None):
+        from board import pathfinding
         inventory = inventories.Inventory.from_dict(dct["inventory"])
         task_queue = tasks.TaskQueue.from_dict(dct["task_queue"])
         orig_rect = pygame.Rect(dct["orig_rect"])
         speed = pygame.Vector2(*dct["speed"])
+        path = pathfinding.Path.from_dict(dct["path"]) if dct["path"] is not None else []
         return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
                         max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_values"],
                         name=dct["name"], number=dct["number"], inventory=inventory, task_queue=task_queue,
-                        board_=board_, sprite_group=sprite_group, task_control=task_control)
+                        board_=board_, sprite_group=sprite_group, task_control=task_control, dest=dct["dest"],
+                        path=path)
 
     def _create_surface(
         self,

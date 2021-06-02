@@ -59,7 +59,7 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
             elif type == "Mining":
                 task = MiningTask(block, priority=priority, **kwargs)
             else:
-                raise Exception("Invalid task name {}".format(type))
+                raise util.GameException("Invalid task name {}".format(type))
 
             surrounding_blocks = self.board.surrounding_blocks(block)
             if len([b for b in surrounding_blocks if b is not None and b.transparant_group != 0]) > 0:
@@ -180,7 +180,6 @@ class MultipleTaskList(loading_saving.Savable, loading_saving.Loadable):
 
     @classmethod
     def from_dict(cls, dct):
-        print(dct)
         tasks = [Task.from_dict(d) for d in dct["tasks"]]
         return cls.load(tasks=tasks)
 
@@ -350,7 +349,7 @@ class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
 
     def start(self, entity, **kwargs):
         self.started_task = True
-        #in case of canceled tasks
+        # in case of canceled tasks
         self.__canceled = False
         self._set_task_progress(entity)
 
@@ -430,7 +429,7 @@ class MultiTask(Task, ABC):
         if self.finished_subtasks:
             super().start(entity, **kwargs)
         elif self._subtask_count > self._max_retries:
-            #make sure to remove the task at the start of the task queue
+            # make sure to remove the task at the start of the task queue
             entity.task_queue.next()
             self.cancel()
 
@@ -486,7 +485,8 @@ class BuildTask(MultiTask):
         return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
                         selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
                         canceled=dct["canceled"], original_group=dct["original_group"],
-                        finished_block=finish_block, removed_blocks=removed_blocks)
+                        finish_block=finish_block, removed_blocks=removed_blocks, subtask_count=dct["subtask_count"],
+                        finished_subtasks=dct["finished_subtasks"], max_retries=dct["max_retries"])
 
     def start(self, entity, **kwargs):
         if not entity.inventory.check_item_get(self.finish_block.name()):
@@ -497,7 +497,7 @@ class BuildTask(MultiTask):
         super().start(entity, **kwargs)
 
     def _set_task_progress(self, entity):
-        #TODO add mining tasks instead of remving and building at the same time. Low prio
+        # TODO add mining tasks instead of remving and building at the same time. Low prio
         self.task_progress = [0, self.BUILDING_SPEED + sum(b.mining_speed for b in self.removed_blocks)]
 
     def hand_in(self, entity, **kwargs):
@@ -539,11 +539,11 @@ class FetchTask(Task):
 
         return cls.load(block=block, priority=dct["priority"], started_task=dct["started_task"],
                         selected=dct["selected"], task_progress=dct["task_progress"], handed_in=dct["handed_in"],
-                        canceled=dct["canceled"], required_block_name=dct["required_block_name"],
+                        canceled=dct["canceled"], required_block_name=dct["req_block_name"],
                         quantity=dct["quantity"], ignore_filter=dct["ignore_filter"])
 
     def start(self, entity, inventory_block=None, **kwargs):
-        if self.block != None:
+        if self.block is not None:
             super().start(entity, **kwargs)
         else:
             # cheat way to disregard the task

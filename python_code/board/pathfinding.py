@@ -4,6 +4,7 @@ from typing import List, Dict, Union, ClassVar, Set, TYPE_CHECKING, Tuple, Any
 import utility.constants as con
 import utility.utilities as util
 import interfaces.windows.interface_utility as interface_util
+from utility import loading_saving
 if TYPE_CHECKING:
     from block_classes import blocks
     import pygame
@@ -194,7 +195,7 @@ class PathFinder:
         return None
 
 
-class Path:
+class Path(loading_saving.Loadable, loading_saving.Savable):
     """Track a path and its lenght"""
     start_location: Union[Tuple[int, int], List[int]]
     __coordiantes: List[List[List[int]]]
@@ -206,7 +207,23 @@ class Path:
     ):
         self.start_location = start
         self.__coordinates = []  # coordinates that give an allowed range
-        self.__lenght = 0
+        self.__length = 0
+
+    def __init_load__(self, start_location, coordinates, length):
+        self.start_location = start_location
+        self.__coordinates = coordinates
+        self.__length = length
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "start_location": self.start_location,
+            "coordinates": self.__coordinates,
+            "length": self.__length
+        }
+
+    @classmethod
+    def from_dict(cls, dct):
+        return cls.load(**dct)
 
     def append(
         self,
@@ -217,7 +234,7 @@ class Path:
         # distance will be zero for the first addition
         point1 = (sum(point[0]) / 2, sum(point[1]) / 2)
         point2 = (sum(self.__coordinates[-1][0]) / 2, sum(self.__coordinates[-1][1]) / 2)
-        self.__lenght += util.manhattan_distance(point1, point2)
+        self.__length += util.manhattan_distance(point1, point2)
 
     def pop(
         self,
@@ -235,7 +252,7 @@ class Path:
     @property
     def path_lenght(self):
         """Give the length of the full path from the location of the path that is available"""
-        return self.__lenght + util.manhattan_distance(self.__coordinates[-1], self.start_location)
+        return self.__length + util.manhattan_distance(self.__coordinates[-1], self.start_location)
 
 
 class Node:

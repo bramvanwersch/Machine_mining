@@ -67,15 +67,17 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.board_generator = board_generator
         self.chunk_matrix = chunk_matrix
         self.loaded_chunks = set()
+        all_update_blocks = []
         for row in chunk_matrix:
             for chunk in row:
                 if chunk is None:
                     continue
                 self.loaded_chunks.add(chunk)
                 self.pathfinding.pathfinding_tree.add_chunk(chunk.pathfinding_chunk)
-                update_blocks = chunk.get_board_update_blocks()
-                self.add_blocks(*update_blocks, update=True)
-                self.changed_light_blocks.update(update_blocks)
+                all_update_blocks.extend(chunk.get_board_update_blocks())
+
+        self.add_blocks(*all_update_blocks, update=True)
+        self.changed_light_blocks.update(all_update_blocks)
         # chunks that are currently loading to make sure that no double chunks are generated
         self._loading_chunks = set()
 
