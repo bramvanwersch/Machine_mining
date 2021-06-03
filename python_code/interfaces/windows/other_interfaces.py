@@ -3,7 +3,7 @@ from typing import List, Union, Tuple, TYPE_CHECKING
 
 import interfaces.widgets as widgets
 import utility.constants as con
-import interfaces.windows.base_interface as base_interfaces
+from interfaces.windows import base_interface, file_explorer_interface
 import scenes
 import utility.utilities as util
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ def get_selected_item() -> Union[None, "inventories.Item"]:
     return None
 
 
-class BuildingWindow(base_interfaces.Window):
+class BuildingWindow(base_interface.Window):
     """The building window where a building material can be selected"""
     WINDOW_SIZE: util.Size = util.Size(400, 300)
     WINDOW_POS: Union[Tuple[int, int], List] = (int((con.SCREEN_SIZE.width - WINDOW_SIZE.width) / 2),
@@ -93,7 +93,7 @@ class BuildingWindow(base_interfaces.Window):
         pygame.event.post(newevent)
 
 
-class PauseWindow(base_interfaces.Window):
+class PauseWindow(base_interface.Window):
     """Pause window when in the game that is called from within the game"""
     WINDOW_SIZE = util.Size(400, 500)
     WINDOW_POS = (int((con.SCREEN_SIZE.width - WINDOW_SIZE.width) / 2),
@@ -101,6 +101,7 @@ class PauseWindow(base_interfaces.Window):
 
     def __init__(self, sprite_group):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, title="PAUSED")
+        self.file_explorer = file_explorer_interface.OpenFile((50, 50), sprite_group)
         self.__init_widgets()
 
     def __init_widgets(self):
@@ -125,10 +126,12 @@ class PauseWindow(base_interfaces.Window):
         scenes.scenes.set_active_scene("MainMenu")
 
     def __save(self):
-        scenes.scenes["Game"].save()
+        from interfaces.managers import game_window_manager
+        game_window_manager.add(self.file_explorer)
+        #scenes.scenes["Game"].save()
 
 
-class InventoryWindow(base_interfaces.Window):
+class InventoryWindow(base_interface.Window):
     """Interface for inventory buildings"""
     SIZE = util.Size(300, 200)
     COLOR = (173, 94, 29)

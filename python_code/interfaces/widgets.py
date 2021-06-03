@@ -1095,6 +1095,21 @@ class ItemDisplay(Label):
             self.__add_quantity_text()
 
 
+class ListBox(Pane):
+
+    def __init__(self, size, list_values, font_size=25, **kwargs):
+        super().__init__(size, **kwargs)
+        self.list_values = list_values
+        self.__list_labels = []
+        self.__init_widgets(font_size)
+
+    def __init_widgets(self, font_size):
+        for index, value in enumerate(self.list_values):
+            label = Label(util.Size(self.rect.width - 10, 30), border=True, text=value, font_size=font_size)
+            self.__list_labels.append(label)
+            self.add_widget((5, 10 + index * 32), label)
+
+
 class MultilineTextBox(Pane):
     __SELECTION_COLOR = (0, 255, 0, 100)
     __BORDER_SPACING = 3
