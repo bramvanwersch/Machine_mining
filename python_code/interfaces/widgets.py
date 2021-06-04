@@ -1095,19 +1095,26 @@ class ItemDisplay(Label):
             self.__add_quantity_text()
 
 
-class ListBox(Pane):
+class ListBox(ScrollPane):
 
-    def __init__(self, size, list_values, font_size=25, **kwargs):
+    def __init__(self, size, **kwargs):
         super().__init__(size, **kwargs)
-        self.list_values = list_values
-        self.__list_labels = []
-        self.__init_widgets(font_size)
 
-    def __init_widgets(self, font_size):
-        for index, value in enumerate(self.list_values):
-            label = Label(util.Size(self.rect.width - 10, 30), border=True, text=value, font_size=font_size)
-            self.__list_labels.append(label)
-            self.add_widget((5, 10 + index * 32), label)
+    def add_widget(
+        self,
+        widget: Widget,
+    ):
+        print(widget)
+        y_pos = sum(w.rect.height + 10 for w in self.widgets)
+        print(self.rect.width / 2 - widget.rect.width / 2, y_pos,
+                                  widget.rect.width, widget.rect.height)
+        widget.rect = pygame.Rect(self.rect.width / 2 - widget.rect.width / 2, y_pos,
+                                  widget.rect.width, widget.rect.height)
+        print(widget.rect)
+        # configure the position of the next
+        self.widgets.append(widget)
+        self.orig_surface.blit(widget.surface, widget.rect)
+        self.changed_image = True
 
 
 class MultilineTextBox(Pane):
