@@ -561,6 +561,7 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
+        self.console_window.run_starting_script()
 
     def save(self, name):
         with open(f"{con.SAVE_DIR}{os.sep}{name}.save", "w") as fp:

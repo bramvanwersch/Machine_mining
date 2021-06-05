@@ -391,7 +391,6 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         # if the id is already present make sure that the building is not added repeadetly
         if block_of_building.id in self.buildings:
             return
-        print(block_of_building.inventory)
         # if the incomming block is a single block part of a building, create the full building first
         if not isinstance(block_of_building, buildings.Building):
             if isinstance(block_of_building, block_classes.ContainerBlock):

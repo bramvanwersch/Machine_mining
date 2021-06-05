@@ -29,6 +29,8 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - add ghost buildings when building
 - have the game start at the surface
 - openGL can be used --> takes a large amount of changes
+- have windows stay in the place where you put them even when zooming. This helps the user when they lay out
+  the UI for themselves.
 
 SPECIFIC FEATURES:
 - Draw air rectangles non-biased towards the y direction.

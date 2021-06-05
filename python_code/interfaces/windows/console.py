@@ -63,6 +63,9 @@ class ConsoleWindow(Window):
             raise util.GameException(f"Invalid direction for retrieving Console line {direction}")
         self.__input_line.active_line.set_line_text(line.text)
 
+    def run_starting_script(self):
+        self.__console.process_command_line_text("scripts start")
+
     def __init_widgets(self):
         self.__input_line = ConsoleLine(self.WINDOW_SIZE.width - 10)
         self.add_widget((5, self.WINDOW_SIZE.height - self.__input_line.rect.height - 5), self.__input_line)
@@ -455,7 +458,6 @@ class Console:
         self.__board = board
         self.__user = user_
         self.__innitialise_command_tree()
-        self.process_command_line_text("scripts start")
 
     def __innitialise_command_tree(self):
         self.command_tree["print"] = self.__create_print_tree()
