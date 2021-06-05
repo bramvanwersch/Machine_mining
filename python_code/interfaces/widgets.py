@@ -377,7 +377,7 @@ class Label(Widget):
 
         # variables for saving the values used for creation of the surface
         self.__image_specifications = None
-        self.__text_specifications = None
+        self.__text_specifications = [text if text is not None else "", text_pos, text_color, font_size]
         self.__selection_specifications = None
         self.create_surface(image, image_pos, image_size, text, text_pos, text_color, font_size)
 
@@ -1104,13 +1104,10 @@ class ListBox(ScrollPane):
         self,
         widget: Widget,
     ):
-        print(widget)
         y_pos = sum(w.rect.height + 10 for w in self.widgets)
-        print(self.rect.width / 2 - widget.rect.width / 2, y_pos,
-                                  widget.rect.width, widget.rect.height)
+
         widget.rect = pygame.Rect(self.rect.width / 2 - widget.rect.width / 2, y_pos,
                                   widget.rect.width, widget.rect.height)
-        print(widget.rect)
         # configure the position of the next
         self.widgets.append(widget)
         self.orig_surface.blit(widget.surface, widget.rect)

@@ -511,8 +511,8 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
 
-    def save(self):
-        with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "w") as fp:
+    def save(self, name):
+        with open(f"{con.SAVE_DIR}{os.sep}{name}.save", "w") as fp:
             d = self.to_dict()
             json.dump(d, fp, indent=True)
         print("gamestate has been saved")

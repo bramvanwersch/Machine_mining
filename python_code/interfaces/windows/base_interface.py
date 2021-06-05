@@ -40,17 +40,18 @@ class Window(widgets.Frame):
         color=COLOR,
         title: Union[str, None] = None,
         static: bool = False,
+        movable: bool = True,
         **kwargs
     ):
         super().__init__(pos, size + self.TOP_SIZE, *groups, color=color, static=static, **kwargs)
 
         if not isinstance(size, util.Size):
             size = util.Size(*size)
-        self.window_manager = window_managers.game_window_manager
 
         # values for moving static windows
         self._is_window_moving = False
         self.__previous_board_pos = None
+        self._movable = movable
 
         self._is_window_showing = False
         self._is_window_focussed = False
@@ -97,9 +98,10 @@ class Window(widgets.Frame):
         is_moving: bool
     ):
         """Function for the action of moving the top label"""
+        if not self._movable:
+            return
         self._is_window_moving = is_moving
         if is_moving is True:
-            # as far as i know this is the best way to acces the main sprite group of this sprite
             self.__previous_board_pos = \
                 interfacer_util.screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)  # noqa
 
@@ -126,9 +128,8 @@ class Window(widgets.Frame):
 
     def _close_window(self):
         """Press the escape key to close the window"""
-        if self.window_manager is None:
-            self.window_manager = window_managers.game_window_manager
-        self.window_manager.remove(self)
+        from interfaces.managers import game_window_manager
+        game_window_manager.remove(self)
         mock_key = event_handling.Key(con.BTN_HOVER)
         self._reset_hovers(mock_key)
 
@@ -177,3 +178,29 @@ class Window(widgets.Frame):
     @classmethod
     def name(cls):
         return cls.__name__
+
+
+class TopWindow(Window):
+    """Window class that does not push on events to lower windows"""
+
+    def handle_mouse_events(
+        self,
+        events: List[pygame.event.Event],
+        consume_events: bool = True
+    ) -> List[pygame.event.Event]:
+        """Handle mouse events issued by the user. These events trigger when this window is hovered"""
+        if self.is_showing():
+            events = super().handle_mouse_events(events, consume_events=consume_events)
+            return []
+        return events
+
+    def handle_other_events(
+        self,
+        events: List[pygame.event.Event],
+        consume_events: bool = True
+    ) -> List[pygame.event.Event]:
+        """Handle keyboard events issued by the user. These events trigger when the window is focussed"""
+        if self.is_showing():
+            events = super().handle_other_events(events, consume_events=consume_events)
+            return []
+        return events

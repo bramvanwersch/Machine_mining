@@ -35,6 +35,8 @@ SPECIFIC FEATURES:
 - Pathfind between chunks before pathfinding trough chunks, this speeds up the pathfinding
 - make the camera stop when the loaded area is about to go offscreen instead of allowing to go to the edge
 - add the seed feature to the game settings, as well as a way to control the amount of structures
+- Revamp the widgets class structures to get an abstract version of the pane and label classes to make sure that certain
+  methods are not present in widgets they shoudnt be.
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
