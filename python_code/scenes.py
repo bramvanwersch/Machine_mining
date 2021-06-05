@@ -168,8 +168,8 @@ class MainMenu(Scene):
 
     def __load_game(self):
         global scenes
-        scenes[LoadingScene.name()] = LoadingScene(self.screen)
-        scenes.set_active_scene(LoadingScene.name())
+        scenes[LoadingOptionsScene.name()] = LoadingOptionsScene(self.screen)
+        scenes.set_active_scene(LoadingOptionsScene.name())
 
     def __open_settings(self):
         warnings.warn("No settings available yet", util.NotImplementedWarning)
@@ -178,7 +178,7 @@ class MainMenu(Scene):
         self.going = False
 
 
-class LoadingScene(Scene):
+class LoadingOptionsScene(Scene):
     def __init__(self, screen):
         sprite_group = sprite_groups.ShowToggleLayerUpdates()
         super().__init__(screen, sprite_group)
@@ -211,7 +211,16 @@ class LoadingScene(Scene):
         self.loading_frame.add_widget(("center", self.rect.height - 100), back_button)
 
     def load_file(self, file_name):
-        Game.load_game(file_name, self.screen)
+        global scenes
+        with open(f"{con.SAVE_DIR}{os.sep}{file_name}", "r") as fp:
+            dct = json.load(fp)
+        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
+        sprite_group = sprite_groups.CameraAwareLayeredUpdates(camera_center, con.BOARD_SIZE)
+        game = Game(self.screen, sprite_group=sprite_group)
+        executor = interface_util.ThreadPoolExecutorStackTraced()
+        future = executor.submit(game.load_start, dct=dct)
+        scenes[LoadingScreen.name()] = LoadingScreen(self.screen, future, game, executor)
+        scenes.set_active_scene(LoadingScreen.name())
 
     def __back_to_main(self):
         global scenes
@@ -459,13 +468,16 @@ class LoadingScreen(Scene):
             super().draw()
 
 
-class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
-    def __init__(self, screen, options):
-        self.__selected_options = options
-        # camera center position is changed before starting the game
-        # TODO make the size 0,0
-        self.camera_center = entities.CameraCentre((0, 0), (5, 5))
-        sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
+class Game(loading_saving.Savable, Scene):
+    def __init__(self, screen, options=None, sprite_group=None):
+        if sprite_group is None:
+            self.__selected_options = options
+            # camera center position is changed before starting the game
+            # TODO make the size 0,0
+            self.camera_center = entities.CameraCentre((0, 0), (5, 5))
+            sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
+        else:
+            self.camera_center = sprite_group.target
         super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
         # update rectangles
         self.__vision_rectangles = []
@@ -485,47 +497,12 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         self.window_manager = None
         self.building_interface = None
 
-    def __init_load__(self, screen, sprite_group, camera_center, board_, user_):
-        # camera center position is changed before starting the game
-        # TODO make the size 0,0
-        self.camera_center = camera_center
-        super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
-        # update rectangles
-        self.__vision_rectangles = []
-        self.__debug_rectangle = (0, 0, 0, 0)
-
-        self._visible_entities = 0
-
-        # zoom variables
-        self._zoom = 1.0
-        self.progress_var = [""]
-        self.board = board_
-        self.user = user_
-        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
-
-        # ready made windows
-        window_managers.create_window_managers(self.camera_center)
-        from interfaces.managers import game_window_manager
-        self.window_manager = game_window_manager
-        self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
-                                                                  self.sprite_group)
-
     def to_dict(self) -> Dict[str, Any]:
         return {
             "camera_center": self.camera_center.to_dict(),
             "user": self.user.to_dict(),
             "board": self.board.to_dict()
         }
-
-    @classmethod
-    def from_dict(cls, dct, screen=None):
-        camera_center = entities.CameraCentre.from_dict(dct["camera_center"])
-        sprite_group = sprite_groups.CameraAwareLayeredUpdates(camera_center, con.BOARD_SIZE)
-        board_ = board.board.Board.from_dict(dct["board"], sprite_group)
-        user_ = user.User.from_dict(dct["user"], board=board_, sprite_group=sprite_group)
-        return cls.load(screen=screen, sprite_group=sprite_group, board_=board_, user_=user_,
-                        camera_center=camera_center)
 
     def start(self):
         # function for setting up a Game
@@ -563,21 +540,28 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
         self.console_window.run_starting_script()
 
+    def load_start(self, dct):
+        # camera center position is changed before starting the game
+        # TODO make the size 0,0
+        self.progress_var[0] = "Loading board"
+        self.board = board.board.Board.from_dict(dct["board"], self.sprite_group)
+        self.progress_var[0] = "Loading user information"
+        self.user = user.User.from_dict(dct["user"], board=self.board, sprite_group=self.sprite_group)
+        self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
+        self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
+
+        # ready made windows
+        window_managers.create_window_managers(self.camera_center)
+        from interfaces.managers import game_window_manager
+        self.window_manager = game_window_manager
+        self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
+                                                                  self.sprite_group)
+
     def save(self, name):
         with open(f"{con.SAVE_DIR}{os.sep}{name}.save", "w") as fp:
             d = self.to_dict()
             json.dump(d, fp, indent=True)
         print("gamestate has been saved")
-
-    @classmethod
-    def load_game(cls, file_name, screen):
-        global scenes
-        with open(f"{con.SAVE_DIR}{os.sep}{file_name}", "r") as fp:
-            dct = json.load(fp)
-        # TODO make this properly load --> speed is at a point that it does not matter at this point
-        game = cls.from_dict(dct, screen)
-        scenes[cls.name()] = game
-        scenes.set_active_scene(cls.name())
 
     def scene_updates(self):
         super().scene_updates()
@@ -647,7 +631,7 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
             clipped_rect = adjusted_rect.clip(self.rect)
             if clipped_rect.width > 0 and clipped_rect.height > 0:
                 board_u_rects.append(clipped_rect)
-        for window in self.window_manager.windows.values():
+        for window in list(self.window_manager.windows.values()) + [self.user.ui]:
             rect = window.orig_rect
             if not window.static:
                 board_u_rects.append(window.orig_rect)
