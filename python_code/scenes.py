@@ -2,6 +2,7 @@
 
 # library imports
 import os
+from os.path import isfile, join
 import json
 import warnings
 from abc import ABC
@@ -167,18 +168,68 @@ class MainMenu(Scene):
 
     def __load_game(self):
         global scenes
-        with open(f"{con.SAVE_DIR}{os.sep}test_save.json", "r") as fp:
-            dct = json.load(fp)
-        # TODO make this properly load
-        game = Game.from_dict(dct, self.screen)
-        scenes[Game.name()] = game
-        scenes.set_active_scene(Game.name())
+        scenes[LoadingScene.name()] = LoadingScene(self.screen)
+        scenes.set_active_scene(LoadingScene.name())
 
     def __open_settings(self):
         warnings.warn("No settings available yet", util.NotImplementedWarning)
 
     def __quit(self):
         self.going = False
+
+
+class LoadingScene(Scene):
+    def __init__(self, screen):
+        sprite_group = sprite_groups.ShowToggleLayerUpdates()
+        super().__init__(screen, sprite_group)
+
+        # all the available menu frames
+        self.loading_frame = None
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        self.loading_frame = widgets.Frame((0, 0), util.Size(*self.rect.size), self.sprite_group,
+                                           color=(173, 94, 29), static=False)
+        frame_rect = self.loading_frame.rect
+        save_label = widgets.Label(util.Size(frame_rect.width, 30), text="Choose a file to load:", font_size=25,
+                                   color=(0, 0, 0, 0), selectable=False)
+        self.loading_frame.add_widget((int(frame_rect.width / 2 - save_label.rect.width / 2), 5), save_label)
+
+        file_list = widgets.ListBox(util.Size(frame_rect.width - 200, self.rect.height - 300),  color=(173, 94, 29))
+        self.loading_frame.add_widget(("center", 75), file_list)
+        self.loading_frame.add_border(file_list)
+
+        for file in os.listdir(con.SAVE_DIR):
+            if isfile(join(con.SAVE_DIR, file)) and file.endswith(".save"):
+                file_button = widgets.Button(util.Size(file_list.rect.width, 25), text=file, font_size=25,
+                                             color=(173, 94, 29))
+                file_button.add_key_event_listener(1, self.load_file, values=[file], types=["unpressed"])
+                file_list.add_widget(file_button)
+
+        back_button = widgets.Button((200, 30), text="BACK", font_size=25, color=(150, 150, 150))
+        back_button.add_key_event_listener(1, self.__back_to_main, types=["unpressed"])
+        self.loading_frame.add_widget(("center", self.rect.height - 100), back_button)
+
+    def load_file(self, file_name):
+        Game.load_game(file_name, self.screen)
+
+    def __back_to_main(self):
+        global scenes
+        if MainMenu.name() not in scenes:
+            scenes[MainMenu.name()] = MainMenu(self.screen)
+        scenes.set_active_scene(MainMenu.name())
+
+    def scene_event_handling(self, consume=False):
+        events = super().scene_event_handling()
+        mouse_events = []
+        other_events = []
+        for event in events:
+            if event.type in (con.MOUSEBUTTONDOWN, con.MOUSEBUTTONUP, con.MOUSEMOTION):
+                mouse_events.append(event)
+            else:
+                other_events.append(event)
+        self.loading_frame.handle_mouse_events(mouse_events, consume_events=consume)
+        self.loading_frame.handle_other_events(other_events, consume_events=consume)
 
 
 class GameSettingsScene(Scene):
@@ -324,7 +375,7 @@ class GameSettingsScene(Scene):
         start_game_btn.add_key_event_listener(1, self.__start_game)
         self.settings_menu_frame.add_widget((x_coord, y_coord), start_game_btn)
 
-        x_coord = (frame_rect.width / 2) + 5
+        x_coord = int((frame_rect.width / 2) + 5)
         back_btn = widgets.Button(widget_size, color=(100, 100, 100), text="BACK", font_size=30)
         back_btn.add_key_event_listener(1, self.__back_to_main)
         self.settings_menu_frame.add_widget((x_coord, y_coord), back_btn)
@@ -516,6 +567,16 @@ class Game(loading_saving.Savable, loading_saving.Loadable, Scene):
             d = self.to_dict()
             json.dump(d, fp, indent=True)
         print("gamestate has been saved")
+
+    @classmethod
+    def load_game(cls, file_name, screen):
+        global scenes
+        with open(f"{con.SAVE_DIR}{os.sep}{file_name}", "r") as fp:
+            dct = json.load(fp)
+        # TODO make this properly load --> speed is at a point that it does not matter at this point
+        game = cls.from_dict(dct, screen)
+        scenes[cls.name()] = game
+        scenes.set_active_scene(cls.name())
 
     def scene_updates(self):
         super().scene_updates()

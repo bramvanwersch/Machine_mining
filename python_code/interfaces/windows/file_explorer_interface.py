@@ -9,6 +9,37 @@ from utility import constants as con, utilities as util
 import scenes
 
 
+class LoadFileWindow(base_interface.Window):
+    # not in use currently but can come in handy when loading from within the game
+    SIZE: util.Size = util.Size(350, 400)
+    COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
+
+    def __init__(self, pos, sprite_group):
+        super().__init__(pos, self.SIZE, sprite_group, title="CHOOSE A FILE", static=False, color=self.COLOR,
+                         movable=False, top_window=True)
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        save_label = widgets.Label(util.Size(200, 30), text="Choose a file to load:", font_size=25, color=(0, 0, 0, 0),
+                                   selectable=False)
+        self.add_widget((int(self.rect.width / 2 - save_label.rect.width / 2), 5), save_label)
+
+        file_list = widgets.ListBox(util.Size(self.rect.width - 50, self.rect.height - 100),  color=self.COLOR)
+        self.add_widget(("center", 45), file_list)
+        self.add_border(file_list)
+
+        for file in os.listdir(con.SAVE_DIR):
+            if isfile(join(con.SAVE_DIR, file)) and file.endswith(".save"):
+                file_button = widgets.Button(util.Size(file_list.rect.width, 25), text=file, font_size=25,
+                                             color=self.COLOR)
+                file_button.add_key_event_listener(1, self.load_file, values=[file], types=["unpressed"])
+                file_list.add_widget(file_button)
+
+    def load_file(self, file_name):
+        screen = scenes.scenes["Game"].screen
+        scenes.Game.load_game(file_name, screen)
+
+
 class SaveFileWindow(base_interface.Window):
     SIZE: util.Size = util.Size(350, 400)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
@@ -16,10 +47,31 @@ class SaveFileWindow(base_interface.Window):
     def __init__(self, pos, sprite_group):
         super().__init__(pos, self.SIZE, sprite_group, title="CHOOSE A FILE", static=False, color=self.COLOR,
                          movable=False, top_window=True)
-        self.file_list = None
         self.__init_widgets()
         self.__create_name_popup = None
         self.__overwrite_file_popup = None
+
+    def __init_widgets(self):
+        save_label = widgets.Label(util.Size(200, 30), text="Choose a save file:", font_size=25, color=(0, 0, 0, 0),
+                                   selectable=False)
+        self.add_widget((int(self.rect.width / 2 - save_label.rect.width / 2), 5), save_label)
+
+        file_list = widgets.ListBox(util.Size(self.rect.width - 50, self.rect.height - 100),  color=self.COLOR)
+        self.add_widget(("center", 45), file_list)
+        self.add_border(file_list)
+
+        new_button = widgets.Button(util.Size(file_list.rect.width, 25), text="New...", font_size=25,
+                                    color=self.COLOR)
+        new_button.add_key_event_listener(1, self.create_new_file_window, types=["unpressed"])
+
+        file_list.add_widget(new_button)
+
+        for file in os.listdir(con.SAVE_DIR):
+            if isfile(join(con.SAVE_DIR, file)) and file.endswith(".save"):
+                file_button = widgets.Button(util.Size(file_list.rect.width, 25), text=file, font_size=25,
+                                             color=self.COLOR)
+                file_button.add_key_event_listener(1, self.confirm_overwrite_window, values=[file], types=["unpressed"])
+                file_list.add_widget(file_button)
 
     def update(self, *args):
         super().update(*args)
@@ -42,28 +94,6 @@ class SaveFileWindow(base_interface.Window):
         file_name = file_name.replace(".save", "")
         scenes.scenes["Game"].save(file_name)
         self._close_window()
-
-    def __init_widgets(self):
-        save_label = widgets.Label(util.Size(200, 30), text="Choose a save file:", font_size=25, color=(0, 0, 0, 0),
-                                   selectable=False)
-        self.add_widget((int(self.rect.width / 2 - save_label.rect.width / 2), 5), save_label)
-
-        self.file_list = widgets.ListBox(util.Size(self.rect.width - 50, self.rect.height - 100),  color=self.COLOR)
-        self.add_widget(("center", 45), self.file_list)
-        self.add_border(self.file_list)
-
-        new_button = widgets.Button(util.Size(self.file_list.rect.width, 25), text="New...", font_size=25,
-                                    color=self.COLOR)
-        new_button.add_key_event_listener(1, self.create_new_file_window, types=["unpressed"])
-
-        self.file_list.add_widget(new_button)
-
-        for file in os.listdir(con.SAVE_DIR):
-            if isfile(join(con.SAVE_DIR, file)) and file.endswith(".save"):
-                file_button = widgets.Button(util.Size(self.file_list.rect.width, 25), text=file, font_size=25,
-                                             color=self.COLOR)
-                file_button.add_key_event_listener(1, self.confirm_overwrite_window, values=[file], types=["unpressed"])
-                self.file_list.add_widget(file_button)
 
     def create_new_file_window(self):
         from interfaces.managers import game_window_manager
@@ -99,7 +129,8 @@ class ConfirmPopup(Popup):
 
     def __init_widgets(self, message):
         for index, line in enumerate(message.split("\n")):
-            message_lbl = widgets.Label(util.Size(self.rect.width - 20, 25), color=self.COLOR, text=line, font_size=18)
+            message_lbl = widgets.Label(util.Size(self.rect.width - 20, 25), color=self.COLOR, text=line, font_size=18,
+                                        selectable=False)
             self.add_widget((10, index * 18 + 5), message_lbl)
 
         oke_button = widgets.Button(util.Size(self.rect.width / 2 - 25, 25), text="OK", font_size=25)
