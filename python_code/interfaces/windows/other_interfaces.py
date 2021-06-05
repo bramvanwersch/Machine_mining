@@ -101,7 +101,12 @@ class PauseWindow(base_interface.Window):
 
     def __init__(self, sprite_group):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, title="PAUSED", movable=False)
-        self.file_explorer = file_explorer_interface.OpenFile((50, 50), sprite_group)
+        self.file_explorer = \
+            file_explorer_interface.OpenFile((self.rect.width / 2 - file_explorer_interface.OpenFile.SIZE.width / 2 +
+                                              self.rect.left,
+                                              self.rect.height / 2 - file_explorer_interface.OpenFile.SIZE.height / 2 +
+                                              self.rect.top), sprite_group)
+
         self.__init_widgets()
 
     def __init_widgets(self):

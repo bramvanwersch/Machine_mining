@@ -2,6 +2,7 @@ import pygame
 
 import utility.constants as con
 import interfaces.windows.interface_utility as util
+from interfaces.windows import base_interface
 
 
 game_window_manager = None
@@ -50,7 +51,7 @@ class WindowManager:
         window.show_window(False)
 
     def __set_top_window(self, window):
-        #set as top window if not already top
+        # set as top window if not already top
         if window != self.window_order[-1]:
             self.remove(window)
             self.add(window)
@@ -79,6 +80,9 @@ class WindowManager:
         if len(self.windows) == 0:
             return events
         hovered_window = self.__find_hovered_window(pygame.mouse.get_pos())
+        # if TopWindow is at the top then only process hovered based events for that window
+        if hovered_window != self.window_order[-1] and self.window_order[-1].is_top_window:
+            hovered_window = None
         window_other_events = []
         window_mouse_events = []
         ignored_events = []

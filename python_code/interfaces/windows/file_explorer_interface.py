@@ -9,12 +9,13 @@ from utility import constants as con, utilities as util
 import scenes
 
 
-class OpenFile(base_interface.TopWindow):
-    SIZE: util.Size = util.Size(400, 400)
+class OpenFile(base_interface.Window):
+    SIZE: util.Size = util.Size(350, 400)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
 
     def __init__(self, pos, sprite_group):
-        super().__init__(pos, self.SIZE, sprite_group, title="CHOOSE A FILE", static=False, color=self.COLOR)
+        super().__init__(pos, self.SIZE, sprite_group, title="CHOOSE A FILE", static=False, color=self.COLOR,
+                         movable=False, top_window=True)
         self.file_list = None
         self.__init_widgets()
         self.__create_name_popup = None
@@ -30,6 +31,7 @@ class OpenFile(base_interface.TopWindow):
             self.__create_name_popup = None
             if response is not False:
                 scenes.scenes["Game"].save(response)
+                self._close_window()
 
     def __init_widgets(self):
         save_label = widgets.Label(util.Size(200, 30), text="Choose a save file:", font_size=25, color=(0, 0, 0, 0),
@@ -63,7 +65,8 @@ class Popup(base_interface.Window, ABC):
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (150, 150, 150)
 
     def __init__(self, pos, sprite_group, **kwargs):
-        super().__init__(pos, self.SIZE, sprite_group, static=False, color=self.COLOR, movable=False, **kwargs)
+        super().__init__(pos, self.SIZE, sprite_group, static=False, color=self.COLOR, movable=False, top_window=True,
+                         **kwargs)
         self.response = False
 
 
@@ -103,4 +106,7 @@ class GiveNamePopup(Popup):
             if character not in con.ALLOWED_FILE_CHARACTERS:
                 self._incorect_lbl.set_text(f"Invalid character: '{character}'", font_size=20, color=(255, 0, 0))
                 return False
+        if os.path.exists(f"{con.SAVE_DIR}{os.sep}{name}.save"):
+            self._incorect_lbl.set_text(f"File '{name}' already exists", font_size=20, color=(255, 0, 0))
+            return False
         return True

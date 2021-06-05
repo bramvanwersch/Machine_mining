@@ -30,6 +30,8 @@ class Window(widgets.Frame):
     _is_window_moving: bool  # track if the window is being moved by the user
     _is_window_showing: bool  # track if the window is within the users fov
     _is_window_focussed: bool  # track if the window is focussed and if it should recieve keyboard events as a result
+    _movable: bool  # if the window should respond to requests to move it with the mouse
+    is_top_window: bool  # if true the window will not allow events to be pushed downwards
     id: str  # track the window with a unique id that is not presee instance dependant
 
     def __init__(
@@ -41,6 +43,7 @@ class Window(widgets.Frame):
         title: Union[str, None] = None,
         static: bool = False,
         movable: bool = True,
+        top_window: bool = False,
         **kwargs
     ):
         super().__init__(pos, size + self.TOP_SIZE, *groups, color=color, static=static, **kwargs)
@@ -52,6 +55,7 @@ class Window(widgets.Frame):
         self._is_window_moving = False
         self.__previous_board_pos = None
         self._movable = movable
+        self.is_top_window = top_window
 
         self._is_window_showing = False
         self._is_window_focussed = False
@@ -171,6 +175,8 @@ class Window(widgets.Frame):
         """Handle keyboard events issued by the user. These events trigger when the window is focussed"""
         if self.is_showing():
             leftovers = super().handle_other_events(events, consume_events=consume_events)
+            if self.is_top_window:
+                leftovers = []
             return leftovers
         else:
             return events
@@ -178,29 +184,3 @@ class Window(widgets.Frame):
     @classmethod
     def name(cls):
         return cls.__name__
-
-
-class TopWindow(Window):
-    """Window class that does not push on events to lower windows"""
-
-    def handle_mouse_events(
-        self,
-        events: List[pygame.event.Event],
-        consume_events: bool = True
-    ) -> List[pygame.event.Event]:
-        """Handle mouse events issued by the user. These events trigger when this window is hovered"""
-        if self.is_showing():
-            events = super().handle_mouse_events(events, consume_events=consume_events)
-            return []
-        return events
-
-    def handle_other_events(
-        self,
-        events: List[pygame.event.Event],
-        consume_events: bool = True
-    ) -> List[pygame.event.Event]:
-        """Handle keyboard events issued by the user. These events trigger when the window is focussed"""
-        if self.is_showing():
-            events = super().handle_other_events(events, consume_events=consume_events)
-            return []
-        return events
