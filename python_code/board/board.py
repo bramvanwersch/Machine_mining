@@ -32,7 +32,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
         self.buildings = {}
-        self.variable_blocks = set()
+        self.variable_blocks = {}
         self.changed_light_blocks = set()
 
         self.board_generator = board_generator
@@ -61,7 +61,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
         self.buildings = {}
-        self.variable_blocks = set()
+        self.variable_blocks = {}
         self.changed_light_blocks = set()
 
         self.board_generator = board_generator
@@ -164,7 +164,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         """Check all blocks with varaible surfaces that potentially need to be changed if that is the case redraw the
         surface"""
         # copy is required because of generation potentially adding blocks while looping
-        for block in self.variable_blocks.copy():
+        for block in self.variable_blocks.copy().values():
             if block.changed:
                 self.add_blocks(block, update=False)
 
@@ -305,7 +305,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
                 if isinstance(block, block_classes.VariableSurfaceBlock):
-                    self.variable_blocks.remove(block)
+                    del self.variable_blocks[block.id]
                 chunk = self.chunk_from_point(block.rect.topleft)
                 removed_items.extend(chunk.remove_blocks(block))
 
@@ -360,13 +360,13 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 block = block.block
             if isinstance(block.material, build_materials.Building):
                 if update and isinstance(block, block_classes.VariableSurfaceBlock):
-                    self.variable_blocks.add(block)
+                    self.variable_blocks[block.id] = block
                 self.add_building(block)
                 continue
             if isinstance(block.material, build_materials.ConveyorBelt):
                 self.conveyor_network.add(block)
             if update and isinstance(block, block_classes.VariableSurfaceBlock):
-                self.variable_blocks.add(block)
+                self.variable_blocks[block.id] = block
             if update and isinstance(block, block_classes.SurroundableBlock):
                 block.surrounding_blocks = self.surrounding_blocks(block)
             chunk = self.chunk_from_point(block.coord)
@@ -391,6 +391,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         # if the id is already present make sure that the building is not added repeadetly
         if block_of_building.id in self.buildings:
             return
+        print(block_of_building.inventory)
         # if the incomming block is a single block part of a building, create the full building first
         if not isinstance(block_of_building, buildings.Building):
             if isinstance(block_of_building, block_classes.ContainerBlock):

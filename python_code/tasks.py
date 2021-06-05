@@ -344,7 +344,7 @@ class Task(loading_saving.Savable, loading_saving.Loadable, ABC):
         pos = dct["pos"]
         mcd = block_classes.Block.from_dict(dct)
         material = mcd.to_instance()
-        block = material.to_block(pos)
+        block = material.to_block(pos, **mcd.block_kwargs)
         return block
 
     def start(self, entity, **kwargs):

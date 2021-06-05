@@ -1,5 +1,5 @@
 
-from typing import Set, TYPE_CHECKING
+from typing import Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from block_classes.blocks import ConveyorNetworkBlock
@@ -7,20 +7,20 @@ if TYPE_CHECKING:
 
 class ConveyorNetwork:
 
-    __belts: Set["ConveyorNetworkBlock"]
+    __belts: Dict[str, "ConveyorNetworkBlock"]
 
     def __init__(self):
-        self.__belts = set()
+        self.__belts = {}
 
     def add(self, belt: "ConveyorNetworkBlock"):
-        self.__belts.add(belt)
+        self.__belts[belt.id] = belt
 
     def remove(self, belt: "ConveyorNetworkBlock"):
-        self.__belts.remove(belt)
+        del self.__belts[belt.id]
 
     def __iter__(self):
         # the copy is neccesairy because loading chunks are able to add belts and that would crash the game
-        return iter(self.__belts.copy())
+        return iter(self.__belts.copy().values())
 
     def __len__(self):
         return len(self.__belts)
