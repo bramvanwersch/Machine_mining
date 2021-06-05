@@ -9,7 +9,7 @@ from utility import constants as con, utilities as util
 import scenes
 
 
-class OpenFile(base_interface.Window):
+class SaveFileWindow(base_interface.Window):
     SIZE: util.Size = util.Size(350, 400)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
 
@@ -38,7 +38,7 @@ class OpenFile(base_interface.Window):
                 self.save_game(response)
 
     def save_game(self, file_name):
-        # since dots are not allowed to be in file names this should be save
+        # since dots are not allowed to be in file names this should be savem
         file_name = file_name.replace(".save", "")
         scenes.scenes["Game"].save(file_name)
         self._close_window()
@@ -59,7 +59,7 @@ class OpenFile(base_interface.Window):
         self.file_list.add_widget(new_button)
 
         for file in os.listdir(con.SAVE_DIR):
-            if isfile(join(con.SAVE_DIR, file) and file.endswith(".save")):
+            if isfile(join(con.SAVE_DIR, file)) and file.endswith(".save"):
                 file_button = widgets.Button(util.Size(self.file_list.rect.width, 25), text=file, font_size=25,
                                              color=self.COLOR)
                 file_button.add_key_event_listener(1, self.confirm_overwrite_window, values=[file], types=["unpressed"])
@@ -67,13 +67,17 @@ class OpenFile(base_interface.Window):
 
     def create_new_file_window(self):
         from interfaces.managers import game_window_manager
-        self.__create_name_popup = GiveNamePopup(self.rect.center, self.groups()[0])
+        self.__create_name_popup = GiveNamePopup((self.rect.width / 2 - GiveNamePopup.SIZE.width / 2 + self.rect.left,
+                                                  self.rect.height / 2 - GiveNamePopup.SIZE.height / 2 + self.rect.top),
+                                                 self.groups()[0])
         game_window_manager.add(self.__create_name_popup)
 
     def confirm_overwrite_window(self, file_name):
         from interfaces.managers import game_window_manager
-        self.__overwrite_file_popup = ConfirmPopup(self.rect.center, f"WARNING: '{file_name}'\n will be overwritten",
-                                                   file_name, self.groups()[0])
+        self.__overwrite_file_popup = \
+            ConfirmPopup((self.rect.width / 2 - GiveNamePopup.SIZE.width / 2 + self.rect.left,
+                          self.rect.height / 2 - GiveNamePopup.SIZE.height / 2 + self.rect.top),
+                         f"WARNING: '{file_name}'\n will be overwritten", file_name, self.groups()[0])
         game_window_manager.add(self.__overwrite_file_popup)
 
 

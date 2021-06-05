@@ -101,12 +101,6 @@ class PauseWindow(base_interface.Window):
 
     def __init__(self, sprite_group):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, title="PAUSED", movable=False)
-        self.file_explorer = \
-            file_explorer_interface.OpenFile((self.rect.width / 2 - file_explorer_interface.OpenFile.SIZE.width / 2 +
-                                              self.rect.left,
-                                              self.rect.height / 2 - file_explorer_interface.OpenFile.SIZE.height / 2 +
-                                              self.rect.top), sprite_group)
-
         self.__init_widgets()
 
     def __init_widgets(self):
@@ -132,7 +126,12 @@ class PauseWindow(base_interface.Window):
 
     def __save(self):
         from interfaces.managers import game_window_manager
-        game_window_manager.add(self.file_explorer)
+        explorer = \
+            file_explorer_interface.SaveFileWindow((self.rect.width / 2 - file_explorer_interface.SaveFileWindow.SIZE.width / 2 +
+                                                    self.rect.left,
+                                                    self.rect.height / 2 - file_explorer_interface.SaveFileWindow.SIZE.height / 2 +
+                                                    self.rect.top), self.groups()[0])
+        game_window_manager.add(explorer)
 
 
 class InventoryWindow(base_interface.Window):
