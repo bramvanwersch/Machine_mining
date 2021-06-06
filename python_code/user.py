@@ -53,8 +53,8 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
         self.__rotate = [0]  # track the amount of times that the rotate key was pressed in a pointer
         self.ui = UserUI((con.SCREEN_SIZE.width - UserUI.SIZE.width, con.SCREEN_SIZE.height - UserUI.SIZE.height),
                          self.__rotate, sprite_group)
-        self.change_mode(con.BOARD_KEYS.SELECTING)
         self._mode = None
+        self.change_mode(con.BOARD_KEYS.SELECTING)
 
     def __init_load__(self, board=None, sprite_group=None, task_control=None, workers=None):
         super().__init__(recordable_keys=[1, 2, 3, 4, *con.BOARD_KEYS.all_keys()])
@@ -66,7 +66,6 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
 
         self.workers = workers
 
-        self._mode = con.MODES[con.BOARD_KEYS.SELECTING]
         self.zoom = 1.0
         self.__rotate = [0]  # track the amount of times that the rotate key was pressed
         self.ui = UserUI((con.SCREEN_SIZE.width - UserUI.SIZE.width, con.SCREEN_SIZE.height - UserUI.SIZE.height),
@@ -130,9 +129,6 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
                 if not self._mode.persistent_highlight:
                     self.__remove_highlight_rectangle()
                 self.change_mode(key.name)
-                board_coord = interface_util.screen_to_board_coordinate(con.SCREEN_SIZE.center,
-                                                                        self.__sprite_group.target, self.zoom)
-                entities.TextSprite(board_coord, self._mode.name, self.__sprite_group)
             elif key.name == con.BOARD_KEYS.ROTATING and self._mode.name == "Building":
                 self.__rotate[0] += 1
 

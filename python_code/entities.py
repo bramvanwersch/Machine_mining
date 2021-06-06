@@ -31,6 +31,7 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, loading_saving.Load
         layer: int = con.HIGHLIGHT_LAYER,
         static: bool = True,
         visible: bool = True,
+        pausable: bool = True,
         **kwargs
     ):
         self._layer = layer
@@ -40,8 +41,10 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, loading_saving.Load
         self.orig_rect = self.surface.get_rect(topleft=pos)
         self._visible = visible
         self.static = static  # if static do not move the entity when camera moves
+        self.pausable = pausable
 
-    def __init_load__(self, layer=None, visible=None, static=None, orig_rect=None, sprite_group=None):
+    def __init_load__(self, layer=None, visible=None, static=None, orig_rect=None, sprite_group=None,
+                      pausable=None):
         self._layer = layer
         pygame.sprite.Sprite.__init__(self, sprite_group if sprite_group is not None else [])
         # color is now hardcoded and useless
@@ -50,19 +53,22 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, loading_saving.Load
         self.orig_rect = orig_rect
         self._visible = visible
         self.static = static
+        self.pausable = pausable
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "layer": self._layer,
             "visible": self._visible,
             "static": self.static,
+            "pausable": self.pausable,
             "orig_rect": (self.orig_rect.left, self.orig_rect.top, self.orig_rect.width, self.orig_rect.height)
         }
 
     @classmethod
     def from_dict(cls, dct):
         orig_rect = pygame.Rect(dct["orig_rect"])
-        return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect)
+        return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
+                        pausable=dct["pausable"])
 
     def show(
         self,
@@ -171,7 +177,7 @@ class SelectionRectangle(ZoomableSprite):
         *groups: "CameraAwareLayeredUpdates",
         **kwargs
     ):
-        super().__init__(pos, size, *groups, **kwargs)
+        super().__init__(pos, size, pausable=False, *groups, **kwargs)
         self.__start_pos = list(pos)
         self.__prev_screen_pos = list(mouse_pos)
         self.__size = util.Size(*size)
@@ -257,7 +263,8 @@ class MovingEntity(ZoomableSprite):
         orig_rect = pygame.Rect(dct["orig_rect"])
         speed = pygame.Vector2(*dct["speed"])
         return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
-                        max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_values"])
+                        max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_values"],
+                        pausable=dct["pausable"])
 
     def _max_frame_speed(self) -> float:
         """Return the maximum speed over this frame, depending on the max_speed and time spent on this frame
@@ -317,7 +324,7 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
         *groups: "CameraAwareLayeredUpdates",
         **kwargs
     ):
-        MovingEntity.__init__(self, pos, size, 1000, *groups, **kwargs)
+        MovingEntity.__init__(self, pos, size, 1000, pausable=False, *groups, **kwargs)
         event_handling.EventHandler.__init__(self, [con.RIGHT, con.LEFT, con.UP, con.DOWN])
 
     def __init_load__(self, max_speed=None, **kwargs):
@@ -334,7 +341,7 @@ class CameraCentre(MovingEntity, event_handling.EventHandler):
     def from_dict(cls, dct):
         orig_rect = pygame.Rect(dct["orig_rect"])
         return cls.load(layer=dct["layer"], visible=dct["visible"], static=dct["static"], orig_rect=orig_rect,
-                        max_speed=dct["max_speed"])
+                        max_speed=dct["max_speed"], pausable=dct["pausable"])
 
     def handle_events(
         self,
@@ -510,7 +517,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
                         max_speed=dct["max_speed"], speed=speed, exact_movement_values=dct["exact_movement_values"],
                         name=dct["name"], number=dct["number"], inventory=inventory, task_queue=task_queue,
                         board_=board_, sprite_group=sprite_group, task_control=task_control, dest=dct["dest"],
-                        path=path)
+                        path=path, pausable=dct["pausable"])
 
     def _create_surface(
         self,

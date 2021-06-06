@@ -75,7 +75,7 @@ class Scene(event_handling.EventHandler, ABC):
     def update(self):
         self.scene_updates()
         self.scene_event_handling()
-        self.sprite_group.update()
+        self.update_sprite_group()
         self.draw()
         self.__counter += 1
         if self.__counter == 500 and con.DEBUG.PRINT_TIMING_BREAKDOWN:
@@ -89,6 +89,9 @@ class Scene(event_handling.EventHandler, ABC):
             return []
         events = pygame.event.get()
         return events
+
+    def update_sprite_group(self):
+        self.sprite_group.update()
 
     def scene_event_handling(self):
         return self.get_events()
@@ -478,8 +481,9 @@ class Game(loading_saving.Savable, Scene):
             sprite_group = sprite_groups.CameraAwareLayeredUpdates(self.camera_center, con.BOARD_SIZE)
         else:
             self.camera_center = sprite_group.target
-        super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.K_b, con.K_COMMA])
+        super().__init__(screen, sprite_group, recordable_keys=[4, 5, con.K_ESCAPE, con.PAUSE, con.K_b, con.K_COMMA])
         # update rectangles
+        self.__paused = False
         self.__vision_rectangles = []
         self.__debug_rectangle = (0, 0, 0, 0)
 
@@ -576,7 +580,11 @@ class Game(loading_saving.Savable, Scene):
             self.draw_air_rectangles()
         if con.DEBUG.SHOW_CHUNK_BORDERS:
             self.__draw_chunk_borders()
-        self.board.update_board()
+        if not self.__paused:
+            self.board.update_board()
+
+    def update_sprite_group(self):
+        self.sprite_group.update(paused=self.__paused)
 
     def draw_air_rectangles(self):
         for key in self.board.pathfinding.pathfinding_tree.rectangle_network[0]:
@@ -610,7 +618,12 @@ class Game(loading_saving.Savable, Scene):
             self.window_manager.add(self.pause_window)
         if self.unpressed(con.K_COMMA):
             self.window_manager.add(self.console_window)
+        if self.pressed(con.PAUSE):
+            self.pause_game()
         self.user.handle_events(leftover_events)
+
+    def pause_game(self):
+        self.__paused = not self.__paused
 
     def set_update_rectangles(self):
         # get a number of rectangles that encompass the changed board state

@@ -60,7 +60,7 @@ class Main:
                 pygame.display.flip()
             else:
                 pygame.display.update(active_scene.board_update_rectangles)
-            con.GAME_TIME.tick(200)
+            con.GAME_TIME.tick(200)  # max FPS
         pygame.quit()
 
 

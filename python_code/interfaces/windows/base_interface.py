@@ -46,7 +46,7 @@ class Window(widgets.Frame):
         top_window: bool = False,
         **kwargs
     ):
-        super().__init__(pos, size + self.TOP_SIZE, *groups, color=color, static=static, **kwargs)
+        super().__init__(pos, size + self.TOP_SIZE, *groups, color=color, static=static, pausable=False, **kwargs)
 
         if not isinstance(size, util.Size):
             size = util.Size(*size)

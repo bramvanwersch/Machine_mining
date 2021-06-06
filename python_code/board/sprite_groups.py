@@ -13,8 +13,11 @@ class CameraAwareLayeredUpdates(pygame.sprite.LayeredUpdates):
         if self.target:
             self.add(target)
 
-    def update(self, *args):
-        super().update(*args)
+    def update(self, *args, paused=False):
+        for sprite in self.sprites():
+            if paused and sprite.pausable:
+                continue
+            sprite.update(*args)
         if self.target:
             x = -self.target.rect.center[0] + con.SCREEN_SIZE.width / 2
             y = -self.target.rect.center[1] + con.SCREEN_SIZE.height / 2

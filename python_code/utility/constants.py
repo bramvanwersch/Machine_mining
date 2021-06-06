@@ -134,6 +134,7 @@ DOWN = K_s
 RIGHT = K_d
 LEFT = K_a
 CAMERA_KEYS = [UP, DOWN, RIGHT, LEFT]
+PAUSE = K_SPACE
 
 
 # mode constants
