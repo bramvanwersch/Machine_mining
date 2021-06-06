@@ -1057,7 +1057,7 @@ class ItemDisplay(Label):
         size: Union[util.Size, Tuple[int, int], List[int]],
         item: Union[None, "inventories.Item"] = None,
         border: bool = True,
-        border_shrink: Union[Tuple[int, int], List[int]] = (3, 3),
+        border_shrink: Union[Tuple[int, int], List[int]] = (4, 4),
         **kwargs
     ):
         super().__init__(size, border=border, border_shrink=border_shrink, **kwargs)

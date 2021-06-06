@@ -5,6 +5,8 @@ import tasks
 import entities
 import interfaces.windows.other_interfaces as small_interface
 import interfaces.windows.interface_utility as interface_util
+from utility import inventories
+from interfaces import widgets
 from utility import utilities as util, constants as con, event_handling, loading_saving
 from block_classes import buildings
 from block_classes.materials import building_materials, environment_materials
@@ -27,7 +29,7 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
     # record of the last selected rectangle by selection rectangle for which a highlight was drawn
     __highlight_rectangle: Union[pygame.Rect, None]
     workers: List[entities.Worker]
-    _mode: con.ModeConstants
+    _mode: Union[None, con.ModeConstants]
     zoom: float
 
     def __init__(
@@ -47,9 +49,12 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
         self.workers = []
         self.__init_workers(progress_var)
 
-        self._mode = con.MODES[con.BOARD_KEYS.SELECTING]
         self.zoom = 1.0
-        self.__rotate = 0  # track the amount of times that the rotate key was pressed
+        self.__rotate = [0]  # track the amount of times that the rotate key was pressed in a pointer
+        self.ui = UserUI((con.SCREEN_SIZE.width - UserUI.SIZE.width, con.SCREEN_SIZE.height - UserUI.SIZE.height),
+                         self.__rotate, sprite_group)
+        self.change_mode(con.BOARD_KEYS.SELECTING)
+        self._mode = None
 
     def __init_load__(self, board=None, sprite_group=None, task_control=None, workers=None):
         super().__init__(recordable_keys=[1, 2, 3, 4, *con.BOARD_KEYS.all_keys()])
@@ -63,7 +68,12 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
 
         self._mode = con.MODES[con.BOARD_KEYS.SELECTING]
         self.zoom = 1.0
-        self.__rotate = 0  # track the amount of times that the rotate key was pressed
+        self.__rotate = [0]  # track the amount of times that the rotate key was pressed
+        self.ui = UserUI((con.SCREEN_SIZE.width - UserUI.SIZE.width, con.SCREEN_SIZE.height - UserUI.SIZE.height),
+                         self.__rotate, sprite_group)
+
+        self._mode = None
+        self.change_mode(con.BOARD_KEYS.SELECTING)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -119,12 +129,12 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
             if key.name in con.MODES:
                 if not self._mode.persistent_highlight:
                     self.__remove_highlight_rectangle()
-                self._mode = con.MODES[key.name]
+                self.change_mode(key.name)
                 board_coord = interface_util.screen_to_board_coordinate(con.SCREEN_SIZE.center,
                                                                         self.__sprite_group.target, self.zoom)
                 entities.TextSprite(board_coord, self._mode.name, self.__sprite_group)
             elif key.name == con.BOARD_KEYS.ROTATING and self._mode.name == "Building":
-                self.__rotate += 1
+                self.__rotate[0] += 1
 
     def __handle_mouse_events(self):
         """Handle mouse events issued by the user."""
@@ -167,6 +177,10 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
                 rectangle = self.selection_rectangle.orig_rect
                 self.__process_selection(rectangle)
                 self.__remove_selection_rectangle()
+
+    def change_mode(self, mode_name):
+        self._mode = con.MODES[mode_name]
+        self.ui.change_mode(self._mode.name)
 
     def get_building_block_class(self) -> Union[Type["Block"], Type[buildings.InterfaceBuilding]]:
         material = small_interface.get_selected_item().material
@@ -370,7 +384,7 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
             block = blocks[0]
             material = small_interface.get_selected_item().material.copy()
             if isinstance(material, building_materials.RotatbleBuildingMaterial):
-                material.rotate(self.__rotate)
+                material.rotate(self.__rotate[0])
             building_block_class = self.get_building_block_class()
             group = block.transparant_group
             if group != 0:
@@ -389,3 +403,53 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
                 overlap_blocks = [block]
             self.task_control.add(self._mode.name, block, finish_block=finish_block, original_group=group,
                                   removed_blocks=overlap_blocks)
+
+
+class UserUI(widgets.Frame):
+    SIZE: Union[util.Size, Tuple[int, int], List[int]] = util.Size(150, 150)
+    COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
+
+    def __init__(
+        self,
+        pos: Union[Tuple[int, int], List[int]],
+        rotate: List[int],
+        sprite_group: pygame.sprite.AbstractGroup,
+        **kwargs
+    ):
+        super().__init__(pos, self.SIZE, sprite_group, static=False, visible=True, layer=con.TOOLTIP_LAYER - 1,
+                         color=con.INVISIBLE_COLOR, **kwargs)
+        self.__rotate = rotate
+        self.__previous_rotate = self.__rotate[0]
+        self.mode_label = None
+        self.item_label = None
+        self.__current_material = None
+        self.__init_widgets()
+
+    def __init_widgets(self):
+        self.mode_label = widgets.Label((self.rect.width - 10, 30), color=(150, 150, 150), border=True)
+        self.add_widget((5, 5), self.mode_label)
+
+        self.item_label = widgets.ItemDisplay((self.rect.width - 50, self.rect.height - 50), color=self.COLOR)
+        self.add_widget((25, 45), self.item_label)
+
+    def update(self, *args):
+        super().update()
+        item = small_interface.get_selected_item()
+        if item is not None:
+            material = item.material
+            if self.__current_material is None or material.name() != self.__current_material.name() or \
+                    self.__rotate[0] != self.__previous_rotate:
+                if isinstance(material, building_materials.RotatbleBuildingMaterial):
+                    material.rotate(self.__rotate[0])
+                self.__current_material = material
+                self.set_build_item(material)
+
+    def change_mode(self, mode):
+        self.mode_label.set_text(text=mode, font_size=25)
+
+    def set_build_item(self, material):
+        item = inventories.Item(material)
+        self.item_label.add_item(item)
+
+    def is_showing(self) -> bool:
+        return True

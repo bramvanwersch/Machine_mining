@@ -20,7 +20,7 @@ class DebugValues(util.ConsoleReadable):
         self.AIR_RECTANGLES = False
         self.WARNINGS = False
         self.SHOW_ZOOM = True
-        self.NO_LIGHTING = True and TESTING
+        self.NO_LIGHTING = False and TESTING
         self.SHOW_THREADS = True
         self.SHOW_BELT_ITEMS = True
         self.PRINT_TIMING_BREAKDOWN = False
