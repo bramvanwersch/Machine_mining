@@ -539,6 +539,7 @@ class Game(loading_saving.Savable, Scene):
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
         self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
         self.console_window.run_starting_script()
+        self.reset_globals()
 
     def load_start(self, dct):
         # camera center position is changed before starting the game
@@ -556,6 +557,11 @@ class Game(loading_saving.Savable, Scene):
         self.window_manager = game_window_manager
         self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
                                                                   self.sprite_group)
+        self.reset_globals()
+
+    def reset_globals(self):
+        from interfaces.windows.other_interfaces import reset_selected_widget
+        reset_selected_widget()
 
     def save(self, name):
         with open(f"{con.SAVE_DIR}{os.sep}{name}.save", "w") as fp:

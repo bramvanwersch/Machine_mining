@@ -21,6 +21,11 @@ def get_selected_item() -> Union[None, "inventories.Item"]:
     return None
 
 
+def reset_selected_widget():
+    global SELECTED_WIDGET
+    SELECTED_WIDGET = None
+
+
 class BuildingWindow(base_interface.Window):
     """The building window where a building material can be selected"""
     WINDOW_SIZE: util.Size = util.Size(400, 300)
