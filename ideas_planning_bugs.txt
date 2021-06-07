@@ -23,7 +23,6 @@ NEEDED FEATURES (features that have to be added before the game is complete and 
 - Some narrative that gives some background to the story
 - add settings
 - Load and unload chunks when needed and have processes react to that
-- allow the game to be paused by pressing space
 - add a filter options for the belts for allot better stuff
 - allow plants to have berries oid
 - add ghost buildings when building
@@ -39,6 +38,7 @@ SPECIFIC FEATURES:
 - add the seed feature to the game settings, as well as a way to control the amount of structures
 - Revamp the widgets class structures to get an abstract version of the pane and label classes to make sure that certain
   methods are not present in widgets they shoudnt be.
+ - get rid of incrementing numbers as class variables since in subsequent runs these will keep counting.
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs

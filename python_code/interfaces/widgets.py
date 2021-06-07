@@ -986,7 +986,6 @@ class ScrollPane(Pane):
         **kwargs
     ):
         super().__init__(size, **kwargs)
-        self.__next_widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
         # the rectangle of the surface, can be bigger then the rect that displays the information
         self.__total_rect = pygame.Rect(0, 0, self.rect.width, self.rect.height)
 
@@ -1009,12 +1008,31 @@ class ScrollPane(Pane):
                     extra_room = (self.widgets[-1].rect.bottom + widget.rect.height + self.BORDER_SPACE) - \
                                  self.__total_rect.height
                     self.__extend_scroll_image(extra_room)
-                self.__next_widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
+                widget_topleft = [self.BORDER_SPACE, self.widgets[-1].rect.bottom]
             else:
-                self.__next_widget_topleft = self.widgets[-1].rect.topright
+                widget_topleft = self.widgets[-1].rect.topright
+        else:
+            widget_topleft = [self.BORDER_SPACE, self.BORDER_SPACE]
         self.widgets.append(widget)
-        widget.rect.topleft = self.__next_widget_topleft
+        widget.rect.topleft = widget_topleft
         self.orig_surface.blit(widget.surface, widget.rect)
+
+    def remove_widget(
+        self,
+        widget: Widget
+    ):
+        widget_index = self.widgets.index(widget)
+        remove_widgets = self.widgets[widget_index:]
+        for widget in remove_widgets:
+            super().remove_widget(widget)
+        if len(remove_widgets) > 1:
+            for widget in remove_widgets[1:]:
+                self.add_widget(widget)
+        if len(self.widgets) == 0:
+            return
+        if self.widgets[-1].rect.top != widget.rect.top:
+            # results in a negative number shrinking the rect
+            self.__extend_scroll_image((self.widgets[-1].rect.bottom + self.BORDER_SPACE) - self.__total_rect.height)
 
     def scroll_y(
         self,

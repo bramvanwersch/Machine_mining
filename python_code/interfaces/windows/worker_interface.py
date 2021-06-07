@@ -180,7 +180,9 @@ class WorkerWindow(other_interfaces.InventoryWindow):
     def __check_tasks(self):
         if len(self._worker.task_queue) != self._previous_number_tasks:
             self._previous_number_tasks = len(self._worker.task_queue)
-            [self._task_information_pane.remove_widget(widget) for widget in self._task_information_pane.widgets]
+            for widget in self._task_information_pane.widgets:
+                print(widget)
+                self._task_information_pane.remove_widget(widget)
             for task in self._worker.task_queue.tasks:
                 task_label = widgets.Label(util.Size(130, 10), text=str(task), text_pos=["west", "center"],
                                            selectable=False)
