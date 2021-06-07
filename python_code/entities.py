@@ -445,9 +445,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                self.WORKER_IMAGES[1].images()[0],
                                                                self.WORKER_IMAGES[0].images()[0]], 15)
         from interfaces.windows import worker_interface
-        from interfaces.managers import game_window_manager
 
-        self.window_manager = game_window_manager
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
                                                                    250), self, *groups)
 
@@ -487,9 +485,7 @@ class Worker(MovingEntity, util.ConsoleReadable):
                                                                self.WORKER_IMAGES[1].images()[0],
                                                                self.WORKER_IMAGES[0].images()[0]], 15)
         from interfaces.windows import worker_interface
-        from interfaces.managers import game_window_manager
 
-        self.window_manager = game_window_manager
         self.interface = worker_interface.WorkerWindow(pygame.Rect(self.orig_rect.left, self.orig_rect.bottom, 300,
                                                                    250), self, kwargs["sprite_group"])
 
@@ -527,10 +523,9 @@ class Worker(MovingEntity, util.ConsoleReadable):
         return self.WORKER_IMAGES[0].images()[0]
 
     def open_interface(self):
-        if self.window_manager is None:
-            from interfaces.managers import game_window_manager
-            self.window_manager = game_window_manager
-        self.window_manager.add(self.interface)
+        from interfaces.managers import game_window_manager
+        if game_window_manager is not None:
+            game_window_manager.add(self.interface)
 
     def printables(self) -> Set[str]:
         attributes = super().printables()
