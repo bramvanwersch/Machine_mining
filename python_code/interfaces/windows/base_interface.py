@@ -2,7 +2,6 @@ import pygame
 from pygame.locals import *
 from typing import List, Union, Tuple, TYPE_CHECKING
 
-import interfaces.managers as window_managers
 import interfaces.windows.interface_utility as interfacer_util
 import utility.utilities as util
 import utility.constants as con
@@ -25,7 +24,6 @@ class Window(widgets.Frame):
     # window ia opened or ['ALL'] if all windows need to be closed
     CLOSE_LIST: List[str] = []
 
-    window_manager: Union[None, window_managers.WindowManager]
     __previous_board_pos: Union[None, Tuple[int, int], List[int]]
     _is_window_moving: bool  # track if the window is being moved by the user
     _is_window_showing: bool  # track if the window is within the users fov

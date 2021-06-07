@@ -20,7 +20,7 @@ class WindowManager:
         self.__target = target
 
     def add(self, window):
-        #dont add the same window multiple times
+        # dont add the same window multiple times
         if window.id in self.windows:
             return
         close_all = False
@@ -51,10 +51,26 @@ class WindowManager:
         window.show_window(False)
 
     def __set_top_window(self, window):
+        # remove then re-add the window without changing the visibility or closing other windows
         # set as top window if not already top
         if window != self.window_order[-1]:
-            self.remove(window)
-            self.add(window)
+            # remove the window first
+            del self.windows[window.id]
+            rem_index = self.window_order.index(window)
+            if rem_index + 1 == len(self.window_order):
+                self.window_order.pop()
+            else:
+                self.window_order.pop(rem_index)
+                for w in self.window_order:
+                    w._layer = max(w._layer - 1, con.INTERFACE_LAYER)
+
+            # then re-add it.
+            self.windows[window.id] = window
+            if len(self.window_order) == 0:
+                window._layer = con.INTERFACE_LAYER
+            else:
+                window._layer = self.window_order[-1]._layer + 1
+            self.window_order.append(window)
 
     def __find_hovered_window(self, mouse_pos):
         board_coord = util.screen_to_board_coordinate(mouse_pos, self.__target, 1)
@@ -62,11 +78,11 @@ class WindowManager:
         for window in self.windows.values():
             if window.static:
                 if window.rect.collidepoint(board_coord) and \
-                        (selected_window == None or selected_window._layer < window._layer):
+                        (selected_window is None or selected_window.layer < window.layer):
                     selected_window = window
             else:
                 if window.orig_rect.collidepoint(mouse_pos) and \
-                        (selected_window == None or selected_window._layer < window._layer):
+                        (selected_window is None or selected_window.layer < window.layer):
                     selected_window = window
         return selected_window
 
