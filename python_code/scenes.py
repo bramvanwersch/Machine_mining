@@ -276,9 +276,10 @@ class GameSettingsScene(Scene):
         y_coord = 100
 
         # GENERAL OPTIONS
-        generel_options_pane = widgets.Pane((frame_rect.width - 100, 100), border=True, border_width=4,
-                                            color=color)
+        generel_options_pane = widgets.Pane((frame_rect.width - 100, 100), color=color)
         self.settings_menu_frame.add_widget(("center", y_coord), generel_options_pane)
+
+        self.settings_menu_frame.add_border(generel_options_pane)
         local_y = 10
         local_x = int((generel_options_pane.rect.width / 2) + 5)
         self.__game_name_textbox = widgets.MultilineTextBox((200, con.FONTS[22].get_linesize() + 6), font_size=22,
@@ -292,9 +293,10 @@ class GameSettingsScene(Scene):
 
         # GENERATION OPTIONS
         y_coord += generel_options_pane.rect.height + 10
-        generation_values_pane = widgets.Pane((frame_rect.width - 100, 300), border=True, border_width=4,
-                                              color=color)
+        generation_values_pane = widgets.Pane((frame_rect.width - 100, 300), color=color)
         self.settings_menu_frame.add_widget(("center", y_coord), generation_values_pane)
+        self.settings_menu_frame.add_border(generation_values_pane)
+
 
         # Biome size selection
         local_y = 10

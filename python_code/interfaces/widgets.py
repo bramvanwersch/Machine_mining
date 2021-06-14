@@ -206,7 +206,6 @@ class Widget(event_handlers.EventHandler, ABC):
         recordable_keys: List = None,
         tooltip: "Tooltip" = None,
         board_pos: Union[Tuple[int, int], List[int]] = (0, 0),
-        **kwargs
     ):
         recordable_keys = recordable_keys if recordable_keys else None
         super().__init__(recordable_keys)
@@ -334,7 +333,48 @@ class Widget(event_handlers.EventHandler, ABC):
             self.selected = selected
 
 
-class Label(Widget):
+class SurfaceWidget(Widget, ABC):
+    """Widget that can display an image or color """
+    color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List]
+
+    surface: Union[None, pygame.Surface]
+    orig_surface: Union[None, pygame.Surface]
+
+    changed_image: bool
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List] = (255, 255, 255),
+
+        **kwargs
+    ):
+        super().__init__(size, **kwargs)
+        self.color = color
+        self.surface = self._create_surface(size, self.color)
+        self.orig_surface = self.surface.copy()
+        # parameter that tells the container widget containing this widget to reblit it onto its surface.
+        self.changed_image = True
+
+    def _create_surface(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List],
+    ):
+        """Create a base image that is saved in the surface parameter"""
+        if len(color) == 3:
+            surface = pygame.Surface(size).convert()
+        # included alpha channel
+        elif len(color) == 4:
+            surface = pygame.Surface(size).convert_alpha()
+        else:
+            raise util.GameException("Color argument {} is invalid should have lenght 3 or 4 not {}"
+                                     .format(color, len(color)))
+        surface.fill(color)
+        return surface
+
+
+class Label(SurfaceWidget):
     """
     Widget that can contain text an image and can be selected
 
@@ -343,15 +383,12 @@ class Label(Widget):
     """
     SELECTED_COLOR: ClassVar[Union[Tuple[int, int, int], List[int]]] = (255, 255, 255)
 
-    color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List]
     surface: Union[None, pygame.Surface]
     orig_surface: Union[None, pygame.Surface]
 
     __image_specifications: Union[None, List]
     __text_specifications: Union[None, List]
     __selection_specifications: Union[None, List]
-
-    changed_image: bool
 
     def __init__(
         self,
@@ -370,21 +407,26 @@ class Label(Widget):
         font_size: int = 15,
         **kwargs
     ):
-        super().__init__(size, **kwargs)
-        self.color = color
-        self.surface = self.__create_background(size, self.color, border, border_color, border_width, border_shrink)
-        self.orig_surface = self.surface.copy()
-
-        # variables for saving the values used for creation of the surface
+        super().__init__(size, color=color, **kwargs)
         self.__image_specifications = None
         self.__text_specifications = [text if text is not None else "", text_pos, text_color, font_size]
         self.__selection_specifications = None
-        self.create_surface(image, image_pos, image_size, text, text_pos, text_color, font_size)
+        if border:
+            self._add_initial_border(border_color, border_shrink, border_width)
+        self._enhance_surface(image, image_pos, image_size, text, text_pos, text_color, font_size)
 
-        # parameter that tells the container widget containing this widget to reblit it onto its surface.
-        self.changed_image = True
+    def _add_initial_border(
+        self,
+        border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
+        border_shrink: Union[Tuple[int, int], List[int]] = (0, 0),
+        border_width: int = 3,
+    ):
+        pygame.draw.rect(self.surface, border_color, (int(border_shrink[0] / 2), int(border_shrink[1] / 2),
+                                                      self.rect.width - border_shrink[0],
+                                                      self.rect.height - border_shrink[1]), border_width)
+        self.orig_surface = self.surface.copy()
 
-    def create_surface(
+    def _enhance_surface(
         self,
         image: pygame.Surface = None,
         image_pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
@@ -398,31 +440,6 @@ class Label(Widget):
             self.set_image(image, image_pos, image_size)
         if text is not None:
             self.set_text(text, text_pos, text_color, font_size)
-
-    def __create_background(
-        self,
-        size: Union[util.Size, Tuple[int, int], List[int]],
-        color: Union[Tuple[int, int, int], Tuple[int, int, int, int], List],
-        border: bool = False,
-        border_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
-        border_width: int = 3,
-        border_shrink: Union[Tuple[int, int], List[int]] = (0, 0)
-    ) -> pygame.Surface:
-        """Create background image where text highlight and images can be displayed on"""
-        if len(color) == 3:
-            lbl_surface = pygame.Surface(size).convert()
-        # included alpha channel
-        elif len(color) == 4:
-            lbl_surface = pygame.Surface(size).convert_alpha()
-        else:
-            raise util.GameException("Color argument {} is invalid should have lenght 3 or 4 not {}"
-                                     .format(color, len(color)))
-        lbl_surface.fill(color)
-        if border:
-            pygame.draw.rect(lbl_surface, border_color, (int(border_shrink[0] / 2), int(border_shrink[1] / 2),
-                                                         size[0] - border_shrink[0], size[1] - border_shrink[1]),
-                             border_width)
-        return lbl_surface
 
     def get_text(self):
         if self.__text_specifications:
@@ -552,7 +569,7 @@ class Button(Label):
         return new_color
 
 
-class Pane(Label):
+class Pane(SurfaceWidget):
     """Container widget that allows selecting and acts as an image for a number of widgets. Changes on the pane are
     handled on widget level as far as possible"""
     widgets: List[Widget]
@@ -563,7 +580,7 @@ class Pane(Label):
         selectable: bool = False,
         **kwargs
     ):
-        Label.__init__(self, size, selectable=selectable, **kwargs)
+        super().__init__(size, selectable=selectable, **kwargs)
         self.widgets = []
 
     def add_widget(
@@ -808,10 +825,15 @@ class Frame(entities.ZoomableSprite, Pane):
         pos: Union[Tuple[int, int], List[int]],
         size: Union[util.Size, Tuple[int, int], List[int]],
         *groups: pygame.sprite.AbstractGroup,
+        layer: int = con.HIGHLIGHT_LAYER,
+        static: bool = True,
+        visible: bool = True,
+        pausable: bool = True,
         **kwargs
     ):
         Pane.__init__(self, size, board_pos=pos, **kwargs)
-        entities.ZoomableSprite.__init__(self, pos, size, *groups, **kwargs)
+        entities.ZoomableSprite.__init__(self, pos, size, *groups, static=static, visible=visible, pausable=pausable,
+                                         layer=layer, **kwargs)
         self.selected_widget = None
         self.__select_top_widget_flag = False
         self.__previous_board_pos = self.board_position
@@ -1171,6 +1193,12 @@ class MultilineTextBox(Pane):
     @property
     def active_line(self) -> "_TextLine":
         return self.__lines[self.__selected_line_index]
+
+    def get_text(self):
+        text = ""
+        for line in self.__lines:
+            text += f"{line.text}\n"
+        return text[:-1]
 
     def wupdate(self, *args):
         super().wupdate(*args)

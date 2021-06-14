@@ -42,7 +42,7 @@ class BuildingWindow(base_interface.Window):
         *sprite_group: "sprite_groups.CameraAwareLayeredUpdates"
     ):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, *sprite_group, layer=con.INTERFACE_LAYER,
-                         title="PICK AN ITEM TO BUILD:", allowed_events=[1, con.K_ESCAPE])
+                         title="PICK AN ITEM TO BUILD:", recordable_keys=[1, con.K_ESCAPE])
         self.__inventory = terminal_inventory
         self.__scrollable_inventory_widget = None
         self.__prev_no_items = 0  # value tracked for efficient drawing of the inventory items
@@ -157,7 +157,7 @@ class InventoryWindow(base_interface.Window):
     ):
         self.__inventory = inventory
         super().__init__(rect.topleft, self.SIZE, sprite_group, layer=con.INTERFACE_LAYER, title=title,
-                         allowed_events=[1, 4, 5, con.K_ESCAPE], static=True)
+                         recordable_keys=[1, 4, 5, con.K_ESCAPE], static=True)
         self.__prev_no_items = 0
         self._inventory_pane = None
 
