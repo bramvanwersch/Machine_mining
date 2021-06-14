@@ -9,7 +9,7 @@ from abc import ABC
 from utility import constants as con, loading_saving
 import utility.utilities as util
 from utility import inventories, game_timing, loot_pools
-import interfaces.windows.base_interface as base_interface
+import interfaces.windows.base_window as base_interface
 if TYPE_CHECKING:
     import block_classes.materials.materials as base_materials
     import block_classes.materials.building_materials as building_materials

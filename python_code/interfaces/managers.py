@@ -2,7 +2,7 @@ import pygame
 
 import utility.constants as con
 import interfaces.windows.interface_utility as util
-from interfaces.windows import base_interface
+from interfaces.windows import base_window
 
 
 game_window_manager = None

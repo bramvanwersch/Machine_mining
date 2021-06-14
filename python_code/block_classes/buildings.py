@@ -11,7 +11,7 @@ import block_classes.materials.materials as base_materials
 import block_classes.blocks as block_classes
 from utility import inventories, loading_saving
 import utility.utilities as util
-import interfaces.windows.base_interface as base_interface
+import interfaces.windows.base_window as base_interface
 import interfaces.windows.other_interfaces as small_interfaces
 import interfaces.windows.crafting_interfaces as craft_interfaces
 import recipes.recipe_utility as r_constants

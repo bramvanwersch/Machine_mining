@@ -3,13 +3,13 @@ from os.path import isfile, join
 from typing import Tuple, Union, List
 from abc import ABC
 
-from interfaces.windows import base_interface
+from interfaces.windows import base_window
 from interfaces import widgets
 from utility import constants as con, utilities as util
 import scenes
 
 
-class LoadFileWindow(base_interface.Window):
+class LoadFileWindow(base_window.Window):
     # not in use currently but can come in handy when loading from within the game
     SIZE: util.Size = util.Size(350, 400)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
@@ -40,7 +40,7 @@ class LoadFileWindow(base_interface.Window):
         scenes.Game.load_game(file_name, screen)
 
 
-class SaveFileWindow(base_interface.Window):
+class SaveFileWindow(base_window.Window):
     SIZE: util.Size = util.Size(350, 400)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (173, 94, 29)
 
@@ -111,7 +111,7 @@ class SaveFileWindow(base_interface.Window):
         game_window_manager.add(self.__overwrite_file_popup)
 
 
-class Popup(base_interface.Window, ABC):
+class Popup(base_window.Window, ABC):
     SIZE: util.Size = util.Size(200, 100)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (150, 150, 150)
 

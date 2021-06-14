@@ -3,7 +3,7 @@ from typing import List, Union, Tuple, TYPE_CHECKING
 
 import interfaces.widgets as widgets
 import utility.constants as con
-from interfaces.windows import base_interface, file_explorer_interface
+from interfaces.windows import base_window, file_explorer_interface
 import scenes
 import utility.utilities as util
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ def reset_selected_widget():
     SELECTED_WIDGET = None
 
 
-class BuildingWindow(base_interface.Window):
+class BuildingWindow(base_window.Window):
     """The building window where a building material can be selected"""
     WINDOW_SIZE: util.Size = util.Size(400, 300)
     WINDOW_POS: Union[Tuple[int, int], List] = (int((con.SCREEN_SIZE.width - WINDOW_SIZE.width) / 2),
@@ -98,7 +98,7 @@ class BuildingWindow(base_interface.Window):
         pygame.event.post(newevent)
 
 
-class PauseWindow(base_interface.Window):
+class PauseWindow(base_window.Window):
     """Pause window when in the game that is called from within the game"""
     WINDOW_SIZE = util.Size(400, 500)
     WINDOW_POS = (int((con.SCREEN_SIZE.width - WINDOW_SIZE.width) / 2),
@@ -139,7 +139,7 @@ class PauseWindow(base_interface.Window):
         game_window_manager.add(explorer)
 
 
-class InventoryWindow(base_interface.Window):
+class InventoryWindow(base_window.Window):
     """Interface for inventory buildings"""
     SIZE = util.Size(300, 200)
     COLOR = (173, 94, 29)
