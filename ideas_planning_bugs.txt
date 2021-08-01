@@ -16,6 +16,7 @@ BUGS:
 - Some mining tasks dont dissapear properly and are reassigned into eternity
 - add highlighting back when a block is updated --> belt updates removing highlighting for mining tasks
 - highlighting is not properly saved
+- rare scenarion where an item is deleted when saving on a specific frame(s)
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes

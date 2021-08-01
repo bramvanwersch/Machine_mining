@@ -36,7 +36,7 @@ class Window(widgets.Frame):
         self,
         pos: Union[Tuple[int, int], List[int]],
         size: Union[util.Size, Tuple[int, int], List[int]],
-        *groups: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         color=COLOR,
         title: Union[str, None] = None,
         static: bool = False,
@@ -44,7 +44,7 @@ class Window(widgets.Frame):
         top_window: bool = False,
         **kwargs
     ):
-        super().__init__(pos, size + self.TOP_SIZE, *groups, color=color, static=static, pausable=False, **kwargs)
+        super().__init__(pos, size + self.TOP_SIZE, sprite_group, color=color, static=static, pausable=False, **kwargs)
 
         if not isinstance(size, util.Size):
             size = util.Size(*size)
