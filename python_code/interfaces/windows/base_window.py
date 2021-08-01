@@ -31,6 +31,7 @@ class Window(widgets.Frame):
     _movable: bool  # if the window should respond to requests to move it with the mouse
     is_top_window: bool  # if true the window will not allow events to be pushed downwards
     id: str  # track the window with a unique id that is not presee instance dependant
+    __precise_change: Tuple[float, float]  # track exact movements of the window rect
 
     def __init__(
         self,
@@ -63,6 +64,8 @@ class Window(widgets.Frame):
         # make closable with escape
         self.add_key_event_listener(K_ESCAPE, self._close_window, types=["unpressed"])
         self.__add_top_border(size, title)
+
+        self.__precise_change = (0, 0)
 
     def update(self, *args):
         super().update(*args)
@@ -113,7 +116,7 @@ class Window(widgets.Frame):
         widget: widgets.Widget,
         adjust: bool = True
     ):
-        """Add a widget to this window. Wraps the Frame method but allows a adjust argument to adjust the widgut
+        """Add a widget to this window. Wraps the Frame method but allows a adjust argument to adjust the widget
         downwards based on the size of the topbar"""
         if adjust:
             widget.rect.move_ip([*self.TOP_SIZE])
@@ -123,10 +126,20 @@ class Window(widgets.Frame):
         """Move the window based on the previous position and the current one on the board"""
         board_pos = \
             interfacer_util.screen_to_board_coordinate(pygame.mouse.get_pos(), self.groups()[0].target, self._zoom)  # noqa
-        moved_x = board_pos[0] - self.__previous_board_pos[0]
-        moved_y = board_pos[1] - self.__previous_board_pos[1]
+        moved_x = (board_pos[0] - self.__previous_board_pos[0]) + self.__precise_change[0]
+        moved_y = (board_pos[1] - self.__previous_board_pos[1]) + self.__precise_change[1]
         self.__previous_board_pos = board_pos
-        self.orig_rect.move_ip((moved_x, moved_y))
+        self.orig_rect.move_ip((int(moved_x), int(moved_y)))
+        if moved_x > 0:
+            residual_x = moved_x % 1
+        else:
+            residual_x = - (moved_x % 1)
+
+        if moved_y > 0:
+            residual_y = moved_y % 1
+        else:
+            residual_y = - (moved_y % 1)
+        self.__precise_change = (residual_x, residual_y)
 
     def _close_window(self):
         """Press the escape key to close the window"""
