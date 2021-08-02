@@ -9,7 +9,7 @@ from utility import inventories
 from interfaces import widgets
 from utility import utilities as util, constants as con, event_handling, loading_saving
 from block_classes import buildings
-from block_classes.materials import building_materials, environment_materials
+from block_classes.materials import building_materials, environment_materials, materials
 
 if TYPE_CHECKING:
     from board.board import Board
@@ -379,7 +379,7 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
             # this should always be 1 block
             block = blocks[0]
             material = small_interface.get_selected_item().material.copy()
-            if isinstance(material, building_materials.RotatbleBuildingMaterial):
+            if isinstance(material, materials.RotatableMaterial):
                 material.rotate(self.__rotate[0])
             building_block_class = self.get_building_block_class()
             group = block.transparant_group
@@ -435,7 +435,7 @@ class UserUI(widgets.Frame):
             material = item.material
             if self.__current_material is None or material.name() != self.__current_material.name() or \
                     self.__rotate[0] != self.__previous_rotate:
-                if isinstance(material, building_materials.RotatbleBuildingMaterial):
+                if isinstance(material, building_materials.RotatableBuildingMaterial):
                     material.rotate(self.__rotate[0])
                 self.__current_material = material
                 self.set_build_item(material)

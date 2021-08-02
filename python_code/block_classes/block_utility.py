@@ -9,6 +9,7 @@ import block_classes.materials.materials as base_materials
 import block_classes.materials.ground_materials as ground_m
 import block_classes.materials.environment_materials as env_m
 import block_classes.materials.building_materials as build_m
+import block_classes.materials.machine_materials as machine_m
 from utility import utilities as util, loading_saving
 
 # Collections used for getting all type of a certain material for conventience
@@ -92,8 +93,8 @@ def material_class_from_string(string: str) -> Type[base_materials.BaseMaterial]
         material = getattr(env_m, string)
     elif string in dir(build_m):
         material = getattr(build_m, string)
-    # elif string in dir(block_classes.machine_materials):
-    #     material = getattr(block_classes.machine_materials, string)
+    elif string in dir(machine_m):
+        material = getattr(machine_m, string)
     else:
         material = getattr(base_materials, string)
     return material

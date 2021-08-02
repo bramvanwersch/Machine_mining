@@ -454,3 +454,10 @@ class TransportableMaterial(ABC):
     @property
     def transport_surface(self) -> pygame.Surface:
         return self.TRANSPORT_IMAGE_DEFINITION.images()[0]
+
+
+class RotatableMaterial(ABC):
+
+    @abstractmethod
+    def rotate(self, rotate_count: int):
+        pass

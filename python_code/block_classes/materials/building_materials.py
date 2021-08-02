@@ -19,13 +19,6 @@ class BuildingMaterial(base_materials.TransportableMaterial, ABC):
                                     if task not in ["Building"]}
 
 
-class RotatbleBuildingMaterial(BuildingMaterial, ABC):
-
-    @abstractmethod
-    def rotate(self, rotate_count: int):
-        pass
-
-
 class Building(ABC):
     """abstraction level for all buildings"""
 
@@ -184,7 +177,8 @@ class RustedIronSheetWall(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (40, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class ConveyorBelt(RotatbleBuildingMaterial, base_materials.MultiImageMaterial, utility.loading_saving.Savable, ABC):
+class ConveyorBelt(base_materials.RotatableMaterial, base_materials.MultiImageMaterial,
+                   utility.loading_saving.Savable, ABC):
     __slots__ = "direction"
 
     direction: int
