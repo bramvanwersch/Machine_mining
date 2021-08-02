@@ -6,11 +6,10 @@ from utility import constants as con
 import utility.image_handling
 
 import block_classes.materials.materials as base_materials
-import block_classes.materials.building_materials as building_materials
 import block_classes.blocks as blocks
 
 
-class MachineComponent(base_materials.ImageMaterial, building_materials.BuildingMaterial, ABC):
+class MachineComponent(base_materials.ImageMaterial, base_materials.TransportableMaterial, ABC):
     pass
 
 

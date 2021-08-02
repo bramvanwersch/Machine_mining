@@ -356,6 +356,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         update: bool = True
     ):
         for block in blocks:
+            # make sure that reflection can be done on the pointed block not the pointer
             if isinstance(block, util.BlockPointer):
                 block = block.block
             if isinstance(block.material, build_materials.Building):
@@ -363,7 +364,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                     self.variable_blocks[block.id] = block
                 self.add_building(block)
                 continue
-            if isinstance(block.material, build_materials.ConveyorBelt):
+            if isinstance(block, block_classes.ConveyorNetworkBlock):
                 self.conveyor_network.add(block)
             if update and isinstance(block, block_classes.VariableSurfaceBlock):
                 self.variable_blocks[block.id] = block
@@ -399,7 +400,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                     starting_items=block_of_building.inventory)
             else:
                 block_of_building = buildings.material_mapping[block_of_building.material.name()](
-                    block_of_building.rect.topleft, self.main_sprite_group, )
+                    block_of_building.rect.topleft, self.main_sprite_group)
         self.buildings[block_of_building.id] = block_of_building
         for row in block_of_building.blocks:
             for block in row:

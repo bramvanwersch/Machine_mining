@@ -675,19 +675,6 @@ class MultiBlock(Block, ABC):
         super().__init__(pos, material, **kwargs)
         self.blocks = self._configure_blocks(blocks_kwargs)
 
-    # def __init_load__(self, pos=None, material=None, id_=None, action=None, light_level=0, blocks=None):
-    #     self.rect = pygame.Rect((pos[0], pos[1], self.size().width, self.size().height))
-    #     self.material = material
-    #     self._action_function = action
-    #     self.id = id_ if id_ else util.unique_id()
-    #     self.light_level = light_level
-    #     self.blocks = blocks
-    #
-    # def to_dict(self):
-    #     d = super().to_dict()
-    #     d["blocks"] = [[block.to_dict() for block in row] for row in self.blocks]
-    #     return d
-
     @classmethod
     def size(cls) -> ClassVar[util.Size]:
         return cls.SIZE * (len(cls.MULTIBLOCK_LAYOUT[0]), len(cls.MULTIBLOCK_LAYOUT))

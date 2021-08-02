@@ -392,7 +392,7 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
             else:
                 finish_block = building_block_class(block.rect.topleft, material=material)
             if isinstance(finish_block, buildings.Building):
-                overlap_rect = pygame.Rect((finish_block.rect.top, finish_block.rect.left, finish_block.rect.width - 1,
+                overlap_rect = pygame.Rect((finish_block.rect.left, finish_block.rect.top, finish_block.rect.width - 1,
                                             finish_block.rect.height - 1))
                 overlap_blocks = self.board.get_blocks_from_rect(overlap_rect)
             else:
@@ -435,7 +435,7 @@ class UserUI(widgets.Frame):
             material = item.material
             if self.__current_material is None or material.name() != self.__current_material.name() or \
                     self.__rotate[0] != self.__previous_rotate:
-                if isinstance(material, building_materials.RotatableBuildingMaterial):
+                if isinstance(material, materials.RotatableMaterial):
                     material.rotate(self.__rotate[0])
                 self.__current_material = material
                 self.set_build_item(material)

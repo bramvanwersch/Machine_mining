@@ -502,9 +502,10 @@ class BuildTask(MultiTask):
 
     def hand_in(self, entity, **kwargs):
         super().hand_in(entity, **kwargs)
+        removed_items = entity.board.remove_blocks(*self.removed_blocks)
         entity.board.add_blocks(self.finish_block)
         entity.inventory.get(self.finish_block.name(), 1)
-        entity.inventory.add_blocks(*self.removed_blocks)
+        entity.inventory.add_blocks(*removed_items)
 
 
 class FetchTask(Task):

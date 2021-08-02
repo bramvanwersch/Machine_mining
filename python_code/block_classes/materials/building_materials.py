@@ -14,11 +14,6 @@ import utility.constants as con
 import utility.loading_saving
 
 
-class BuildingMaterial(base_materials.TransportableMaterial, ABC):
-    ALLOWED_TASKS: ClassVar[Set] = {task for task in base_materials.BaseMaterial.ALLOWED_TASKS
-                                    if task not in ["Building"]}
-
-
 class Building(ABC):
     """abstraction level for all buildings"""
 
@@ -50,7 +45,7 @@ class TerminalMaterial(Building, base_materials.Indestructable, base_materials.M
                                                image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
+class FurnaceMaterial(Building, base_materials.TransportableMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 3
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
@@ -71,7 +66,7 @@ class FurnaceMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
                                                image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMaterial):
+class FactoryMaterial(Building, base_materials.TransportableMaterial, base_materials.MultiImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 4
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
@@ -92,7 +87,7 @@ class FactoryMaterial(Building, BuildingMaterial, base_materials.MultiImageMater
                                                image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
+class StonePipeMaterial(base_materials.TransportableMaterial, base_materials.MultiImageMaterial):
     _BASE_TRANSPARANT_GROUP: ClassVar[int] = 5
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.NetworkEdgeBlock
     # first number for the amount of connections (0, 1, 2, 3, 4)
@@ -121,7 +116,7 @@ class StonePipeMaterial(BuildingMaterial, base_materials.MultiImageMaterial):
         super().__init__(image_key="0_", **kwargs)
 
 
-class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMaterial):
+class StoneChestMaterial(Building, base_materials.TransportableMaterial, base_materials.ImageMaterial):
     TEXT_COLOR: ClassVar[Tuple[int, int, int]] = (255, 255, 255)
     _BLOCK_TYPE: ClassVar[blocks.Block] = blocks.InterfaceBlock
     FULL_SURFACE: ClassVar[utility.image_handling.ImageDefinition] = \
@@ -132,7 +127,7 @@ class StoneChestMaterial(Building, BuildingMaterial, base_materials.ImageMateria
         utility.image_handling.ImageDefinition("materials", (0, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class StoneBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
+class StoneBrickMaterial(base_materials.TransportableMaterial, base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 4
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
@@ -141,7 +136,7 @@ class StoneBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (0, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class MossBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
+class MossBrickMaterial(base_materials.TransportableMaterial, base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 4
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
@@ -150,7 +145,7 @@ class MossBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (10, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class ManyMossBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
+class ManyMossBrickMaterial(base_materials.TransportableMaterial, base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 4
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
@@ -159,7 +154,7 @@ class ManyMossBrickMaterial(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (20, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class IronSheetWall(BuildingMaterial, base_materials.ImageMaterial):
+class IronSheetWall(base_materials.TransportableMaterial, base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 50
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
@@ -168,7 +163,7 @@ class IronSheetWall(BuildingMaterial, base_materials.ImageMaterial):
         utility.image_handling.ImageDefinition("materials", (30, 70), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class RustedIronSheetWall(BuildingMaterial, base_materials.ImageMaterial):
+class RustedIronSheetWall(base_materials.TransportableMaterial, base_materials.ImageMaterial):
 
     HARDNESS: ClassVar[int] = 50
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
@@ -178,17 +173,17 @@ class RustedIronSheetWall(BuildingMaterial, base_materials.ImageMaterial):
 
 
 class ConveyorBelt(base_materials.RotatableMaterial, base_materials.MultiImageMaterial,
-                   utility.loading_saving.Savable, ABC):
+                   base_materials.TransportableMaterial, utility.loading_saving.Savable, ABC):
     __slots__ = "direction"
 
     direction: int
 
     def __init__(self, direction=0, **kwargs):
-        super().__init__(**kwargs)
+        base_materials.MultiImageMaterial.__init__(self, **kwargs)
         self.direction = direction  # direction the belt is facing.
 
     def to_dict(self):
-        d = super().to_dict()
+        d = base_materials.MultiImageMaterial.to_dict(self)
         d["direction"] = self.direction
         return d
 
