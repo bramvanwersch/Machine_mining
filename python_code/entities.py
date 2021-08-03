@@ -107,6 +107,14 @@ class MySprite(pygame.sprite.Sprite, loading_saving.Savable, loading_saving.Load
         """Set the orig_rect using the rect value. Support for zoomable entity"""
         self.orig_rect = rect
 
+    @property
+    def layer(self):
+        return self._layer
+
+    @layer.setter
+    def layer(self, value: int):
+        self._layer = value
+
 
 class ZoomableSprite(MySprite):
     """Sprite that is zoomed when the user zooms the game"""

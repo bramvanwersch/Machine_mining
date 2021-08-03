@@ -134,10 +134,10 @@ class Terminal(InterfaceBuilding):
     def __init__(
         self,
         pos: Union[Tuple[int, int], List[int]],
-        spite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, size=-1, interface_title="TERMINAL", **kwargs)
+        InterfaceBuilding.__init__(self, pos, sprite_group, size=-1, interface_title="TERMINAL", **kwargs)
 
 
 class StoneChest(InterfaceBuilding):
@@ -149,10 +149,10 @@ class StoneChest(InterfaceBuilding):
     def __init__(
         self,
         pos: Union[Tuple[int, int], List[int]],
-        spite_group: "sprite_groups.CameraAwareLayeredUpdates",
+        sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        InterfaceBuilding.__init__(self, pos, spite_group, size=100, interface_title="STONE CHEST", **kwargs)
+        InterfaceBuilding.__init__(self, pos, sprite_group, size=100, interface_title="STONE CHEST", **kwargs)
 
 
 class CraftingInterfaceBuilding(InterfaceBuilding, block_classes.VariableSurfaceBlock, ABC):

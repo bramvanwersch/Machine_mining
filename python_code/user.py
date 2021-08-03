@@ -8,7 +8,7 @@ import interfaces.windows.interface_utility as interface_util
 from utility import inventories
 from interfaces import widgets
 from utility import utilities as util, constants as con, event_handling, loading_saving
-from block_classes import buildings
+from block_classes import buildings, machine_blocks
 from block_classes.materials import building_materials, environment_materials, materials
 
 if TYPE_CHECKING:
@@ -387,7 +387,7 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
                 block.transparant_group = util.unique_id()
                 chunk = self.board.chunk_from_point(block.coord)
                 chunk.update_blocks(block)
-            if issubclass(building_block_class, buildings.InterfaceBuilding):
+            if issubclass(building_block_class, (buildings.InterfaceBuilding, machine_blocks.MachineTerminalBlock)):
                 finish_block = building_block_class(block.rect.topleft, self.__sprite_group)
             else:
                 finish_block = building_block_class(block.rect.topleft, material=material)

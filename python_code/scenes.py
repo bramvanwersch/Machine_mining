@@ -103,7 +103,7 @@ class Scene(event_handling.EventHandler, ABC):
     def scene_updates(self):
         # TODO make this how it was intended using the build in method
         for sprite in self.sprite_group.sprites():
-            self.sprite_group.change_layer(sprite, sprite._layer)
+            self.sprite_group.change_layer(sprite, sprite.layer)
         self.set_update_rectangles()
 
     @game_timing.time_function("scene drawing")
