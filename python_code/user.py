@@ -170,9 +170,10 @@ class User(event_handling.EventHandler, loading_saving.Savable, loading_saving.L
                                          building_block_class.size().height - 1))
                 self.__process_selection(rectangle)
             else:
-                rectangle = self.selection_rectangle.orig_rect
-                self.__process_selection(rectangle)
-                self.__remove_selection_rectangle()
+                if self.selection_rectangle is not None:
+                    rectangle = self.selection_rectangle.orig_rect
+                    self.__process_selection(rectangle)
+                    self.__remove_selection_rectangle()
 
     def change_mode(self, mode_name):
         self._mode = con.MODES[mode_name]

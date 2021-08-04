@@ -228,7 +228,7 @@ class Widget(event_handlers.EventHandler, ABC):
         """
         pass
 
-    def move(
+    def move_boardpos(
         self,
         offset: Union[Tuple[int, int], List[int]]
     ):
@@ -354,6 +354,15 @@ class SurfaceWidget(Widget, ABC):
         self.surface = self._create_surface(size, self.color)
         self.orig_surface = self.surface.copy()
         # parameter that tells the container widget containing this widget to reblit it onto its surface.
+        self.changed_image = True
+
+    def move(
+        self,
+        offset: Union[Tuple[int, int], List[int]]
+    ):
+        super().move_boardpos(offset)
+        # make sure to redraw
+        self.rect.move_ip(*offset)
         self.changed_image = True
 
     def _create_surface(
@@ -622,13 +631,13 @@ class Pane(SurfaceWidget):
                 self.__redraw_widget(widget)
                 widget.changed_image = False
 
-    def move(
+    def move_boardpos(
         self,
         offset: Union[Tuple[int, int], List[int]]
     ):
-        super().move(offset)
+        super().move_boardpos(offset)
         for widget in self.widgets:
-            widget.move(offset)
+            widget.move_boardpos(offset)
 
     def _find_hovered_widgets(
         self,
@@ -844,10 +853,11 @@ class Frame(entities.ZoomableSprite, Pane):
     def update(self, *args):
         """Call pane wupdate method in order to update relevant widgets """
         super().update(*args)
-        if self.is_showing() and self.__previous_board_pos != self.rect.topleft:
-            self.move([self.__previous_board_pos[0] - self.rect.left, self.__previous_board_pos[1] - self.rect.top])
-            self.__previous_board_pos = self.rect.topleft
-        self.wupdate(*args)
+        if self.is_showing():
+            self.wupdate(*args)
+            if self.__previous_board_pos != self.rect.topleft:
+                self.move_boardpos([self.__previous_board_pos[0] - self.rect.left, self.__previous_board_pos[1] - self.rect.top])
+                self.__previous_board_pos = self.rect.topleft
 
     def __select_top_widget(self):
         self.__select_top_widget_flag = True
@@ -893,16 +903,15 @@ class Frame(entities.ZoomableSprite, Pane):
         # add a hover event that can be consumed in the same way as normal events.
         leftover_events.append(pygame.event.Event(con.HOVER, button=con.BTN_HOVER))
         # handle all events from the most front widget to the most back one. --> this should be mouse events
-        if hovered is not None:
-            while len(hovered) > 0 and len(leftover_events) > 0:
-                widget = hovered.pop()
-                if self.__select_top_widget_flag is True and widget.selectable:
-                    self.__select_top_widget_flag = False
-                    if self.selected_widget:
-                        self.selected_widget.set_selected(False)
-                    self.selected_widget = widget
-                    self.selected_widget.set_selected(True)
-                leftover_events = widget.handle_events(leftover_events, type_="mouse", consume_events=consume_events)
+        while len(hovered) > 0 and len(leftover_events) > 0:
+            widget = hovered.pop()
+            if self.__select_top_widget_flag is True and widget.selectable:
+                self.__select_top_widget_flag = False
+                if self.selected_widget:
+                    self.selected_widget.set_selected(False)
+                self.selected_widget = widget
+                self.selected_widget.set_selected(True)
+            leftover_events = widget.handle_events(leftover_events, type_="mouse", consume_events=consume_events)
         # if clicked but no selectable widget was found the user clicked outside them to deselect
         if self.__select_top_widget_flag is True:
             self.__select_top_widget_flag = False
@@ -916,9 +925,9 @@ class Frame(entities.ZoomableSprite, Pane):
         return leftover_events
 
     def handle_other_events(
-            self,
-            events: List[pygame.event.Event],
-            consume_events: bool = True
+        self,
+        events: List[pygame.event.Event],
+        consume_events: bool = True
     ) -> List[pygame.event.Event]:
         """Handle all events but key events for the widget that is selected"""
         leftover_events = self.handle_events(events, type_="other", consume_events=consume_events)

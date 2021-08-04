@@ -20,6 +20,6 @@ class MachineTerminalBlock(blocks.InterfaceBlock):
         sprite_group: "sprite_groups.CameraAwareLayeredUpdates",
         **kwargs
     ):
-        interface = terminal_interface.MachineTerminal(pos, util.Size(400, 300), sprite_group)
+        interface = terminal_interface.MachineTerminal(pos, sprite_group)
         inventory = inventories.Inventory(self.BASE_INV_WHEIGHT)
         super().__init__(pos, machine_materials.MachineTerminalMaterial(), interface, inventory=inventory, **kwargs)
