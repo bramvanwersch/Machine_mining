@@ -856,7 +856,8 @@ class Frame(entities.ZoomableSprite, Pane):
         if self.is_showing():
             self.wupdate(*args)
             if self.__previous_board_pos != self.rect.topleft:
-                self.move_boardpos([self.__previous_board_pos[0] - self.rect.left, self.__previous_board_pos[1] - self.rect.top])
+                self.move_boardpos([self.__previous_board_pos[0] - self.rect.left,
+                                    self.__previous_board_pos[1] - self.rect.top])
                 self.__previous_board_pos = self.rect.topleft
 
     def __select_top_widget(self):

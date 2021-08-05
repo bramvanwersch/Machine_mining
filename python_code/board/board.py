@@ -10,6 +10,7 @@ import block_classes.materials.building_materials as build_materials
 import block_classes.materials.environment_materials as environment_materials
 import interfaces.windows.interface_utility as interface_util
 from board import flora, chunks, pathfinding
+import block_classes.machine_blocks as machine_blocks
 import network.conveynetwork
 from utility import game_timing, loading_saving, utilities as util, constants as con
 
@@ -563,9 +564,11 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         t = buildings.Terminal(appropriate_location + (-40, 0), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (40, 0), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (0, 0), self.main_sprite_group)
+        tm = machine_blocks.MachineTerminalBlock(appropriate_location + (40, 0), self.main_sprite_group)
         self.add_blocks(t)
         self.add_blocks(c)
         self.add_blocks(f)
+        self.add_blocks(tm)
         self.terminal = t
 
     def add_to_terminal_inventory(self, item):
