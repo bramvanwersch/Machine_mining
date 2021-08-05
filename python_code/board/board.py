@@ -8,11 +8,13 @@ import block_classes.blocks as block_classes
 import block_classes.buildings as buildings
 import block_classes.materials.building_materials as build_materials
 import block_classes.materials.environment_materials as environment_materials
+import block_classes.materials.machine_materials as machine_materials
 import interfaces.windows.interface_utility as interface_util
 from board import flora, chunks, pathfinding
 import block_classes.machine_blocks as machine_blocks
 import network.conveynetwork
 from utility import game_timing, loading_saving, utilities as util, constants as con
+import machines.base_machine as machines
 
 
 class Board(loading_saving.Savable, loading_saving.Loadable):
@@ -33,6 +35,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         self.conveyor_network = network.conveynetwork.ConveyorNetwork()
 
         self.buildings = {}
+        self.machines = {}
         self.variable_blocks = {}
         self.changed_light_blocks = set()
 
@@ -302,6 +305,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 removed_items.extend(self.remove_building(block))
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
+            elif isinstance(block.material, machine_materials.MachineComponent):
+                removed_items.extend(self.remove_machine_component(block))
             else:
                 if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
@@ -351,6 +356,14 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 chunk.remove_blocks(block)
         return removed_items
 
+    def remove_machine_component(self, block):
+        for machine in self.machines:
+            if block in machine:
+                machine.remove_block(block)
+                if machine.size <= 0:
+                    del self.machines[machine.id]
+                break
+
     def add_blocks(
         self,
         *blocks: Union[block_classes.Block, util.BlockPointer],
@@ -365,6 +378,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                     self.variable_blocks[block.id] = block
                 self.add_building(block)
                 continue
+            if isinstance(block.material, machine_materials.MachineComponent):
+                self.add_machine(block)
             if isinstance(block, block_classes.ConveyorNetworkBlock):
                 self.conveyor_network.add(block)
             if update and isinstance(block, block_classes.VariableSurfaceBlock):
@@ -409,6 +424,20 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                     self.inventorie_blocks.append(block)
                 chunk = self.chunk_from_point(block.coord)
                 chunk.add_blocks(block)
+
+    def add_machine(self, block):
+        neighbour_machines = []
+        for machine in self.machines:
+            if machine.can_add(block.coord):
+                neighbour_machines.append(machine)
+        if len(neighbour_machines) > 0:
+            neighbour_machines[0].add_block(block)
+            if len(neighbour_machines) > 1:
+                for machine in neighbour_machines[1:]:
+                    neighbour_machines[0].add_machine(machine)
+        else:
+            new_machine = machines.Machine(block)
+            self.machines[new_machine.id] = new_machine
 
     def adjust_lighting(
         self,
