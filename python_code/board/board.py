@@ -427,7 +427,6 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
 
     def add_machine(self, block):
         neighbour_machines = []
-        print(block.coord)
         for machine in self.machines.values():
             if machine.can_add(block.coord):
                 neighbour_machines.append(machine)
@@ -440,8 +439,6 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         else:
             new_machine = machines.Machine(block)
             self.machines[new_machine.id] = new_machine
-        for machine in self.machines.values():
-            print(machine.blocks)
 
     def adjust_lighting(
         self,
