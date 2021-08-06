@@ -1,10 +1,12 @@
 import utility.utilities as util
 import utility.constants as con
+import block_classes.machine_blocks
 
 
 class Machine:
     def __init__(self, block):
         self.blocks = {block.coord[1]: {block.coord[0]: block}}
+        self.terminal_block = block if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock) else None
         self.rect = block.rect
         self.id = util.unique_id()
         self.size = 1
@@ -16,6 +18,8 @@ class Machine:
                 self.blocks[block.coord[1]][block.coord[0]] = block
             else:
                 self.blocks[block.coord[1]] = {block.coord[0]: block}
+            if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
+                self.terminal_block = block
             self.size += 1
         else:
             print("Warning: Can not add block to machine, not adjacent.")

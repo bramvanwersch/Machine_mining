@@ -21,17 +21,21 @@ class MachineTerminal(base_window.Window):
         **kwargs
     ):
         super().__init__(pos, self.SIZE, sprite_group, static=True, **kwargs)
-        self.movable_item_pane = None
+        self.machine_config_grid = None
+        self._machine = None
         self.__init_widgets()
 
     def __init_widgets(self):
-        self.movable_item_pane = MachineGrid(util.Size(400, 400), util.Size(7, 7))
-        self.add_widget((25, 25), self.movable_item_pane)
+        self.machine_config_grid = MachineGrid(util.Size(400, 400), util.Size(7, 7))
+        self.add_widget((25, 25), self.machine_config_grid)
 
         block_button = widgets.Button(util.Size(50, 15), text="Block", selectable=False)
-        block_button.add_key_event_listener(1, self.movable_item_pane.set_addition_item, values=["block"],
+        block_button.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=["block"],
                                             types=["unpressed"])
         self.add_widget((425, 25), block_button)
+
+    def set_machine(self, machine):
+        self._machine = machine
 
 
 class MachineGrid(widgets.Pane):

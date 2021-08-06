@@ -1,8 +1,7 @@
-from typing import List, TYPE_CHECKING, ClassVar, Type
+from typing import List, TYPE_CHECKING, ClassVar
 
 import block_classes.blocks as blocks
 from utility import inventories
-import utility.utilities as util
 import interfaces.windows.machine_terminal_interface as terminal_interface
 from block_classes.materials import machine_materials
 
@@ -14,6 +13,8 @@ class MachineTerminalBlock(blocks.InterfaceBlock):
 
     BASE_INV_WHEIGHT: ClassVar[int] = 25
 
+    interface: terminal_interface.MachineTerminal
+
     def __init__(
         self,
         pos: List[int],
@@ -23,3 +24,7 @@ class MachineTerminalBlock(blocks.InterfaceBlock):
         interface = terminal_interface.MachineTerminal(pos, sprite_group)
         inventory = inventories.Inventory(self.BASE_INV_WHEIGHT)
         super().__init__(pos, machine_materials.MachineTerminalMaterial(), interface, inventory=inventory, **kwargs)
+
+    def set_machine(self, machine):
+        # set machine for the interface
+        self.interface.set_machine(machine)

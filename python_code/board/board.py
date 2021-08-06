@@ -93,7 +93,6 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
             if isinstance(building, buildings.Terminal):
                 self.terminal = building
                 break
-            # self.add_blocks(building)
 
     def to_dict(self) -> Dict[str, Any]:
         # TODO handle chunks currently being loaded
@@ -306,7 +305,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             elif isinstance(block.material, machine_materials.MachineComponent):
-                self.remove_machine_component(block)
+                removed_items.extend(self.remove_machine_component(block))
             else:
                 if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
@@ -360,9 +359,12 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         for machine in self.machines.values():
             if block in machine:
                 machine.remove_block(block)
+                chunk = self.chunk_from_point(block.rect.topleft)
+                chunk.remove_blocks(block)
                 if machine.size <= 0:
                     del self.machines[machine.id]
                 break
+        return block.destroy()
 
     def add_blocks(
         self,

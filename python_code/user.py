@@ -438,6 +438,7 @@ class UserUI(widgets.Frame):
                     self.__rotate[0] != self.__previous_rotate:
                 if isinstance(material, materials.RotatableMaterial):
                     material.rotate(self.__rotate[0])
+                    self.__previous_rotate = self.__rotate[0]
                 self.__current_material = material
                 self.set_build_item(material)
 
