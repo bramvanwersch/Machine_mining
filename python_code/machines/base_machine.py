@@ -1,9 +1,10 @@
 import utility.utilities as util
+import utility.constants as con
 
 
 class Machine:
     def __init__(self, block):
-        self.blocks = {}
+        self.blocks = {block.coord[1]: {block.coord[0]: block}}
         self.rect = block.rect
         self.id = util.unique_id()
         self.size = 1
@@ -36,14 +37,16 @@ class Machine:
         # check if the coordinate is next to any of the blocks in the machine
         # given the assumption the coordinate is not within the machine
         if coord[1] in self.blocks:
-            if coord[0] + 1 in self.blocks[coord[1]]:
+            if coord[0] + con.BLOCK_SIZE.width in self.blocks[coord[1]]:
                 return True
-            elif coord[0] - 1 in self.blocks[coord[0]]:
+            elif coord[0] - con.BLOCK_SIZE.width in self.blocks[coord[1]]:
                 return True
             return False
-        elif coord[1] - 1 in self.blocks and coord[0] in self.blocks[coord[1] - 1]:
+        elif coord[1] - con.BLOCK_SIZE.height in self.blocks and \
+                coord[0] in self.blocks[coord[1] - con.BLOCK_SIZE.height]:
             return True
-        elif coord[1] + 1 in self.blocks and coord[0] in self.blocks[coord[1] + 1]:
+        elif coord[1] + con.BLOCK_SIZE.height in self.blocks and \
+                coord[0] in self.blocks[coord[1] + con.BLOCK_SIZE.height]:
             return True
         return False
 

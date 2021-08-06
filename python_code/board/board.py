@@ -306,7 +306,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
             elif isinstance(block.material, environment_materials.MultiFloraMaterial):
                 removed_items.extend(self.remove_plant(block))
             elif isinstance(block.material, machine_materials.MachineComponent):
-                removed_items.extend(self.remove_machine_component(block))
+                self.remove_machine_component(block)
             else:
                 if isinstance(block.material, build_materials.ConveyorBelt):
                     self.conveyor_network.remove(block)
@@ -357,7 +357,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         return removed_items
 
     def remove_machine_component(self, block):
-        for machine in self.machines:
+        for machine in self.machines.values():
             if block in machine:
                 machine.remove_block(block)
                 if machine.size <= 0:
@@ -427,7 +427,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
 
     def add_machine(self, block):
         neighbour_machines = []
-        for machine in self.machines:
+        print(block.coord)
+        for machine in self.machines.values():
             if machine.can_add(block.coord):
                 neighbour_machines.append(machine)
         if len(neighbour_machines) > 0:
@@ -435,9 +436,12 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
             if len(neighbour_machines) > 1:
                 for machine in neighbour_machines[1:]:
                     neighbour_machines[0].add_machine(machine)
+                    del self.machines[machine.id]
         else:
             new_machine = machines.Machine(block)
             self.machines[new_machine.id] = new_machine
+        for machine in self.machines.values():
+            print(machine.blocks)
 
     def adjust_lighting(
         self,
