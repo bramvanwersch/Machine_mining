@@ -594,7 +594,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         t = buildings.Terminal(appropriate_location + (-40, 0), self.main_sprite_group)
         c = buildings.Factory(appropriate_location + (40, 0), self.main_sprite_group)
         f = buildings.Furnace(appropriate_location + (0, 0), self.main_sprite_group)
-        tm = machine_blocks.MachineTerminalBlock(appropriate_location + (40, 0), self.main_sprite_group)
+        tm = machine_blocks.MachineTerminalBlock(appropriate_location + (0, -20), self.main_sprite_group)
         self.add_blocks(t)
         self.add_blocks(c)
         self.add_blocks(f)

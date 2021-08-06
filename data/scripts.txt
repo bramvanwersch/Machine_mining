@@ -1,4 +1,4 @@
 all_debug_values:print debug [FPS, ENTITY_NMBR, AIR_RECTANGLES, WARNINGS, SHOW_ZOOM, NO_LIGHTING, SHOW_THREADS]
 switch_visual_debug_off:set debug [FPS f, ENTITY_NMBR f, SHOW_ZOOM f, SHOW_THREADS f, SHOW_BELT_ITEMS f, SHOW_CHUNK_BORDERS f]
 switch_visual_debug_on:set debug [FPS t, ENTITY_NMBR t, SHOW_ZOOM t, SHOW_THREADS t, SHOW_BELT_ITEMS t, SHOW_CHUNK_BORDERS t]
-start:add_item [building_materials [BasicConveyorBelt 100, FurnaceMaterial 25], ground_materials [Coal 1000, Iron 1000], machine_materials [MachineTerminalMaterial 5]]
+start:add_item [building_materials [BasicConveyorBelt 100, FurnaceMaterial 25], ground_materials [Coal 1000, Iron 1000], machine_materials [MachineTerminalMaterial 5, MachineConnector 5, MachineInventoryMaterial 5, DrillMaterial 5, MoverMaterial 5, PlacerMaterial 5]]
