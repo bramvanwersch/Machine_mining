@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Tuple, List, Union
 
 import pygame
 import os
@@ -19,7 +19,7 @@ def load_images():
     image_sheets["materials"] = Spritesheet("materials.bmp", util.Size(10, 10))
 
 
-def load_image(name, colorkey=None):
+def _load_spritesheet(name, colorkey=None):
     fullname = os.path.join(con.IMAGE_DIR, name)
     try:
         image = pygame.image.load(fullname)
@@ -35,12 +35,19 @@ def load_image(name, colorkey=None):
     return image
 
 
+def load_image(sprite_sheet_name, coord, size=None, color_key=con.INVISIBLE_COLOR):
+    try:
+        return image_sheets[sprite_sheet_name].image_at(coord, size, color_key)
+    except KeyError:
+        raise util.GameException(f"No sprite sheet with name {sprite_sheet_name}.")
+
+
 class Spritesheet:
     def __init__(self, filename, size):
-        self.sheet = load_image(filename)
+        self.sheet = _load_spritesheet(filename)
         self.image_size = size
 
-    def image_at(self, coord, size = None, color_key=con.INVISIBLE_COLOR):
+    def image_at(self, coord, size=None, color_key=con.INVISIBLE_COLOR):
         if size is None:
             size = self.image_size
         rect = pygame.Rect(*coord, *size)
@@ -69,7 +76,8 @@ class Spritesheet:
         for y in range(int(rect[3] / self.image_size[1])):
             image_row = []
             for x in range(int(rect[2] / self.image_size[0])):
-                image_row.append(self.image_at((rect[0] + x * self.image_size[0],rect[1] + y *self.image_size[1]), **kwargs))
+                image_row.append(self.image_at((rect[0] + x * self.image_size[0],rect[1] + y * self.image_size[1]),
+                                               **kwargs))
             images.append(image_row)
         return images
 
@@ -109,6 +117,11 @@ class ImageDefinition:
         if len(self.__images) > 0:
             return self.__images
         return self.__create_images()
+
+    def set_size(self, size: Union[pygame.Rect, Tuple[int, int, int, int], List[int]]):
+        """Allow to set the scale after the fact"""
+        self.__size = size
+        self.__create_images()
 
     def __create_images(self) -> List[pygame.Surface]:
         """Get defined images from image sheets and potentially scale and transform when neccesairy"""

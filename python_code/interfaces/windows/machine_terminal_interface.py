@@ -5,12 +5,13 @@ import interfaces.windows.base_window as base_window
 import utility.utilities as util
 import utility.constants as con
 import interfaces.widgets as widgets
+import block_classes.materials.machine_materials as machine_materials
 
 if TYPE_CHECKING:
     from board import sprite_groups
 
 
-class MachineTerminal(base_window.Window):
+class MachineInterface(base_window.Window):
 
     SIZE = util.Size(500, 500)
 
@@ -29,10 +30,16 @@ class MachineTerminal(base_window.Window):
         self.machine_config_grid = MachineGrid(util.Size(400, 400), util.Size(7, 7))
         self.add_widget((25, 25), self.machine_config_grid)
 
-        block_button = widgets.Button(util.Size(50, 15), text="Block", selectable=False)
-        block_button.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=["block"],
-                                            types=["unpressed"])
-        self.add_widget((425, 25), block_button)
+        wire_rb = widgets.RadioButton(util.Size(15, 15))
+        wire_rb.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=["wire"],
+                                       types=["unpressed"])
+        self.add_widget((425, 35), wire_rb)
+
+        wire_lbl = widgets.Label(util.Size(50, 15), text="Wire", selectable=False)
+        self.add_widget((450, 35), wire_lbl)
+
+    def _create_circuit_buttons(self):
+        pass
 
     def set_machine(self, machine):
         self._machine = machine

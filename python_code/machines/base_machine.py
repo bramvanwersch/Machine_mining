@@ -19,7 +19,10 @@ class Machine:
             else:
                 self.blocks[block.coord[1]] = {block.coord[0]: block}
             if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
-                self.terminal_block = block
+                if self.terminal_block is None:
+                    self.terminal_block = block
+                else:
+                    block.interface = self.terminal_block.interface
             self.size += 1
         else:
             print("Warning: Can not add block to machine, not adjacent.")

@@ -544,16 +544,18 @@ class Button(Label):
     def __init__(
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
+        have_hover: bool = True,
         hover_image: Union[None, pygame.Surface] = None,
         **kwargs
     ):
         super().__init__(size, **kwargs)
-        if hover_image is not None:
-            hover_surface = hover_image
-        else:
-            hover_surface = self.create_hover_surface()
-        self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[hover_surface],
-                                      unhover_values=[self.surface])
+        if have_hover is True:
+            if hover_image is not None:
+                hover_surface = hover_image
+            else:
+                hover_surface = self.create_hover_surface()
+            self.add_hover_event_listener(self.set_image, self.set_image, hover_values=[hover_surface],
+                                          unhover_values=[self.surface])
 
     def create_hover_surface(self) -> pygame.Surface:
         """Fill all pixels of color self.color with a new color. Method is relatovely heavy"""
@@ -576,6 +578,38 @@ class Button(Label):
             else:
                 new_color.append(channel + self.COLOR_CHANGE)
         return new_color
+
+
+class RadioButton(Button):
+
+    def __init__(
+        self,
+        size: Union[util.Size, Tuple[int, int], List[int]],
+        **kwargs
+    ):
+        self.__off_image = image_handling.load_image("general", (70, 20))
+        self.__off_image = pygame.transform.scale(self.__off_image, size)
+        self.__on_image = image_handling.load_image("general", (80, 20))
+        self.__on_image = pygame.transform.scale(self.__on_image, size)
+        super().__init__(size, have_hover=False, image=self.__off_image, **kwargs)
+        self._state = False  # false is of true is on
+
+    def set_selected(
+        self,
+        selected: bool,
+        color: Union[Tuple[int, int, int], List[int]] = None,
+        redraw: bool = True
+    ):
+        self.selected = selected
+        if selected is True:
+            self.switch()
+
+    def switch(self):
+        self._state = not self._state
+        if self._state is False:
+            self.set_image(self.__off_image)
+        else:
+            self.set_image(self.__on_image)
 
 
 class Pane(SurfaceWidget):
@@ -903,15 +937,18 @@ class Frame(entities.ZoomableSprite, Pane):
         hovered, unhovered = self._find_hovered_widgets(pos)
         # add a hover event that can be consumed in the same way as normal events.
         leftover_events.append(pygame.event.Event(con.HOVER, button=con.BTN_HOVER))
+
+        is_mouse1_down = any(ev.type == pygame.MOUSEBUTTONDOWN and ev.button == 1 for ev in leftover_events)
         # handle all events from the most front widget to the most back one. --> this should be mouse events
         while len(hovered) > 0 and len(leftover_events) > 0:
             widget = hovered.pop()
             if self.__select_top_widget_flag is True and widget.selectable:
                 self.__select_top_widget_flag = False
-                if self.selected_widget:
-                    self.selected_widget.set_selected(False)
-                self.selected_widget = widget
-                self.selected_widget.set_selected(True)
+                if is_mouse1_down:
+                    if self.selected_widget:
+                        self.selected_widget.set_selected(False)
+                    self.selected_widget = widget
+                    self.selected_widget.set_selected(True)
             leftover_events = widget.handle_events(leftover_events, type_="mouse", consume_events=consume_events)
         # if clicked but no selectable widget was found the user clicked outside them to deselect
         if self.__select_top_widget_flag is True:

@@ -14,6 +14,17 @@ class MachineComponent(base_materials.TransportableMaterial, ABC):
     pass
 
 
+class UnbuildableMachineComponent(base_materials.ImageMaterial, base_materials.Unbuildable, ABC):
+    pass
+
+
+class MachineWireMaterial(UnbuildableMachineComponent):
+    IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
+        utility.image_handling.ImageDefinition("buildings", (30, 90))
+    TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
+        utility.image_handling.ImageDefinition("buildings", (30, 90), image_size=con.TRANSPORT_BLOCK_SIZE)
+
+
 class NormalMachineComponent(base_materials.ImageMaterial, MachineComponent, ABC):
     pass
 
@@ -22,7 +33,7 @@ class MachineConnector(NormalMachineComponent):
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("buildings", (60, 30))
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
-        utility.image_handling.ImageDefinition("materials", (60, 30), image_size=con.TRANSPORT_BLOCK_SIZE)
+        utility.image_handling.ImageDefinition("buildings", (60, 30), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class MachineTerminalMaterial(NormalMachineComponent):
@@ -38,7 +49,7 @@ class MachineInventoryMaterial(NormalMachineComponent):
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
         utility.image_handling.ImageDefinition("buildings", (80, 30))
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
-        utility.image_handling.ImageDefinition("materials", (80, 30), image_size=con.TRANSPORT_BLOCK_SIZE)
+        utility.image_handling.ImageDefinition("buildings", (80, 30), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class RotatableMachineComponent(base_materials.MultiImageMaterial, base_materials.RotatableMaterial,
@@ -52,7 +63,7 @@ class RotatableMachineComponent(base_materials.MultiImageMaterial, base_material
         self.image_key %= 4
 
 
-class DrillMaterial(RotatableMachineComponent):
+class MachineDrillMaterial(RotatableMachineComponent):
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {0: utility.image_handling.ImageDefinition("buildings", (60, 0)),
          1: utility.image_handling.ImageDefinition("buildings", (70, 0)),
@@ -62,7 +73,7 @@ class DrillMaterial(RotatableMachineComponent):
         utility.image_handling.ImageDefinition("buildings", (60, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class MoverMaterial(RotatableMachineComponent):
+class MachineMoverMaterial(RotatableMachineComponent):
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {0: utility.image_handling.ImageDefinition("buildings", (60, 10)),
          1: utility.image_handling.ImageDefinition("buildings", (70, 10)),
@@ -72,7 +83,7 @@ class MoverMaterial(RotatableMachineComponent):
         utility.image_handling.ImageDefinition("buildings", (60, 10), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
-class PlacerMaterial(RotatableMachineComponent):
+class MachinePlacerMaterial(RotatableMachineComponent):
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {0: utility.image_handling.ImageDefinition("buildings", (60, 20)),
          1: utility.image_handling.ImageDefinition("buildings", (70, 20)),
