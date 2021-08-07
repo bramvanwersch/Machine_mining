@@ -76,14 +76,14 @@ class SelectionGroup:
         multiple: bool = False
     ):
         self.multi_mode = multiple
-        self.__widgets = set()
+        self._widgets = set()
         self.selected_widgets = None
 
     def add(
         self,
         widget: "Widget"
     ):
-        self.__widgets.add(widget)
+        self._widgets.add(widget)
 
     def select(
         self,
@@ -91,7 +91,7 @@ class SelectionGroup:
         **kwargs
     ):
         if not self.multi_mode:
-            for w in self.__widgets:
+            for w in self._widgets:
                 w.set_selected(False)
             self.selected_widgets = None
         widget.set_selected(True, **kwargs)
@@ -103,13 +103,43 @@ class SelectionGroup:
     def off(self):
         """Turn all widgets off"""
         self.selected_widgets = None
-        [w.set_selected(False) for w in self.__widgets]
+        [w.set_selected(False) for w in self._widgets]
 
     def on(self):
         """Turn all widgets on"""
         if self.multi_mode:
-            [w.set_selected(True) for w in self.__widgets]
-            self.selected_widgets = list(self.__widgets)
+            [w.set_selected(True) for w in self._widgets]
+            self.selected_widgets = list(self._widgets)
+
+
+class RadioGroup(SelectionGroup):
+    """A collection of widgets to control selection of the widgets"""
+
+    def select(
+        self,
+        widget: "RadioButton",
+        **kwargs
+    ):
+        if not self.multi_mode:
+            for w in self._widgets:
+                w.switch(False)
+            self.selected_widgets = None
+        widget.switch(True)
+        if self.selected_widgets is None:
+            self.selected_widgets = [widget]
+        else:
+            self.selected_widgets.append(widget)
+
+    def off(self):
+        """Turn all widgets off"""
+        self.selected_widgets = None
+        [w.switch(False) for w in self._widgets]
+
+    def on(self):
+        """Turn all widgets on"""
+        if self.multi_mode:
+            [w.switch(True) for w in self._widgets]
+            self.selected_widgets = list(self._widgets)
 
 
 class WidgetPosition:
@@ -585,6 +615,7 @@ class RadioButton(Button):
     def __init__(
         self,
         size: Union[util.Size, Tuple[int, int], List[int]],
+        selection_group: Union[None, RadioGroup] = None,
         **kwargs
     ):
         self.__off_image = image_handling.load_image("general", (70, 20))
@@ -593,6 +624,7 @@ class RadioButton(Button):
         self.__on_image = pygame.transform.scale(self.__on_image, size)
         super().__init__(size, have_hover=False, image=self.__off_image, color=con.INVISIBLE_COLOR, **kwargs)
         self._state = False  # false is of true is on
+        self._selection_group = selection_group
 
     def set_selected(
         self,
@@ -602,14 +634,19 @@ class RadioButton(Button):
     ):
         self.selected = selected
         if selected is True:
-            self.switch()
+            if self._selection_group is not None:
+                self._selection_group.select(self)
 
-    def switch(self):
-        self._state = not self._state
-        if self._state is False:
-            self.set_image(self.__off_image)
-        else:
-            self.set_image(self.__on_image)
+    def switch(self, state=None):
+        if state is None:
+            state = not self._state
+        prev_state = self._state
+        self._state = state
+        if prev_state != self._state:
+            if self._state is False:
+                self.set_image(self.__off_image)
+            else:
+                self.set_image(self.__on_image)
 
 
 class Pane(SurfaceWidget):
