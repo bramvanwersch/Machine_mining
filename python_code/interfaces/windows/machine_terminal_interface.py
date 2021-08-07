@@ -4,6 +4,7 @@ import interfaces.windows.base_window as base_window
 import utility.utilities as util
 import utility.constants as con
 import interfaces.widgets as widgets
+import pygame
 import block_classes.materials.machine_materials as machine_materials
 
 if TYPE_CHECKING:
@@ -118,6 +119,11 @@ class MachineGrid(widgets.Pane):
     COLOR: ClassVar[Union[Tuple[int, int, int], List[int]]] = (173, 94, 29)
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
 
+    _WIRE_IMAGE = None
+    _DRILL_IMAGE = None
+    _MOVER_IMAGE = None
+    _PLACER_IMAGE = None
+
     def __init__(
         self,
         size,
@@ -127,7 +133,20 @@ class MachineGrid(widgets.Pane):
         super().__init__(size, color=con.INVISIBLE_COLOR, **kwargs)
         self._crafting_grid = []
         self.__addition_item = None
+        self.__init_images(grid_size)
+
         self.__init_grid(grid_size)
+
+    def __init_images(
+        self,
+        grid_size: util.Size
+    ):
+        label_size = [int((self.rect.width - self.BORDER_SIZE.width * 2) / grid_size.width),
+                      int((self.rect.height - self.BORDER_SIZE.height * 2) / grid_size.height)]
+        self._WIRE_IMAGE = pygame.transform.scale(machine_materials.MachineWireMaterial().surface, label_size)
+        self._DRILL_IMAGE = pygame.transform.scale(machine_materials.MachineDrillMaterial().surface, label_size)
+        self._MOVER_IMAGE = pygame.transform.scale(machine_materials.MachineMoverMaterial().surface, label_size)
+        self._PLACER_IMAGE = pygame.transform.scale(machine_materials.MachinePlacerMaterial().surface, label_size)
 
     def __init_grid(
         self,
@@ -154,7 +173,16 @@ class MachineGrid(widgets.Pane):
 
     def change_label_image(self, label):
         if self.__addition_item == "wire":
-            image = machine_materials.MachineWireMaterial().surface
+            image = self._WIRE_IMAGE
+            label.set_image(image)
+        elif self.__addition_item == "drill":
+            image = self._DRILL_IMAGE
+            label.set_image(image)
+        elif self.__addition_item == "mover":
+            image = self._MOVER_IMAGE
+            label.set_image(image)
+        elif self.__addition_item == "placer":
+            image = self._PLACER_IMAGE
             label.set_image(image)
         elif self.__addition_item is None:
             self.clear_label_image(label)
