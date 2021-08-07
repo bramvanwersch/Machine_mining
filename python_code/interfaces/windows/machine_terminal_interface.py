@@ -85,10 +85,9 @@ class MachineGrid(widgets.Pane):
         self.__addition_item = name
 
     def change_label_image(self, label):
-        if self.__addition_item == "block":
-            s = pygame.Surface((25, 25))
-            s.fill((0, 0, 0))
-            label.set_image(s)
+        if self.__addition_item == "wire":
+            image = machine_materials.MachineWireMaterial().surface
+            label.set_image(image)
         elif self.__addition_item is None:
             self.clear_label_image(label)
 
@@ -103,48 +102,3 @@ class MachineGrid(widgets.Pane):
             for lbl in row:
                 lbl.set_item_image(None)
                 lbl.set_item_presence(False)
-
-
-
-# class MovableItemPane(widgets.Pane):
-#
-#     def __init__(self, size, **kwargs):
-#         super().__init__(size, **kwargs)
-#         self._moving_widget = None
-#         self.__previous_pos = [0, 0]
-#         self.__precise_change = [0.0, 0.0]
-#
-#     def wupdate(self, *args):
-#         super().wupdate(*args)
-#         if self._moving_widget is not None:
-#             self.__move_moving_widget()
-#
-#     def add_item(self, type_):
-#         if type_ == "block":
-#             self.add_block()
-#
-#     def add_block(self):
-#         block = widgets.Label(util.Size(10, 10), color=(0, 0, 0), selectable=False)
-#         block.add_key_event_listener(1, self._select_movable_block, values=[block], types=["pressed"])
-#         self.add_widget((0, 0), block)
-#
-#     def _select_movable_block(self, block):
-#         self._moving_widget = block
-#         self.__previous_pos = pygame.mouse.get_pos()
-#
-#     def __move_moving_widget(self):
-#         mouse_pos = pygame.mouse.get_pos()
-#         moved_x = (mouse_pos[0] - self.__previous_pos[0]) + self.__precise_change[0]
-#         moved_y = (mouse_pos[1] - self.__previous_pos[1]) + self.__precise_change[1]
-#         self.__previous_pos = mouse_pos
-#         self._moving_widget.move((int(moved_x), int(moved_y)))
-#         if moved_x > 0:
-#             residual_x = moved_x % 1
-#         else:
-#             residual_x = - (moved_x % 1)
-#
-#         if moved_y > 0:
-#             residual_y = moved_y % 1
-#         else:
-#             residual_y = - (moved_y % 1)
-#         self.__precise_change = (residual_x, residual_y)

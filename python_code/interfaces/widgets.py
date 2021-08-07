@@ -591,7 +591,7 @@ class RadioButton(Button):
         self.__off_image = pygame.transform.scale(self.__off_image, size)
         self.__on_image = image_handling.load_image("general", (80, 20))
         self.__on_image = pygame.transform.scale(self.__on_image, size)
-        super().__init__(size, have_hover=False, image=self.__off_image, **kwargs)
+        super().__init__(size, have_hover=False, image=self.__off_image, color=con.INVISIBLE_COLOR, **kwargs)
         self._state = False  # false is of true is on
 
     def set_selected(

@@ -20,9 +20,9 @@ class UnbuildableMachineComponent(base_materials.ImageMaterial, base_materials.U
 
 class MachineWireMaterial(UnbuildableMachineComponent):
     IMAGE_DEFINITIONS: ClassVar[List[utility.image_handling.ImageDefinition]] = \
-        utility.image_handling.ImageDefinition("buildings", (30, 90))
+        utility.image_handling.ImageDefinition("buildings", (90, 30))
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
-        utility.image_handling.ImageDefinition("buildings", (30, 90), image_size=con.TRANSPORT_BLOCK_SIZE)
+        utility.image_handling.ImageDefinition("buildings", (90, 30), image_size=con.TRANSPORT_BLOCK_SIZE)
 
 
 class NormalMachineComponent(base_materials.ImageMaterial, MachineComponent, ABC):
