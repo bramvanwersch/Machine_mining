@@ -5,27 +5,26 @@ import block_classes.machine_blocks
 
 class Machine:
     def __init__(self, block):
-        self.blocks = {block.coord[1]: {block.coord[0]: block}}
-        self.terminal_block = block if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock) else None
+        self.blocks = {}
+        self.terminal_block = None
         self.rect = block.rect
         self.id = util.unique_id()
         self.size = 1
+        self.add_block(block)
 
     def add_block(self, block):
         # make sure to check befoerhand
-        if self.can_add(block.coord):
-            if block.coord[1] in self.blocks:
-                self.blocks[block.coord[1]][block.coord[0]] = block
-            else:
-                self.blocks[block.coord[1]] = {block.coord[0]: block}
-            if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
-                if self.terminal_block is None:
-                    self.terminal_block = block
-                else:
-                    block.interface = self.terminal_block.interface
-            self.size += 1
+        if block.coord[1] in self.blocks:
+            self.blocks[block.coord[1]][block.coord[0]] = block
         else:
-            print("Warning: Can not add block to machine, not adjacent.")
+            self.blocks[block.coord[1]] = {block.coord[0]: block}
+        if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
+            if self.terminal_block is None:
+                self.terminal_block = block
+                self.terminal_block.set_machine(self)
+            else:
+                block.interface = self.terminal_block.interface
+        self.size += 1
 
     def remove_block(self, block):
         del self.blocks[block.coord[1]][block.coord[0]]
