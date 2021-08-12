@@ -1,9 +1,19 @@
+from typing import TYPE_CHECKING, Dict
+
 import utility.utilities as util
 import utility.constants as con
 import block_classes.machine_blocks
 
+if TYPE_CHECKING:
+    import pygame
+    from block_classes.blocks import Block
+
 
 class Machine:
+
+    rect: "pygame.Rect"
+    blocks: Dict[int, Dict[int, "Block"]]
+
     def __init__(self, block):
         self.blocks = {}
         self.terminal_block = None
@@ -13,10 +23,18 @@ class Machine:
         self.add_block(block)
 
     def add_block(self, block):
-        # make sure to check befoerhand
+        # it is very important that this block is connected, always make sure to check before with can_add()
         if block.coord[1] in self.blocks:
+            if block.rect.left < self.rect.left:
+                self.rect.left = block.rect.left
+            elif block.rect.right > self.rect.right:
+                self.rect.right = block.rect.right
             self.blocks[block.coord[1]][block.coord[0]] = block
         else:
+            if block.rect.top < self.rect.top:
+                self.rect.top = block.rect.top
+            elif block.rect.bottom > self.rect.bottom:
+                self.rect.bottom = block.rect.bottom
             self.blocks[block.coord[1]] = {block.coord[0]: block}
         if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
             if self.terminal_block is None:
@@ -33,11 +51,7 @@ class Machine:
         # it is assumed that machines are connected
         for y_dict in machine.blocks.values():
             for block in y_dict.values():
-                # cannot just use the add method since the check might fail
-                if block.coord[1] in self.blocks:
-                    self.blocks[block.coord[1]][block.coord[0]] = block
-                else:
-                    self.blocks[block.coord[1]] = {block.coord[0]: block}
+                self.add_block(block)
 
     def can_add(self, coord):
         # check if the coordinate is next to any of the blocks in the machine

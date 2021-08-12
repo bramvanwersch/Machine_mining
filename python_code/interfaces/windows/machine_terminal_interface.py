@@ -14,11 +14,12 @@ if TYPE_CHECKING:
 
 class MachineInterface(base_window.Window):
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (150, 150, 150, 255)
-    SIZE = util.Size(525, 500)
+    SIZE = util.Size(640, 500)
 
     _nr_drill_lbl: Union[None, "AmountIndicator"]
     _nr_mover_lbl: Union[None, "AmountIndicator"]
     _nr_placer_lbl: Union[None, "AmountIndicator"]
+    _building_view: Union[None, "MachineView"]
     _machine: Union[None, "base_machine.Machine"]
     _prev_machine_size: int
 
@@ -34,6 +35,7 @@ class MachineInterface(base_window.Window):
         self._nr_drill_lbl = None
         self._nr_mover_lbl = None
         self._nr_placer_lbl = None
+        self._building_view = None
         self._prev_machine_size = 0
         self.__init_widgets()
         self._set_total_amounts()
@@ -44,7 +46,12 @@ class MachineInterface(base_window.Window):
 
         radio_selection_group = widgets.RadioGroup()
 
-        y = 35
+        y = 30
+
+        self._building_view = MachineView(util.Size(200, 200))
+        self.add_widget((430, y), self._building_view)
+
+        y += 215
         header_lbl = widgets.Label(util.Size(100, 20), text="Components:", font_size=20, color=con.INVISIBLE_COLOR,
                                    text_pos=("west", "center"))
         self.add_widget((425, y), header_lbl)
@@ -136,7 +143,43 @@ class MachineInterface(base_window.Window):
 
     def set_machine(self, machine):
         self._machine = machine
+        self._building_view.set_machine(machine)
         self._set_total_amounts()
+
+
+class MachineView(widgets.Pane):
+
+    _machine: Union[None, "base_machine.Machine"]
+    _prev_machine_size: int
+
+    def __init__(
+        self,
+        size,
+        **kwargs
+    ):
+        super().__init__(size, color=(0, 0, 0), **kwargs)
+        self._machine = None
+        self._prev_machine_size = 0
+
+    def wupdate(self, *args):
+        super().wupdate(*args)
+        if self._machine is not None and self._machine.size != self._prev_machine_size:
+            self._prev_machine_size = self._machine.size
+            for widget in self.widgets:
+                self.remove_widget(widget)
+            self.create_machine_view()
+
+    def set_machine(self, machine):
+        self._machine = machine
+        self.create_machine_view()
+
+    def create_machine_view(self):
+        topleft_offset = self._machine.rect.topleft
+        for row_dict in self._machine.blocks.values():
+            for block in row_dict.values():
+                topleft = block.rect.left - topleft_offset[0], block.rect.top - topleft_offset[1]
+                component_lbl = widgets.Label(block.rect.size, block.material.VIEW_COLOR)  # noqa --> always machineComponent
+                self.add_widget(topleft, component_lbl)
 
 
 class MachineGrid(widgets.Pane):
@@ -144,11 +187,12 @@ class MachineGrid(widgets.Pane):
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (100, 100, 100, 255)
 
-    _WIRE_IMAGE = None
-    _DRILL_IMAGE = None
-    _MOVER_IMAGE = None
-    _PLACER_IMAGE = None
+    _WIRE_IMAGE: pygame.Surface
+    _DRILL_IMAGE: pygame.Surface
+    _MOVER_IMAGE: pygame.Surface
+    _PLACER_IMAGE: pygame.Surface
 
+    _crafting_size: List
     __addition_item: Union[None, "AmountIndicator"]
 
     def __init__(
