@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class MachineInterface(base_window.Window):
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (150, 150, 150, 255)
-    SIZE = util.Size(640, 500)
+    SIZE: util.Size = util.Size(640, 500)
 
     _nr_drill_lbl: Union[None, "AmountIndicator"]
     _nr_mover_lbl: Union[None, "AmountIndicator"]
@@ -53,7 +53,7 @@ class MachineInterface(base_window.Window):
 
         y += 215
         header_lbl = widgets.Label(util.Size(100, 20), text="Components:", font_size=20, color=con.INVISIBLE_COLOR,
-                                   text_pos=("west", "center"))
+                                   text_pos=("west", "center"), selectable=False)
         self.add_widget((425, y), header_lbl)
 
         # wire
@@ -174,11 +174,13 @@ class MachineView(widgets.Pane):
         self.create_machine_view()
 
     def create_machine_view(self):
+        print(self._machine.rect.topleft)
         topleft_offset = self._machine.rect.topleft
         for row_dict in self._machine.blocks.values():
             for block in row_dict.values():
+                print(block, block.rect)
                 topleft = block.rect.left - topleft_offset[0], block.rect.top - topleft_offset[1]
-                component_lbl = widgets.Label(block.rect.size, block.material.VIEW_COLOR)  # noqa --> always machineComponent
+                component_lbl = widgets.Label(block.rect.size, color=block.material.VIEW_COLOR)  # noqa --> always machineComponent
                 self.add_widget(topleft, component_lbl)
 
 

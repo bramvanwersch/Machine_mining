@@ -16,7 +16,7 @@ class MachineComponent(base_materials.TransportableMaterial, ABC):
     @property
     def VIEW_COLOR(self) -> Tuple[int, int, int]:
         # overwrite this property to set the color in the view
-        return 150, 150, 150
+        return 175, 175, 175
 
 
 class UnbuildableMachineComponent(MachineComponent, base_materials.ImageMaterial, base_materials.Unbuildable, ABC):

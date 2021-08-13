@@ -17,7 +17,7 @@ class Machine:
     def __init__(self, block):
         self.blocks = {}
         self.terminal_block = None
-        self.rect = block.rect
+        self.rect = block.rect.copy()
         self.id = util.unique_id()
         self.size = 1
         self.add_block(block)
@@ -27,14 +27,16 @@ class Machine:
         if block.coord[1] in self.blocks:
             if block.rect.left < self.rect.left:
                 self.rect.left = block.rect.left
+                self.rect.width += self.rect.left - block.rect.left
             elif block.rect.right > self.rect.right:
-                self.rect.right = block.rect.right
+                self.rect.width += block.rect.right - self.rect.right
             self.blocks[block.coord[1]][block.coord[0]] = block
         else:
             if block.rect.top < self.rect.top:
                 self.rect.top = block.rect.top
+                self.rect.height += self.rect.top - block.rect.top
             elif block.rect.bottom > self.rect.bottom:
-                self.rect.bottom = block.rect.bottom
+                self.rect.height += block.rect.bottom - self.rect.bottom
             self.blocks[block.coord[1]] = {block.coord[0]: block}
         if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
             if self.terminal_block is None:
