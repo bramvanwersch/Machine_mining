@@ -19,7 +19,7 @@ class MachineInterface(base_window.Window):
     _nr_drill_lbl: Union[None, "AmountIndicator"]
     _nr_mover_lbl: Union[None, "AmountIndicator"]
     _nr_placer_lbl: Union[None, "AmountIndicator"]
-    _building_view: Union[None, "MachineView"]
+    _machine_view: Union[None, "MachineView"]
     _machine: Union[None, "base_machine.Machine"]
     _prev_machine_size: int
 
@@ -35,7 +35,7 @@ class MachineInterface(base_window.Window):
         self._nr_drill_lbl = None
         self._nr_mover_lbl = None
         self._nr_placer_lbl = None
-        self._building_view = None
+        self._machine_view = None
         self._prev_machine_size = 0
         self.__init_widgets()
         self._set_total_amounts()
@@ -48,8 +48,9 @@ class MachineInterface(base_window.Window):
 
         y = 30
 
-        self._building_view = MachineView(util.Size(200, 200))
-        self.add_widget((430, y), self._building_view)
+        self._machine_view = MachineView(util.Size(200, 200))
+        self.add_widget((430, y), self._machine_view)
+        self.add_border(self._machine_view)
 
         y += 215
         header_lbl = widgets.Label(util.Size(100, 20), text="Components:", font_size=20, color=con.INVISIBLE_COLOR,
@@ -146,7 +147,7 @@ class MachineInterface(base_window.Window):
 
     def set_machine(self, machine):
         self._machine = machine
-        self._building_view.set_machine(machine)
+        self._machine_view.set_machine(machine)
         self._set_total_amounts()
 
 
@@ -160,7 +161,7 @@ class MachineView(widgets.Pane):
         size,
         **kwargs
     ):
-        super().__init__(size, color=(0, 0, 0), **kwargs)
+        super().__init__(size, color=(255, 255, 255), **kwargs)
         self._machine = None
         self._prev_machine_size = 0
 
@@ -185,7 +186,11 @@ class MachineView(widgets.Pane):
                               ((self.rect.width / 2) - (self._machine.rect.width / 2))), \
                           int((block.rect.top - topleft_offset[1]) +
                               ((self.rect.height / 2) - (self._machine.rect.height / 2)))
-                component_lbl = widgets.Label(block.rect.size, color=block.material.VIEW_COLOR)  # noqa --> always machineComponent
+                if block.material.VIEWABLE:  # noqa --> always machineComponent
+                    component_lbl = widgets.Label(block.rect.size, image=block.material.surface,
+                                                  selection_color=(0, 0, 0))
+                else:
+                    component_lbl = widgets.Label(block.rect.size, color=(175, 175, 175), selectable=False)
                 self.add_widget(topleft, component_lbl)
 
 
@@ -240,7 +245,7 @@ class MachineGrid(widgets.Pane):
 
                 lbl = GridLabel(label_size)
                 lbl.add_key_event_listener(1, self.change_label_image, values=[lbl], types=["pressed"])
-                lbl.add_key_event_listener(3, self.clear_label_image, values=[lbl], types=["pressed"])
+                lbl.add_key_event_listener(3, lbl.remove_indicator, types=["pressed"])
                 self.add_widget(pos, lbl)
                 row.append(lbl)
             self._crafting_grid.append(row)
@@ -248,9 +253,9 @@ class MachineGrid(widgets.Pane):
     def set_addition_item(self, amount_lbl):
         self.__addition_item = amount_lbl
 
-    def change_label_image(self, label):
+    def change_label_image(self, grid_label):
         if self.__addition_item is None:
-            self.clear_label_image(label)
+            grid_label.remove_indicator()
             return
         if not self.__addition_item.can_place():
             return
@@ -265,11 +270,8 @@ class MachineGrid(widgets.Pane):
         else:
             print(f"Warning: No case for component with name {self.__addition_item.name}")
             return
-        label.switch_indicator(self.__addition_item)
-        label.set_image(image)
-
-    def clear_label_image(self, label):
-        label.clean_surface()
+        grid_label.switch_indicator(self.__addition_item)
+        grid_label.set_image(image)
 
     def wupdate(self, *args):
         super().wupdate()
@@ -294,10 +296,16 @@ class GridLabel(widgets.Label):
         if self._current_indicator is not None:
             self._current_indicator.add_current(-1)
 
+    def remove_indicator(self):
+        super().clean_surface()
+        if self._current_indicator is not None:
+            self._current_indicator.add_current(1)
+            self._current_indicator = None
+
 
 class AmountIndicator(widgets.Label):
     def __init__(self, size, name, current: Union[str, int] = 0, total: Union[str, int] = 0, **kwargs):
-        super().__init__(size, color=MachineInterface.COLOR, text_pos=("west", "center"), **kwargs)
+        super().__init__(size, color=MachineInterface.COLOR, text_pos=("west", "center"), selectable=False, **kwargs)
         self.name = name
         self._current = current
         self._total = total

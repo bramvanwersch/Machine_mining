@@ -444,12 +444,13 @@ class Label(SurfaceWidget):
         text_pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         text_color: Union[Tuple[int, int, int], List[int]] = (0, 0, 0),
         font_size: int = 15,
+        selection_color: Tuple[int, int, int] = SELECTED_COLOR,
         **kwargs
     ):
         super().__init__(size, color=color, **kwargs)
         self.__image_specifications = None
         self.__text_specifications = [text if text is not None else "", text_pos, text_color, font_size]
-        self.__selection_specifications = None
+        self.__selection_specifications = [False, selection_color]
         if border:
             self._add_initial_border(border_color, border_shrink, border_width)
         self._enhance_surface(image, image_pos, image_size, text, text_pos, text_color, font_size)
@@ -540,6 +541,8 @@ class Label(SurfaceWidget):
         super().set_selected(selected)
         if not self.selectable:
             return
+        if self.__selection_specifications[1] is not None and color is None:
+            color = self.__selection_specifications[1]
         self.__selection_specifications = [selected, color]
         if redraw:
             self.clean_surface(clean_text=False, clean_image=False)

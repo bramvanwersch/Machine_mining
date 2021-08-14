@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, ClassVar, Dict, Tuple
+from typing import List, ClassVar, Dict
 
 # own imports
 from utility import constants as con
@@ -14,9 +14,9 @@ class MachineComponent(base_materials.TransportableMaterial, ABC):
 
     # noinspection PyPep8Naming
     @property
-    def VIEW_COLOR(self) -> Tuple[int, int, int]:
-        # overwrite this property to set the color in the view
-        return 175, 175, 175
+    def VIEWABLE(self) -> bool:
+        # if this component is shown in detail in the machine view
+        return False
 
 
 class UnbuildableMachineComponent(MachineComponent, base_materials.ImageMaterial, base_materials.Unbuildable, ABC):
@@ -76,7 +76,7 @@ class MachineDrillMaterial(RotatableMachineComponent):
          3: utility.image_handling.ImageDefinition("buildings", (90, 0))}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (60, 0), image_size=con.TRANSPORT_BLOCK_SIZE)
-    VIEW_COLOR: Tuple[int, int, int] = 135, 74, 24
+    VIEWABLE: bool = True
 
 
 class MachineMoverMaterial(RotatableMachineComponent):
@@ -87,7 +87,7 @@ class MachineMoverMaterial(RotatableMachineComponent):
          3: utility.image_handling.ImageDefinition("buildings", (90, 10))}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (60, 10), image_size=con.TRANSPORT_BLOCK_SIZE)
-    VIEW_COLOR: Tuple[int, int, int] = 75, 135, 49
+    VIEWABLE: bool = True
 
 
 class MachinePlacerMaterial(RotatableMachineComponent):
@@ -98,5 +98,4 @@ class MachinePlacerMaterial(RotatableMachineComponent):
          3: utility.image_handling.ImageDefinition("buildings", (90, 20))}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (60, 20), image_size=con.TRANSPORT_BLOCK_SIZE)
-    VIEW_COLOR: Tuple[int, int, int] = 10, 105, 145
-
+    VIEWABLE: bool = True
