@@ -128,6 +128,9 @@ class MachineInterface(base_window.Window):
     def _set_total_amounts(self):
         if self._machine is None:
             return
+        self._nr_drill_lbl.reset_amounts()
+        self._nr_placer_lbl.reset_amounts()
+        self._nr_mover_lbl.reset_amounts()
         for row_dict in self._machine.blocks.values():
             for block in row_dict.values():
                 if isinstance(block.material, machine_materials.MachineDrillMaterial):
@@ -165,7 +168,8 @@ class MachineView(widgets.Pane):
         super().wupdate(*args)
         if self._machine is not None and self._machine.size != self._prev_machine_size:
             self._prev_machine_size = self._machine.size
-            for widget in self.widgets:
+            # do not itterate over a list were deletions are made
+            for widget in self.widgets.copy():
                 self.remove_widget(widget)
             self.create_machine_view()
 
@@ -174,12 +178,13 @@ class MachineView(widgets.Pane):
         self.create_machine_view()
 
     def create_machine_view(self):
-        print(self._machine.rect.topleft)
         topleft_offset = self._machine.rect.topleft
         for row_dict in self._machine.blocks.values():
             for block in row_dict.values():
-                print(block, block.rect)
-                topleft = block.rect.left - topleft_offset[0], block.rect.top - topleft_offset[1]
+                topleft = int((block.rect.left - topleft_offset[0]) +
+                              ((self.rect.width / 2) - (self._machine.rect.width / 2))), \
+                          int((block.rect.top - topleft_offset[1]) +
+                              ((self.rect.height / 2) - (self._machine.rect.height / 2)))
                 component_lbl = widgets.Label(block.rect.size, color=block.material.VIEW_COLOR)  # noqa --> always machineComponent
                 self.add_widget(topleft, component_lbl)
 
@@ -323,3 +328,10 @@ class AmountIndicator(widgets.Label):
 
     def can_place(self):
         return self._current == "inf" or self._current > 0
+
+    def reset_amounts(self):
+        # reset total and current
+        if self._total != "inf":
+            self._total = 0
+        if self._current != "inf":
+            self._current = 0

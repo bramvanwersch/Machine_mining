@@ -1229,10 +1229,9 @@ class ListBox(ScrollPane):
         widget: Widget,
     ):
         y_pos = sum(w.rect.height + 10 for w in self.widgets)
-
+        # configure the position of the next
         widget.rect = pygame.Rect(self.rect.width / 2 - widget.rect.width / 2, y_pos,
                                   widget.rect.width, widget.rect.height)
-        # configure the position of the next
         self.widgets.append(widget)
         self.orig_surface.blit(widget.surface, widget.rect)
         self.changed_image = True

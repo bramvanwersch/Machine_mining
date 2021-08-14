@@ -26,15 +26,15 @@ class Machine:
         # it is very important that this block is connected, always make sure to check before with can_add()
         if block.coord[1] in self.blocks:
             if block.rect.left < self.rect.left:
-                self.rect.left = block.rect.left
                 self.rect.width += self.rect.left - block.rect.left
+                self.rect.left = block.rect.left
             elif block.rect.right > self.rect.right:
                 self.rect.width += block.rect.right - self.rect.right
             self.blocks[block.coord[1]][block.coord[0]] = block
         else:
             if block.rect.top < self.rect.top:
-                self.rect.top = block.rect.top
                 self.rect.height += self.rect.top - block.rect.top
+                self.rect.top = block.rect.top
             elif block.rect.bottom > self.rect.bottom:
                 self.rect.height += block.rect.bottom - self.rect.bottom
             self.blocks[block.coord[1]] = {block.coord[0]: block}
