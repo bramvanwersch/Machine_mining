@@ -8,6 +8,11 @@ if TYPE_CHECKING:
     import pygame
     from block_classes.blocks import Block
 
+# TODO section
+#  1: make sure that disconecting large oarts works properly
+#  2: have a max size
+#  3: have other machine additions not exceed max size
+
 
 class Machine:
 
@@ -38,22 +43,36 @@ class Machine:
             elif block.rect.bottom > self.rect.bottom:
                 self.rect.height += block.rect.bottom - self.rect.bottom
             self.blocks[block.coord[1]] = {block.coord[0]: block}
+        if self.terminal_block is not None:
+            self.terminal_block.add_block_to_interface(block)
         if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
             if self.terminal_block is None:
-                self.terminal_block = block
-                self.terminal_block.set_machine(self)
+                self._set_terminal_block(block)
             else:
                 block.interface = self.terminal_block.interface
         self.size += 1
 
     def remove_block(self, block):
+        if block.id == self.terminal_block.id:
+            self.terminal_block = None
+        if self.terminal_block is not None:
+            self.terminal_block.remove_block_from_interface(block)
         del self.blocks[block.coord[1]][block.coord[0]]
+        self.size -= 1
 
     def add_machine(self, machine):
         # it is assumed that machines are connected
         for y_dict in machine.blocks.values():
             for block in y_dict.values():
                 self.add_block(block)
+
+    def _set_terminal_block(self, terminal_block: block_classes.machine_blocks.MachineTerminalBlock):
+        self.terminal_block = terminal_block
+        for y_dict in self.blocks.values():
+            for block in y_dict.values():
+                self.terminal_block.add_block_to_interface(block)
+
+        self.terminal_block.set_machine(self)
 
     def can_add(self, coord):
         # check if the coordinate is next to any of the blocks in the machine

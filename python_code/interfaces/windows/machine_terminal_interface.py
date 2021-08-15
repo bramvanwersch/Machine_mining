@@ -16,9 +16,10 @@ class MachineInterface(base_window.Window):
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (150, 150, 150, 255)
     SIZE: util.Size = util.Size(640, 500)
 
-    _nr_drill_lbl: Union[None, "AmountIndicator"]
-    _nr_mover_lbl: Union[None, "AmountIndicator"]
-    _nr_placer_lbl: Union[None, "AmountIndicator"]
+    machine_config_grid: Union[None, "MachineGrid"]
+    _drill_components: Union[None, "ComponentGroup"]
+    _mover_components: Union[None, "ComponentGroup"]
+    _placer_components: Union[None, "ComponentGroup"]
     _machine_view: Union[None, "MachineView"]
     _machine: Union[None, "base_machine.Machine"]
     _prev_machine_size: int
@@ -32,13 +33,12 @@ class MachineInterface(base_window.Window):
         super().__init__(pos, self.SIZE, sprite_group, color=self.COLOR, static=True, **kwargs)
         self.machine_config_grid = None
         self._machine = None
-        self._nr_drill_lbl = None
-        self._nr_mover_lbl = None
-        self._nr_placer_lbl = None
+        self._drill_components = ComponentGroup()
+        self._mover_components = ComponentGroup()
+        self._placer_components = ComponentGroup()
         self._machine_view = None
         self._prev_machine_size = 0
         self.__init_widgets()
-        self._set_total_amounts()
 
     def __init_widgets(self):
         self.machine_config_grid = MachineGrid(util.Size(400, 400), util.Size(7, 7))
@@ -68,10 +68,10 @@ class MachineInterface(base_window.Window):
                                  text_pos=("west", "center"))
         self.add_widget((445, y), wire_lbl)
 
-        self._nr_wire_lbl = AmountIndicator(util.Size(30, 15), "wire", current="inf", total="inf")
-        wire_rb.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=[self._nr_wire_lbl],
+        wire_lbl = widgets.Label(util.Size(30, 15), text="inf.", color=con.INVISIBLE_COLOR)
+        wire_rb.add_key_event_listener(1, self.machine_config_grid.set_logic_component, values=["wire"],
                                        types=["unpressed"])
-        self.add_widget((490, y), self._nr_wire_lbl)
+        self.add_widget((490, y), wire_lbl)
 
         # drill
         y += 20
@@ -84,10 +84,10 @@ class MachineInterface(base_window.Window):
                                   text_pos=("west", "center"))
         self.add_widget((445, y), drill_lbl)
 
-        self._nr_drill_lbl = AmountIndicator(util.Size(30, 15), name="drill")
-        drill_rb.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=[self._nr_drill_lbl],
-                                        types=["unpressed"])
-        self.add_widget((490, y), self._nr_drill_lbl)
+        nr_drill_lbl = AmountIndicator(util.Size(30, 15), self._drill_components)
+        drill_rb.add_key_event_listener(1, self.machine_config_grid.set_component_group,
+                                        values=[self._drill_components], types=["unpressed"])
+        self.add_widget((490, y), nr_drill_lbl)
 
         # mover
         y += 20
@@ -100,10 +100,10 @@ class MachineInterface(base_window.Window):
                                   text_pos=("west", "center"))
         self.add_widget((445, y), mover_lbl)
 
-        self._nr_mover_lbl = AmountIndicator(util.Size(30, 15), name="mover")
-        mover_rb.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=[self._nr_mover_lbl],
-                                        types=["unpressed"])
-        self.add_widget((490, y), self._nr_mover_lbl)
+        nr_mover_lbl = AmountIndicator(util.Size(30, 15), self._mover_components)
+        mover_rb.add_key_event_listener(1, self.machine_config_grid.set_component_group,
+                                        values=[self._mover_components], types=["unpressed"])
+        self.add_widget((490, y), nr_mover_lbl)
 
         # placer
         y += 20
@@ -116,39 +116,34 @@ class MachineInterface(base_window.Window):
                                    text_pos=("west", "center"))
         self.add_widget((445, y), placer_lbl)
 
-        self._nr_placer_lbl = AmountIndicator(util.Size(30, 15), name="placer")
-        placer_rb.add_key_event_listener(1, self.machine_config_grid.set_addition_item, values=[self._nr_placer_lbl],
-                                         types=["unpressed"])
-        self.add_widget((490, y), self._nr_placer_lbl)
+        nr_placer_lbl = AmountIndicator(util.Size(30, 15), self._placer_components)
+        placer_rb.add_key_event_listener(1, self.machine_config_grid.set_component_group,
+                                         values=[self._placer_components], types=["unpressed"])
+        self.add_widget((490, y), nr_placer_lbl)
 
-    def wupdate(self, *args):
-        super().wupdate(*args)
-        if self._machine is not None and self._machine.size != self._prev_machine_size:
-            self._set_total_amounts()
+    def add_machine_block(self, block):
+        if isinstance(block.material, machine_materials.MachineDrillMaterial):
+            self._drill_components.add(block)
+        elif isinstance(block.material, machine_materials.MachineMoverMaterial):
+            self._mover_components.add(block)
+        elif isinstance(block.material, machine_materials.MachinePlacerMaterial):
+            self._placer_components.add(block)
 
-    def _set_total_amounts(self):
-        if self._machine is None:
-            return
-        self._nr_drill_lbl.reset_amounts()
-        self._nr_placer_lbl.reset_amounts()
-        self._nr_mover_lbl.reset_amounts()
-        for row_dict in self._machine.blocks.values():
-            for block in row_dict.values():
-                if isinstance(block.material, machine_materials.MachineDrillMaterial):
-                    self._nr_drill_lbl.add_total(1)
-                    self._nr_drill_lbl.add_current(1)
-                elif isinstance(block.material, machine_materials.MachineMoverMaterial):
-                    self._nr_mover_lbl.add_total(1)
-                    self._nr_mover_lbl.add_current(1)
-                elif isinstance(block.material, machine_materials.MachinePlacerMaterial):
-                    self._nr_placer_lbl.add_total(1)
-                    self._nr_placer_lbl.add_current(1)
-        self._prev_machine_size = self._machine.size
+    def remove_machine_block(self, block):
+        grid_pos = None
+        if isinstance(block.material, machine_materials.MachineDrillMaterial):
+            grid_pos = self._drill_components.remove(block)
+        elif isinstance(block.material, machine_materials.MachineMoverMaterial):
+            grid_pos = self._mover_components.remove(block)
+        elif isinstance(block.material, machine_materials.MachinePlacerMaterial):
+            grid_pos = self._placer_components.remove(block)
+
+        if grid_pos is not None:
+            self.machine_config_grid.remove_grid_image(grid_pos)
 
     def set_machine(self, machine):
         self._machine = machine
         self._machine_view.set_machine(machine)
-        self._set_total_amounts()
 
 
 class MachineView(widgets.Pane):
@@ -199,13 +194,9 @@ class MachineGrid(widgets.Pane):
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (100, 100, 100, 255)
 
-    _WIRE_IMAGE: pygame.Surface
-    _DRILL_IMAGE: pygame.Surface
-    _MOVER_IMAGE: pygame.Surface
-    _PLACER_IMAGE: pygame.Surface
-
     _crafting_size: List
-    __addition_item: Union[None, "AmountIndicator"]
+    __component_group: Union[None, "ComponentGroup"]
+    __logic_component: Union[None, str]
 
     def __init__(
         self,
@@ -214,8 +205,9 @@ class MachineGrid(widgets.Pane):
         **kwargs
     ):
         super().__init__(size, color=con.INVISIBLE_COLOR, **kwargs)
-        self._crafting_grid = []
-        self.__addition_item = None
+        self._logic_grid = []
+        self.__component_group = None
+        self.__logic_component = None
         self.__init_images(grid_size)
 
         self.__init_grid(grid_size)
@@ -227,9 +219,6 @@ class MachineGrid(widgets.Pane):
         image_size = [int((self.rect.width - self.BORDER_SIZE.width * 2) / grid_size.width) - 2,
                       int((self.rect.height - self.BORDER_SIZE.height * 2) / grid_size.height) - 2]
         self._WIRE_IMAGE = pygame.transform.scale(machine_materials.MachineWireMaterial().surface, image_size)
-        self._DRILL_IMAGE = pygame.transform.scale(machine_materials.MachineDrillMaterial().surface, image_size)
-        self._MOVER_IMAGE = pygame.transform.scale(machine_materials.MachineMoverMaterial().surface, image_size)
-        self._PLACER_IMAGE = pygame.transform.scale(machine_materials.MachinePlacerMaterial().surface, image_size)
 
     def __init_grid(
         self,
@@ -243,103 +232,104 @@ class MachineGrid(widgets.Pane):
                 pos = self.BORDER_SIZE.width + label_size.width * col_i, \
                       self.BORDER_SIZE.height + label_size.height * row_i
 
-                lbl = GridLabel(label_size)
-                lbl.add_key_event_listener(1, self.change_label_image, values=[lbl], types=["pressed"])
-                lbl.add_key_event_listener(3, lbl.remove_indicator, types=["pressed"])
+                lbl = GridLabel(label_size, (col_i, row_i))
+                lbl.add_key_event_listener(1, self.set_grid_image, values=[(col_i, row_i)], types=["pressed"])
+                lbl.add_key_event_listener(3, self.remove_grid_image, values=[(col_i, row_i)], types=["pressed"])
                 self.add_widget(pos, lbl)
                 row.append(lbl)
-            self._crafting_grid.append(row)
+            self._logic_grid.append(row)
 
-    def set_addition_item(self, amount_lbl):
-        self.__addition_item = amount_lbl
+    def set_component_group(self, group):
+        self.__component_group = group
+        self.__logic_component = None
 
-    def change_label_image(self, grid_label):
-        if self.__addition_item is None:
-            grid_label.remove_indicator()
-            return
-        if not self.__addition_item.can_place():
-            return
-        elif self.__addition_item.name == "wire":
-            image = self._WIRE_IMAGE
-        elif self.__addition_item.name == "drill":
-            image = self._DRILL_IMAGE
-        elif self.__addition_item.name == "mover":
-            image = self._MOVER_IMAGE
-        elif self.__addition_item.name == "placer":
-            image = self._PLACER_IMAGE
-        else:
-            print(f"Warning: No case for component with name {self.__addition_item.name}")
-            return
-        grid_label.switch_indicator(self.__addition_item)
-        grid_label.set_image(image)
+    def set_logic_component(self, name):
+        self.__logic_component = name
+        self.__component_group = None
 
-    def wupdate(self, *args):
-        super().wupdate()
+    def set_grid_image(self, grid_pos: Union[Tuple[int, int], List[int]]):
+        grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
+        if self.__logic_component is not None:
+            if self.__logic_component == "wire":
+                grid_label.set_component_image(self._WIRE_IMAGE)
+        elif self.__component_group is not None:
+            block = self.__component_group.assign_block(grid_label.grid_pos)
+            if block is not None:
+                grid_label.set_component_group(block, self.__component_group)
 
-    def reset(self):
-        for row in self._crafting_grid:
-            for lbl in row:
-                lbl.set_item_image(None)
-                lbl.set_item_presence(False)
+    def remove_grid_image(self, grid_pos: Union[Tuple[int, int], List[int]]):
+        grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
+        grid_label.remove_component_image()
 
 
 class GridLabel(widgets.Label):
-    def __init__(self, size, **kwargs):
-        super().__init__(size, color=MachineGrid.COLOR, selectable=False, text_pos=("west", "center"),
+    def __init__(self, size, grid_pos, **kwargs):
+        super().__init__(size, color=MachineGrid.COLOR, selectable=False,
                          border=True, border_color=(0, 0, 0), border_width=1, **kwargs)
         self._current_indicator = None
+        self.grid_pos = grid_pos
 
-    def switch_indicator(self, new_indicator):
-        if self._current_indicator is not None:
-            self._current_indicator.add_current(1)
-        self._current_indicator = new_indicator
-        if self._current_indicator is not None:
-            self._current_indicator.add_current(-1)
+        # tracked in case of a component group
+        self._component_group = None
+        self._block = None
 
-    def remove_indicator(self):
-        super().clean_surface()
-        if self._current_indicator is not None:
-            self._current_indicator.add_current(1)
-            self._current_indicator = None
+    def set_component_group(self, block, component_group):
+        self._component_group = component_group
+        self._block = block
+        image = pygame.transform.scale(block.material.surface, self.rect.size)
+        self.set_image(image)
+
+    def set_component_image(self, image):
+        self._component_group = None
+        self._block = None
+        self.set_image(image)
+
+    def remove_component_image(self):
+        if self._component_group is not None:
+            self._component_group.unassign_block(self._block)
+        self.clean_surface()
 
 
 class AmountIndicator(widgets.Label):
-    def __init__(self, size, name, current: Union[str, int] = 0, total: Union[str, int] = 0, **kwargs):
+    def __init__(self, size, component_group: "ComponentGroup", **kwargs):
         super().__init__(size, color=MachineInterface.COLOR, text_pos=("west", "center"), selectable=False, **kwargs)
-        self.name = name
-        self._current = current
-        self._total = total
-        self._changed_numbers = False
-        self._create_text()
-
-    def _create_text(self):
-        self.set_text("")
-        self.set_text(f"{self._current}/{self._total}")
+        self._component_group = component_group
+        self._current_text = ""
 
     def wupdate(self):
         super().wupdate()
-        if self._changed_numbers:
-            self._create_text()
-            self._changed_numbers = False
+        if self._current_text != self._component_group.get_amount_text():
+            self.set_text(self._component_group.get_amount_text())
 
-    def add_current(self, value):
-        if self._current == "inf":
-            return
-        self._current += value
-        self._changed_numbers = True
 
-    def add_total(self, value):
-        if self._total == "inf":
-            return
-        self._total += value
-        self._changed_numbers = True
+class ComponentGroup:
+    def __init__(self):
+        self._blocks = set()
+        self._assigned_blocks = {}
 
-    def can_place(self):
-        return self._current == "inf" or self._current > 0
+    def add(self, block):
+        self._blocks.add(block)
 
-    def reset_amounts(self):
-        # reset total and current
-        if self._total != "inf":
-            self._total = 0
-        if self._current != "inf":
-            self._current = 0
+    def assign_block(self, grid_pos):
+        chosen_block = None
+        for block in self._blocks:
+            if block not in self._assigned_blocks:
+                self._assigned_blocks[block.id] = grid_pos
+                chosen_block = block
+                break
+        return chosen_block
+
+    def unassign_block(self, block):
+        if block.id in self._assigned_blocks:
+            return self._assigned_blocks.pop(block.id)
+        return None
+
+    def remove(self, block):
+        self._blocks.remove(block)
+        grid_pos = None
+        if block.id in self._assigned_blocks:
+            grid_pos = self.unassign_block(block)
+        return grid_pos
+
+    def get_amount_text(self):
+        return f"{len(self._assigned_blocks)} / {len(self._blocks)}"

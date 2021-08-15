@@ -28,3 +28,9 @@ class MachineTerminalBlock(blocks.InterfaceBlock):
     def set_machine(self, machine):
         # set machine for the interface
         self.interface.set_machine(machine)
+
+    def add_block_to_interface(self, block):
+        self.interface.add_machine_block(block)
+
+    def remove_block_from_interface(self, block):
+        self.interface.remove_machine_block(block)

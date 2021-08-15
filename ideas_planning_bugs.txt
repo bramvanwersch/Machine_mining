@@ -40,7 +40,8 @@ SPECIFIC FEATURES:
 - add the seed feature to the game settings, as well as a way to control the amount of structures
 - Revamp the widgets class structures to get an abstract version of the pane and label classes to make sure that certain
   methods are not present in widgets they shoudnt be.
- - get rid of incrementing numbers as class variables since in subsequent runs these will keep counting.
+- get rid of incrementing numbers as class variables since in subsequent runs these will keep counting.
+- save interfaces so that they stay configured properly when the game is reloaded
 
 EXTRA FEATURES (features that can be in the game at some point):
 - fix all the TODOs
