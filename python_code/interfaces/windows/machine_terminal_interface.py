@@ -48,7 +48,8 @@ class MachineInterface(base_window.Window):
 
         y = 30
 
-        self._machine_view = MachineView(util.Size(200, 200))
+        self._machine_view = MachineView(util.Size(200, 200), [self._drill_components, self._mover_components,
+                                                               self._placer_components])
         self.add_widget((430, y), self._machine_view)
         self.add_border(self._machine_view)
 
@@ -154,11 +155,13 @@ class MachineView(widgets.Pane):
     def __init__(
         self,
         size,
+        component_groups: List["ComponentGroup"],
         **kwargs
     ):
         super().__init__(size, color=(255, 255, 255), **kwargs)
         self._machine = None
         self._prev_machine_size = 0
+        self._component_groups = component_groups
 
     def wupdate(self, *args):
         super().wupdate(*args)
@@ -182,11 +185,42 @@ class MachineView(widgets.Pane):
                           int((block.rect.top - topleft_offset[1]) +
                               ((self.rect.height / 2) - (self._machine.rect.height / 2)))
                 if block.material.VIEWABLE:  # noqa --> always machineComponent
-                    component_lbl = widgets.Label(block.rect.size, image=block.material.surface,
-                                                  selection_color=(0, 0, 0))
+                    present_group = None
+                    for group in self._component_groups:
+                        if block in group:
+                            present_group = group
+                            break
+                    component_lbl = MachineViewLabel(present_group, block, image=block.material.surface,
+                                                     selection_color=(0, 0, 0))
                 else:
                     component_lbl = widgets.Label(block.rect.size, color=(175, 175, 175), selectable=False)
                 self.add_widget(topleft, component_lbl)
+
+
+class MachineViewLabel(widgets.Label):
+
+    def __init__(self, component_group, block, **kwargs):
+        self._component_group = component_group
+        self._block = block
+        super().__init__(block.rect.size, **kwargs)
+
+    def wupdate(self):
+        super().wupdate()
+        if self._component_group is not None:
+            if self.selected and not self._component_group.is_block_selected(self._block):
+                self.set_selected(False)
+            if not self.selected and self._component_group.is_block_selected(self._block):
+                self.set_selected(True)
+
+    def set_selected(
+        self,
+        selected: bool,
+        color: Union[Tuple[int, int, int], List[int]] = None,
+        redraw: bool = True
+    ):
+        super().set_selected(selected, color, redraw)
+        if self._component_group is not None:
+            self._component_group.select_block(self._block, selected)
 
 
 class MachineGrid(widgets.Pane):
@@ -263,9 +297,11 @@ class MachineGrid(widgets.Pane):
 
 
 class GridLabel(widgets.Label):
+
+    _component_group: Union[None, "ComponentGroup"]
+
     def __init__(self, size, grid_pos, **kwargs):
-        super().__init__(size, color=MachineGrid.COLOR, selectable=False,
-                         border=True, border_color=(0, 0, 0), border_width=1, **kwargs)
+        super().__init__(size, color=MachineGrid.COLOR, border=True, border_color=(0, 0, 0), border_width=1, **kwargs)
         self._current_indicator = None
         self.grid_pos = grid_pos
 
@@ -273,21 +309,46 @@ class GridLabel(widgets.Label):
         self._component_group = None
         self._block = None
 
+    def wupdate(self):
+        super().wupdate()
+        if self._component_group is not None:
+            if self.selected and not self._component_group.is_block_selected(self._block):
+                self.set_selected(False)
+            if not self.selected and self._component_group.is_block_selected(self._block):
+                self.set_selected(True)
+
+    def set_selected(
+        self,
+        selected: bool,
+        color: Union[Tuple[int, int, int], List[int]] = None,
+        redraw: bool = True
+    ):
+        super().set_selected(selected, color, redraw)
+        if self._component_group is not None:
+            self._component_group.select_block(self._block, selected)
+
     def set_component_group(self, block, component_group):
+        self._unassign_component_group()
         self._component_group = component_group
         self._block = block
-        image = pygame.transform.scale(block.material.surface, self.rect.size)
+        image = pygame.transform.scale(block.material.surface, (self.rect.width - 5, self.rect.height - 5))
         self.set_image(image)
 
     def set_component_image(self, image):
-        self._component_group = None
-        self._block = None
+        self._unassign_component_group()
         self.set_image(image)
 
-    def remove_component_image(self):
+    def _unassign_component_group(self):
         if self._component_group is not None:
             self._component_group.unassign_block(self._block)
+            self._component_group.select_block(self._block, False)
+            self._component_group = None
+            self._block = None
+
+    def remove_component_image(self):
+        self._unassign_component_group()
         self.clean_surface()
+        self._reset_specifications(image=True)
 
 
 class AmountIndicator(widgets.Label):
@@ -305,6 +366,7 @@ class AmountIndicator(widgets.Label):
 class ComponentGroup:
     def __init__(self):
         self._blocks = set()
+        self._selected_blocks = {}
         self._assigned_blocks = {}
 
     def add(self, block):
@@ -313,7 +375,7 @@ class ComponentGroup:
     def assign_block(self, grid_pos):
         chosen_block = None
         for block in self._blocks:
-            if block not in self._assigned_blocks:
+            if block.id not in self._assigned_blocks:
                 self._assigned_blocks[block.id] = grid_pos
                 chosen_block = block
                 break
@@ -324,6 +386,14 @@ class ComponentGroup:
             return self._assigned_blocks.pop(block.id)
         return None
 
+    def select_block(self, block, select: bool):
+        self._selected_blocks[block.id] = select
+
+    def is_block_selected(self, block):
+        if block.id in self._selected_blocks:
+            return self._selected_blocks[block.id]
+        return False
+
     def remove(self, block):
         self._blocks.remove(block)
         grid_pos = None
@@ -333,3 +403,6 @@ class ComponentGroup:
 
     def get_amount_text(self):
         return f"{len(self._assigned_blocks)} / {len(self._blocks)}"
+
+    def __contains__(self, block):
+        return block in self._blocks

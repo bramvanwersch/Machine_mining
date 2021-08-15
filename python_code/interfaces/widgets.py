@@ -570,6 +570,19 @@ class Label(SurfaceWidget):
             self.set_selected(*self.__selection_specifications, redraw=False)
         self.changed_image = True
 
+    def _reset_specifications(
+        self,
+        text: bool = False,
+        selected: bool = False,
+        image: bool = False
+    ):
+        if text:
+            self.__text_specifications = None
+        if selected:
+            self.__selection_specifications = None
+        if image:
+            self.__image_specifications = None
+
 
 class Button(Label):
     COLOR_CHANGE: ClassVar[int] = 75
