@@ -73,6 +73,22 @@ class MachineInterface(base_window.Window):
         wire_rb.add_key_event_listener(1, self.machine_config_grid.set_logic_component, values=["wire"],
                                        types=["unpressed"])
         self.add_widget((490, y), wire_lbl)
+        
+        # inverter wire
+        y += 20
+        inverter_rb = widgets.RadioButton(util.Size(15, 15), selection_group=radio_selection_group)
+
+        self.add_widget((425, y), inverter_rb)
+        radio_selection_group.add(inverter_rb)
+
+        inverter_lbl = widgets.Label(util.Size(35, 15), text="Inverter:", selectable=False, color=con.INVISIBLE_COLOR,
+                                 text_pos=("west", "center"))
+        self.add_widget((445, y), inverter_lbl)
+
+        inverter_lbl = widgets.Label(util.Size(30, 15), text="inf.", color=con.INVISIBLE_COLOR)
+        inverter_rb.add_key_event_listener(1, self.machine_config_grid.set_logic_component, values=["inverter"], 
+                                           types=["unpressed"])
+        self.add_widget((490, y), inverter_lbl)
 
         # drill
         y += 20
@@ -123,20 +139,20 @@ class MachineInterface(base_window.Window):
         self.add_widget((490, y), nr_placer_lbl)
 
     def add_machine_block(self, block):
-        if isinstance(block.material, machine_materials.MachineDrillMaterial):
+        if isinstance(block.material, machine_materials.MachineDrill):
             self._drill_components.add(block)
-        elif isinstance(block.material, machine_materials.MachineMoverMaterial):
+        elif isinstance(block.material, machine_materials.MachineMover):
             self._mover_components.add(block)
-        elif isinstance(block.material, machine_materials.MachinePlacerMaterial):
+        elif isinstance(block.material, machine_materials.MachinePlacer):
             self._placer_components.add(block)
 
     def remove_machine_block(self, block):
         grid_pos = None
-        if isinstance(block.material, machine_materials.MachineDrillMaterial):
+        if isinstance(block.material, machine_materials.MachineDrill):
             grid_pos = self._drill_components.remove(block)
-        elif isinstance(block.material, machine_materials.MachineMoverMaterial):
+        elif isinstance(block.material, machine_materials.MachineMover):
             grid_pos = self._mover_components.remove(block)
-        elif isinstance(block.material, machine_materials.MachinePlacerMaterial):
+        elif isinstance(block.material, machine_materials.MachinePlacer):
             grid_pos = self._placer_components.remove(block)
 
         if grid_pos is not None:
@@ -228,6 +244,9 @@ class MachineGrid(widgets.Pane):
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (100, 100, 100, 255)
 
+    _wire_image: Union[None, pygame.Surface]
+    _inverter_image: Union[None, pygame.Surface]
+
     _crafting_size: List
     __component_group: Union[None, "ComponentGroup"]
     __logic_component: Union[None, str]
@@ -242,6 +261,8 @@ class MachineGrid(widgets.Pane):
         self._logic_grid = []
         self.__component_group = None
         self.__logic_component = None
+        self._wire_image = None
+        self._inverter_image = None
         self.__init_images(grid_size)
 
         self.__init_grid(grid_size)
@@ -252,7 +273,8 @@ class MachineGrid(widgets.Pane):
     ):
         image_size = [int((self.rect.width - self.BORDER_SIZE.width * 2) / grid_size.width) - 2,
                       int((self.rect.height - self.BORDER_SIZE.height * 2) / grid_size.height) - 2]
-        self._WIRE_IMAGE = pygame.transform.scale(machine_materials.MachineWireMaterial().surface, image_size)
+        self._wire_image = pygame.transform.scale(machine_materials.MachineWire().surface, image_size)
+        self._inverter_image = pygame.transform.scale(machine_materials.MachineWireInverter().surface, image_size)
 
     def __init_grid(
         self,
@@ -285,7 +307,11 @@ class MachineGrid(widgets.Pane):
         grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
         if self.__logic_component is not None:
             if self.__logic_component == "wire":
-                grid_label.set_component_image(self._WIRE_IMAGE)
+                grid_label.set_component_image(self._wire_image)
+            elif self.__logic_component == "inverter":
+                grid_label.set_component_image(self._inverter_image)
+            else:
+                print(f"Warning: no case for name {self.__logic_component}")
         elif self.__component_group is not None:
             block = self.__component_group.assign_block(grid_label.grid_pos)
             if block is not None:

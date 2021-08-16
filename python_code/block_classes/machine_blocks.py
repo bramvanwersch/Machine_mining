@@ -23,7 +23,7 @@ class MachineTerminalBlock(blocks.InterfaceBlock):
     ):
         interface = terminal_interface.MachineInterface(pos, sprite_group)
         inventory = inventories.Inventory(self.BASE_INV_WHEIGHT)
-        super().__init__(pos, machine_materials.MachineTerminalMaterial(), interface, inventory=inventory, **kwargs)
+        super().__init__(pos, machine_materials.MachineTerminal(), interface, inventory=inventory, **kwargs)
 
     def set_machine(self, machine):
         # set machine for the interface
