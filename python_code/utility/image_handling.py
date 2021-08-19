@@ -84,7 +84,8 @@ class Spritesheet:
 
 class ImageDefinition:
     """Define an image and make sure that image creation is not done repeatedly"""
-    __slots__ = "__sheet_name", "__image_location", "__color_key", "__flip", "__size", "__image_size", "__images"
+    __slots__ = "__sheet_name", "__image_location", "__color_key", "__flip", "__size", "__image_size", "__images",\
+                "__rotate"
 
     __sheet_name: str
     __image_location: Tuple[int, int]
@@ -93,6 +94,7 @@ class ImageDefinition:
     # this varaible will save when get_images is called once before te prevent unnecesairy transform an image_at calls
     __images: List[pygame.Surface]
     __size: util.Size
+    __rotate: int
     __image_size: util.Size
 
     def __init__(
@@ -102,13 +104,15 @@ class ImageDefinition:
         color_key: Tuple[int, int, int] = con.INVISIBLE_COLOR,
         flip: Tuple[bool, bool] = (False, False),
         image_size: util.Size = con.BLOCK_SIZE,
-        size: util.Size = util.Size(10, 10)
+        size: util.Size = util.Size(10, 10),
+        rotate: int = 0
     ):
         self.__sheet_name = sheet_name
         self.__image_location = image_location
         self.__color_key = color_key
         self.__flip = flip
         self.__size = size
+        self.__rotate = rotate
         self.__image_size = image_size
         self.__images = []
 
@@ -120,7 +124,7 @@ class ImageDefinition:
 
     def set_size(self, size: Union[pygame.Rect, Tuple[int, int, int, int], List[int]]):
         """Allow to set the scale after the fact"""
-        self.__size = size
+        self.__size = util.Size(*size)
         self.__create_images()
 
     def __create_images(self) -> List[pygame.Surface]:
@@ -131,6 +135,8 @@ class ImageDefinition:
         norm_size = norm_image.get_size()
         if norm_size[0] != self.__image_size[0] or norm_size[1] != self.__image_size[1]:
             norm_image = pygame.transform.scale(norm_image, self.__image_size.size)
+        if self.__rotate != 0:
+            norm_image = pygame.transform.rotate(norm_image, self.__rotate)
         self.__images = [norm_image]
         if self.__flip[0]:
             horizontal_flip_image = pygame.transform.flip(norm_image, True, False)

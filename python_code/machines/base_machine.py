@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from block_classes.blocks import Block
 
 # TODO section
-#  1: make sure that disconecting large oarts works properly
+#  1: make sure that disconecting large parts works properly
 #  2: have a max size
 #  3: have other machine additions not exceed max size
 
