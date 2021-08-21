@@ -425,7 +425,7 @@ class Label(SurfaceWidget):
     surface: Union[None, pygame.Surface]
     orig_surface: Union[None, pygame.Surface]
 
-    __image_specifications: Union[None, List]
+    __image_specifications: Union[None, Tuple[pygame.Surface, WidgetPosition]]
     __text_specifications: Union[None, List]
     __selection_specifications: Union[None, List]
 
@@ -491,7 +491,7 @@ class Label(SurfaceWidget):
         image: pygame.Surface,
         pos: Union[Tuple[Union[int, str], Union[str, int]], List[Union[int, str]]] = ("center", "center"),
         size: Union[util.Size, Tuple[int, int], List[int]] = None,
-        redraw: bool = True
+        redraw: bool = True,
     ):
         if redraw:
             self.clean_surface()
@@ -499,8 +499,8 @@ class Label(SurfaceWidget):
             image = pygame.transform.scale(image, size)
         rect = image.get_rect()
         pos = WidgetPosition(pos, rect, self.rect)
-        # make sure transform is not reopeaditly triggered
-        self.__image_specifications = [image.copy(), pos, None]
+
+        self.__image_specifications = (image.copy(), pos)
         self.surface.blit(image, pos.position)
         if redraw:
             if self.__text_specifications:
