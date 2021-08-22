@@ -6,6 +6,7 @@ import utility.constants as con
 import interfaces.widgets as widgets
 import pygame
 import block_classes.materials.machine_materials as machine_materials
+from block_classes.materials.materials import BaseMaterial, RotatableMaterial
 
 if TYPE_CHECKING:
     from board import sprite_groups
@@ -166,7 +167,7 @@ class MachineInterface(base_window.Window):
         # logic component selection
         x = 10
         wire_rb = widgets.RadioButton(util.Size(15, 15), selection_group=component_selection_group)
-        wire_rb.add_key_event_listener(1, self._set_logic_component, values=["wire"])
+        wire_rb.add_key_event_listener(1, self._set_logic_component, values=["wire", self._wire_color])
         wire_pane.add_widget((x, y), wire_rb)
         component_selection_group.add(wire_rb)
 
@@ -176,7 +177,7 @@ class MachineInterface(base_window.Window):
 
         y += 20
         inverter_rb = widgets.RadioButton(util.Size(15, 15), selection_group=component_selection_group)
-        inverter_rb.add_key_event_listener(1, self._set_logic_component, values=["inverter"])
+        inverter_rb.add_key_event_listener(1, self._set_logic_component, values=["inverter", self._wire_color])
         wire_pane.add_widget((x, y), inverter_rb)
         component_selection_group.add(inverter_rb)
 
@@ -218,14 +219,18 @@ class MachineInterface(base_window.Window):
         self._machine = machine
         self._machine_view.set_machine(machine)
 
-    def _set_logic_component(self, component):
+    def _set_logic_component(self, component, color=None):
         self._component = component
-        self.machine_config_grid.set_logic_component(f"{self._wire_color}_{self._component}")
+        if color is None:
+            name = self._component
+        else:
+            name = f"{self._wire_color}:{self._component}"
+        self.machine_config_grid.set_logic_component(name)
 
     def _set_wire_color(self, color):
         self._wire_color = color
         if self._component is not None:
-            self.machine_config_grid.set_logic_component(f"{self._wire_color}_{self._component}")
+            self.machine_config_grid.set_logic_component(f"{self._wire_color}:{self._component}")
 
 
 class MachineView(widgets.Pane):
@@ -308,9 +313,14 @@ class MachineGrid(widgets.Pane):
     """Crafting grid for displaying recipes and the presence of items of those recipes"""
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (100, 100, 100, 255)
-
-    _image_size: Union[None, Tuple[int, int]]
-    _logic_image_dict: Dict[str, pygame.Surface]
+    _LOGIC_IMAGE_MAPPING: Dict[str, "machine_materials.MachineComponent"] = \
+        {"red:wire": machine_materials.RedWire(),
+         "green:wire": machine_materials.GreenWire(),
+         "blue:wire": machine_materials.BlueWire(),
+         "red:inverter": machine_materials.RedInverterWire(),
+         "green:inverter": machine_materials.GreenInverterWire(),
+         "blue:inverter": machine_materials.BlueInverterWire(),
+         "connector": machine_materials.WireConnector()}
 
     _crafting_size: List
     __component_group: Union[None, "ComponentGroup"]
@@ -326,36 +336,8 @@ class MachineGrid(widgets.Pane):
         self._logic_grid = []
         self.__component_group = None
         self.__logic_component = None
-        self._logic_image_dict = {}
-        self._image_size = None
-        self.__init_logic_image_dict(grid_size)
 
         self.__init_grid(grid_size)
-
-    def __init_logic_image_dict(
-        self,
-        grid_size: util.Size
-    ):
-        self._image_size = (int((self.rect.width - self.BORDER_SIZE.width * 2) / grid_size.width) - 2,
-                            int((self.rect.height - self.BORDER_SIZE.height * 2) / grid_size.height) - 2)
-        self._logic_image_dict["red_wire"] = \
-            pygame.transform.scale(machine_materials.RedWire().surface, self._image_size)
-        self._logic_image_dict["green_wire"] = \
-            pygame.transform.scale(machine_materials.GreenWire().surface, self._image_size)
-        self._logic_image_dict["blue_wire"] = \
-            pygame.transform.scale(machine_materials.BlueWire().surface, self._image_size)
-        self._logic_image_dict["red_inverter"] = \
-            pygame.transform.scale(machine_materials.RedInverterWire().surface, self._image_size)
-        self._logic_image_dict["green_inverter"] = \
-            pygame.transform.scale(machine_materials.GreenInverterWire().surface, self._image_size)
-        self._logic_image_dict["blue_inverter"] = \
-            pygame.transform.scale(machine_materials.BlueInverterWire().surface, self._image_size)
-        self._logic_image_dict["red_connector"] = \
-            pygame.transform.scale(machine_materials.WireConnector().surface, self._image_size)
-        self._logic_image_dict["green_connector"] = \
-            pygame.transform.scale(machine_materials.WireConnector().surface, self._image_size)
-        self._logic_image_dict["blue_connector"] = \
-            pygame.transform.scale(machine_materials.WireConnector().surface, self._image_size)
 
     def __init_grid(
         self,
@@ -388,8 +370,12 @@ class MachineGrid(widgets.Pane):
         grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
         if self.__logic_component is not None:
             try:
-                color = self.__logic_component.split("_")[0]
-                grid_label.set_component_image(self._logic_image_dict[self.__logic_component], color)
+                if ":" in self.__logic_component:
+                    color = self.__logic_component.split(":")[0]
+                else:
+                    # default color that wil do for components not affected by color
+                    color = "red"
+                grid_label.set_logic_image(self._LOGIC_IMAGE_MAPPING[self.__logic_component], color)
             except KeyError:
                 print(f"Warning: no image for logic component {self.__logic_component}")
         elif self.__component_group is not None:
@@ -405,7 +391,7 @@ class MachineGrid(widgets.Pane):
 class GridLabel(widgets.Label):
 
     _component_group: Union[None, "ComponentGroup"]
-    _logic_components: Dict[str, Union[pygame.Surface, None]]
+    _logic_image: Union[None, "LogicImage"]
 
     def __init__(self, size, grid_pos, **kwargs):
         super().__init__(size, color=MachineGrid.COLOR, border=True, border_color=(0, 0, 0), border_width=1, **kwargs)
@@ -414,7 +400,7 @@ class GridLabel(widgets.Label):
 
         # tracked in case of a component group
         self._component_group = None
-        self._logic_components = {"red": None, "green": None, "blue": None}
+        self._logic_image = None
         self._block = None
 
     def wupdate(self):
@@ -440,19 +426,15 @@ class GridLabel(widgets.Label):
         self._component_group = component_group
         self._block = block
         image = pygame.transform.scale(block.material.surface, (self.rect.width - 5, self.rect.height - 5))
-        self._logic_components = {"red": None, "green": None, "blue": None}
+        self._logic_image = None
         self.set_image(image)
 
-    def set_component_image(self, image: pygame.Surface, color):
-        self._logic_components[color] = image
-        full_image = pygame.Surface(image.get_rect().size)
-        full_image.fill(MachineGrid.COLOR)
-        for color in self._logic_components:
-            img = self._logic_components[color]
-            if img is not None:
-                full_image.blit(img, (0, 0))
+    def set_logic_image(self, material: Union[BaseMaterial, RotatableMaterial], color, rotation=0):
+        if self._logic_image is None:
+            self._logic_image = LogicImage(self.rect.size, rotation)
+        self._logic_image.add_material(material, color)
         self._unassign_component_group()
-        self.set_image(full_image)
+        self.set_image(self._logic_image.get_surface())
 
     def _unassign_component_group(self):
         if self._component_group is not None:
@@ -468,8 +450,52 @@ class GridLabel(widgets.Label):
 
 
 class LogicImage:
-    def __init__(self, image, rotation, color):
-        pass
+    # combines multiple logic images into one image and uses a cache to prevent repeated image creation if possible
+
+    materials: Dict[str, Union[None, BaseMaterial, RotatableMaterial]]
+
+    def __init__(self, size, rotation: int = 0, active: bool = False):
+        self.materials = {"red": None, "green": None, "blue": None}
+        self._image_cache = {}  # save created images to prevent repeated creation
+        self.rotation = rotation
+        self.size = size
+        self.active = active
+
+    def add_material(self, material: Union[BaseMaterial, RotatableMaterial], component_color):
+        # -1 in case of no rotates when not dealing with a rotatble material
+        if isinstance(material, RotatableMaterial):
+            material.rotate(self.rotation)
+        material.set_active(self.active)
+        self.materials[component_color] = material
+
+    def set_rotation(self, rotation):
+        rotate_count = self.rotation - rotation
+        self.rotation = rotation
+        for material in self.materials.values():
+            if material is not None and isinstance(material, RotatableMaterial):
+                material.rotate(rotate_count)
+
+    def set_active(self, value: bool):
+        self.active = value
+        for material in self.materials.values():
+            if material is not None:
+                material.set_active(self.active)
+
+    def get_surface(self):
+        cache_key = f"{self.active}_{self.materials}_{self.rotation}"
+        if cache_key in self._image_cache:
+            return self._image_cache[cache_key]
+        full_image = pygame.Surface(self.size)
+        full_image.fill(MachineGrid.COLOR)
+        for color in self.materials:
+            material = self.materials[color]
+            if material is None:
+                continue
+            surface = material.surface
+            surface = pygame.transform.scale(surface, self.size)
+            full_image.blit(surface, (0, 0))
+        self._image_cache[cache_key] = full_image
+        return full_image
 
 
 class AmountIndicator(widgets.Label):

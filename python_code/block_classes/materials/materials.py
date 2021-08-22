@@ -147,8 +147,8 @@ class BaseMaterial(loading_saving.Savable, loading_saving.Loadable, ABC):
         self,
         value: bool
     ):
-        if self._active_surface is None:
-            raise util.GameException(f"Material {type(self)} has no ACTIVE_IMAGE_DEFINITION and as a result can not"
+        if self._active_surface is None and value is True:
+            raise util.GameException(f"Material {type(self)} has no ACTIVE_IMAGE_DEFINITION and as a result can not "
                                      f"be set active")
         self._active = value
 
