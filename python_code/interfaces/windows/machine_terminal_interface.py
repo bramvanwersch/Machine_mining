@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List, TYPE_CHECKING, ClassVar, Dict
+from typing import Union, Tuple, List, TYPE_CHECKING, ClassVar, Dict, Set
 
 import interfaces.windows.base_window as base_window
 import utility.utilities as util
@@ -6,7 +6,7 @@ import utility.constants as con
 import interfaces.widgets as widgets
 import pygame
 import block_classes.materials.machine_materials as machine_materials
-from block_classes.materials.materials import BaseMaterial, RotatableMaterial
+from block_classes.materials.materials import BaseMaterial
 
 if TYPE_CHECKING:
     from board import sprite_groups
@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class MachineInterface(base_window.Window):
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (150, 150, 150, 255)
     SIZE: util.Size = util.Size(540, 500)
+    NO_COLOR_LOGIC_COMPONENTS: Set[str] = {"connector"}
 
     machine_config_grid: Union[None, "MachineGrid"]
     _drill_components: Union[None, "ComponentGroup"]
@@ -32,6 +33,7 @@ class MachineInterface(base_window.Window):
         **kwargs
     ):
         super().__init__(pos, self.SIZE, sprite_group, color=self.COLOR, static=True, **kwargs)
+        self.add_key_event_listener(pygame.K_r, self._add_rotation, types=["pressed"])
         self.machine_config_grid = None
         self._machine = None
         self._drill_components = ComponentGroup()
@@ -41,6 +43,7 @@ class MachineInterface(base_window.Window):
         self._prev_machine_size = 0
         self._wire_color = "red"
         self._component = None
+        self._rotate = 0
         self.__init_widgets()
 
     def __init_widgets(self):
@@ -167,7 +170,7 @@ class MachineInterface(base_window.Window):
         # logic component selection
         x = 10
         wire_rb = widgets.RadioButton(util.Size(15, 15), selection_group=component_selection_group)
-        wire_rb.add_key_event_listener(1, self._set_logic_component, values=["wire", self._wire_color])
+        wire_rb.add_key_event_listener(1, self._set_logic_component, values=["wire"])
         wire_pane.add_widget((x, y), wire_rb)
         component_selection_group.add(wire_rb)
 
@@ -177,7 +180,7 @@ class MachineInterface(base_window.Window):
 
         y += 20
         inverter_rb = widgets.RadioButton(util.Size(15, 15), selection_group=component_selection_group)
-        inverter_rb.add_key_event_listener(1, self._set_logic_component, values=["inverter", self._wire_color])
+        inverter_rb.add_key_event_listener(1, self._set_logic_component, values=["inverter"])
         wire_pane.add_widget((x, y), inverter_rb)
         component_selection_group.add(inverter_rb)
 
@@ -219,9 +222,9 @@ class MachineInterface(base_window.Window):
         self._machine = machine
         self._machine_view.set_machine(machine)
 
-    def _set_logic_component(self, component, color=None):
+    def _set_logic_component(self, component):
         self._component = component
-        if color is None:
+        if self._component in self.NO_COLOR_LOGIC_COMPONENTS:
             name = self._component
         else:
             name = f"{self._wire_color}:{self._component}"
@@ -230,7 +233,11 @@ class MachineInterface(base_window.Window):
     def _set_wire_color(self, color):
         self._wire_color = color
         if self._component is not None:
-            self.machine_config_grid.set_logic_component(f"{self._wire_color}:{self._component}")
+            self._set_logic_component(self._component)
+
+    def _add_rotation(self):
+        self._rotate += 1
+        self.machine_config_grid.add_rotation()
 
 
 class MachineView(widgets.Pane):
@@ -313,14 +320,6 @@ class MachineGrid(widgets.Pane):
     """Crafting grid for displaying recipes and the presence of items of those recipes"""
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (100, 100, 100, 255)
-    _LOGIC_IMAGE_MAPPING: Dict[str, "machine_materials.MachineComponent"] = \
-        {"red:wire": machine_materials.RedWire(),
-         "green:wire": machine_materials.GreenWire(),
-         "blue:wire": machine_materials.BlueWire(),
-         "red:inverter": machine_materials.RedInverterWire(),
-         "green:inverter": machine_materials.GreenInverterWire(),
-         "blue:inverter": machine_materials.BlueInverterWire(),
-         "connector": machine_materials.WireConnector()}
 
     _crafting_size: List
     __component_group: Union[None, "ComponentGroup"]
@@ -333,6 +332,7 @@ class MachineGrid(widgets.Pane):
         **kwargs
     ):
         super().__init__(size, color=con.INVISIBLE_COLOR, **kwargs)
+        self._rotation_count = 0
         self._logic_grid = []
         self.__component_group = None
         self.__logic_component = None
@@ -357,6 +357,32 @@ class MachineGrid(widgets.Pane):
                 self.add_widget(pos, lbl)
                 row.append(lbl)
             self._logic_grid.append(row)
+            
+    def _get_machine_material(self):
+        mat = None
+        if self.__logic_component == "red:wire":
+            mat = machine_materials.RedWire()
+        elif self.__logic_component == "green:wire":
+            mat = machine_materials.GreenWire()
+        elif self.__logic_component == "blue:wire":
+            mat = machine_materials.BlueWire()
+        elif self.__logic_component == "red:inverter":
+            mat = machine_materials.RedInverterWire()
+        elif self.__logic_component == "green:inverter":
+            mat = machine_materials.GreenInverterWire()
+        elif self.__logic_component == "blue:inverter":
+            mat = machine_materials.BlueInverterWire()
+        elif self.__logic_component == "connector":
+            mat = machine_materials.WireConnector()
+        if mat is None:
+            # crashes the game
+            raise util.GameException(f"No material for logic component with name: {self.__logic_component}")
+        if isinstance(mat, machine_materials.RotatableMachineComponent):
+            mat.rotate(self._rotation_count)
+        return mat
+            
+    def add_rotation(self):
+        self._rotation_count += 1
 
     def set_component_group(self, group):
         self.__component_group = group
@@ -369,15 +395,15 @@ class MachineGrid(widgets.Pane):
     def set_grid_image(self, grid_pos: Union[Tuple[int, int], List[int]]):
         grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
         if self.__logic_component is not None:
-            try:
-                if ":" in self.__logic_component:
-                    color = self.__logic_component.split(":")[0]
-                else:
-                    # default color that wil do for components not affected by color
-                    color = "red"
-                grid_label.set_logic_image(self._LOGIC_IMAGE_MAPPING[self.__logic_component], color)
-            except KeyError:
-                print(f"Warning: no image for logic component {self.__logic_component}")
+            material = self._get_machine_material()
+            if ":" in self.__logic_component:
+                color = self.__logic_component.split(":")[0]
+                grid_label.set_logic_image(material, color)
+            else:
+                # default color that wil do for components not affected by color
+                grid_label.set_logic_image(material, "red")
+                grid_label.set_logic_image(None, "green")
+                grid_label.set_logic_image(None, "blue")
         elif self.__component_group is not None:
             block = self.__component_group.assign_block(grid_label.grid_pos)
             if block is not None:
@@ -429,10 +455,14 @@ class GridLabel(widgets.Label):
         self._logic_image = None
         self.set_image(image)
 
-    def set_logic_image(self, material: Union[BaseMaterial, RotatableMaterial], color, rotation=0):
+    def set_logic_image(
+        self,
+        material: Union[BaseMaterial, machine_materials.RotatableMachineComponent, None],
+        color,
+    ):
         if self._logic_image is None:
-            self._logic_image = LogicImage(self.rect.size, rotation)
-        self._logic_image.add_material(material, color)
+            self._logic_image = LogicImage(util.Size(*self.rect.size) - (2, 2))
+        self._logic_image.set_material(material, color)
         self._unassign_component_group()
         self.set_image(self._logic_image.get_surface())
 
@@ -446,34 +476,38 @@ class GridLabel(widgets.Label):
     def remove_component_image(self):
         self._unassign_component_group()
         self.clean_surface()
+        self._logic_image = None
         self._reset_specifications(image=True)
 
 
 class LogicImage:
     # combines multiple logic images into one image and uses a cache to prevent repeated image creation if possible
 
-    materials: Dict[str, Union[None, BaseMaterial, RotatableMaterial]]
+    materials: Dict[str, Union[None, BaseMaterial, machine_materials.RotatableMachineComponent]]
 
-    def __init__(self, size, rotation: int = 0, active: bool = False):
+    def __init__(self, size, active: bool = False):
         self.materials = {"red": None, "green": None, "blue": None}
         self._image_cache = {}  # save created images to prevent repeated creation
-        self.rotation = rotation
+        self.rotation = 0
         self.size = size
         self.active = active
 
-    def add_material(self, material: Union[BaseMaterial, RotatableMaterial], component_color):
-        # -1 in case of no rotates when not dealing with a rotatble material
-        if isinstance(material, RotatableMaterial):
-            material.rotate(self.rotation)
+    def set_material(
+        self,
+        material: Union[BaseMaterial, machine_materials.RotatableMachineComponent, None],
+        component_color
+    ):
+        if material is None:
+            self.materials[component_color] = material
+            return
+        if isinstance(material, machine_materials.RotatableMachineComponent):
+            # of a component with new rotation is introduced reset all other materials
+            if material.image_key != self.rotation:
+                self.rotation = material.image_key
+                for color in self.materials:
+                    self.materials[color] = None
         material.set_active(self.active)
         self.materials[component_color] = material
-
-    def set_rotation(self, rotation):
-        rotate_count = self.rotation - rotation
-        self.rotation = rotation
-        for material in self.materials.values():
-            if material is not None and isinstance(material, RotatableMaterial):
-                material.rotate(rotate_count)
 
     def set_active(self, value: bool):
         self.active = value
