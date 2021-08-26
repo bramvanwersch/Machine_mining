@@ -1,7 +1,6 @@
-from abc import ABC
 
-
-class LogicComponent(ABC):
-    def __init__(self, material):
+class LogicComponent:
+    def __init__(self, material, active):
         self.material = material
+        self.active = active
 

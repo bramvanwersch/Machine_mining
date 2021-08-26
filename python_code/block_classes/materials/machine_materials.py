@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import List, ClassVar, Dict
+from typing import List, ClassVar, Dict, Type
 
 # own imports
 from utility import constants as con
@@ -8,6 +8,7 @@ import utility.image_handling
 import block_classes.materials.materials as base_materials
 import block_classes.blocks as blocks
 import block_classes.machine_blocks as machine_blocks
+import machines.logic_components as components
 
 
 class MachineComponent(base_materials.TransportableMaterial, ABC):
@@ -17,6 +18,11 @@ class MachineComponent(base_materials.TransportableMaterial, ABC):
     def VIEWABLE(self) -> bool:
         # if this component is shown in detail in the machine view
         return False
+
+    # noinspection PyPep8Naming
+    @property
+    def LOGIC_COMPONENT(self) -> Type[components.LogicComponent]:
+        return components.LogicComponent
 
 
 class UnbuildableMachineComponent(MachineComponent, base_materials.MultiImageMaterial, base_materials.Unbuildable, ABC):

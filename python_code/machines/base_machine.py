@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Dict
 import utility.utilities as util
 import utility.constants as con
 import block_classes.machine_blocks
+import machines.logic_circuit
 
 if TYPE_CHECKING:
     import pygame
@@ -25,6 +26,7 @@ class Machine:
         self.rect = block.rect.copy()
         self.id = util.unique_id()
         self.size = 1
+        self.logic_circuit = machines.logic_circuit.LogicCircuit()
         self.add_block(block)
 
     def add_block(self, block):
