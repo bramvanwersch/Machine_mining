@@ -4,3 +4,6 @@ class LogicComponent:
         self.material = material
         self.active = active
 
+    def get_active(self, side: str):
+        pass
+

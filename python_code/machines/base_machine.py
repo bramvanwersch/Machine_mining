@@ -26,7 +26,7 @@ class Machine:
         self.rect = block.rect.copy()
         self.id = util.unique_id()
         self.size = 1
-        self.logic_circuit = machines.logic_circuit.LogicCircuit()
+        self.logic_circuit = machines.logic_circuit.LogicCircuit(util.Size(7, 7))
         self.add_block(block)
 
     def add_block(self, block):

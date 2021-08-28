@@ -50,7 +50,7 @@ class MachineInterface(base_window.Window):
         mc_width = 300
         mc_height = 300
         mc_pos = (10, 25)
-        self.machine_config_grid = MachineGrid(util.Size(mc_width, mc_height), util.Size(7, 7))
+        self.machine_config_grid = MachineGrid(util.Size(mc_width, mc_height))
         self.add_widget(mc_pos, self.machine_config_grid)
 
         component_selection_group = widgets.RadioGroup()
@@ -325,12 +325,11 @@ class MachineGrid(widgets.Pane):
     _crafting_size: List
     __component_group: Union[None, "ComponentGroup"]
     __logic_component: Union[None, str]
-    _logic_circuit: Union[None, logic_circuit.LogicCircuit]
+    _logic_circuit: Union[None, "logic_circuit.LogicCircuit"]
 
     def __init__(
         self,
         size,
-        grid_size,
         **kwargs
     ):
         super().__init__(size, color=con.INVISIBLE_COLOR, **kwargs)
@@ -339,8 +338,6 @@ class MachineGrid(widgets.Pane):
         self.__component_group = None
         self.__logic_component = None
         self._logic_circuit = None
-
-        self.__init_grid(grid_size)
 
     def __init_grid(
         self,
@@ -398,7 +395,7 @@ class MachineGrid(widgets.Pane):
     def set_grid_image(self, grid_pos: Union[Tuple[int, int], List[int]]):
         grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
         if self.__logic_component is not None:
-            # make sure that this is guaranteed
+            # make sure that this is guaranteed a machinecomponent
             material: machine_materials.MachineComponent = self._get_machine_material()
             if ":" in self.__logic_component:
                 color = self.__logic_component.split(":")[0]
@@ -408,6 +405,8 @@ class MachineGrid(widgets.Pane):
                 grid_label.set_logic_image(material, "red")
                 grid_label.set_logic_image(None, "green")
                 grid_label.set_logic_image(None, "blue")
+
+            # add the logic component
             component = material.LOGIC_COMPONENT(material, False)
             self._logic_circuit.add_component(component, grid_pos)
         elif self.__component_group is not None:
@@ -418,9 +417,11 @@ class MachineGrid(widgets.Pane):
     def remove_grid_image(self, grid_pos: Union[Tuple[int, int], List[int]]):
         grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
         grid_label.remove_component_image()
+        self._logic_circuit.remove_component(grid_pos)
 
     def set_logic_circuit(self, circuit):
         self._logic_circuit = circuit
+        self.__init_grid(self._logic_circuit.size())
 
 
 class GridLabel(widgets.Label):
