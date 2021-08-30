@@ -36,7 +36,11 @@ class BaseMaterial(loading_saving.Savable, loading_saving.Loadable, ABC):
     _surface: pygame.Surface
     __transparant_group: int
 
-    def __init__(self, active=False, **kwargs):
+    def __init__(
+        self,
+        active: bool = False,
+        **kwargs
+    ):
         self._surface = self._configure_surface()
         self._active_surface = self._configure_active_surface()
 

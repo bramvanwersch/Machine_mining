@@ -397,18 +397,23 @@ class MachineGrid(widgets.Pane):
         if self.__logic_component is not None:
             # make sure that this is guaranteed a machinecomponent
             material: machine_materials.MachineComponent = self._get_machine_material()
+            colors = []
             if ":" in self.__logic_component:
-                color = self.__logic_component.split(":")[0]
-                grid_label.set_logic_image(material, color)
+                colors = [self.__logic_component.split(":")[0]]
+                grid_label.set_logic_image(material, colors[0])
             else:
                 # default color that wil do for components not affected by color
+                component = material.LOGIC_COMPONENT(material, colors)
+                self._logic_circuit.add_component(component, grid_pos)
                 grid_label.set_logic_image(material, "red")
                 grid_label.set_logic_image(None, "green")
                 grid_label.set_logic_image(None, "blue")
+                colors = ["red", "green", "blue"]
 
             # add the logic component
-            component = material.LOGIC_COMPONENT(material, False)
+            component = material.LOGIC_COMPONENT(material, colors)
             self._logic_circuit.add_component(component, grid_pos)
+
         elif self.__component_group is not None:
             block = self.__component_group.assign_block(grid_label.grid_pos)
             if block is not None:
@@ -446,6 +451,17 @@ class GridLabel(widgets.Label):
                 self.set_selected(False)
             if not self.selected and self._component_group.is_block_selected(self._block):
                 self.set_selected(True)
+        if self._logic_image is None:
+            return
+
+        # check for changed component materials
+        any_changed = False
+        for mat in self._logic_image.materials.values():
+            if mat is not None and mat.changed:
+                # have to get all changed to avoid repeated updates
+                any_changed = True
+        if any_changed:
+            self.set_image(self._logic_image.get_surface())
 
     def set_selected(
         self,
@@ -516,7 +532,7 @@ class LogicImage:
                 self.rotation = material.image_key
                 for color in self.materials:
                     self.materials[color] = None
-        material.set_active(self.active)
+        self.active = material.active
         self.materials[component_color] = material
 
     def set_active(self, value: bool):
@@ -526,7 +542,7 @@ class LogicImage:
                 material.set_active(self.active)
 
     def get_surface(self):
-        cache_key = f"{self.active}_{self.materials}_{self.rotation}"
+        cache_key = f"{(mat.id if mat is not None else 'None' for mat in self.materials.values())}"
         if cache_key in self._image_cache:
             return self._image_cache[cache_key]
         full_image = pygame.Surface(self.size)
