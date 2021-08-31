@@ -174,97 +174,96 @@ class WireComponent(RotatableMachineComponent, base_materials.Unbuildable, ABC):
 
     def connecting_directions(self) -> List[int]:
         if self.image_key == 0:
-            return [1, 3]
-        else:
             return [0, 2]
+        else:
+            return [1, 3]
 
 
 class DirectionalWireComponent(RotatableMachineComponent, base_materials.Unbuildable, ABC):
 
     def connecting_directions(self) -> List[int]:
         if self.image_key == 0 or self.image_key == 2:
-            return [1, 3]
-        else:
             return [0, 2]
+        else:
+            return [1, 3]
 
 
 class RedWire(WireComponent):
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (90, 30)),
-         1: utility.image_handling.ImageDefinition("buildings", (90, 30), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (90, 30)),
+         0: utility.image_handling.ImageDefinition("buildings", (90, 30), rotate=90)}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (90, 30), image_size=con.TRANSPORT_BLOCK_SIZE)
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (0, 40)),
-         1: utility.image_handling.ImageDefinition("buildings", (0, 40), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (0, 40)),
+         0: utility.image_handling.ImageDefinition("buildings", (0, 40), rotate=90)}
 
 
 class RedInverterWire(DirectionalWireComponent):
     LOGIC_COMPONENT: Type[components.LogicComponent] = components.InverterLogicComponent
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (30, 50)),
-         1: utility.image_handling.ImageDefinition("buildings", (30, 50), rotate=90),
-         2: utility.image_handling.ImageDefinition("buildings", (20, 60)),
-         3: utility.image_handling.ImageDefinition("buildings", (20, 60), rotate=90)
-         }
+        {1: utility.image_handling.ImageDefinition("buildings", (30, 50)),
+         0: utility.image_handling.ImageDefinition("buildings", (30, 50), rotate=90),
+         3: utility.image_handling.ImageDefinition("buildings", (20, 60)),
+         2: utility.image_handling.ImageDefinition("buildings", (20, 60), rotate=90)}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (30, 50), image_size=con.TRANSPORT_BLOCK_SIZE)
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (60, 50)),
-         1: utility.image_handling.ImageDefinition("buildings", (60, 50), rotate=90),
-         2: utility.image_handling.ImageDefinition("buildings", (50, 60)),
-         3: utility.image_handling.ImageDefinition("buildings", (50, 60), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (60, 50)),
+         0: utility.image_handling.ImageDefinition("buildings", (60, 50), rotate=90),
+         3: utility.image_handling.ImageDefinition("buildings", (50, 60)),
+         2: utility.image_handling.ImageDefinition("buildings", (50, 60), rotate=90)}
 
 
 class GreenWire(WireComponent):
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (10, 40)),
-         1: utility.image_handling.ImageDefinition("buildings", (10, 40), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (10, 40)),
+         0: utility.image_handling.ImageDefinition("buildings", (10, 40), rotate=90)}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (10, 40), image_size=con.TRANSPORT_BLOCK_SIZE)
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (20, 40)),
-         1: utility.image_handling.ImageDefinition("buildings", (20, 40), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (20, 40)),
+         0: utility.image_handling.ImageDefinition("buildings", (20, 40), rotate=90)}
 
 
 class GreenInverterWire(DirectionalWireComponent):
     LOGIC_COMPONENT: Type[components.LogicComponent] = components.InverterLogicComponent
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (40, 50)),
-         1: utility.image_handling.ImageDefinition("buildings", (40, 50), rotate=90),
-         2: utility.image_handling.ImageDefinition("buildings", (10, 60)),
-         3: utility.image_handling.ImageDefinition("buildings", (10, 60), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (40, 50)),
+         0: utility.image_handling.ImageDefinition("buildings", (40, 50), rotate=90),
+         3: utility.image_handling.ImageDefinition("buildings", (10, 60)),
+         2: utility.image_handling.ImageDefinition("buildings", (10, 60), rotate=90)}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (40, 50), image_size=con.TRANSPORT_BLOCK_SIZE)
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (70, 50)),
-         1: utility.image_handling.ImageDefinition("buildings", (70, 50), rotate=90),
-         2: utility.image_handling.ImageDefinition("buildings", (40, 60)),
-         3: utility.image_handling.ImageDefinition("buildings", (40, 60), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (70, 50)),
+         0: utility.image_handling.ImageDefinition("buildings", (70, 50), rotate=90),
+         3: utility.image_handling.ImageDefinition("buildings", (40, 60)),
+         2: utility.image_handling.ImageDefinition("buildings", (40, 60), rotate=90)}
 
 
 class BlueWire(WireComponent):
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (30, 40)),
-         1: utility.image_handling.ImageDefinition("buildings", (30, 40), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (30, 40)),
+         0: utility.image_handling.ImageDefinition("buildings", (30, 40), rotate=90)}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (30, 40), image_size=con.TRANSPORT_BLOCK_SIZE)
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (40, 40)),
-         1: utility.image_handling.ImageDefinition("buildings", (40, 40), rotate=90)}
+        {1: utility.image_handling.ImageDefinition("buildings", (40, 40)),
+         0: utility.image_handling.ImageDefinition("buildings", (40, 40), rotate=90)}
 
 
 class BlueInverterWire(DirectionalWireComponent):
     LOGIC_COMPONENT: Type[components.LogicComponent] = components.InverterLogicComponent
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (50, 50)),
-         1: utility.image_handling.ImageDefinition("buildings", (50, 50), rotate=90),
-         2: utility.image_handling.ImageDefinition("buildings", (0, 60)),
-         3: utility.image_handling.ImageDefinition("buildings", (0, 60), rotate=90)}
+        {2: utility.image_handling.ImageDefinition("buildings", (0, 60), rotate=90),
+         1: utility.image_handling.ImageDefinition("buildings", (50, 50)),
+         0: utility.image_handling.ImageDefinition("buildings", (50, 50), rotate=90),
+         3: utility.image_handling.ImageDefinition("buildings", (0, 60))}
     TRANSPORT_IMAGE_DEFINITION: ClassVar[utility.image_handling.ImageDefinition] = \
         utility.image_handling.ImageDefinition("buildings", (50, 50), image_size=con.TRANSPORT_BLOCK_SIZE)
     ACTIVE_IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
-        {0: utility.image_handling.ImageDefinition("buildings", (80, 50)),
-         1: utility.image_handling.ImageDefinition("buildings", (80, 50), rotate=90),
-         2: utility.image_handling.ImageDefinition("buildings", (30, 60)),
-         3: utility.image_handling.ImageDefinition("buildings", (30, 60), rotate=90)}
+        {2: utility.image_handling.ImageDefinition("buildings", (30, 60), rotate=90),
+         1: utility.image_handling.ImageDefinition("buildings", (80, 50)),
+         0: utility.image_handling.ImageDefinition("buildings", (80, 50), rotate=90),
+         3: utility.image_handling.ImageDefinition("buildings", (30, 60))}

@@ -396,15 +396,11 @@ class MachineGrid(widgets.Pane):
         grid_label = self._logic_grid[grid_pos[1]][grid_pos[0]]
         if self.__logic_component is not None:
             # make sure that this is guaranteed a machinecomponent
-            material: machine_materials.MachineComponent = self._get_machine_material()
-            colors = []
+            material: machine_materials.MultiImageMachineComponent = self._get_machine_material()
             if ":" in self.__logic_component:
                 colors = [self.__logic_component.split(":")[0]]
                 grid_label.set_logic_image(material, colors[0])
             else:
-                # default color that wil do for components not affected by color
-                component = material.LOGIC_COMPONENT(material, colors)
-                self._logic_circuit.add_component(component, grid_pos)
                 grid_label.set_logic_image(material, "red")
                 grid_label.set_logic_image(None, "green")
                 grid_label.set_logic_image(None, "blue")
@@ -511,12 +507,10 @@ class LogicImage:
 
     materials: Dict[str, Union[None, BaseMaterial, machine_materials.RotatableMachineComponent]]
 
-    def __init__(self, size, active: bool = False):
+    def __init__(self, size):
         self.materials = {"red": None, "green": None, "blue": None}
-        self._image_cache = {}  # save created images to prevent repeated creation
         self.rotation = 0
         self.size = size
-        self.active = active
 
     def set_material(
         self,
@@ -532,19 +526,9 @@ class LogicImage:
                 self.rotation = material.image_key
                 for color in self.materials:
                     self.materials[color] = None
-        self.active = material.active
         self.materials[component_color] = material
 
-    def set_active(self, value: bool):
-        self.active = value
-        for material in self.materials.values():
-            if material is not None:
-                material.set_active(self.active)
-
     def get_surface(self):
-        cache_key = f"{(mat.id if mat is not None else 'None' for mat in self.materials.values())}"
-        if cache_key in self._image_cache:
-            return self._image_cache[cache_key]
         full_image = pygame.Surface(self.size)
         full_image.fill(MachineGrid.COLOR)
         for color in self.materials:
@@ -554,7 +538,6 @@ class LogicImage:
             surface = material.surface
             surface = pygame.transform.scale(surface, self.size)
             full_image.blit(surface, (0, 0))
-        self._image_cache[cache_key] = full_image
         return full_image
 
 

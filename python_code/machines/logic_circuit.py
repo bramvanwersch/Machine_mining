@@ -24,10 +24,11 @@ class LogicCircuit:
         pos: Union[List[int], Tuple[int, int]]
     ):
         if self._components[pos[1]][pos[0]] is not None:
+            component.set_connected_component(self._get_neighbouring_components(pos))
             self._components[pos[1]][pos[0]].add_component(component)
         else:
             self._components[pos[1]][pos[0]] = component
-            component.set_surrounding_components(self._get_neighbouring_components(pos))
+            component.set_connected_component(self._get_neighbouring_components(pos))
 
     def _get_neighbouring_components(
         self,
