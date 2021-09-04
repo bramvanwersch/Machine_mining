@@ -1,8 +1,40 @@
-from typing import TYPE_CHECKING, List, Tuple, Union, Dict, Set
+from typing import TYPE_CHECKING, List, Tuple, Union, Dict, Set, Callable, Any
 
 if TYPE_CHECKING:
     from block_classes.materials.machine_materials import MultiImageMachineComponent
     from block_classes.materials.materials import MultiImageMaterial
+
+
+class LogicQueue:
+    QUEUE_LENGTH: int = 10
+
+    _queue: List[Union[None, Tuple[Callable, List[Any]]]]
+
+    def __init__(self):
+        self._queue = [None for _ in range(self.QUEUE_LENGTH)]
+        self._insertion_pos = 0
+        self._queue_pos = 0
+
+    def add(self, function: Callable, values: List[Any] = None):
+        if self._queue[self._insertion_pos] is not None:
+            print("Warning: Queue is full deleting old call.")
+        self._queue[self._insertion_pos] = (function, values)
+
+        if self._insertion_pos + 1 >= self.QUEUE_LENGTH:
+            self._insertion_pos = 0
+        else:
+            self._insertion_pos += 1
+
+    def pop(self):
+        if self._queue[self._queue_pos] is None:
+            return
+        self._queue[self._queue_pos][0](*self._queue[self._queue_pos][1])
+        self._queue[self._queue_pos] = None
+
+        if self._queue_pos + 1 >= self.QUEUE_LENGTH:
+            self._queue_pos = 0
+        else:
+            self._queue_pos += 1
 
 
 class LogicComponent:
@@ -11,6 +43,7 @@ class LogicComponent:
     _wire_actives: Dict[str, List[bool]]
     _connected_components: List[Union[None, "LogicComponent"]]
     _connecting_directions: Set[int]
+    _queue: LogicQueue
 
     def __init__(
         self,
@@ -22,7 +55,12 @@ class LogicComponent:
         self._wire_actives = {col: [False, False, False, False] for col in ("red", "green", "blue")}
         self._connected_components = [None, None, None, None]
         self._connecting_directions = set()
+        self._queue = LogicQueue()
         self._configure_innitial_active(colors, material)
+
+    def next_circuit_tick(self):
+        # use this function to have logicomponents take a delayed effect
+        pass
 
     def _configure_innitial_active(
         self,
