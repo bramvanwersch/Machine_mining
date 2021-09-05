@@ -407,8 +407,9 @@ class MachineGrid(widgets.Pane):
                 colors = ["red", "green", "blue"]
 
             # add the logic component
-            component = material.LOGIC_COMPONENT(material, colors)
-            self._logic_circuit.add_component(component, grid_pos)
+            for color in colors:
+                component = material.LOGIC_COMPONENT(material, color)
+                self._logic_circuit.add_component(component, grid_pos)
 
         elif self.__component_group is not None:
             block = self.__component_group.assign_block(grid_label.grid_pos)
