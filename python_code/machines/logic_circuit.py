@@ -20,6 +20,11 @@ class LogicCircuit:
         self._components = [[None for _ in range(grid_size.width)] for _ in range(grid_size.height)]
         self._power_components = set()
 
+    def update(self):
+        for row in self._components:
+            for component in row:
+                component.next_circuit_tick()
+
     def add_component(
         self,
         component: "LogicComponent",
@@ -31,8 +36,9 @@ class LogicCircuit:
         else:
             self._components[pos[1]][pos[0]] = CombinationComponent()
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
+        self._configure_component_states()
 
-    def _configure_component_states(self):
+    def _configure_component_states(self, rece):
         pass
 
     def _get_neighbouring_components(

@@ -43,16 +43,16 @@ class CombinationComponent:
 
     _wires: Dict[str, Union[None, Union["LogicComponent"]]]
     _connecting_directions: Set[int]
-    _queue: LogicQueue
 
     def __init__(self):
         self._wires = {col: None for col in ("red", "green", "blue")}
         self._connecting_directions = set()
-        self._queue = LogicQueue()
 
     def next_circuit_tick(self):
-        # use this function to have logicomponents take a delayed effect
-        self._queue.execute_oldest()
+        for col in self._wires:
+            component = self._wires[col]
+            if component is not None:
+                component.next_circuit_tick()
 
     def get_active(
         self,
@@ -61,7 +61,7 @@ class CombinationComponent:
     ) -> bool:
         return self._wires[color].get_active(direction)
 
-    def _can_connect(self, component: "CombinationComponent"):
+    def _can_connect(self, component: "CombinationComponent") -> bool:
         # get the reverse directions for a comparisson
         other_directions = set((d + 2) % 4 for d in component._connecting_directions)
         return len(other_directions & self._connecting_directions) > 0
@@ -74,7 +74,7 @@ class CombinationComponent:
         if current_component is not None:
             # remove all directions to be sure
             for direction in current_component.connectable_directions():
-                self._connecting_directions.remove(direction)
+                self._connecting_directions.discard(direction)
             current_component.remove()
 
         # add new directions and component
@@ -102,6 +102,8 @@ class CombinationComponent:
 class LogicComponent:
 
     _EMITS_POWER: bool = False  # use this flag to indicate if the component naturally emits an active state
+    _connected_components: List[Union[None, "LogicComponent"]]
+    _queue: LogicQueue
 
     def __init__(
         self,
@@ -111,25 +113,37 @@ class LogicComponent:
         # first the material of the wire then the state active or not
         self.material = material
         self.color = color
-        self.wire_actives = self._innitial_wire_actives()
+        self._active = False
         self._connected_components = [None, None, None, None]
+        self._queue = LogicQueue()
 
-    def _innitial_wire_actives(self) -> List[bool]:
-        return [False, False, False, False]
+    def next_circuit_tick(self):
+        # use this function to have logicomponents take a delayed effect
+        self._queue.execute_oldest()
 
-    def get_active(self, direction):
-        return self.wire_actives[direction]
+    def get_active(
+        self,
+        direction: int
+    ) -> bool:
+        # return if a given direction gives a active signal --> normal wire is active on all connectable sites
+        if direction is self.connectable_directions():
+            return self._active
+        return False
 
     def set_active(
         self,
         value: bool,
-        activation_direction: int  # direction activation comes from
+        propagation_direction: int
     ):
-        # for a 2 sided wire
-        opposing_direction = (activation_direction + 2) % 4
-        self.wire_actives[activation_direction] = value
-        self.wire_actives[opposing_direction] = value
+        # dont calculate if no change
+        if value == self._active:
+            return
+        self._active = value
         self.material.set_active(value)
+
+        # propagate signal
+        if self._connected_components[propagation_direction] is not None:
+            self._connected_components[propagation_direction].set_active(value, propagation_direction)
 
     def set_component_connection(self, component, direction_index):
         # N = 0, E = 1, S = 2, W = 3
@@ -167,18 +181,56 @@ class ConnectorLogicComponent(LogicComponent):
 
 class InverterLogicComponent(LogicComponent):
 
-    EMITS_POWER: bool = True
-
-    def _innitial_wire_actives(self) -> List[bool]:
-        return [True if self.material.image_key == index else False for index in range(4)]
+    _EMITS_POWER: bool = True
 
     def set_active(
         self,
         value: bool,
-        activation_direction: int
+        propagation_direction: int
+    ):
+        # dont calculate if no change
+        if value == self._active:
+            return
+        # change the power delayed by a circuit tick
+        if propagation_direction == self.material.image_key:
+            self._queue.add(self._switch_active, [value])
+
+    def get_active(
+        self,
+        direction: int
+    ) -> bool:
+        # return if a given direction gives a active signal --> normal wire is active on all connectable sites
+        if direction is self.connectable_directions():
+            # if requested direction is facing direction the signal is inverted from active state
+            if direction == self.material.image_key:
+                return not self._active
+            else:
+                return self._active
+        return False
+
+    def set_component_connection(self, component, direction_index):
+        # N = 0, E = 1, S = 2, W = 3
+        self._connected_components[direction_index] = component
+        self._propagate_signal()
+
+    def _switch_active(
+        self,
+        value: bool,
     ):
         self.material.set_active(value)
-        opposing_direction = (activation_direction + 2) % 4
-        if self.material.image_key == opposing_direction:
-            self.wire_actives[activation_direction] = value
-            self.wire_actives[opposing_direction] = not value
+        self._active = value
+        self._propagate_signal()
+
+    def _propagate_signal(self):
+        # propagate the signal
+        opposing_direction = (self.material.image_key + 2) % 4
+        if self._active is True:
+            if self._connected_components[self.material.image_key] is not None:
+                self._connected_components[self.material.image_key].set_active(False, self.material.image_key)
+            if self._connected_components[opposing_direction] is not None:
+                self._connected_components[opposing_direction].set_active(True, opposing_direction)
+        else:
+            if self._connected_components[self.material.image_key] is not None:
+                self._connected_components[self.material.image_key].set_active(True, self.material.image_key)
+            if self._connected_components[opposing_direction] is not None:
+                self._connected_components[opposing_direction].set_active(False, opposing_direction)
