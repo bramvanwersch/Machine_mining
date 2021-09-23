@@ -61,10 +61,16 @@ class CombinationComponent:
     ) -> bool:
         return self._wires[color].get_active(direction)
 
-    def _can_connect(self, component: "CombinationComponent") -> bool:
+    def _can_connect(
+        self,
+        component: "CombinationComponent",
+        component_direction: int
+    ) -> bool:
         # get the reverse directions for a comparisson
         other_directions = set((d + 2) % 4 for d in component._connecting_directions)
-        return len(other_directions & self._connecting_directions) > 0
+        if component_direction in self._connecting_directions:
+            return len(other_directions & self._connecting_directions) > 0
+        return False
 
     def add_component(
         self,
@@ -89,7 +95,7 @@ class CombinationComponent:
         for direction, combi_component in enumerate(surrounding_components):
             if combi_component is not None:
                 # make sure that the combination components can connect in the first place
-                if not self._can_connect(combi_component):
+                if not self._can_connect(combi_component, direction):
                     continue
                 for color, component in combi_component._wires.items():
                     # add the component for both directions
@@ -145,16 +151,26 @@ class LogicComponent:
         if self._connected_components[propagation_direction] is not None:
             self._connected_components[propagation_direction].set_active(value, propagation_direction)
 
-    def set_component_connection(self, component, direction_index):
+    def set_component_connection(self, component: Union[None, "LogicComponent"], direction_index: int):
         # N = 0, E = 1, S = 2, W = 3
         self._connected_components[direction_index] = component
+        if self._active and component is not None:
+            component.set_active(True, direction_index)
 
     def remove(self):
-        # function to remove certain information on deletion of this component
-        pass
+        for direction, component in enumerate(self._connected_components):
+            if component is not None:
+                opposite_direction = (direction + 2) % 4
+                component.set_component_connection(None, opposite_direction)
+                if not component.power_source:
+                    component.set_active(False, direction)
 
     def connectable_directions(self):
         return self.material.connecting_directions()
+
+    @property
+    def power_source(self):
+        return self._EMITS_POWER
 
 
 class ConnectorLogicComponent(LogicComponent):
@@ -162,13 +178,8 @@ class ConnectorLogicComponent(LogicComponent):
     # def set_active(
     #     self,
     #     value: bool,
-    #     color: str,
     #     activation_direction: int
     # ):
-    #     wire_material = self._wire_materials[color]
-    #     if wire_material is None:
-    #         return
-    #     self._wire_actives[color][activation_direction] = value
     #     active_key = ""
     #     if any(self._wire_actives["red"]):
     #         active_key += "r"
@@ -176,7 +187,7 @@ class ConnectorLogicComponent(LogicComponent):
     #         active_key += "g"
     #     if any(self._wire_actives["blue"]):
     #         active_key += "b"
-    #     self._wire_materials["red"].change_image_key(active_key)
+    #     self.material.change_image_key(active_key)
 
 
 class InverterLogicComponent(LogicComponent):
@@ -226,11 +237,11 @@ class InverterLogicComponent(LogicComponent):
         opposing_direction = (self.material.image_key + 2) % 4
         if self._active is True:
             if self._connected_components[self.material.image_key] is not None:
-                self._connected_components[self.material.image_key].set_active(False, self.material.image_key)
-            if self._connected_components[opposing_direction] is not None:
-                self._connected_components[opposing_direction].set_active(True, opposing_direction)
-        else:
-            if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(True, self.material.image_key)
             if self._connected_components[opposing_direction] is not None:
                 self._connected_components[opposing_direction].set_active(False, opposing_direction)
+        else:
+            if self._connected_components[self.material.image_key] is not None:
+                self._connected_components[self.material.image_key].set_active(False, self.material.image_key)
+            if self._connected_components[opposing_direction] is not None:
+                self._connected_components[opposing_direction].set_active(True, opposing_direction)

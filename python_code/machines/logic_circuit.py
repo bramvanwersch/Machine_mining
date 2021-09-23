@@ -30,16 +30,15 @@ class LogicCircuit:
         component: "LogicComponent",
         pos: Union[List[int], Tuple[int, int]]
     ):
+
         if self._components[pos[1]][pos[0]] is not None:
             self._components[pos[1]][pos[0]].add_component(component)
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
         else:
-            self._components[pos[1]][pos[0]] = CombinationComponent()
+            combi_component = CombinationComponent()
+            combi_component.add_component(component)
+            self._components[pos[1]][pos[0]] = combi_component
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
-        self._configure_component_states()
-
-    def _configure_component_states(self, rece):
-        pass
 
     def _get_neighbouring_components(
         self,
