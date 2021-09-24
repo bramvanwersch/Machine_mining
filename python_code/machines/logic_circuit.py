@@ -64,7 +64,9 @@ class LogicCircuit:
         self,
         pos: Union[List[int], Tuple[int, int]]
     ):
-        self._components[pos[1]][pos[0]] = None
+        if self._components[pos[1]][pos[0]] is not None:
+            self._components[pos[1]][pos[0]].delete()
+            self._components[pos[1]][pos[0]] = None
 
     def size(self) -> util.Size:
         return util.Size(len(self._components[0]), len(self._components))

@@ -54,6 +54,12 @@ class CombinationComponent:
             if component is not None:
                 component.next_circuit_tick()
 
+    def delete(self):
+        for color in self._wires:
+            if self._wires[color] is None:
+                continue
+            self._wires[color].delete()
+
     def get_active(
         self,
         color: str,
@@ -81,7 +87,7 @@ class CombinationComponent:
             # remove all directions to be sure
             for direction in current_component.connectable_directions():
                 self._connecting_directions.discard(direction)
-            current_component.remove()
+            current_component.delete()
 
         # add new directions and component
         self._wires[component.color] = component
@@ -100,9 +106,9 @@ class CombinationComponent:
                 for color, component in combi_component._wires.items():
                     # add the component for both directions
                     if component is not None:
-                        component.set_component_connection(self._wires[color], direction)
+                        component.set_component_connection(self._wires[color], (direction + 2) % 4)
                     if self._wires[color] is not None:
-                        self._wires[color].set_component_connection(component, (direction + 2) % 4)
+                        self._wires[color].set_component_connection(component, direction)
 
 
 class LogicComponent:
@@ -157,7 +163,7 @@ class LogicComponent:
         if self._active and component is not None:
             component.set_active(True, direction_index)
 
-    def remove(self):
+    def delete(self):
         for direction, component in enumerate(self._connected_components):
             if component is not None:
                 opposite_direction = (direction + 2) % 4
@@ -237,11 +243,11 @@ class InverterLogicComponent(LogicComponent):
         opposing_direction = (self.material.image_key + 2) % 4
         if self._active is True:
             if self._connected_components[self.material.image_key] is not None:
-                self._connected_components[self.material.image_key].set_active(True, self.material.image_key)
-            if self._connected_components[opposing_direction] is not None:
-                self._connected_components[opposing_direction].set_active(False, opposing_direction)
-        else:
-            if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(False, self.material.image_key)
             if self._connected_components[opposing_direction] is not None:
                 self._connected_components[opposing_direction].set_active(True, opposing_direction)
+        else:
+            if self._connected_components[self.material.image_key] is not None:
+                self._connected_components[self.material.image_key].set_active(True, self.material.image_key)
+            if self._connected_components[opposing_direction] is not None:
+                self._connected_components[opposing_direction].set_active(False, opposing_direction)

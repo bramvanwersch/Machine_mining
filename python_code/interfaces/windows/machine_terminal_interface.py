@@ -1,10 +1,10 @@
 from typing import Union, Tuple, List, TYPE_CHECKING, ClassVar, Dict, Set
+import pygame
 
 import interfaces.windows.base_window as base_window
 import utility.utilities as util
 import utility.constants as con
 import interfaces.widgets as widgets
-import pygame
 import block_classes.materials.machine_materials as machine_materials
 from block_classes.materials.materials import BaseMaterial
 
