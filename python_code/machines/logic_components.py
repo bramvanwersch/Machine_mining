@@ -205,12 +205,14 @@ class InverterLogicComponent(LogicComponent):
         value: bool,
         propagation_direction: int
     ):
-        # dont calculate if no change
-        if value == self._active:
-            return
+        # # dont calculate if no change
+        # if value == self._active:
+        #     return
         # change the power delayed by a circuit tick
         if propagation_direction == self.material.image_key:
             self._queue.add(self._switch_active, [value])
+        elif (propagation_direction + 2) % 4 == self.material.image_key:
+            self._propagate_signal()
 
     def get_active(
         self,
