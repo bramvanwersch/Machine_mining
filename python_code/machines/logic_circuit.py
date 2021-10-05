@@ -1,6 +1,7 @@
 from typing import List, Union, Tuple, TYPE_CHECKING
 
 import utility.utilities as util
+import utility.constants as con
 from machines.logic_components import CombinationComponent
 
 if TYPE_CHECKING:
@@ -19,11 +20,19 @@ class LogicCircuit:
             raise util.GameException("Logic circuit height and width have to be at least 1")
         self._components = [[None for _ in range(grid_size.width)] for _ in range(grid_size.height)]
         self._power_components = set()
+        self._time_since_last_update = 0
 
     def update(self):
-        for row in self._components:
-            for component in row:
-                component.next_circuit_tick()
+        if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
+
+            for row in self._components:
+                for component in row:
+                    if component is None:
+                        continue
+                    component.next_circuit_tick()
+            self._time_since_last_update -= con.CIRCUIT_TICK_TIME
+        else:
+            self._time_since_last_update += con.GAME_TIME.get_time()
 
     def add_component(
         self,

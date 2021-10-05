@@ -22,6 +22,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
     chunk_matrix: List[List[Union[chunks.Chunk, None]]]
 
     def __init__(self, board_generator, main_sprite_group, progress_var):
+        # TODO: safe load machines
         self.inventorie_blocks = []
         self.main_sprite_group = main_sprite_group
 
@@ -134,6 +135,8 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
 
         self.__update_variable_blocks()
 
+        self.__update_machines()
+
         # chunk updates
         for chunk in self.loaded_chunks.copy():
             if not chunk.is_showing():
@@ -170,6 +173,10 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         for block in self.variable_blocks.copy().values():
             if block.changed:
                 self.add_blocks(block, update=False)
+
+    def __update_machines(self):
+        for machine in self.machines.values():
+            machine.update()
 
     def generate_chunks(
         self,

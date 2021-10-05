@@ -29,6 +29,9 @@ class Machine:
         self.logic_circuit = machines.logic_circuit.LogicCircuit(util.Size(7, 7))
         self.add_block(block)
 
+    def update(self):
+        self.logic_circuit.update()
+
     def add_block(self, block):
         # it is very important that this block is connected, always make sure to check before with can_add()
         if block.coord[1] in self.blocks:
