@@ -98,14 +98,19 @@ class CombinationComponent:
                 for color, component in combi_component._wires.items():
                     # add the component for both directions
                     if component is not None:
-                        component.set_component_connection(self._wires[color], (direction + 2) % 4)
+                        component.set_component_connection(self._wires[color], (direction + 2) % 4, color)
                     if self._wires[color] is not None:
-                        self._wires[color].set_component_connection(component, direction)
+                        self._wires[color].set_component_connection(component, direction, color)
 
 
 class LogicComponent:
 
     _EMITS_POWER: bool = False  # use this flag to indicate if the component naturally emits an active state
+    _FULL_COMPONENT: bool = False  # use this flag for components with multiple color channels
+
+    material: "MultiImageMachineComponent"
+    color: str
+    _active: bool
     _connected_components: List[Union[None, "LogicComponent"]]
     _queue: LogicQueue
 
@@ -139,7 +144,8 @@ class LogicComponent:
         self,
         value: bool,
         propagation_direction: int,
-        from_power_source: bool  # needed to prevent infinite feedback loops for inverter components
+        from_power_source: bool,  # needed to prevent infinite feedback loops for inverter components
+        color: str
     ):
         # dont calculate if no change
         if value == self._active:
@@ -149,47 +155,119 @@ class LogicComponent:
 
         # propagate signal
         if self._connected_components[propagation_direction] is not None:
-            self._connected_components[propagation_direction].set_active(value, propagation_direction, self.power_source)
+            self._connected_components[propagation_direction].set_active(value, propagation_direction,
+                                                                         self.power_source, self.color)
 
-    def set_component_connection(self, component: Union[None, "LogicComponent"], direction_index: int):
+    def set_component_connection(
+        self,
+        component: Union[None, "LogicComponent"],
+        direction_index: int,
+        color: str
+    ):
         # N = 0, E = 1, S = 2, W = 3
         self._connected_components[direction_index] = component
         if self._active and component is not None:
-            component.set_active(True, direction_index, self.power_source)
+            component.set_active(True, direction_index, self.power_source, self.color)
 
     def delete(self):
         for direction, component in enumerate(self._connected_components):
             if component is not None:
                 opposite_direction = (direction + 2) % 4
-                component.set_component_connection(None, opposite_direction)
+                component.set_component_connection(None, opposite_direction, self.color)
                 if not component.power_source:
-                    component.set_active(False, direction, self.power_source)
+                    component.set_active(False, direction, self.power_source, self.color)
                 else:
-                    component.set_active(self._active, direction, self.power_source)
+                    component.set_active(self._active, direction, self.power_source, self.color)
 
     def connectable_directions(self):
         return self.material.connecting_directions()
 
     @property
-    def power_source(self):
+    def power_source(self) -> bool:
         return self._EMITS_POWER
+
+    @property
+    def full_component(self) -> bool:
+        return self._FULL_COMPONENT
 
 
 class ConnectorLogicComponent(LogicComponent):
-    pass
-    # def set_active(
-    #     self,
-    #     value: bool,
-    #     activation_direction: int
-    # ):
-    #     active_key = ""
-    #     if any(self._wire_actives["red"]):
-    #         active_key += "r"
-    #     if any(self._wire_actives["green"]):
-    #         active_key += "g"
-    #     if any(self._wire_actives["blue"]):
-    #         active_key += "b"
-    #     self.material.change_image_key(active_key)
+
+    _FULL_COMPONENT: bool = True
+
+    color: str
+    _active: Dict[str, bool]
+    _connected_components: Dict[str, List[Union[None, "LogicComponent"]]]
+    _queue: LogicQueue
+
+    def __init__(
+        self,
+        material: Union["MultiImageMachineComponent", "MultiImageMaterial"],
+        color: str,
+    ):
+        super().__init__(material, color)
+        self._active = {"red": False, "green": False, "blue": False}
+        self._connected_components = {"red": [None, None, None, None],
+                                      "green": [None, None, None, None],
+                                      "blue": [None, None, None, None]}
+        self._queue = LogicQueue()
+
+    def get_active(
+        self,
+        direction: int
+    ) -> bool:
+        # return if a given direction gives a active signal
+        if direction is self.connectable_directions():
+            return all(self._active.values())
+        return False
+
+    def set_active(
+        self,
+        value: bool,
+        propagation_direction: int,
+        from_power_source: bool,  # needed to prevent infinite feedback loops for inverter components
+        color: str
+    ):
+        self._active[color] = value
+        material_key = self._get_material_image_key()
+        if material_key != self.material.image_key:
+            self.material.change_image_key(material_key)
+        # propagate signal
+        if self._connected_components[color][propagation_direction] is not None:
+            self._connected_components[color][propagation_direction].set_active(value, propagation_direction,
+                                                                                self.power_source, color)
+
+    def _get_material_image_key(self):
+        active_key = ""
+        if self._active["red"] is True:
+            active_key += "r"
+        if self._active["green"] is True:
+            active_key += "g"
+        if self._active["blue"] is True:
+            active_key += "b"
+        return active_key
+
+    def set_component_connection(
+        self,
+        component: Union[None, "LogicComponent"],
+        direction_index: int,
+        color: str
+    ):
+        # N = 0, E = 1, S = 2, W = 3
+        self._connected_components[color][direction_index] = component
+        if self._active and component is not None:
+            component.set_active(True, direction_index, self.power_source, color)
+
+    def delete(self):
+        for color, components in self._connected_components.items():
+            for direction, component in enumerate(components):
+                if component is not None:
+                    opposite_direction = (direction + 2) % 4
+                    component.set_component_connection(None, opposite_direction, color)
+                    if not component.power_source:
+                        component.set_active(False, direction, self.power_source, color)
+                    else:
+                        component.set_active(self._active[color], direction, self.power_source, color)
 
 
 class InverterLogicComponent(LogicComponent):
@@ -200,7 +278,8 @@ class InverterLogicComponent(LogicComponent):
         self,
         value: bool,
         propagation_direction: int,
-        from_power_source: bool
+        from_power_source: bool,  # needed to prevent infinite feedback loops for inverter components
+        color: str
     ):
         # change the power delayed by a circuit tick
         if propagation_direction == self.material.image_key:
@@ -221,7 +300,12 @@ class InverterLogicComponent(LogicComponent):
                 return self._active
         return False
 
-    def set_component_connection(self, component, direction_index):
+    def set_component_connection(
+        self,
+        component: Union[None, "LogicComponent"],
+        direction_index: int,
+        color: str
+    ):
         # N = 0, E = 1, S = 2, W = 3
         self._connected_components[direction_index] = component
         self._propagate_signal()
@@ -240,12 +324,14 @@ class InverterLogicComponent(LogicComponent):
         if self._active is True:
             if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(False, self.material.image_key,
-                                                                               self.power_source)
+                                                                               self.power_source, self.color)
             if self._connected_components[opposing_direction] is not None:
-                self._connected_components[opposing_direction].set_active(True, opposing_direction, self.power_source)
+                self._connected_components[opposing_direction].set_active(True, opposing_direction,
+                                                                          self.power_source, self.color)
         else:
             if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(True, self.material.image_key,
-                                                                               self.power_source)
+                                                                               self.power_source, self.color)
             if self._connected_components[opposing_direction] is not None:
-                self._connected_components[opposing_direction].set_active(False, opposing_direction, self.power_source)
+                self._connected_components[opposing_direction].set_active(False, opposing_direction,
+                                                                          self.power_source, self.color)

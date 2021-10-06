@@ -522,7 +522,7 @@ class LogicImage:
             self.materials[component_color] = material
             return
         if isinstance(material, machine_materials.RotatableMachineComponent):
-            # of a component with new rotation is introduced reset all other materials
+            # if a component with new rotation is introduced reset all other materials
             if material.image_key != self.rotation:
                 self.rotation = material.image_key
                 for color in self.materials:
