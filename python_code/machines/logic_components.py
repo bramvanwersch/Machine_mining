@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, List, Union, Dict, Set, Callable, Any
 from collections import deque
 
+import utility.constants as con
+
 if TYPE_CHECKING:
     from block_classes.materials.machine_materials import MultiImageMachineComponent
     from block_classes.materials.materials import MultiImageMaterial
@@ -74,17 +76,23 @@ class CombinationComponent:
         self,
         component: "LogicComponent"
     ):
-        current_component = self._wires[component.color]
-        if current_component is not None:
-            # remove all directions to be sure
-            for direction in current_component.connectable_directions():
-                self._connecting_directions.discard(direction)
-            current_component.delete()
+        # if component takes up all color connection slots add it to all slots
+        if component.full_component:
+            colors = con.WIRE_COLORS
+        else:
+            colors = [component.color]
+        for color in colors:
+            current_component = self._wires[color]
+            if current_component is not None:
+                # remove all directions to be sure
+                for direction in current_component.connectable_directions():
+                    self._connecting_directions.discard(direction)
+                current_component.delete()
 
-        # add new directions and component
-        self._wires[component.color] = component
-        for direction in component.connectable_directions():
-            self._connecting_directions.add(direction)
+            # add new directions and component
+            self._wires[color] = component
+            for direction in component.connectable_directions():
+                self._connecting_directions.add(direction)
 
     def set_connected_component(
         self,
@@ -232,10 +240,11 @@ class ConnectorLogicComponent(LogicComponent):
         material_key = self._get_material_image_key()
         if material_key != self.material.image_key:
             self.material.change_image_key(material_key)
-        # propagate signal
-        if self._connected_components[color][propagation_direction] is not None:
-            self._connected_components[color][propagation_direction].set_active(value, propagation_direction,
-                                                                                self.power_source, color)
+        all_prop_directions = [propagation_direction, (propagation_direction + 1) % 4, (propagation_direction - 1) % 4]
+        # propagate signals
+        for direction in all_prop_directions:
+            if self._connected_components[color][direction] is not None:
+                self._connected_components[color][direction].set_active(value, direction, self.power_source, color)
 
     def _get_material_image_key(self):
         active_key = ""
@@ -255,7 +264,7 @@ class ConnectorLogicComponent(LogicComponent):
     ):
         # N = 0, E = 1, S = 2, W = 3
         self._connected_components[color][direction_index] = component
-        if self._active and component is not None:
+        if self._active[color] and component is not None:
             component.set_active(True, direction_index, self.power_source, color)
 
     def delete(self):

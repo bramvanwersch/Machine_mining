@@ -44,6 +44,7 @@ PF_UPDATE_TIME = 1000  # constant to tell when to recalculate pathfinding for a 
 GROW_CYCLE_UPDATE_TIME = 10_000 if not TESTING else 100  # ms
 MINING_SPEED_PER_HARDNESS = 100   # ms
 CIRCUIT_TICK_TIME = 100  # ms
+WIRE_COLORS = ("red", "green", "blue")
 
 # path varaibles
 MAIN_DIR = os.path.split(os.path.abspath(__file__))[0].rsplit(os.sep, 2)[0]
