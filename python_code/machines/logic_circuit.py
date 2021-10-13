@@ -19,17 +19,17 @@ class LogicCircuit:
         if grid_size.height == 0 or grid_size.width == 0:
             raise util.GameException("Logic circuit height and width have to be at least 1")
         self._components = [[None for _ in range(grid_size.width)] for _ in range(grid_size.height)]
-        self._power_components = set()
         self._time_since_last_update = 0
 
     def update(self):
-        if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
-
-            for row in self._components:
-                for component in row:
-                    if component is None:
-                        continue
+        for row in self._components:
+            for component in row:
+                if component is None:
+                    continue
+                component.reset_logic_components()
+                if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
                     component.next_circuit_tick()
+        if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
             self._time_since_last_update -= con.CIRCUIT_TICK_TIME
         else:
             self._time_since_last_update += con.GAME_TIME.get_time()
@@ -39,7 +39,6 @@ class LogicCircuit:
         component: "LogicComponent",
         pos: Union[List[int], Tuple[int, int]]
     ):
-
         if self._components[pos[1]][pos[0]] is not None:
             self._components[pos[1]][pos[0]].add_component(component)
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
