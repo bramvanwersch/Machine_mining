@@ -338,20 +338,13 @@ class InverterLogicComponent(LogicComponent):
 
     def _propagate_signal(self, orig_signal_id):
         # propagate the signal
-        opposing_direction = (self.material.image_key + 2) % 4
         if self._active is True:
             if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(False, self.material.image_key,
                                                                                orig_signal_id, self.color,
                                                                                self.power_source)
-            if self._connected_components[opposing_direction] is not None:
-                self._connected_components[opposing_direction].set_active(True, opposing_direction,
-                                                                          orig_signal_id, self.color, self.power_source)
         else:
             if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(True, self.material.image_key,
                                                                                orig_signal_id, self.color,
                                                                                self.power_source)
-            if self._connected_components[opposing_direction] is not None:
-                self._connected_components[opposing_direction].set_active(False, opposing_direction,
-                                                                          orig_signal_id, self.color, self.power_source)
