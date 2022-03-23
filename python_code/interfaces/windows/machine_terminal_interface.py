@@ -404,7 +404,8 @@ class MachineGrid(widgets.Pane):
                 grid_label.set_logic_image(material, "red")
                 grid_label.set_logic_image(None, "green")
                 grid_label.set_logic_image(None, "blue")
-                colors = ["red", "green", "blue"]
+                # TODO: make sure that the other two colors cannot be set.
+                colors = ["red"]
 
             # add the logic component
             for color in colors:

@@ -435,15 +435,18 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
                 chunk.add_blocks(block)
 
     def add_machine(self, block):
+        # collect all neighboring machines to a block
         neighbour_machines = []
         for machine in self.machines.values():
             if machine.can_add(block.coord):
                 neighbour_machines.append(machine)
+
+        # merge if needed
         if len(neighbour_machines) > 0:
             neighbour_machines[0].add_block(block)
             if len(neighbour_machines) > 1:
                 for machine in neighbour_machines[1:]:
-                    neighbour_machines[0].add_machine(machine)
+                    neighbour_machines[0].add_machine(machine, block.coord)
                     del self.machines[machine.id]
         else:
             new_machine = machines.Machine(block)

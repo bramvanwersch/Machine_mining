@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING, Dict, Union
 
 import utility.utilities as util
 import utility.constants as con
@@ -17,8 +17,12 @@ if TYPE_CHECKING:
 
 class Machine:
 
+    blocks: Dict[int, Dict[int, "Block"]]  # save blocks by y_coord x_coord in a dict
+    terminal_block: Union[block_classes.machine_blocks.MachineTerminalBlock, None]
     rect: "pygame.Rect"
-    blocks: Dict[int, Dict[int, "Block"]]
+    id: str
+    size: int
+    logic_circuit: machines.logic_circuit.LogicCircuit
 
     def __init__(self, block):
         self.blocks = {}
@@ -65,7 +69,7 @@ class Machine:
         del self.blocks[block.coord[1]][block.coord[0]]
         self.size -= 1
 
-    def add_machine(self, machine):
+    def add_machine(self, machine, connecting_block_coord):
         # it is assumed that machines are connected
         for y_dict in machine.blocks.values():
             for block in y_dict.values():
