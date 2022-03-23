@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 class LogicCircuit:
 
     _components: List[List[Union["CombinationComponent", None]]]
+    _power_components: List["LogicComponent"]
+    _time_since_last_update: int
 
     def __init__(
         self,
@@ -19,17 +21,20 @@ class LogicCircuit:
         if grid_size.height == 0 or grid_size.width == 0:
             raise util.GameException("Logic circuit height and width have to be at least 1")
         self._components = [[None for _ in range(grid_size.width)] for _ in range(grid_size.height)]
-        self._power_components = set()
+        self._power_components = []
         self._time_since_last_update = 0
 
     def update(self):
         if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
-
             for row in self._components:
                 for component in row:
                     if component is None:
                         continue
-                    component.next_circuit_tick()
+                    component.reset_flags()
+            # make sure that active components are updated first
+            self._power_components.sort(key=lambda x: x.get_active_state())
+            for component in self._power_components:
+                component.update()
             self._time_since_last_update -= con.CIRCUIT_TICK_TIME
         else:
             self._time_since_last_update += con.GAME_TIME.get_time()
@@ -39,7 +44,6 @@ class LogicCircuit:
         component: "LogicComponent",
         pos: Union[List[int], Tuple[int, int]]
     ):
-
         if self._components[pos[1]][pos[0]] is not None:
             self._components[pos[1]][pos[0]].add_component(component)
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
@@ -48,6 +52,8 @@ class LogicCircuit:
             combi_component.add_component(component)
             self._components[pos[1]][pos[0]] = combi_component
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
+        if component.power_source:
+            self._power_components.append(component)
 
     def _get_neighbouring_components(
         self,
