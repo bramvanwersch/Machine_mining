@@ -1,14 +1,24 @@
 from abc import ABC
-from typing import Dict, Any
+from typing import Dict, Any, TYPE_CHECKING, Union, List, Tuple
 
 from utility import utilities as util, constants as con, loading_saving
 from block_classes import blocks as block_classes
+
+if TYPE_CHECKING:
+    from block_classes.blocks import Block
+    from board.board import Board
+    from utility.inventories import Inventory
 
 
 class TaskControl(loading_saving.Savable, loading_saving.Loadable):
     """
     Holds a list of block_classes that contain tasks that the workers can accept
     """
+    reachable_block_tasks: Dict[str, Dict[str, "MultipleTaskList"]]
+    unreachable_block_tasks: Dict[str, Dict[str, "MultipleTaskList"]]
+    board: "Board"
+    __terminal_inv: "Inventory"
+
     def __init__(self, board):
         # variable to track tasks by name and allow for fast search and destroy
         self.reachable_block_tasks = {}
@@ -42,7 +52,13 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
         return cls.load(reachable_block_tasks=reachable_block_tasks, unreachable_block_tasks=unreachable_block_tasks,
                         board=board)
 
-    def add(self, type, *blocks, priority = 1, **kwargs):
+    def add(
+        self,
+        type_: str,
+        *blocks: "Block",
+        priority: int = 1,
+        **kwargs
+    ):
         """
         Add a task to the total list of tasks. This functions as a smart way of
         storing what tasks can likely be performed and which ones not.
@@ -50,34 +66,37 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
         for block in blocks:
             if isinstance(block, util.BlockPointer):
                 block = block.block
-            if type == "Building":
-                task = BuildTask(block, priority = priority, **kwargs)
-            elif type == "Request":
+            if type_ == "Building":
+                task = BuildTask(block, priority=priority, **kwargs)
+            elif type_ == "Request":
                 task = RequestTask(block, priority=priority, **kwargs)
-            elif type == "Deliver":
+            elif type_ == "Deliver":
                 task = DeliverTask(block, priority=priority, **kwargs)
-            elif type == "Mining":
+            elif type_ == "Mining":
                 task = MiningTask(block, priority=priority, **kwargs)
             else:
-                raise util.GameException("Invalid task name {}".format(type))
+                raise util.GameException("Invalid task name {}".format(type_))
 
             surrounding_blocks = self.board.surrounding_blocks(block)
             if len([b for b in surrounding_blocks if b is not None and b.transparant_group != 0]) > 0:
                 if block.id not in self.reachable_block_tasks:
                     self.reachable_block_tasks[block.id] = {}
-                if task.name() in self.reachable_block_tasks[block.id] and con.MULTI_TASKS[type].multi:
+                if task.name() in self.reachable_block_tasks[block.id] and con.MULTI_TASKS[type_].multi:
                     self.reachable_block_tasks[block.id][task.name()].append(task)
                 else:
                     self.reachable_block_tasks[block.id][task.name()] = MultipleTaskList(task)
             else:
                 if block.id not in self.unreachable_block_tasks:
                     self.unreachable_block_tasks[block.id] = {}
-                if task.name() in self.unreachable_block_tasks[block.id] and con.MULTI_TASKS[type].multi:
+                if task.name() in self.unreachable_block_tasks[block.id] and con.MULTI_TASKS[type_].multi:
                     self.unreachable_block_tasks[block.id][task.name()].append(task)
                 else:
                     self.unreachable_block_tasks[block.id][task.name()] = MultipleTaskList(task)
 
-    def remove_tasks(self, *tasks):
+    def remove_tasks(
+        self,
+        *tasks: "Task"
+    ):
         for task in tasks:
             # a block can be none for tasks not added to the task control
             if task.block.id not in self.reachable_block_tasks or\
@@ -94,32 +113,39 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
                 self.__check_surrounding_tasks(task.block)
             elif isinstance(task, BuildTask) and task.finish_block.transparant_group != 0:
                 self.__check_surrounding_tasks(task.block)
-        return
 
-    def cancel_tasks(self, *blocks, remove=False):
+    def cancel_tasks(
+        self,
+        *blocks: "Block",
+        remove: bool = False
+    ):
         """
         Remove a task from a block and consider other things if needed
-
-        :param blocks: a list of block_classes for which tasks need to be removed
         """
         for block in blocks:
             removed_tasks = self.reachable_block_tasks.pop(block.id, None)
-            if removed_tasks != None:
+            if removed_tasks is not None:
                 for tasks in removed_tasks.values():
                     for task in tasks:
-                        if remove == True:
+                        if remove:
                             self.remove_tasks(task)
-                        #make sure that entitties still performing the task stop
+                        # make sure that entitties still performing the task stop
                         task.cancel()
             else:
                 removed_tasks = self.unreachable_block_tasks.pop(block.id, None)
-            if removed_tasks != None:
+            if removed_tasks is not None:
                 for tasks in removed_tasks.values():
                     for task in tasks:
                         if isinstance(task, BuildTask):
                             block.transparant_group = task.original_group
 
-    def __check_surrounding_tasks(self, block):
+    def __check_surrounding_tasks(
+        self,
+        block: "Block"
+    ):
+        """
+        Check surrounding blocks and ensure that if they have become reachable that they are added to the reachable list
+        """
         surrounding_task_blocks = [tb for tb in self.board.surrounding_blocks(block) if tb]
         for block in surrounding_task_blocks:
             block = block.block
@@ -127,9 +153,15 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
             if b:
                 self.reachable_block_tasks[block.id] = b
 
-    def get_task(self, worker_pos):
-
-        sorted_task_dicts = sorted(self.reachable_block_tasks.values(), key = lambda x: self.__best_task_sort_tuple(x, worker_pos)[0])
+    def get_task(
+        self,
+        worker_pos: Union[List[int], Tuple[int, int]]
+    ) -> Union["Task", None]:
+        """
+        Get the global closest highest priority task
+        """
+        sorted_task_dicts = sorted(self.reachable_block_tasks.values(),
+                                   key=lambda x: self.__best_task_sort_tuple(x, worker_pos)[0])
 
         for task_dict in sorted_task_dicts:
             for tasks in sorted(task_dict.values(), key=lambda x: self.__best_task_sort_tuple(task_dict, worker_pos)):
@@ -138,23 +170,26 @@ class TaskControl(loading_saving.Savable, loading_saving.Loadable):
                     if not t.selected:
                         task = t
                         break
-                if task == None:
+                if task is None:
                     continue
                 if isinstance(task, BuildTask):
-                    #TODO make this a total inventory of all inventories on the map
+                    # TODO make this a total inventory of all inventories on the map
                     if not self.__terminal_inv.check_item_get(task.finish_block.name()):
                         continue
                 elif isinstance(task, RequestTask):
-                    #TODO make this a total inventory of all inventories on the map
+                    # TODO make this a total inventory of all inventories on the map
                     if not self.__terminal_inv.check_item_get(task.req_item.name(), 1) and\
                             task.block.inventory.check_item_deposit(task.req_item.name()):
                         continue
-                if task != None:
+                if task is not None:
                     task.selected = True
                 return task
         return None
 
     def __best_task_sort_tuple(self, task_dictionary, worker_pos):
+        """
+        Create a tuple of values that determine the most optimal task to assign at the moment
+        """
         task_tuples = []
         for tasks in task_dictionary.values():
             task = tasks[0]
@@ -167,7 +202,12 @@ class MultipleTaskList(loading_saving.Savable, loading_saving.Loadable):
     """
     Object for tracking all tasks for a certain type and block
     """
-    def __init__(self, task):
+    tasks: List["Task"]
+
+    def __init__(
+        self,
+        task: "Task"
+    ):
         self.tasks = [task]
 
     def __init_load__(self, tasks):
@@ -184,36 +224,49 @@ class MultipleTaskList(loading_saving.Savable, loading_saving.Loadable):
         return cls.load(tasks=tasks)
 
     def task(self):
+        # current top task
         return self.tasks[0]
 
-    def append(self, task):
-        self.tasks = list(sorted(self.tasks + [task], key=lambda x: (x.started_task, -1 * x.priority)))
+    def append(self, task: "Task"):
+        self.tasks.append(task)
+        self._sort_tasks()
 
-    def pop(self, item):
+    def pop(
+        self,
+        item
+    ) -> Union[None, "Task"]:
+        # TODO: figure out the reason for this function
         if isinstance(item, Task):
             for index, task in enumerate(self.tasks):
                 if item == task:
                     popped_task = self.tasks.pop(index)
-                    self.tasks = list(sorted(self.tasks, key=lambda x: (x.started_task, -1 * x.priority)))
+                    self._sort_tasks()
                     return popped_task
             return None
         popped_task = self.tasks.pop(item)
-        self.tasks = list(sorted(self.tasks, key=lambda x: (x.started_task, -1 * x.priority)))
+        self._sort_tasks()
         return popped_task
+
+    def remove(
+        self,
+        task: "Task"
+    ):
+        for t in self.tasks:
+            if t == task:
+                self.tasks.remove(task)
+                break
+        if len(self.tasks) > 0:
+            self._sort_tasks()
+
+    def _sort_tasks(self):
+        # sort tasks first on if they are started then priority from high to low
+        self.tasks = list(sorted(self.tasks, key=lambda x: (x.started_task, -1 * x.priority)))
 
     def __getitem__(self, index):
         return self.tasks[index]
 
     def __iter__(self):
         return iter(self.tasks)
-
-    def remove(self, task):
-        for t in self.tasks:
-            if t == task:
-                self.tasks.remove(task)
-                break
-        if len(self.tasks) > 0:
-            self.tasks = list(sorted(self.tasks, key=lambda x: (x.started_task, -1 * x.priority)))
 
     def __len__(self):
         return len(self.tasks)
@@ -223,6 +276,8 @@ class TaskQueue(loading_saving.Savable, loading_saving.Loadable):
     """
     acts as a queue of tasks that are performed from last to first by a worker
     """
+    tasks: List["Task"]
+
     def __init__(self):
         self.tasks = []
 
@@ -645,7 +700,8 @@ class RequestTask(MultiTask):
 
 class DeliverTask(MultiTask):
     MAX_RETRIES = 5
-    def __init__(self, block, pushed_item, **kwargs):
+
+    def __init__(self, block: "Block", pushed_item, **kwargs):
         self.pushed_item = pushed_item
         super().__init__(block, **kwargs)
         self.__finished_get = False
