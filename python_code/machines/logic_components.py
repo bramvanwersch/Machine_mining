@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Union, Dict, Set, Callable, Any
+from typing import TYPE_CHECKING, List, Union, Dict, Set, Callable, Any, Iterator
 from collections import deque
 
 import utility.constants as con
@@ -42,17 +42,17 @@ class CombinationComponent:
         self._wires = {col: None for col in ("red", "green", "blue")}
         self._connecting_directions = set()
 
-    def reset_flags(self):
+    def reset_component(self):
         for col in self._wires:
             component = self._wires[col]
             if component is not None:
-                component.reset_flag()
+                component.reset_component()
 
-    def delete(self):
+    def clear(self):
         for color in self._wires:
             if self._wires[color] is None:
                 continue
-            self._wires[color].delete()
+            self._wires[color].reset_connections()
 
     def get_active(
         self,
@@ -87,7 +87,7 @@ class CombinationComponent:
                 # remove all directions to be sure
                 for direction in current_component.connectable_directions():
                     self._connecting_directions.discard(direction)
-                current_component.delete()
+                current_component.reset_connections()
 
             # add new directions and component
             self._wires[color] = component
@@ -109,6 +109,9 @@ class CombinationComponent:
                         component.set_component_connection(self._wires[color], (direction + 2) % 4, color)
                     if self._wires[color] is not None:
                         self._wires[color].set_component_connection(component, direction, color)
+
+    def __iter__(self) -> Iterator["LogicComponent"]:
+        return iter(self._wires.values())
 
 
 class LogicComponent:
@@ -147,6 +150,10 @@ class LogicComponent:
             return self._active
         return False
 
+    def get_active_state(self) -> bool:
+        # return if the state of the component is active
+        return self._active
+
     def set_active(
         self,
         value: bool,
@@ -157,9 +164,7 @@ class LogicComponent:
         # dont calculate again
         if self._activated_this_tick:
             return
-        self._active = value
-        if value != self._active:
-            self.material.set_active(value)
+        self._change_material_active(value)
 
         # propagate signal
         if self._connected_components[propagation_direction] is not None:
@@ -167,7 +172,9 @@ class LogicComponent:
             self._connected_components[propagation_direction].set_active(value, propagation_direction,
                                                                          self.power_source, self.color)
 
-    def reset_flag(self):
+    def reset_component(self):
+        # will be set while updating and makes sure that unpowered wires are unpowered
+        self._change_material_active(False)
         self._activated_this_tick = False
 
     def set_component_connection(
@@ -181,7 +188,7 @@ class LogicComponent:
         if self._active and component is not None:
             component.set_active(True, direction_index, self.power_source, self.color)
 
-    def delete(self):
+    def reset_connections(self):
         for direction, component in enumerate(self._connected_components):
             if component is not None:
                 opposite_direction = (direction + 2) % 4
@@ -193,6 +200,14 @@ class LogicComponent:
 
     def connectable_directions(self):
         return self.material.connecting_directions()
+
+    def _change_material_active(
+        self,
+        value: bool
+    ):
+        self._active = value
+        if value != self._active:
+            self.material.set_active(value)
 
     @property
     def power_source(self) -> bool:
@@ -242,10 +257,7 @@ class ConnectorLogicComponent(LogicComponent):
     ):
         if self._activated_this_tick[color]:
             return
-        self._active[color] = value
-        material_key = self._get_material_image_key()
-        if material_key != self.material.image_key:
-            self.material.change_image_key(material_key)
+        self._change_material_active(value, color)
         all_prop_directions = [propagation_direction, (propagation_direction + 1) % 4, (propagation_direction - 1) % 4]
         # propagate signals
         for direction in all_prop_directions:
@@ -253,9 +265,10 @@ class ConnectorLogicComponent(LogicComponent):
                 self._activated_this_tick[color] = True
                 self._connected_components[color][direction].set_active(value, direction, self.power_source, color)
 
-    def reset_flag(self):
+    def reset_component(self):
         for color in self._activated_this_tick:
             self._activated_this_tick[color] = False
+            self._change_material_active(False, color)
 
     def _get_material_image_key(self):
         active_key = ""
@@ -278,7 +291,7 @@ class ConnectorLogicComponent(LogicComponent):
         if self._active[color] and component is not None:
             component.set_active(True, direction_index, self.power_source, color)
 
-    def delete(self):
+    def reset_connections(self):
         for color, components in self._connected_components.items():
             for direction, component in enumerate(components):
                 if component is not None:
@@ -288,6 +301,16 @@ class ConnectorLogicComponent(LogicComponent):
                         component.set_active(False, direction, self.power_source, color)
                     else:
                         component.set_active(self._active[color], direction, self.power_source, color)
+
+    def _change_material_active(
+        self,
+        value: bool,
+        color: str = "red"  # keep it sort of consistent :/
+    ):
+        self._active[color] = value
+        material_key = self._get_material_image_key()
+        if material_key != self.material.image_key:
+            self.material.change_image_key(material_key)
 
 
 class InverterLogicComponent(LogicComponent):
@@ -301,14 +324,18 @@ class InverterLogicComponent(LogicComponent):
         from_power_source: bool,  # needed to prevent infinite feedback loops for inverter components
         color: str
     ):
+        self._activated_this_tick = True
+
         # change the power delayed by a circuit tick
         if propagation_direction == self.material.image_key:
             self._switch_active(value)
-        # elif (propagation_direction + 2) % 4 == self.material.image_key and not from_power_source:
-        #     self._propagate_signal()
 
     def update(self):
         self._propagate_signal()
+
+    def reset_component(self):
+        # dont change p[ower off here since this is a controlling power component
+        self._activated_this_tick = False
 
     def get_active(
         self,
@@ -322,10 +349,6 @@ class InverterLogicComponent(LogicComponent):
             else:
                 return self._active
         return False
-
-    def get_active_state(self) -> bool:
-        # return if the state of the component is active
-        return self._active
 
     def set_component_connection(
         self,
@@ -354,4 +377,3 @@ class InverterLogicComponent(LogicComponent):
             if self._connected_components[self.material.image_key] is not None:
                 self._connected_components[self.material.image_key].set_active(True, self.material.image_key,
                                                                                self.power_source, self.color)
-

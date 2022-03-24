@@ -30,7 +30,7 @@ class LogicCircuit:
                 for component in row:
                     if component is None:
                         continue
-                    component.reset_flags()
+                    component.reset_component()
             # make sure that active components are updated first
             self._power_components.sort(key=lambda x: x.get_active_state())
             for component in self._power_components:
@@ -80,7 +80,10 @@ class LogicCircuit:
         pos: Union[List[int], Tuple[int, int]]
     ):
         if self._components[pos[1]][pos[0]] is not None:
-            self._components[pos[1]][pos[0]].delete()
+            for wire in self._components[pos[1]][pos[0]]:
+                if wire is not None and wire.power_source:
+                    self._power_components.remove(wire)
+            self._components[pos[1]][pos[0]].clear()
             self._components[pos[1]][pos[0]] = None
 
     def size(self) -> util.Size:
