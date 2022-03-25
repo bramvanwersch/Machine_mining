@@ -205,8 +205,8 @@ class LogicComponent:
         self,
         value: bool
     ):
-        self._active = value
         if value != self._active:
+            self._active = value
             self.material.set_active(value)
 
     @property

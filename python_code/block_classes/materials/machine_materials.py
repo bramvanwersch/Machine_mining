@@ -1,4 +1,4 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import List, ClassVar, Dict, Type, Any
 
 # own imports
@@ -121,6 +121,8 @@ class MachineInventory(NormalMachineComponent):
 
 class RotatableMachineComponent(MultiImageMachineComponent, base_materials.RotatableMaterial, ABC):
 
+    TOTAL_ROTATIONS: ClassVar[int] = 4
+
     def rotate(
         self,
         rotate_count: int
@@ -164,6 +166,8 @@ class MachinePlacer(RotatableMachineComponent):
 
 
 class WireComponent(RotatableMachineComponent, base_materials.Unbuildable, ABC):
+
+    TOTAL_ROTATIONS: ClassVar[int] = 2
 
     def rotate(
         self,

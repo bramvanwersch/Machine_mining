@@ -80,6 +80,7 @@ class LogicCircuit:
         pos: Union[List[int], Tuple[int, int]]
     ):
         if self._components[pos[1]][pos[0]] is not None:
+            # remove power components form update list
             for wire in self._components[pos[1]][pos[0]]:
                 if wire is not None and wire.power_source:
                     self._power_components.remove(wire)

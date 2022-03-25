@@ -324,7 +324,7 @@ class MachineGrid(widgets.Pane):
 
     _crafting_size: List
     __component_group: Union[None, "ComponentGroup"]
-    __logic_component: Union[None, str]
+    __logic_component: Union[None, str]  # currently selected component
     _logic_circuit: Union[None, "logic_circuit.LogicCircuit"]
 
     def __init__(
@@ -524,7 +524,8 @@ class LogicImage:
             return
         if isinstance(material, machine_materials.RotatableMachineComponent):
             # if a component with new rotation is introduced reset all other materials
-            if material.image_key != self.rotation:
+            if material.image_key != self.rotation and\
+                    (material.image_key - (material.TOTAL_ROTATIONS / 2)) % material.TOTAL_ROTATIONS != self.rotation:
                 self.rotation = material.image_key
                 for color in self.materials:
                     self.materials[color] = None
