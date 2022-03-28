@@ -26,6 +26,7 @@ class LogicCircuit:
 
     def update(self):
         if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
+            # make sure that all component states are reset
             for row in self._components:
                 for component in row:
                     if component is None:
@@ -45,6 +46,8 @@ class LogicCircuit:
         pos: Union[List[int], Tuple[int, int]]
     ):
         if self._components[pos[1]][pos[0]] is not None:
+            # make sure component is properly removed
+            self._remove_power_wires(pos)
             self._components[pos[1]][pos[0]].add_component(component)
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
         else:
@@ -81,11 +84,17 @@ class LogicCircuit:
     ):
         if self._components[pos[1]][pos[0]] is not None:
             # remove power components form update list
-            for wire in self._components[pos[1]][pos[0]]:
-                if wire is not None and wire.power_source:
-                    self._power_components.remove(wire)
+            self._remove_power_wires(pos)
             self._components[pos[1]][pos[0]].clear()
             self._components[pos[1]][pos[0]] = None
+
+    def _remove_power_wires(
+        self,
+        pos: Union[List[int], Tuple[int, int]]
+    ):
+        for wire in self._components[pos[1]][pos[0]]:
+            if wire is not None and wire.power_source:
+                self._power_components.remove(wire)
 
     def size(self) -> util.Size:
         return util.Size(len(self._components[0]), len(self._components))

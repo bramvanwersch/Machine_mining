@@ -54,12 +54,12 @@ class CombinationComponent:
                 continue
             self._wires[color].reset_connections()
 
-    def get_active(
+    def get_active_direction(
         self,
         color: str,
         direction: int
     ) -> bool:
-        return self._wires[color].get_active(direction)
+        return self._wires[color].get_active_direction(direction)
 
     def _can_connect(
         self,
@@ -141,7 +141,7 @@ class LogicComponent:
         # used to update components for power transfer for instance
         pass
 
-    def get_active(
+    def get_active_direction(
         self,
         direction: int
     ) -> bool:
@@ -239,7 +239,7 @@ class ConnectorLogicComponent(LogicComponent):
                                       "green": [None, None, None, None],
                                       "blue": [None, None, None, None]}
 
-    def get_active(
+    def get_active_direction(
         self,
         direction: int
     ) -> bool:
@@ -337,7 +337,7 @@ class InverterLogicComponent(LogicComponent):
         # dont change p[ower off here since this is a controlling power component
         self._activated_this_tick = False
 
-    def get_active(
+    def get_active_direction(
         self,
         direction: int
     ) -> bool:
