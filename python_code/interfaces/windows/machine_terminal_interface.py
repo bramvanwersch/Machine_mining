@@ -322,7 +322,7 @@ class MachineGrid(widgets.Pane):
     BORDER_SIZE: ClassVar[util.Size] = util.Size(5, 5)
     COLOR: Union[Tuple[int, int, int, int], Tuple[int, int, int], List[int]] = (100, 100, 100, 255)
 
-    _crafting_size: List
+    _logic_grid: List[List["GridLabel"]]
     __component_group: Union[None, "ComponentGroup"]
     __logic_component: Union[None, str]  # currently selected component
     _logic_circuit: Union[None, "logic_circuit.LogicCircuit"]
@@ -404,7 +404,6 @@ class MachineGrid(widgets.Pane):
                 grid_label.set_logic_image(material, "red")
                 grid_label.set_logic_image(None, "green")
                 grid_label.set_logic_image(None, "blue")
-                # TODO: make sure that the other two colors cannot be set.
                 colors = ["red"]
 
             # add the logic component
@@ -522,6 +521,10 @@ class LogicImage:
         if material is None:
             self.materials[component_color] = material
             return
+
+        # make sure to reset the WireConnector
+        if isinstance(self.materials["red"], machine_materials.WireConnector):
+            self.materials["red"] = None
         if isinstance(material, machine_materials.RotatableMachineComponent):
             # if a component with new rotation is introduced reset all other materials
             if material.image_key != self.rotation and\
@@ -531,7 +534,7 @@ class LogicImage:
                     self.materials[color] = None
         self.materials[component_color] = material
 
-    def get_surface(self):
+    def get_surface(self) -> pygame.Surface:
         full_image = pygame.Surface(self.size)
         full_image.fill(MachineGrid.COLOR)
         for color in self.materials:

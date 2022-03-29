@@ -28,8 +28,8 @@ class MachineComponent(base_materials.TransportableMaterial, ABC):
 
     # noinspection PyPep8Naming
     @property
-    def LOGIC_COMPONENT(self) -> Type[components.LogicComponent]:
-        return components.LogicComponent
+    def LOGIC_COMPONENT(self) -> Type[components.Wire]:
+        return components.Wire
 
     @property
     def changed(self):
@@ -75,7 +75,7 @@ class UnbuildableMachineComponent(MultiImageMachineComponent, base_materials.Unb
 
 
 class WireConnector(UnbuildableMachineComponent):
-    LOGIC_COMPONENT: Type[components.LogicComponent] = components.ConnectorLogicComponent
+    LOGIC_COMPONENT: Type[components.Wire] = components.ConnectorWire
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {"": utility.image_handling.ImageDefinition("buildings", (50, 40)),
          "r": utility.image_handling.ImageDefinition("buildings", (60, 40)),
@@ -204,7 +204,7 @@ class RedWire(WireComponent):
 
 
 class RedInverterWire(DirectionalWireComponent):
-    LOGIC_COMPONENT: Type[components.LogicComponent] = components.InverterLogicComponent
+    LOGIC_COMPONENT: Type[components.Wire] = components.InverterWire
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {1: utility.image_handling.ImageDefinition("buildings", (30, 50)),
          0: utility.image_handling.ImageDefinition("buildings", (30, 50), rotate=90),
@@ -231,7 +231,7 @@ class GreenWire(WireComponent):
 
 
 class GreenInverterWire(DirectionalWireComponent):
-    LOGIC_COMPONENT: Type[components.LogicComponent] = components.InverterLogicComponent
+    LOGIC_COMPONENT: Type[components.Wire] = components.InverterWire
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {1: utility.image_handling.ImageDefinition("buildings", (40, 50)),
          0: utility.image_handling.ImageDefinition("buildings", (40, 50), rotate=90),
@@ -258,7 +258,7 @@ class BlueWire(WireComponent):
 
 
 class BlueInverterWire(DirectionalWireComponent):
-    LOGIC_COMPONENT: Type[components.LogicComponent] = components.InverterLogicComponent
+    LOGIC_COMPONENT: Type[components.Wire] = components.InverterWire
     IMAGE_DEFINITIONS: ClassVar[Dict[int, List[utility.image_handling.ImageDefinition]]] = \
         {2: utility.image_handling.ImageDefinition("buildings", (0, 60), rotate=90),
          1: utility.image_handling.ImageDefinition("buildings", (50, 50)),

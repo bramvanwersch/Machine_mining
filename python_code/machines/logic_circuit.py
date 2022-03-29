@@ -5,13 +5,13 @@ import utility.constants as con
 from machines.logic_components import CombinationComponent
 
 if TYPE_CHECKING:
-    from machines.logic_components import LogicComponent
+    from machines.logic_components import Wire
 
 
 class LogicCircuit:
 
     _components: List[List[Union["CombinationComponent", None]]]
-    _power_components: List["LogicComponent"]
+    _power_components: List["Wire"]
     _time_since_last_update: int
 
     def __init__(
@@ -42,21 +42,19 @@ class LogicCircuit:
 
     def add_component(
         self,
-        component: "LogicComponent",
+        wire: "Wire",
         pos: Union[List[int], Tuple[int, int]]
     ):
         if self._components[pos[1]][pos[0]] is not None:
-            # make sure component is properly removed
-            self._remove_power_wires(pos)
-            self._components[pos[1]][pos[0]].add_component(component)
+            self._components[pos[1]][pos[0]].add_component(wire)
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
         else:
             combi_component = CombinationComponent()
-            combi_component.add_component(component)
+            combi_component.add_component(wire)
             self._components[pos[1]][pos[0]] = combi_component
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
-        if component.power_source:
-            self._power_components.append(component)
+        if wire.power_source:
+            self._power_components.append(wire)
 
     def _get_neighbouring_components(
         self,

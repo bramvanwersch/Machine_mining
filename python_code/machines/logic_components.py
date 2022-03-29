@@ -35,7 +35,7 @@ class LogicQueue:
 class CombinationComponent:
     # can hold up to three components of different colors
 
-    _wires: Dict[str, Union[None, Union["LogicComponent"]]]
+    _wires: Dict[str, Union[None, Union["Wire"]]]
     _connecting_directions: Set[int]
 
     def __init__(self):
@@ -74,7 +74,7 @@ class CombinationComponent:
 
     def add_component(
         self,
-        component: "LogicComponent"
+        component: "Wire"
     ):
         # if component takes up all color connection slots add it to all slots
         if component.full_component:
@@ -106,15 +106,15 @@ class CombinationComponent:
                 for color, component in combi_component._wires.items():
                     # add the component for both directions
                     if component is not None:
-                        component.set_component_connection(self._wires[color], (direction + 2) % 4, color)
+                        component.set_wire_connection(self._wires[color], (direction + 2) % 4, color)
                     if self._wires[color] is not None:
-                        self._wires[color].set_component_connection(component, direction, color)
+                        self._wires[color].set_wire_connection(component, direction, color)
 
-    def __iter__(self) -> Iterator["LogicComponent"]:
+    def __iter__(self) -> Iterator["Wire"]:
         return iter(self._wires.values())
 
 
-class LogicComponent:
+class Wire:
 
     _EMITS_POWER: bool = False  # use this flag to indicate if the component naturally emits an active state
     _FULL_COMPONENT: bool = False  # use this flag for components with multiple color channels
@@ -123,7 +123,7 @@ class LogicComponent:
     color: str
     _activated_this_tick: bool
     _active: bool
-    _connected_components: List[Union[None, "LogicComponent"]]
+    _connected_components: List[Union[None, "Wire"]]
 
     def __init__(
         self,
@@ -177,9 +177,9 @@ class LogicComponent:
         self._change_material_active(False)
         self._activated_this_tick = False
 
-    def set_component_connection(
+    def set_wire_connection(
         self,
-        component: Union[None, "LogicComponent"],
+        component: Union[None, "Wire"],
         direction_index: int,
         color: str
     ):
@@ -189,14 +189,14 @@ class LogicComponent:
             component.set_active(True, direction_index, self.power_source, self.color)
 
     def reset_connections(self):
-        for direction, component in enumerate(self._connected_components):
-            if component is not None:
+        for direction, wire in enumerate(self._connected_components):
+            if wire is not None:
                 opposite_direction = (direction + 2) % 4
-                component.set_component_connection(None, opposite_direction, self.color)
-                if not component.power_source:
-                    component.set_active(False, direction, self.power_source, self.color)
+                wire.set_wire_connection(None, opposite_direction, self.color)
+                if not wire.power_source:
+                    wire.set_active(False, direction, self.power_source, self.color)
                 else:
-                    component.set_active(self._active, direction, self.power_source, self.color)
+                    wire.set_active(self._active, direction, self.power_source, self.color)
 
     def connectable_directions(self):
         return self.material.connecting_directions()
@@ -218,14 +218,14 @@ class LogicComponent:
         return self._FULL_COMPONENT
 
 
-class ConnectorLogicComponent(LogicComponent):
+class ConnectorWire(Wire):
 
     _FULL_COMPONENT: bool = True
 
     color: str
     _active: Dict[str, bool]
     _activated_this_tick: Dict[str, bool]
-    _connected_components: Dict[str, List[Union[None, "LogicComponent"]]]
+    _connected_components: Dict[str, List[Union[None, "Wire"]]]
 
     def __init__(
         self,
@@ -280,9 +280,9 @@ class ConnectorLogicComponent(LogicComponent):
             active_key += "b"
         return active_key
 
-    def set_component_connection(
+    def set_wire_connection(
         self,
-        component: Union[None, "LogicComponent"],
+        component: Union[None, "Wire"],
         direction_index: int,
         color: str
     ):
@@ -296,7 +296,7 @@ class ConnectorLogicComponent(LogicComponent):
             for direction, component in enumerate(components):
                 if component is not None:
                     opposite_direction = (direction + 2) % 4
-                    component.set_component_connection(None, opposite_direction, color)
+                    component.set_wire_connection(None, opposite_direction, color)
                     if not component.power_source:
                         component.set_active(False, direction, self.power_source, color)
                     else:
@@ -313,7 +313,7 @@ class ConnectorLogicComponent(LogicComponent):
             self.material.change_image_key(material_key)
 
 
-class InverterLogicComponent(LogicComponent):
+class InverterWire(Wire):
 
     _EMITS_POWER: bool = True
 
@@ -350,9 +350,9 @@ class InverterLogicComponent(LogicComponent):
                 return self._active
         return False
 
-    def set_component_connection(
+    def set_wire_connection(
         self,
-        component: Union[None, "LogicComponent"],
+        component: Union[None, "Wire"],
         direction_index: int,
         color: str
     ):
