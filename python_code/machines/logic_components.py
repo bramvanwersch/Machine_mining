@@ -1,35 +1,10 @@
-from typing import TYPE_CHECKING, List, Union, Dict, Set, Callable, Any, Iterator
-from collections import deque
+from typing import TYPE_CHECKING, List, Union, Dict, Set, Iterator
 
 import utility.constants as con
 
 if TYPE_CHECKING:
     from block_classes.materials.machine_materials import MultiImageMachineComponent
     from block_classes.materials.materials import MultiImageMaterial
-
-
-class LogicQueue:
-    MAX_QUEUE_LENGTH: int = 10
-
-    _queue: deque
-
-    def __init__(self):
-        self._queue = deque()
-
-    def add(self, function: Callable, values: List[Any] = None):
-        if len(self._queue) == self.MAX_QUEUE_LENGTH:
-            print(f"Warning: Cannot add {function} to queue. Queue is full.")
-            return
-        self._queue.append((function, values))
-
-    def execute_oldest(self) -> Any:
-        function, values = self._queue.popleft()
-        # execute the function
-        return_value = function(*values)
-        return return_value
-
-    def __len__(self) -> int:
-        return len(self._queue)
 
 
 class CombinationComponent:
@@ -130,7 +105,6 @@ class Wire:
         material: Union["MultiImageMachineComponent", "MultiImageMaterial"],
         color: str,
     ):
-        # first the material of the wire then the state active or not
         self.material = material
         self.color = color
         self._activated_this_tick = False
@@ -222,7 +196,6 @@ class ConnectorWire(Wire):
 
     _FULL_COMPONENT: bool = True
 
-    color: str
     _active: Dict[str, bool]
     _activated_this_tick: Dict[str, bool]
     _connected_components: Dict[str, List[Union[None, "Wire"]]]

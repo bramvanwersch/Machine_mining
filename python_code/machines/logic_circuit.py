@@ -24,7 +24,7 @@ class LogicCircuit:
         self._power_components = []
         self._time_since_last_update = 0
 
-    def update(self):
+    def visual_update(self):
         if self._time_since_last_update >= con.CIRCUIT_TICK_TIME:
             # make sure that all component states are reset
             for row in self._components:

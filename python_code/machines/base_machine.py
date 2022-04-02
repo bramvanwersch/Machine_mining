@@ -13,11 +13,12 @@ if TYPE_CHECKING:
 #  1: make sure that disconecting large parts works properly
 #  2: have a max size
 #  3: have other machine additions not exceed max size
+#  4: make sure that replaced blocks are handled well
 
 
 class Machine:
 
-    blocks: Dict[int, Dict[int, "Block"]]  # save blocks by y_coord x_coord in a dict
+    blocks: Dict[int, Dict[int, "Block"]]  # save blocks by y_coord then by x_coord in a dict
     terminal_block: Union[block_classes.machine_blocks.MachineTerminalBlock, None]
     rect: "pygame.Rect"
     id: str
@@ -34,7 +35,9 @@ class Machine:
         self.add_block(block)
 
     def update(self):
-        self.logic_circuit.update()
+        # only needed when active interface
+        if self.terminal_block is not None and self.terminal_block.interface.is_showing():
+            self.logic_circuit.visual_update()
 
     def add_block(self, block):
         # it is very important that this block is connected, always make sure to check before with can_add()
@@ -102,4 +105,3 @@ class Machine:
 
     def __contains__(self, block):
         return block.coord[1] in self.blocks and block.coord[0] in self.blocks[block.coord[1]]
-
