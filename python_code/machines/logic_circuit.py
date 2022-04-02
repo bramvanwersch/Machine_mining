@@ -1,4 +1,4 @@
-from typing import List, Union, Tuple, TYPE_CHECKING
+from typing import List, Union, Tuple, TYPE_CHECKING, Set
 
 import utility.utilities as util
 import utility.constants as con
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class LogicCircuit:
 
     _components: List[List[Union["CombinationComponent", None]]]
-    _power_components: List["Wire"]
+    _power_components: Set["Wire"]
     _time_since_last_update: int
 
     def __init__(
@@ -21,7 +21,7 @@ class LogicCircuit:
         if grid_size.height == 0 or grid_size.width == 0:
             raise util.GameException("Logic circuit height and width have to be at least 1")
         self._components = [[None for _ in range(grid_size.width)] for _ in range(grid_size.height)]
-        self._power_components = []
+        self._power_components = set()
         self._time_since_last_update = 0
 
     def visual_update(self):
@@ -33,8 +33,8 @@ class LogicCircuit:
                         continue
                     component.reset_component()
             # make sure that active components are updated first
-            self._power_components.sort(key=lambda x: x.get_active_state())
-            for component in self._power_components:
+            sorted_comps = sorted(list(self._power_components), key=lambda x: x.get_active_state())
+            for component in sorted_comps:
                 component.update()
             self._time_since_last_update -= con.CIRCUIT_TICK_TIME
         else:
@@ -46,7 +46,10 @@ class LogicCircuit:
         pos: Union[List[int], Tuple[int, int]]
     ):
         if self._components[pos[1]][pos[0]] is not None:
-            self._components[pos[1]][pos[0]].add_component(wire)
+            removed_components = self._components[pos[1]][pos[0]].add_component(wire)
+            for comp in removed_components:
+                if comp in self._power_components:
+                    self._power_components.remove(comp)
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
         else:
             combi_component = CombinationComponent()
@@ -54,7 +57,7 @@ class LogicCircuit:
             self._components[pos[1]][pos[0]] = combi_component
             self._components[pos[1]][pos[0]].set_connected_component(self._get_neighbouring_components(pos))
         if wire.power_source:
-            self._power_components.append(wire)
+            self._power_components.add(wire)
 
     def _get_neighbouring_components(
         self,

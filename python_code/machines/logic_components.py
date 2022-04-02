@@ -50,7 +50,8 @@ class CombinationComponent:
     def add_component(
         self,
         component: "Wire"
-    ):
+    ) -> List["Wire"]:
+        removed_components = []
         # if component takes up all color connection slots add it to all slots
         if component.full_component:
             colors = con.WIRE_COLORS
@@ -59,6 +60,7 @@ class CombinationComponent:
         for color in colors:
             current_component = self._wires[color]
             if current_component is not None:
+                removed_components.append(current_component)
                 # remove all directions to be sure
                 for direction in current_component.connectable_directions():
                     self._connecting_directions.discard(direction)
@@ -68,6 +70,7 @@ class CombinationComponent:
             self._wires[color] = component
             for direction in component.connectable_directions():
                 self._connecting_directions.add(direction)
+        return removed_components
 
     def set_connected_component(
         self,
