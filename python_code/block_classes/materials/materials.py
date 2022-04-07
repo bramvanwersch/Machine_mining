@@ -108,12 +108,6 @@ class BaseMaterial(loading_saving.Savable, loading_saving.Loadable, ABC):
 
     def to_block(self, pos: Union[List[int], Tuple[int, int]], **kwargs) -> blocks.Block:
         """Convert a material into the appropriate block with that material
-
-        Args:
-            pos (list): lenght 2 list of the block position
-            **kwargs: optional arguments for the block class
-        Returns:
-            an instance of a Block class
         """
         return self._BLOCK_TYPE(pos, self, **kwargs)
 
