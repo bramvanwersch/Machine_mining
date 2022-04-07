@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Dict, Union
 import utility.utilities as util
 import utility.constants as con
 import block_classes.machine_blocks
-import machines.logic_circuit
 
 if TYPE_CHECKING:
     import pygame
@@ -23,7 +22,6 @@ class Machine:
     rect: "pygame.Rect"
     id: str
     size: int
-    logic_circuit: machines.logic_circuit.LogicCircuit
 
     def __init__(self, block):
         self.blocks = {}
@@ -31,13 +29,10 @@ class Machine:
         self.rect = block.rect.copy()
         self.id = util.unique_id()
         self.size = 1
-        self.logic_circuit = machines.logic_circuit.LogicCircuit(util.Size(7, 7))
         self.add_block(block)
 
     def update(self):
-        # only needed when active interface
-        if self.terminal_block is not None and self.terminal_block.interface.is_showing():
-            self.logic_circuit.visual_update()
+        pass
 
     def add_block(self, block):
         # it is very important that this block is connected, always make sure to check before with can_add()
@@ -80,10 +75,6 @@ class Machine:
 
     def _set_terminal_block(self, terminal_block: block_classes.machine_blocks.MachineTerminalBlock):
         self.terminal_block = terminal_block
-        for y_dict in self.blocks.values():
-            for block in y_dict.values():
-                self.terminal_block.add_block_to_interface(block)
-
         self.terminal_block.set_machine(self)
 
     def can_add(self, coord):

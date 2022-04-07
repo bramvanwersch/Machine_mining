@@ -4,7 +4,7 @@ GAME IDEA:
 BUGS:
 - Windows dont close when buildings are destroyed
 - Windows dont appear when opening in zoomed in mode.
-- Mouse moves from window bar when moving windows in zoomed mode
+- Mouse moves from window bar when moving windows in zoomed mode for fixed size windows
 - couple of issues with the start settings leading to some errors when generating the map.
 - Low priority: chunks generated while zoomed dont show up until updated
 - Bug with plants being removed by removing the block they are attached to and pathfinding
@@ -18,6 +18,7 @@ BUGS:
 - highlighting is not properly saved
 - ghostblock building multiple block structures allows overlap and causes overlapping machines to be placed
 - rare scenarion where an item is deleted when saving on a specific frame(s)
+- Windows cause a lot of entities to be loaded
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes

@@ -297,7 +297,6 @@ class GameSettingsScene(Scene):
         self.settings_menu_frame.add_widget(("center", y_coord), generation_values_pane)
         self.settings_menu_frame.add_border(generation_values_pane)
 
-
         # Biome size selection
         local_y = 10
         local_x = int((generation_values_pane.rect.width / 2) + 5)
