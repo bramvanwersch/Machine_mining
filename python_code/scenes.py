@@ -14,7 +14,7 @@ import board.board
 import entities
 from board import sprite_groups as sprite_groups
 from interfaces import widgets as widgets, managers as window_managers
-from interfaces.windows import interface_utility as interface_util, other_interfaces as small_interfaces, console
+from interfaces.windows import interface_utility as interface_util, other_interfaces as small_interfaces, console_window
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
 import user
@@ -542,7 +542,7 @@ class Game(loading_saving.Savable, Scene):
 
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
+        self.console_window = console_window.ConsoleWindow(self.sprite_group, self.board, self.user)
         self.console_window.run_starting_script()
         self.reset_globals()
 
@@ -554,7 +554,7 @@ class Game(loading_saving.Savable, Scene):
         self.progress_var[0] = "Loading user information"
         self.user = user.User.from_dict(dct["user"], board=self.board, sprite_group=self.sprite_group)
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console.ConsoleWindow(self.sprite_group, self.board, self.user)
+        self.console_window = console_window.ConsoleWindow(self.sprite_group, self.board, self.user)
 
         # ready made windows
         window_managers.create_window_managers(self.camera_center)

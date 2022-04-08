@@ -19,6 +19,8 @@ BUGS:
 - ghostblock building multiple block structures allows overlap and causes overlapping machines to be placed
 - rare scenarion where an item is deleted when saving on a specific frame(s)
 - Windows cause a lot of entities to be loaded
+- Missing blinker in text fields
+- Some commands from console do not work properly --> mostly visual related
 
 NEEDED FEATURES (features that have to be added before the game is complete and playable):
 - Allot more recipes --> make a tree of progress using the recipes
