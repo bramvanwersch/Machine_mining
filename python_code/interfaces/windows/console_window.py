@@ -28,15 +28,14 @@ class ConsoleWindow(Window):
     def __init__(
         self,
         sprite_group: "CameraAwareLayeredUpdates",
-        board: "Board",
-        user_: "user.User"
+        console_: console.Console,
     ):
         super().__init__(self.WINDOW_POS, self.WINDOW_SIZE, sprite_group, static=False, title="CONSOLE",
                          color=(150, 150, 150))
         self.__input_line = None
         self.__text_log_label = None
         self.__log = TextLog()
-        self.__console = console.Console(board, user_)
+        self.__console = console_
 
         self.__init_widgets()
         self.add_key_event_listener(con.K_TAB, self.__create_tab_information, types=["pressed"])
@@ -56,7 +55,7 @@ class ConsoleWindow(Window):
         self.__input_line.active_line.set_line_text(line.text)
 
     def run_starting_script(self):
-        self.__console.process_command_line_text("scripts start")
+        self.__console.process_line("scripts start")
 
     def __init_widgets(self):
         self.__input_line = ConsoleLine(self.WINDOW_SIZE.width - 10)
@@ -83,7 +82,7 @@ class ConsoleWindow(Window):
         super().update()
         if self.__input_line.process_line is not None:
             self.add_executed_command_message(self.__input_line.process_line)
-            results = self.__console.process_command_line_text(self.__input_line.process_line)
+            results = self.__console.process_line(self.__input_line.process_line)
             for message, is_error in results:
                 if is_error:
                     [self.add_error_message(m) for m in message.split("\n")]

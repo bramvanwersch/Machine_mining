@@ -19,6 +19,7 @@ from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
 import user
 from utility import game_timing, loading_saving
+from utility import console
 
 
 # defined below SceneManager
@@ -542,7 +543,8 @@ class Game(loading_saving.Savable, Scene):
 
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console_window.ConsoleWindow(self.sprite_group, self.board, self.user)
+        console_ = console.MainConsole(self.board, self.user)
+        self.console_window = console_window.ConsoleWindow(self.sprite_group, console_)
         self.console_window.run_starting_script()
         self.reset_globals()
 
@@ -554,7 +556,8 @@ class Game(loading_saving.Savable, Scene):
         self.progress_var[0] = "Loading user information"
         self.user = user.User.from_dict(dct["user"], board=self.board, sprite_group=self.sprite_group)
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        self.console_window = console_window.ConsoleWindow(self.sprite_group, self.board, self.user)
+        console_ = console.MainConsole(self.board, self.user)
+        self.console_window = console_window.ConsoleWindow(self.sprite_group, console_)
 
         # ready made windows
         window_managers.create_window_managers(self.camera_center)

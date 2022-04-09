@@ -3,6 +3,7 @@ import re
 from typing import Union, Tuple, List, Dict, Any, TYPE_CHECKING
 import os
 import inspect
+from abc import ABC, abstractmethod
 
 import utility.inventories
 import utility.utilities as util
@@ -17,7 +18,21 @@ if TYPE_CHECKING:
     import user
 
 
-class Console:
+class Console(ABC):
+    command_tree: Dict[str, Any]
+
+    def __init__(self):
+        self.command_tree = {}
+
+    @abstractmethod
+    def process_line(
+        self,
+        text: str
+    ) -> List[Tuple[str, bool]]:
+        pass
+
+
+class MainConsole(Console):
     """Class that allows for using commands in order to manipulate values while the game is running
     Quick guide:
         - Every command is build up in a simple way. Name of main command, a series of names indicating where to find
@@ -28,7 +43,6 @@ class Console:
          as well
         - brackets and ; are used in order to set lists in order to not interfer with the square bracket syntax
     """
-    command_tree: Dict[str, Any]
     __board: "Board"
     __user: "user.User"
 
@@ -37,7 +51,7 @@ class Console:
         board: "Board",
         user_: "user.User"
     ):
-        self.command_tree = {}
+        super().__init__()
         self.__board = board
         self.__user = user_
         self.__innitialise_command_tree()
@@ -111,7 +125,7 @@ class Console:
                 tree[str_atr] = False
         return tree
 
-    def process_command_line_text(
+    def process_line(
         self,
         text: str
     ) -> List[Tuple[str, bool]]:
@@ -244,7 +258,7 @@ class Console:
     ) -> List[Tuple[str, bool]]:
         """Process a script call by taking the name and taking the provided line"""
         command_line = self.command_tree["scripts"][arguments[1]]
-        results = self.process_command_line_text(command_line)
+        results = self.process_line(command_line)
         return results
 
     def _process_set(

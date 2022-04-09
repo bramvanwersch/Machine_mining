@@ -527,7 +527,7 @@ class Label(SurfaceWidget):
             self.clean_surface(clean_image=False)
         self.surface.blit(s, pos.position)
         # make sure that the selection rectangle is shown
-        if redraw:
+        if redraw and self.selectable:
             if self.__selection_specifications:
                 self.set_selected(*self.__selection_specifications, redraw=False)
         self.changed_image = True
@@ -539,11 +539,11 @@ class Label(SurfaceWidget):
         redraw: bool = True
     ):
         super().set_selected(selected)
-        if not self.selectable:
-            return
         if self.__selection_specifications[1] is not None and color is None:
             color = self.__selection_specifications[1]
         self.__selection_specifications = [selected, color]
+        if not self.selectable:
+            return
         if redraw:
             self.clean_surface(clean_text=False, clean_image=False)
         if color is None:
@@ -1575,7 +1575,7 @@ class _TextLine(Label):
         color: Union[Tuple[int, int, int], List[int]] = None,
         redraw: bool = True
     ):
-        """Do not add the highligth"""
+        super().set_selected(selected, color, redraw)
         self.selected = selected
         if not selected:
             self.__blinker_active = False
