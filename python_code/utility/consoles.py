@@ -15,6 +15,7 @@ from block_classes.materials import building_materials, environment_materials, g
 
 if TYPE_CHECKING:
     from board.board import Board
+    from machines.base_machine import Machine
     import user
 
 
@@ -129,7 +130,7 @@ class MainConsole(Console):
         self,
         text: str
     ) -> List[Tuple[str, bool]]:
-        """Process a string that presumably represents a valid command"""
+        """Process a string that presumably represents a valid command, return a message and bool indicating failure"""
         results = []
         try:
             commands_list = self.__text_to_commands(text)
@@ -154,7 +155,10 @@ class MainConsole(Console):
                 results.append((f"Not enough arguments supplied for the {arguments[0]} command.", True))
         return results
 
-    def __text_to_commands(self, text):
+    def __text_to_commands(
+        self,
+        text: str
+    ) -> List[str]:
         """Extract all commands in a given text by writing out all the lists into lines of commands conveyed by those
         lists"""
         text = text.strip()
@@ -361,3 +365,50 @@ class MainConsole(Console):
                 raise ValueError("expected value of type {} at index {}. Cannot convert {} to {}."
                                  .format(val_type, index, the_list[index], val_type))
         return the_list
+
+
+class MachineConsole(Console):
+
+    _machine: Union["Machine", None]
+
+    def __init__(self):
+        super().__init__()
+        # this value is set before the user can open the interface and use the console
+        self._machine = None
+        self._populate_command_tree()
+
+    def _populate_command_tree(self):
+        self.command_tree["get_size"] = self.size
+
+    def set_machine(
+        self,
+        machine: "Machine"
+    ):
+        self._machine = machine
+
+    def size(self):
+        return str(self._machine.size)
+
+    def process_line(
+        self,
+        text: str
+    ) -> List[Tuple[str, bool]]:
+        if "(" not in text:
+            return [(f"Functions need opening and closing brackets after the name", True)]
+        function_name, args = self._get_function_call(text)
+        if function_name not in self.command_tree:
+            return [(f"No function with name {function_name}", True)]
+        try:
+            return [(self.command_tree[function_name](*args), False)]
+        except Exception as e:
+            return [(f"call failed with message: {str(e)}", True)]
+
+    def _get_function_call(self, text: str):
+        function_name, argument_part = text.split("(")
+        argument_part = argument_part.replace(")", "")
+        arguments = [arg.strip() for arg in argument_part.split(",")]
+
+        # in case no arguments are provided, but keeping empty arguments for consistency
+        if len(arguments) == 1 and arguments[0] == "":
+            arguments = []
+        return function_name, arguments

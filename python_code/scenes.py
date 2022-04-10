@@ -14,12 +14,12 @@ import board.board
 import entities
 from board import sprite_groups as sprite_groups
 from interfaces import widgets as widgets, managers as window_managers
-from interfaces.windows import interface_utility as interface_util, other_interfaces as small_interfaces, console_window
+from interfaces.windows import interface_utility as interface_util, other_interfaces as small_interfaces, console_windows
 from utility import constants as con, utilities as util, event_handling
 import board_generation.generation as generation
 import user
 from utility import game_timing, loading_saving
-from utility import console
+from utility import consoles
 
 
 # defined below SceneManager
@@ -543,21 +543,22 @@ class Game(loading_saving.Savable, Scene):
 
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        console_ = console.MainConsole(self.board, self.user)
-        self.console_window = console_window.ConsoleWindow(self.sprite_group, console_)
+        console_ = consoles.MainConsole(self.board, self.user)
+        self.console_window = console_windows.MainConsoleWindow(
+            (0, 0), util.Size(con.SCREEN_SIZE.width, 0.6 * con.SCREEN_SIZE.height), self.sprite_group, console_)
         self.console_window.run_starting_script()
         self.reset_globals()
 
     def load_start(self, dct):
-        # camera center position is changed before starting the game
-        # TODO make the size 0,0
+
         self.progress_var[0] = "Loading board"
         self.board = board.board.Board.from_dict(dct["board"], self.sprite_group)
         self.progress_var[0] = "Loading user information"
         self.user = user.User.from_dict(dct["user"], board=self.board, sprite_group=self.sprite_group)
         self.pause_window = small_interfaces.PauseWindow(self.sprite_group)
-        console_ = console.MainConsole(self.board, self.user)
-        self.console_window = console_window.ConsoleWindow(self.sprite_group, console_)
+        console_ = consoles.MainConsole(self.board, self.user)
+        self.console_window = console_windows.MainConsoleWindow(
+            (0, 0), util.Size(con.SCREEN_SIZE.width, 0.6 * con.SCREEN_SIZE.height), self.sprite_group, console_)
 
         # ready made windows
         window_managers.create_window_managers(self.camera_center)
