@@ -94,5 +94,9 @@ class Machine:
             return True
         return False
 
+    def iter_parts(self):
+        # iter all parts of the machine first x then y and return string names
+        pass
+
     def __contains__(self, block):
         return block.coord[1] in self.blocks and block.coord[0] in self.blocks[block.coord[1]]

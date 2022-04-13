@@ -369,25 +369,19 @@ class MainConsole(Console):
 
 class MachineConsole(Console):
 
-    _machine: Union["Machine", None]
+    _code_wrapper: Union["_MachineCodeWrapper", None]
 
     def __init__(self):
         super().__init__()
-        # this value is set before the user can open the interface and use the console
-        self._machine = None
-        self._populate_command_tree()
-
-    def _populate_command_tree(self):
-        self.command_tree["get_size"] = self.size
+        self._code_wrapper = None
 
     def set_machine(
         self,
         machine: "Machine"
     ):
-        self._machine = machine
-
-    def size(self):
-        return str(self._machine.size)
+        # this value is set before the user can open the interface and use the console
+        self._code_wrapper = _MachineCodeWrapper(machine)
+        self.command_tree = self._code_wrapper.get_possible_commands_dict()
 
     def process_line(
         self,
@@ -395,15 +389,18 @@ class MachineConsole(Console):
     ) -> List[Tuple[str, bool]]:
         if "(" not in text:
             return [(f"Functions need opening and closing brackets after the name", True)]
+        if text.strip()[-1] != ")":
+            return [(f"Functions need opening and closing brackets after the name", True)]
         function_name, args = self._get_function_call(text)
         if function_name not in self.command_tree:
             return [(f"No function with name {function_name}", True)]
         try:
-            return [(self.command_tree[function_name](*args), False)]
+            # make sure it is always a string
+            return [(str(self.command_tree[function_name](*args)), False)]
         except Exception as e:
             return [(f"call failed with message: {str(e)}", True)]
 
-    def _get_function_call(self, text: str):
+    def _get_function_call(self, text: str) -> Tuple[str, List[str]]:
         function_name, argument_part = text.split("(")
         argument_part = argument_part.replace(")", "")
         arguments = [arg.strip() for arg in argument_part.split(",")]
@@ -412,3 +409,56 @@ class MachineConsole(Console):
         if len(arguments) == 1 and arguments[0] == "":
             arguments = []
         return function_name, arguments
+
+
+class _MachineCodeWrapper:
+    """This will be a wrapper for all functions that can be called on machines in the language and from console"""
+    _machine: "Machine"
+
+    def __init__(self, machine: "Machine"):
+        self._machine = machine
+
+    def get_possible_commands_dict(self):
+        return {tpl[0]: tpl[1] for tpl in inspect.getmembers(self, predicate=inspect.ismethod) if
+                tpl[0] not in {"__init__", "get_possible_commands_dict"}}
+
+    # here are all callable methods from console and language
+
+    def get_size(self) -> int:
+        return self._machine.size
+
+    def get_parts(self):
+        pass
+
+    def get_placers(self):
+        pass
+
+    def get_drills(self):
+        pass
+
+    def get_inventory(self):
+        pass
+
+    def check_item(self, item_type):
+        pass
+
+    def get_overview(self):
+        pass
+
+    def drill(self, drills):
+        pass
+
+    def place(self, placers, block_type):
+        pass
+
+    def move_x(self, amnt):
+        pass
+
+    def move_y(self, amnt):
+        pass
+
+    def help(self, function_name):
+        pass
+
+
+
