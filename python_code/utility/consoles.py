@@ -14,6 +14,8 @@ from block_classes.materials import building_materials, environment_materials, g
     machine_materials, materials
 
 if TYPE_CHECKING:
+    from utility.inventories import Inventory
+    from block_classes.blocks import Block
     from board.board import Board
     from machines.base_machine import Machine
     import user
@@ -427,20 +429,53 @@ class _MachineCodeWrapper:
     def get_size(self) -> int:
         return self._machine.size
 
-    def get_parts(self):
-        pass
+    def get_parts(self) -> List["Block"]:
+        """
+        Get all the blocks that the machine is made up of starting from the block with the lowest x, y coordinate then
+        increasing first the x and then the y coordinate.
 
-    def get_placers(self):
-        pass
+        Returns:
+            A List of Block instances
+        """
+        return self._machine.get_blocks()
 
-    def get_drills(self):
-        pass
+    def get_placers(self) -> List["Block"]:
+        """
+        Get all the placers in the machine starting from the block with the lowest x, y coordinate then
+        increasing first the x and then the y coordinate.
 
-    def get_inventory(self):
-        pass
+        Returns:
+            A List of Block instances
+        """
+        return self._machine.get_blocks(machine_materials.MachinePlacer)
 
-    def check_item(self, item_type):
-        pass
+    def get_drills(self) -> List["Block"]:
+        """
+        Get all the drills in the machine starting from the block with the lowest x, y coordinate then
+        increasing first the x and then the y coordinate.
+
+        Returns:
+            A List of Block instances
+        """
+        return self._machine.get_blocks(machine_materials.MachineDrill)
+
+    def get_movers(self) -> List["Block"]:
+        """
+        Get all the movers in the machine starting from the block with the lowest x, y coordinate then
+        increasing first the x and then the y coordinate.
+
+        Returns:
+            A List of Block instances
+        """
+        return self._machine.get_blocks(machine_materials.MachineDrill)
+
+    def get_inventory(self) -> "Inventory":
+        """
+        Get the inventory of the current machine. This inventory can be used to check items
+        Returns:
+
+        """
+        return "To be implemented"
 
     def get_overview(self):
         pass
@@ -459,6 +494,3 @@ class _MachineCodeWrapper:
 
     def help(self, function_name):
         pass
-
-
-

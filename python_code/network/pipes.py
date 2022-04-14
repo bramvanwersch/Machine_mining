@@ -95,7 +95,7 @@ class Network(util.Serializer):
         for index, item in enumerate(destination_node.requested_items[::-1]):
             if node.inventory.check_item_get(item.name()):
                 #take top left block as target
-                self.task_control.add("Request", destination_node.blocks[0][0], req_item=item)
+                self.task_control.add("Request", destination_node._blocks[0][0], req_item=item)
                 #request all items at once
                 del destination_node.requested_items[tot_len - index]
 
@@ -130,7 +130,7 @@ class Network(util.Serializer):
         for index, item in enumerate(node.pushed_items[::-1]):
             if destination_node.inventory.check_item_deposit(item.name()):
                 del node.pushed_items[tot_len - index]
-                self.task_control.add("Deliver", node.blocks[0][0], pushed_item = item)
+                self.task_control.add("Deliver", node._blocks[0][0], pushed_item = item)
 
     def check_storage_connections(self, node):
         storage_connections = []
@@ -294,7 +294,7 @@ class NetworkEdge(util.Serializer):
         return False
 
     def is_node_adjacent(self, node):
-        for row in node.blocks:
+        for row in node._blocks:
             for block in row:
                 if self.can_add(block):
                     return True
