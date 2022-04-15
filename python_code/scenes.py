@@ -538,7 +538,7 @@ class Game(loading_saving.Savable, Scene):
 
         # add one of the imventories of the terminal
         if self.building_interface is None:
-            self.building_interface = small_interfaces.BuildingWindow(self.board.terminal._blocks[0][0].inventory,
+            self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
                                                                       self.sprite_group)
 
         self.camera_center.rect.center = self.board.get_start_chunk().rect.center
@@ -564,7 +564,7 @@ class Game(loading_saving.Savable, Scene):
         window_managers.create_window_managers(self.camera_center)
         from interfaces.managers import game_window_manager
         self.window_manager = game_window_manager
-        self.building_interface = small_interfaces.BuildingWindow(self.board.terminal._blocks[0][0].inventory,
+        self.building_interface = small_interfaces.BuildingWindow(self.board.terminal.blocks[0][0].inventory,
                                                                   self.sprite_group)
         self.reset_globals()
 

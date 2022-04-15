@@ -540,7 +540,7 @@ class Board(loading_saving.Savable, loading_saving.Loadable):
         for building in self.buildings.values():
             if not building.has_inventory():
                 continue
-            inventory = building._blocks[0][0].inventory
+            inventory = building.blocks[0][0].inventory
             if (deposit == False and all([inventory.check_item_get(name) for name in item_names])):
                 pass
             elif (deposit == True and all([inventory.check_item_deposit(name) for name in item_names])):

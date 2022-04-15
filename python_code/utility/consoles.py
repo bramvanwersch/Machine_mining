@@ -15,9 +15,8 @@ from block_classes.materials import building_materials, environment_materials, g
 
 if TYPE_CHECKING:
     from utility.inventories import Inventory
-    from block_classes.blocks import Block
     from board.board import Board
-    from machines.base_machine import Machine
+    from machines.base_machine import Machine, MachineBlock
     import user
 
 
@@ -429,7 +428,7 @@ class _MachineCodeWrapper:
     def get_size(self) -> int:
         return self._machine.size
 
-    def get_parts(self) -> List["Block"]:
+    def get_parts(self) -> List["MachineBlock"]:
         """
         Get all the blocks that the machine is made up of starting from the block with the lowest x, y coordinate then
         increasing first the x and then the y coordinate.
@@ -439,7 +438,7 @@ class _MachineCodeWrapper:
         """
         return self._machine.get_blocks()
 
-    def get_placers(self) -> List["Block"]:
+    def get_placers(self) -> List["MachineBlock"]:
         """
         Get all the placers in the machine starting from the block with the lowest x, y coordinate then
         increasing first the x and then the y coordinate.
@@ -449,7 +448,7 @@ class _MachineCodeWrapper:
         """
         return self._machine.get_blocks(machine_materials.MachinePlacer)
 
-    def get_drills(self) -> List["Block"]:
+    def get_drills(self) -> List["MachineBlock"]:
         """
         Get all the drills in the machine starting from the block with the lowest x, y coordinate then
         increasing first the x and then the y coordinate.
@@ -459,7 +458,7 @@ class _MachineCodeWrapper:
         """
         return self._machine.get_blocks(machine_materials.MachineDrill)
 
-    def get_movers(self) -> List["Block"]:
+    def get_movers(self) -> List["MachineBlock"]:
         """
         Get all the movers in the machine starting from the block with the lowest x, y coordinate then
         increasing first the x and then the y coordinate.
@@ -478,7 +477,12 @@ class _MachineCodeWrapper:
         return "To be implemented"
 
     def get_overview(self):
-        pass
+        blocks = self._machine.get_blocks()
+        strings = ["" for _ in range(blocks[-1].y_coordinate)]
+        for block in blocks:
+            for
+            strings[block.y_coordinate] += f" {block.get_letter()} "
+        return '\n'.join(strings)
 
     def drill(self, drills):
         pass
