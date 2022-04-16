@@ -478,10 +478,12 @@ class _MachineCodeWrapper:
 
     def get_overview(self):
         blocks = self._machine.get_blocks()
-        strings = ["" for _ in range(blocks[-1].y_coordinate)]
+        max_x_block = max(blocks, key=lambda x: x.x_coordinate)
+        max_y_block = max(blocks, key=lambda x: x.y_coordinate)
+        strings = [[" " for _ in range(max_x_block.x_coordinate + 1)] for _ in range(max_y_block.y_coordinate + 1)]
         for block in blocks:
-            for
-            strings[block.y_coordinate] += f" {block.get_letter()} "
+            strings[block.y_coordinate][block.x_coordinate] = f"{block.get_letter()}"
+        strings = [''.join(lst) for lst in strings]
         return '\n'.join(strings)
 
     def drill(self, drills):

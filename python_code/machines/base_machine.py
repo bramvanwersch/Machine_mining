@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 #  1: make sure that disconecting large parts works properly
 #  2: have a max size
 #  3: have other machine additions not exceed max size
-#  4: make sure that replaced _blocks are handled well
+#  4: make sure that replaced blocks are handled well
 
 
 class Machine:
@@ -53,8 +53,6 @@ class Machine:
             elif block.rect.bottom > self.rect.bottom:
                 self.rect.height += block.rect.bottom - self.rect.bottom
             self._blocks[block.coord[1]] = {block.coord[0]: block}
-        if self.terminal_block is not None:
-            self.terminal_block.add_block_to_interface(block)
         if isinstance(block, block_classes.machine_blocks.MachineTerminalBlock):
             if self.terminal_block is None:
                 self._set_terminal_block(block)
@@ -65,8 +63,6 @@ class Machine:
     def remove_block(self, block):
         if block.id == self.terminal_block.id:
             self.terminal_block = None
-        if self.terminal_block is not None:
-            self.terminal_block.remove_block_from_interface(block)
         del self._blocks[block.coord[1]][block.coord[0]]
         self.size -= 1
 
@@ -102,20 +98,29 @@ class Machine:
         wanted_type: Type["BaseMaterial"] = None
     ) -> List["MachineBlock"]:
         # iter all parts of the machine first x then y and return parts
-        all__blocks = []
+        all_blocks = []
         y_keys = list(self._blocks.keys())
         # have the y-axis in the matematical expected direction
         y_keys.sort(reverse=True)
+        all_x_coords = set()
         for y_coord, y_key in enumerate(y_keys):
             x_dict = self._blocks[y_key]
             x_keys = list(x_dict.keys())
             x_keys.sort()
-            for x_coord, x_key in enumerate(x_keys):
+            for x_key in x_keys:
+                all_x_coords.add(x_key)
                 block = x_dict[x_key]
                 if wanted_type is None or isinstance(block.material, wanted_type):
-                    mblock = MachineBlock(block, (x_coord, y_coord))
-                    all__blocks.append(mblock)
-        return all__blocks
+                    mblock = MachineBlock(block, (x_key, y_coord))
+                    all_blocks.append(mblock)
+        # map the x_keys to proper coordinates
+        sorted_x_coords = sorted(list(all_x_coords))
+        x_map = {coord: index for index, coord in enumerate(sorted_x_coords)}
+        for index in range(len(all_blocks)):
+            block = all_blocks[index]
+            block.coordinate[0] = x_map[block.coordinate[0]]
+            all_blocks[index] = block
+        return all_blocks
 
     def __contains__(self, block):
         return block.coord[1] in self._blocks and block.coord[0] in self._blocks[block.coord[1]]
@@ -125,8 +130,8 @@ class MachineBlock:
     """Wrapper around a block that allows for restricted acces and has the machine coordinate"""
 
     def __init__(self, block: "Block", coord: Union[Tuple[int, int], List[int]]):
-        self.type = type(block).__name__
-        self.coordinate = coord
+        self.type = type(block.material).__name__
+        self.coordinate = list(coord)
 
     def get_letter(self) -> str:
         return self.type.replace("Machine", "")[0]
@@ -141,3 +146,6 @@ class MachineBlock:
     @property
     def y_coordinate(self):
         return self.coordinate[1]
+
+    def __repr__(self):
+        return f"MachineBlock<({self.x_coordinate}, {self.y_coordinate}), {self.type}>"
