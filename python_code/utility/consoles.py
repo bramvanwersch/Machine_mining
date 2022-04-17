@@ -388,11 +388,10 @@ class MachineConsole(Console):
         self,
         text: str
     ) -> List[Tuple[str, bool]]:
-        if "(" not in text:
-            return [(f"Functions need opening and closing brackets after the name", True)]
-        if text.strip()[-1] != ")":
-            return [(f"Functions need opening and closing brackets after the name", True)]
-        function_name, args = self._get_function_call(text)
+        # for calling a function
+        function_and_args = self._tokenize_line(text)
+        function_name = function_and_args[0]
+        args = function_and_args[1:]
         if function_name not in self.command_tree:
             return [(f"No function with name {function_name}", True)]
         try:
@@ -401,15 +400,8 @@ class MachineConsole(Console):
         except Exception as e:
             return [(f"call failed with message: {str(e)}", True)]
 
-    def _get_function_call(self, text: str) -> Tuple[str, List[str]]:
-        function_name, argument_part = text.split("(")
-        argument_part = argument_part.replace(")", "")
-        arguments = [arg.strip() for arg in argument_part.split(",")]
-
-        # in case no arguments are provided, but keeping empty arguments for consistency
-        if len(arguments) == 1 and arguments[0] == "":
-            arguments = []
-        return function_name, arguments
+    def _tokenize_line(self, text: str) -> List[str]:
+        return text.strip().split()
 
 
 class _MachineCodeWrapper:
@@ -426,64 +418,74 @@ class _MachineCodeWrapper:
     # here are all callable methods from console and language
 
     def get_size(self) -> int:
+        """
+Get the size of the current machine. This is the number of blocks that the machine consists of
+Returns:
+    an Integer
+        """
         return self._machine.size
 
     def get_parts(self) -> List["MachineBlock"]:
         """
-        Get all the blocks that the machine is made up of starting from the block with the lowest x, y coordinate then
-        increasing first the x and then the y coordinate.
+Get all the blocks that the machine is made up of starting from the block with the lowest x, y coordinate then
+ increasing first the x and then the y coordinate.
 
-        Returns:
-            A List of Block instances
+Returns:
+    A List of Block instances
         """
         return self._machine.get_blocks()
 
     def get_placers(self) -> List["MachineBlock"]:
         """
-        Get all the placers in the machine starting from the block with the lowest x, y coordinate then
-        increasing first the x and then the y coordinate.
+Get all the placers in the machine starting from the block with the lowest x, y coordinate then
+ increasing first the x and then the y coordinate.
 
-        Returns:
-            A List of Block instances
+Returns:
+    A List of Block instances
         """
         return self._machine.get_blocks(machine_materials.MachinePlacer)
 
     def get_drills(self) -> List["MachineBlock"]:
         """
-        Get all the drills in the machine starting from the block with the lowest x, y coordinate then
-        increasing first the x and then the y coordinate.
+Get all the drills in the machine starting from the block with the lowest x, y coordinate then
+ increasing first the x and then the y coordinate.
 
-        Returns:
-            A List of Block instances
+Returns:
+    A List of Block instances
         """
         return self._machine.get_blocks(machine_materials.MachineDrill)
 
     def get_movers(self) -> List["MachineBlock"]:
         """
-        Get all the movers in the machine starting from the block with the lowest x, y coordinate then
-        increasing first the x and then the y coordinate.
+Get all the movers in the machine starting from the block with the lowest x, y coordinate then
+ increasing first the x and then the y coordinate.
 
-        Returns:
-            A List of Block instances
+Returns:
+    A List of Block instances
         """
         return self._machine.get_blocks(machine_materials.MachineDrill)
 
     def get_inventory(self) -> "Inventory":
         """
-        Get the inventory of the current machine. This inventory can be used to check items
-        Returns:
+Get the inventory of the current machine. This inventory can be used to check items
+Returns:
 
         """
         return "To be implemented"
 
     def get_overview(self):
+        """
+Get an overview of the machine as a string of characters
+Returns:
+    A string of letters describing the machine by the first name of the components
+        """
         blocks = self._machine.get_blocks()
         max_x_block = max(blocks, key=lambda x: x.x_coordinate)
         max_y_block = max(blocks, key=lambda x: x.y_coordinate)
         strings = [[" " for _ in range(max_x_block.x_coordinate + 1)] for _ in range(max_y_block.y_coordinate + 1)]
         for block in blocks:
             strings[block.y_coordinate][block.x_coordinate] = f"{block.get_letter()}"
-        strings = [''.join(lst) for lst in strings]
+        strings = [''.join(lst) for lst in strings[::-1]]
         return '\n'.join(strings)
 
     def drill(self, drills):
@@ -498,5 +500,16 @@ class _MachineCodeWrapper:
     def move_y(self, amnt):
         pass
 
-    def help(self, function_name):
-        pass
+    def help(self, function_name: str):
+        """
+Get a help message for a given function name if it exists
+Args:
+    function_name: The name of the function you want more information for
+
+Returns:
+    A string that describes the function and input parameters in more detail
+        """
+        function_mapping = self.get_possible_commands_dict()
+        if function_name not in function_mapping:
+            return f"No function with name: {function_name}"
+        return function_mapping[function_name].__doc__

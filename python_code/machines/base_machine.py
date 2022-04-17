@@ -31,7 +31,7 @@ class Machine:
         self.terminal_block = None
         self.rect = block.rect.copy()
         self.id = util.unique_id()
-        self.size = 1
+        self.size = 0
         self.add_block(block)
 
     def update(self):
